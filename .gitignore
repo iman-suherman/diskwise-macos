@@ -1,3 +1,5 @@
+.cursor/
+
 .DS_Store
 .build/
 .swiftpm/
@@ -13,12 +15,18 @@ DerivedData/
 DiskWise.app
 DiskWise.dmg
 DiskWise.zip
+releases/
 *.db
 *.db-shm
 *.db-wal
 .env
 .env.local
 .env.release
+.gcloud/application_default_credentials.json
+logs/*
+!logs/.gitkeep
+website/node_modules/
+website/.next/
 .venv/
 __pycache__/
 *.pyc
