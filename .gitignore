@@ -29,6 +29,7 @@ logs/*
 !logs/.gitkeep
 website/node_modules/
 website/.next/
+*.tsbuildinfo
 website/public/downloads/*.zip
 website/public/downloads/*.html
 !website/public/downloads/.gitkeep
