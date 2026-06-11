@@ -32,8 +32,8 @@ export function Header() {
             <Image
               src="/app-icon.png"
               alt=""
-              width={794}
-              height={757}
+              width={908}
+              height={890}
               priority
               sizes="48px"
               className="app-icon-mark relative h-10 w-10 rounded-lg object-contain drop-shadow-[0_4px_12px_rgba(0,122,255,0.45)] sm:h-12 sm:w-12"
