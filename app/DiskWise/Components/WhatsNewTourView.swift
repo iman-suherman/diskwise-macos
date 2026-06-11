@@ -12,6 +12,8 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
+        case "0.1.8":
+            return v018Pages
         case "0.1.7":
             return v017Pages
         case "0.1.6":
@@ -28,6 +30,27 @@ enum WhatsNewContent {
             return genericPages(version: version)
         }
     }
+
+    private static let v018Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "welcome",
+            icon: "sparkles",
+            title: "Welcome to DiskWise 0.1.8",
+            message: "Scanning is easier from the sidebar — full drive or just one folder.",
+            bullets: []
+        ),
+        WhatsNewPage(
+            id: "scan",
+            icon: "arrow.triangle.2.circlepath",
+            title: "Scan from the sidebar",
+            message: "Select a drive to reveal a scan button on its row, or use Actions.",
+            bullets: [
+                "Shows Scan until the drive is indexed, then Rescan",
+                "Scan Folder… picks a subtree without re-indexing the whole volume",
+                "Right-click any drive for Scan, Scan Folder, or Eject",
+            ]
+        ),
+    ]
 
     private static let v017Pages: [WhatsNewPage] = [
         WhatsNewPage(

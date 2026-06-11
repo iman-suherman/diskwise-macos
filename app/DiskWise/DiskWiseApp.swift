@@ -204,6 +204,9 @@ struct ContentView: View {
                             volume: volume,
                             isSelected: viewModel.selectedVolumePath == volume.mountPath,
                             isIndexed: viewModel.isIndexed(volume),
+                            isScanDisabled: viewModel.isVolumeBusy(volume),
+                            onScan: { viewModel.scan(volume: volume) },
+                            onScanFolder: { viewModel.scanFolder(on: volume) },
                             onEject: volume.isEjectable ? { viewModel.ejectVolume(volume) } : nil
                         )
                         .tag(volume.mountPath)
@@ -220,7 +223,10 @@ struct ContentView: View {
                             volume: volume,
                             isSelected: viewModel.selectedVolumePath == volume.mountPath,
                             isIndexed: viewModel.isIndexed(volume),
+                            isScanDisabled: viewModel.isVolumeBusy(volume),
                             isEjectDisabled: viewModel.isVolumeBusy(volume),
+                            onScan: { viewModel.scan(volume: volume) },
+                            onScanFolder: { viewModel.scanFolder(on: volume) },
                             onEject: volume.isEjectable ? { viewModel.ejectVolume(volume) } : nil
                         )
                         .tag(volume.mountPath)
@@ -258,11 +264,25 @@ struct ContentView: View {
                         viewModel.scanSelectedVolume()
                     } label: {
                         Label(
-                            viewModel.isScanning ? "Scanning…" : (viewModel.isFindingDuplicates ? "Checking duplicates…" : "Rescan \(volume.name)"),
+                            viewModel.isScanning
+                                ? "Scanning…"
+                                : (viewModel.isFindingDuplicates
+                                    ? "Checking duplicates…"
+                                    : viewModel.scanActionTitle(for: volume)),
                             systemImage: "arrow.triangle.2.circlepath"
                         )
                     }
-                    .disabled(viewModel.isScanning)
+                    .disabled(viewModel.isVolumeBusy(volume))
+
+                    Button {
+                        viewModel.scanFolderOnSelectedVolume()
+                    } label: {
+                        Label(
+                            viewModel.isScanning ? "Scanning…" : "Scan Folder…",
+                            systemImage: "folder.badge.plus"
+                        )
+                    }
+                    .disabled(viewModel.isVolumeBusy(volume))
 
                     Button {
                         viewModel.showActivityLog = true

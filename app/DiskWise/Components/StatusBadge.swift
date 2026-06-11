@@ -57,7 +57,10 @@ struct DeviceSidebarRow: View {
     let volume: MountedVolume
     let isSelected: Bool
     let isIndexed: Bool
+    var isScanDisabled: Bool = false
     var isEjectDisabled: Bool = false
+    var onScan: (() -> Void)? = nil
+    var onScanFolder: (() -> Void)? = nil
     var onEject: (() -> Void)? = nil
 
     var body: some View {
@@ -93,6 +96,25 @@ struct DeviceSidebarRow: View {
                 }
             }
 
+            if isSelected, let onScan {
+                Button {
+                    onScan()
+                } label: {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(isScanDisabled ? .tertiary : .secondary)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(isScanDisabled)
+                .help(
+                    isScanDisabled
+                        ? "Wait for scan to finish"
+                        : (isIndexed ? "Rescan \"\(volume.name)\"" : "Scan \"\(volume.name)\"")
+                )
+            }
+
             if let onEject {
                 Button {
                     onEject()
@@ -111,6 +133,27 @@ struct DeviceSidebarRow: View {
         .padding(.vertical, 6)
         .contentShape(Rectangle())
         .contextMenu {
+            if let onScan {
+                Button {
+                    onScan()
+                } label: {
+                    Label(
+                        isIndexed ? "Rescan \"\(volume.name)\"" : "Scan \"\(volume.name)\"",
+                        systemImage: "arrow.triangle.2.circlepath"
+                    )
+                }
+                .disabled(isScanDisabled)
+            }
+
+            if let onScanFolder {
+                Button {
+                    onScanFolder()
+                } label: {
+                    Label("Scan Folder…", systemImage: "folder.badge.plus")
+                }
+                .disabled(isScanDisabled)
+            }
+
             if let onEject {
                 Button {
                     onEject()

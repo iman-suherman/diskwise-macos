@@ -108,10 +108,14 @@ public final class ScanEngine: @unchecked Sendable {
     public func scanVolume(
         name: String,
         mountPath: URL,
+        scanRoot: URL? = nil,
         onProgress: (@Sendable (ScanProgress) -> Void)? = nil,
         isCancelled: (@Sendable () -> Bool)? = nil
     ) throws -> ScanSummary {
         let start = Date()
+        let root = scanRoot ?? mountPath
+        let isFolderScan = root.standardizedFileURL.path != mountPath.standardizedFileURL.path
+
         let resourceValues = try mountPath.resourceValues(forKeys: [
             .volumeTotalCapacityKey,
             .volumeAvailableCapacityKey,
@@ -131,10 +135,14 @@ public final class ScanEngine: @unchecked Sendable {
             throw DiskWiseDatabaseError.diskNotFound
         }
 
-        try database.deleteFiles(forDiskID: diskID)
+        if isFolderScan {
+            try database.deleteFiles(forDiskID: diskID, underPath: root.path)
+        } else {
+            try database.deleteFiles(forDiskID: diskID)
+        }
 
         let scannedFiles = try scanner.scan(
-            mountPath: mountPath,
+            mountPath: root,
             onProgress: onProgress,
             isCancelled: isCancelled
         )
