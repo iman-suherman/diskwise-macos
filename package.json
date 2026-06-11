@@ -1,6 +1,6 @@
 {
   "name": "diskwise-macos",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "displayName": "DiskWise",
   "publisher": "Iman Suherman",
   "private": true,
@@ -19,7 +19,7 @@
     "setup:xcode": "xcodebuild -runFirstLaunch",
     "build:app": "bash scripts/build.sh",
     "prepare:icon": "swift scripts/generate-app-icon.swift app/DiskWise/Assets.xcassets/AppIcon.appiconset app/DiskWise/Assets/AppIconSource.png",
-    "prepare:website": "swift scripts/prepare-website-assets.swift",
+    "prepare:website": "swift scripts/prepare-website-assets.swift && swift scripts/prepare-website-screenshots.swift",
     "build:app:release": "bash scripts/build.sh release",
     "run:app": "bash scripts/run-app.sh",
     "open:xcode": "open app/DiskWise.xcodeproj",
