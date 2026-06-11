@@ -57,6 +57,7 @@ struct DeviceSidebarRow: View {
     let volume: MountedVolume
     let isSelected: Bool
     let isIndexed: Bool
+    var isEjectDisabled: Bool = false
     var onEject: (() -> Void)? = nil
 
     var body: some View {
@@ -91,6 +92,21 @@ struct DeviceSidebarRow: View {
                     }
                 }
             }
+
+            if let onEject {
+                Button {
+                    onEject()
+                } label: {
+                    Image(systemName: "eject.fill")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(isEjectDisabled ? .tertiary : .secondary)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(isEjectDisabled)
+                .help(isEjectDisabled ? "Wait for scan to finish" : "Eject \"\(volume.name)\"")
+            }
         }
         .padding(.vertical, 6)
         .contentShape(Rectangle())
@@ -101,6 +117,7 @@ struct DeviceSidebarRow: View {
                 } label: {
                     Label("Eject \"\(volume.name)\"", systemImage: "eject.fill")
                 }
+                .disabled(isEjectDisabled)
             }
         }
     }
