@@ -14,8 +14,9 @@ const highlights = [
     tint: "bg-brand-purple/15 text-brand-purple",
   },
   {
-    title: "AI recommendations",
-    description: "Get actionable cleanup plans for stale exports, preview files, and long-unaccessed media.",
+    title: "AI chat & recommendations",
+    description:
+      "Ask DiskWise what is using your disk, then review ranked cleanup suggestions for caches, old DMGs, and stale files.",
     icon: "✨",
     tint: "bg-brand-orange/15 text-brand-orange",
   },
@@ -34,7 +35,7 @@ const workflowSteps = [
   },
   {
     title: "Review",
-    description: "Explore treemaps, duplicate groups, and AI-generated recommendations.",
+    description: "Explore storage breakdowns, duplicate groups, AI chat, and safe cleanup suggestions.",
   },
   {
     title: "Reclaim",

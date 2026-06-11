@@ -34,8 +34,8 @@ export function Hero() {
             <span className="gradient-text">AI-powered storage insights.</span>
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-slate-400 sm:mt-6 sm:text-lg sm:leading-8 md:text-xl md:leading-9">
-            Scan volumes, find duplicate videos, classify storage hotspots, and safely move clutter
-            to Trash — all from a native macOS app built for privacy.
+            Scan volumes, find duplicate videos, get safe cleanup suggestions, and ask AI about your
+            storage — all from a native macOS app built for privacy.
           </p>
 
           <div id="download" className="mt-6 flex flex-col gap-3 sm:mt-8">
@@ -82,6 +82,7 @@ export function Hero() {
             width={1024}
             height={1024}
             priority
+            unoptimized
             sizes="(max-width: 1024px) 90vw, 32rem"
             className="app-icon-hero relative h-auto w-full object-contain drop-shadow-[0_20px_50px_rgba(0,122,255,0.45)]"
           />

@@ -9,8 +9,9 @@ let sourcePath = CommandLine.arguments.dropFirst().first
     ?? repoRoot.appendingPathComponent("app/DiskWise/Assets/AppIconSource.png").path
 let outputPath = CommandLine.arguments.dropFirst().dropFirst().first
     ?? repoRoot.appendingPathComponent("website/public/app-icon.png").path
+let heroOutputPath = repoRoot.appendingPathComponent("website/public/hero.png").path
 
-let blackThreshold: UInt8 = 28
+let blackThreshold = 28
 
 func makeTransparentBitmap(from path: String) -> (rep: NSBitmapImageRep, width: Int, height: Int)? {
     guard let image = NSImage(contentsOfFile: path),
@@ -42,15 +43,23 @@ func makeTransparentBitmap(from path: String) -> (rep: NSBitmapImageRep, width: 
     guard let data = rep.bitmapData else { return nil }
     let bytesPerRow = rep.bytesPerRow
 
+    let feather: Int = 24
+
     for y in 0..<height {
         for x in 0..<width {
             let offset = y * bytesPerRow + x * 4
-            let red = data[offset]
-            let green = data[offset + 1]
-            let blue = data[offset + 2]
+            let red = Int(data[offset])
+            let green = Int(data[offset + 1])
+            let blue = Int(data[offset + 2])
+            let luminance = (red * 299 + green * 587 + blue * 114) / 1000
 
-            if red <= blackThreshold && green <= blackThreshold && blue <= blackThreshold {
+            if luminance <= blackThreshold {
                 data[offset + 3] = 0
+            } else if luminance < blackThreshold + feather {
+                let alpha = (luminance - blackThreshold) * 255 / feather
+                data[offset + 3] = UInt8(min(255, max(0, alpha)))
+            } else {
+                data[offset + 3] = 255
             }
         }
     }
@@ -146,4 +155,12 @@ try FileManager.default.createDirectory(
 try png.write(to: outputURL)
 
 fputs("prepare-website-assets: wrote \(outputPath)\n", stderr)
-fputs("prepare-website-assets: hero.png is maintained separately in website/public/\n", stderr)
+
+guard let heroPNG = initial.rep.representation(using: .png, properties: [:]) else {
+    fputs("prepare-website-assets: failed to encode hero PNG\n", stderr)
+    exit(1)
+}
+
+let heroOutputURL = URL(fileURLWithPath: heroOutputPath)
+try heroPNG.write(to: heroOutputURL)
+fputs("prepare-website-assets: wrote \(heroOutputPath)\n", stderr)
