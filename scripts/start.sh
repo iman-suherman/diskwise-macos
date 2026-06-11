@@ -30,6 +30,11 @@ fi
 echo "==> Creating DMG installer"
 bash "$ROOT_DIR/scripts/create-dmg.sh" "$APP_PATH" "$OUTPUT_DMG"
 
+if [[ "${SPARKLE_LOCAL:-1}" == "1" ]]; then
+  echo "==> Publishing Sparkle artifacts for local website"
+  node "$ROOT_DIR/scripts/sparkle-local-publish.cjs"
+fi
+
 echo ""
 echo "Done."
 echo "  DMG: $OUTPUT_DMG"

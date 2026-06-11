@@ -30,6 +30,11 @@ async function registerPluginVersion({
   latestObjectPath,
   releaseNotesObjectPath,
   sizeBytes,
+  sparkleObjectPath,
+  sparkleLatestObjectPath,
+  sparkleSizeBytes,
+  sparkleDownloadUrl,
+  appcastObjectPath,
   publishedBy,
 }) {
   applyGcpEnv(root);
@@ -81,6 +86,16 @@ async function registerPluginVersion({
       ? `gs://${bucket}/${releaseNotesObjectPath}`
       : null,
     sizeBytes: sizeBytes || null,
+    sparkle: sparkleObjectPath
+      ? {
+          objectPath: sparkleObjectPath,
+          latestObjectPath: sparkleLatestObjectPath,
+          sizeBytes: sparkleSizeBytes || null,
+          publicDownloadUrl: sparkleDownloadUrl || null,
+        }
+      : null,
+    appcastUrl: appcastObjectPath ? `gs://${bucket}/${appcastObjectPath}` : null,
+    publicAppcastUrl: `${(process.env.WEBSITE_BASE_URL?.trim() || "https://diskwise.suherman.net").replace(/\/$/, "")}/appcast.xml`,
     gitCommit: release.gitCommit || null,
     gitTag: release.gitTag || null,
     previousTag: release.previousTag || null,

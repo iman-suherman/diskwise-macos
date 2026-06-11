@@ -72,3 +72,30 @@ For a local unsigned DMG (no notarization):
 ```bash
 npm run start
 ```
+
+## Sparkle updates (local)
+
+Debug builds check `http://127.0.0.1:3000/appcast.xml` (Release builds use production).
+
+```bash
+# 1. Build a release (or signed local) app + publish ZIP/appcast to website/public/
+npm run release:local
+# or: npm run start
+
+# 2. Serve the local website (appcast + downloads)
+npm run dev:website
+
+# 3. Run a Debug build — it will check the local feed every 5 minutes
+npm run dev:app
+```
+
+Publish Sparkle artifacts without a full release:
+
+```bash
+npm run build:app:release
+npm run sign
+npm run sparkle:local
+npm run dev:website
+```
+
+Artifacts land in `website/public/appcast.xml` and `website/public/downloads/DiskWise-{version}.zip`.

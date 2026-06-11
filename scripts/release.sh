@@ -20,6 +20,15 @@ bash "$ROOT_DIR/scripts/build.sh" release
 bash "$ROOT_DIR/scripts/sign.sh"
 bash "$ROOT_DIR/scripts/package.sh" "" "$OUTPUT_DMG"
 
+if [[ "${SPARKLE_LOCAL:-1}" == "1" ]]; then
+  echo ""
+  echo "==> Publishing Sparkle artifacts for local website"
+  node "$ROOT_DIR/scripts/sparkle-local-publish.cjs"
+fi
+
 echo ""
 echo "Release complete: $OUTPUT_DMG"
 echo "Drag DiskWise.app to Applications — Gatekeeper should accept the notarized build."
+if [[ "${SPARKLE_LOCAL:-1}" == "1" ]]; then
+  echo "Local Sparkle feed: run npm run dev:website then test updates from http://127.0.0.1:3000/appcast.xml"
+fi

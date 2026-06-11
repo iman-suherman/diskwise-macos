@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Import Sparkle signing key
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          if [[ -n "$SPARKLE_PRIVATE_KEY" ]]; then
+            echo "Sparkle private key configured for CI signing."
+          else
+            echo "SPARKLE_PRIVATE_KEY secret is not set — appcast signatures will use the local keychain if available."
+          fi
+
+      - name: Resolve release version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          node -e "const { assertSemver } = require('./scripts/semver.cjs'); assertSemver(process.argv[1]);" "$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          node scripts/sync-app-version.cjs "$VERSION"
+
+      - name: Build signed and notarized release
+        env:
+          DISKWISE_RELEASE_DEFAULTS: "1"
+          MACOS_NOTARIZE: "1"
+          OUTPUT_DMG: releases/diskwise-macos-${{ steps.version.outputs.version }}.dmg
+          APPLE_NOTARIZE_KEYCHAIN_PROFILE: ${{ secrets.APPLE_NOTARIZE_KEYCHAIN_PROFILE }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          MACOS_CODESIGN_IDENTITY: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
+          DEVELOPER_ID_APPLICATION: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: bash scripts/release.sh
+
+      - name: Upload release artifacts and update appcast
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+          GCS_APP_BUCKET: ${{ secrets.GCS_APP_BUCKET }}
+          GCS_APP_PREFIX: ${{ secrets.GCS_APP_PREFIX }}
+          GCS_LOCATION: ${{ secrets.GCS_LOCATION }}
+          GCP_USER_EMAIL: ${{ github.actor }}
+          RELEASE_FORCE: "1"
+          RELEASE_SKIP_TAG: "1"
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          node -e "
+            const { uploadRelease } = require('./scripts/upload-release.cjs');
+            uploadRelease({
+              version: '${{ steps.version.outputs.version }}',
+              dmgPath: 'releases/diskwise-macos-${{ steps.version.outputs.version }}.dmg',
+              previousVersion: null,
+            }).catch((err) => { console.error(err); process.exit(1); });
+          "
+
+      - name: Deploy website (appcast.xml)
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+        run: npm run deploy:website
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: DiskWise ${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          files: |
+            releases/diskwise-macos-${{ steps.version.outputs.version }}.dmg
+            releases/sparkle/DiskWise-${{ steps.version.outputs.version }}.zip
+            website/public/appcast.xml

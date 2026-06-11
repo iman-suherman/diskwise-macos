@@ -177,6 +177,7 @@ async function main() {
   run("bash", ["scripts/release.sh"], {
     env: {
       OUTPUT_DMG: dmgPath,
+      SPARKLE_LOCAL: "0",
     },
   });
 

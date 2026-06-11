@@ -10,6 +10,11 @@ const { resolveGcpProjectId } = require("./gcp-config.cjs");
 const { assertSemver } = require("./semver.cjs");
 const { generateReleaseNotes, writeReleaseArtifacts } = require("./generate-release-notes.cjs");
 const { registerPluginVersion } = require("./register-version.cjs");
+const { generateAppcast } = require("./generate-appcast.cjs");
+const {
+  sparkleZipFileName,
+  publicSparkleDownloadUrl,
+} = require("./public-download-url.cjs");
 
 const root = path.join(__dirname, "..");
 const shell = process.platform === "win32";
@@ -142,14 +147,42 @@ async function uploadRelease(options = {}) {
   console.log(`upload: release notes → ${artifacts.jsonPath}`);
   console.log(`upload: ${release.summary}`);
 
+  const sparkleZipPath = path.join(
+    resolveReleasesDir(),
+    "sparkle",
+    sparkleZipFileName(version)
+  );
+  if (!fs.existsSync(sparkleZipPath)) {
+    const appPath =
+      options.appPath ||
+      path.join(root, ".build/DerivedData/Build/Products/Release/DiskWise.app");
+    if (fs.existsSync(appPath)) {
+      console.log("upload: creating Sparkle ZIP archive…");
+      run("bash", ["scripts/package-zip.sh", appPath, version, sparkleZipPath]);
+    } else {
+      console.warn(`upload: Sparkle ZIP not found (${sparkleZipPath}); skipping Sparkle upload`);
+    }
+  }
+
+  let appcastPath = path.join(root, "website", "public", "appcast.xml");
+  if (fs.existsSync(sparkleZipPath)) {
+    const appcastArtifacts = generateAppcast({ release });
+    appcastPath = appcastArtifacts.websiteAppcastPath;
+    console.log(`upload: Sparkle appcast → ${appcastPath}`);
+  }
+
   const bucket = resolveBucket(projectId);
   const prefix = resolvePrefix();
   const dmgPath = resolveDmgPath(options);
   const dmgName = path.basename(dmgPath);
   const objectPath = `${prefix}/${version}/${dmgName}`;
   const latestObjectPath = `${prefix}/latest/${dmgName}`;
+  const sparkleZipName = sparkleZipFileName(version);
+  const sparkleObjectPath = `${prefix}/${version}/${sparkleZipName}`;
+  const sparkleLatestObjectPath = `${prefix}/latest/${sparkleZipName}`;
   const releaseNotesObjectPath = `${prefix}/${version}/release-${version}.json`;
   const releaseNotesMarkdownPath = `${prefix}/${version}/release-${version}.md`;
+  const appcastObjectPath = `${prefix}/appcast.xml`;
 
   ensureBucket(bucket, projectId, resolveLocation());
 
@@ -185,6 +218,42 @@ async function uploadRelease(options = {}) {
     projectId,
   ]);
 
+  let sparkleSizeBytes = null;
+  if (fs.existsSync(sparkleZipPath)) {
+    console.log(`upload: uploading ${sparkleZipName} → gs://${bucket}/${sparkleObjectPath}`);
+    run("gcloud", [
+      "storage",
+      "cp",
+      sparkleZipPath,
+      `gs://${bucket}/${sparkleObjectPath}`,
+      "--project",
+      projectId,
+    ]);
+
+    console.log(`upload: uploading Sparkle latest copy → gs://${bucket}/${sparkleLatestObjectPath}`);
+    run("gcloud", [
+      "storage",
+      "cp",
+      sparkleZipPath,
+      `gs://${bucket}/${sparkleLatestObjectPath}`,
+      "--project",
+      projectId,
+    ]);
+    sparkleSizeBytes = fs.statSync(sparkleZipPath).size;
+  }
+
+  if (fs.existsSync(appcastPath)) {
+    console.log(`upload: uploading appcast → gs://${bucket}/${appcastObjectPath}`);
+    run("gcloud", [
+      "storage",
+      "cp",
+      appcastPath,
+      `gs://${bucket}/${appcastObjectPath}`,
+      "--project",
+      projectId,
+    ]);
+  }
+
   const sizeBytes = fs.statSync(dmgPath).size;
   const registration = await registerPluginVersion({
     release,
@@ -193,6 +262,13 @@ async function uploadRelease(options = {}) {
     latestObjectPath,
     releaseNotesObjectPath,
     sizeBytes,
+    sparkleObjectPath: fs.existsSync(sparkleZipPath) ? sparkleObjectPath : null,
+    sparkleLatestObjectPath: fs.existsSync(sparkleZipPath) ? sparkleLatestObjectPath : null,
+    sparkleSizeBytes,
+    sparkleDownloadUrl: fs.existsSync(sparkleZipPath)
+      ? publicSparkleDownloadUrl({ version })
+      : null,
+    appcastObjectPath: fs.existsSync(appcastPath) ? appcastObjectPath : null,
     publishedBy: process.env.GCP_USER_EMAIL || null,
   });
 
