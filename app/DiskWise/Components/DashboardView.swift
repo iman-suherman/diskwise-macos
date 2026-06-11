@@ -534,6 +534,10 @@ struct DashboardView: View {
                         }
                     }
 
+                    if viewModel.totalDuplicateSavings > 0 {
+                        duplicatesCallToAction
+                    }
+
                     if !viewModel.topConsumers.isEmpty {
                         topConsumersSection
                     }
@@ -551,6 +555,37 @@ struct DashboardView: View {
         .sheet(item: $viewModel.recommendationReview) { review in
             RecommendationReviewSheet(state: review)
                 .environmentObject(viewModel)
+        }
+    }
+
+    private var duplicatesCallToAction: some View {
+        GroupBox {
+            HStack(spacing: 16) {
+                Image(systemName: "doc.on.doc.fill")
+                    .font(.system(size: 28))
+                    .foregroundStyle(.orange)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(viewModel.duplicateGroups.count) duplicate groups found")
+                        .font(.headline)
+                    Text("\(DiskWiseFormatters.bytes.string(fromByteCount: viewModel.totalDuplicateSavings)) can be reclaimed by moving extra copies to Trash.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Button {
+                    viewModel.openDuplicatesPane()
+                } label: {
+                    Label("Review & Delete Duplicates", systemImage: "trash.fill")
+                        .frame(minWidth: 220)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+                .controlSize(.large)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 

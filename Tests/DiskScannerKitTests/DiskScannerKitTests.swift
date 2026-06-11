@@ -9,6 +9,20 @@ final class DiskScannerKitTests: XCTestCase {
             .video
         )
         XCTAssertEqual(
+            FileClassifier.category(
+                for: URL(fileURLWithPath: "/Users/me/Documents/DJI_0049_D.MP4"),
+                isDirectory: false
+            ),
+            .video
+        )
+        XCTAssertEqual(
+            FileClassifier.category(
+                for: URL(fileURLWithPath: "/Users/me/Documents/artwork.eps"),
+                isDirectory: false
+            ),
+            .other
+        )
+        XCTAssertEqual(
             FileClassifier.category(for: URL(fileURLWithPath: "/tmp/export.partial"), isDirectory: false),
             .temporary
         )

@@ -92,9 +92,11 @@ public enum FileClassifier {
         }
 
         let ext = url.pathExtension.lowercased()
-        switch ext {
-        case "mp4", "mkv", "mov", "avi", "m4v", "webm", "ts":
+        if VideoFileRules.extensions.contains(ext) {
             return .video
+        }
+
+        switch ext {
         case "jpg", "jpeg", "png", "heic", "gif", "tif", "tiff", "raw", "cr2", "nef":
             return .photo
         case "pdf", "doc", "docx", "txt", "md", "rtf", "pages", "xls", "xlsx", "ppt", "pptx":
