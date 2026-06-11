@@ -77,6 +77,19 @@ function main() {
   fs.copyFileSync(sparkleZipPath, websiteZipPath);
   console.log(`sparkle:local: copied zip → ${websiteZipPath}`);
 
+  const dmgCandidates = [
+    process.env.OUTPUT_DMG?.trim(),
+    path.join(root, "releases", `diskwise-macos-${version}.dmg`),
+  ].filter(Boolean);
+  for (const dmgPath of dmgCandidates) {
+    if (!fs.existsSync(dmgPath)) continue;
+    const dmgName = path.basename(dmgPath);
+    const websiteDmgPath = path.join(websiteDownloads, dmgName);
+    fs.copyFileSync(dmgPath, websiteDmgPath);
+    console.log(`sparkle:local: copied dmg → ${websiteDmgPath}`);
+    break;
+  }
+
   const release = generateReleaseNotes({ version });
   writeReleaseArtifacts(release);
 

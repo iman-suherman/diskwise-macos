@@ -4,9 +4,31 @@ export const REGISTRY_API_URL =
   process.env.NEXT_PUBLIC_REGISTRY_API_URL?.trim() ||
   "https://diskwise-registry.suherman.net";
 
-export const DOWNLOAD_BASE_URL =
-  process.env.NEXT_PUBLIC_DOWNLOAD_BASE_URL?.trim() ||
-  "https://diskwise-download.suherman.net/downloads";
+const PRODUCTION_DOWNLOAD_BASE = "https://diskwise-download.suherman.net/downloads";
+
+const LOCAL_DOWNLOAD_BASE =
+  process.env.NEXT_PUBLIC_LOCAL_DOWNLOAD_BASE_URL?.trim() ||
+  "http://127.0.0.1:3000/downloads";
+
+function isLocalhostUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return host === "localhost" || host === "127.0.0.1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Fallback when constructing URLs client-side. Prefer `version.publicDownloadUrl`
+ * from the registry API (always rewritten to the production CDN).
+ */
+export const DOWNLOAD_BASE_URL = (() => {
+  const configured = process.env.NEXT_PUBLIC_DOWNLOAD_BASE_URL?.trim();
+  if (configured && !isLocalhostUrl(configured)) return configured;
+  if (process.env.NODE_ENV === "development") return LOCAL_DOWNLOAD_BASE;
+  return PRODUCTION_DOWNLOAD_BASE;
+})();
 
 export type ReleaseNotes = {
   introduced?: string[];
@@ -66,6 +88,9 @@ function dmgFileName(version: AppVersion): string {
 }
 
 export function toPublicDownloadUrl(version: AppVersion): string {
+  if (version.publicDownloadUrl && !isLocalhostUrl(version.publicDownloadUrl)) {
+    return version.publicDownloadUrl;
+  }
   const base = DOWNLOAD_BASE_URL.replace(/\/$/, "");
   return `${base}/${dmgFileName(version)}`;
 }

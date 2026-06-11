@@ -7,7 +7,6 @@ const path = require("path");
 const { resolveGcpProjectId } = require("./gcp-config.cjs");
 const { getProjectAdcPath } = require("./gcp-lib-adc.cjs");
 const { loadDotenv } = require("./load-dotenv.cjs");
-const { resolveDownloadBase } = require("./public-download-url.cjs");
 
 const root = path.join(__dirname, "..");
 const websiteDir = path.join(root, "website");
@@ -48,7 +47,11 @@ function main() {
   const registryApiUrl =
     process.env.NEXT_PUBLIC_REGISTRY_API_URL?.trim() ||
     "https://diskwise-registry.suherman.net";
-  const downloadBase = resolveDownloadBase();
+  // Always bake production CDN URLs into the website — never SPARKLE_LOCAL / localhost.
+  const downloadBase =
+    process.env.PUBLIC_DOWNLOAD_BASE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_DOWNLOAD_BASE_URL?.trim() ||
+    "https://diskwise-download.suherman.net/downloads";
 
   console.log(`deploy:website: deploying ${serviceName} to Cloud Run (${region})…`);
   run("gcloud", [

@@ -1,14 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { DownloadButton } from "@/components/DownloadButton";
 import { useLatestVersion } from "@/hooks/useRegistry";
-import { DOWNLOAD_BASE_URL, toPublicDownloadUrl } from "@/lib/registry";
-
-const FALLBACK_DOWNLOAD_URL = `${DOWNLOAD_BASE_URL.replace(/\/$/, "")}/latest.dmg`;
 
 export function CtaBanner() {
-  const { data: latest } = useLatestVersion();
-  const downloadUrl = latest ? toPublicDownloadUrl(latest) : FALLBACK_DOWNLOAD_URL;
+  const { data: latest, loading } = useLatestVersion();
 
   return (
     <section className="mx-auto max-w-7xl px-4 pb-6 sm:px-6 sm:pb-8">
@@ -24,9 +21,7 @@ export function CtaBanner() {
             </p>
           </div>
           <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2">
-            <a href={downloadUrl} className="btn-cta-primary">
-              {latest ? `Download v${latest.version}` : "Download for macOS"}
-            </a>
+            <DownloadButton latest={latest} loading={loading} className="btn-cta-primary" />
             <Link href="/versions" className="btn-cta-secondary">
               Browse versions
             </Link>

@@ -200,11 +200,13 @@ public final class DuplicateEngine: @unchecked Sendable {
 
     public func detectAll(
         forDiskID diskID: Int64,
+        fileLimit: Int = 100_000,
         levels: [DuplicateDetectionLevel] = DuplicateDetectionLevel.allCases,
         onProgress: (@Sendable (DuplicateScanProgress) -> Void)? = nil,
         isCancelled: (@Sendable () -> Bool)? = nil
     ) throws -> DuplicateScanSummary {
-        let files = try database.files(forDiskID: diskID, limit: 100_000)
+        let cappedLimit = max(1_000, min(fileLimit, 1_000_000))
+        let files = try database.files(forDiskID: diskID, limit: cappedLimit)
         var groupsFound = 0
         var reclaimableBytes: Int64 = 0
         let activeLevels = levels.filter { level in DuplicateDetectionLevel.allCases.contains(level) }

@@ -1,0 +1,96 @@
+import SwiftUI
+
+struct AppSettingsView: View {
+    @ObservedObject var settings: AppSettings
+
+    var body: some View {
+        Form {
+            Section {
+                Text(
+                    "DiskWise always indexes every file during Step 1. These limits control how many of the largest files are checked for duplicates and used to build cleanup recommendations."
+                )
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Section("Performance preset") {
+                Picker("Preset", selection: Binding(
+                    get: { settings.activePreset ?? .balanced },
+                    set: { settings.applyPreset($0) }
+                )) {
+                    ForEach(ScanPerformancePreset.allCases) { preset in
+                        Text(preset.title).tag(preset)
+                    }
+                }
+
+                Text(settings.activePreset?.detail ?? "Custom limits — adjust the sliders below.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Duplicate detection (Step 2)") {
+                limitRow(
+                    title: "Files to check",
+                    value: $settings.duplicateScanFileLimit,
+                    range: AppSettings.duplicateScanFileLimitRange,
+                    step: 10_000,
+                    help: "Compares the largest files by size. Higher values find more duplicates but take longer."
+                )
+            }
+
+            Section("Storage analysis (Step 3)") {
+                limitRow(
+                    title: "Files to analyze",
+                    value: $settings.analysisFileLimit,
+                    range: AppSettings.analysisFileLimitRange,
+                    step: 1_000,
+                    help: "Samples the largest files when building cleanup recommendations and AI insights."
+                )
+            }
+
+            Section {
+                Button("Restore defaults") {
+                    settings.resetToDefaults()
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .frame(width: 520, height: 420)
+        .navigationTitle("Settings")
+    }
+
+    @ViewBuilder
+    private func limitRow(
+        title: String,
+        value: Binding<Int>,
+        range: ClosedRange<Int>,
+        step: Int,
+        help: String
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(title)
+                Spacer()
+                Text(value.wrappedValue.formatted())
+                    .font(.body.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+
+            Slider(
+                value: Binding(
+                    get: { Double(value.wrappedValue) },
+                    set: { value.wrappedValue = Int($0.rounded()) }
+                ),
+                in: Double(range.lowerBound)...Double(range.upperBound),
+                step: Double(step)
+            )
+
+            Text(help)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 4)
+    }
+}

@@ -2,14 +2,9 @@
 
 import Link from "next/link";
 import { LocalReleaseDate } from "@/components/LocalReleaseDate";
+import { DownloadButton } from "@/components/DownloadButton";
 import { useLatestVersion } from "@/hooks/useRegistry";
-import {
-  DOWNLOAD_BASE_URL,
-  publishedAtToIso,
-  toPublicDownloadUrl,
-} from "@/lib/registry";
-
-const FALLBACK_DOWNLOAD_URL = `${DOWNLOAD_BASE_URL.replace(/\/$/, "")}/latest.dmg`;
+import { publishedAtToIso, toPublicDownloadUrl } from "@/lib/registry";
 
 const steps = [
   {
@@ -49,11 +44,10 @@ const steps = [
 
 export function InstallGuide() {
   const { data: latest, loading } = useLatestVersion();
-  const downloadUrl = latest ? toPublicDownloadUrl(latest) : FALLBACK_DOWNLOAD_URL;
   const versionLabel = latest?.version;
   const releasedAtIso = publishedAtToIso(latest?.publishedAt);
-  const downloadLabel =
-    loading || !versionLabel ? "Download for macOS" : `Download v${versionLabel}`;
+  const downloadUrl = latest ? toPublicDownloadUrl(latest) : null;
+  const downloadLabel = versionLabel ? `Download v${versionLabel}` : "Download";
 
   return (
     <article className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
@@ -73,9 +67,7 @@ export function InstallGuide() {
 
       <div className="mt-8 flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-4">
-          <a href={downloadUrl} className="btn-primary">
-            {downloadLabel}
-          </a>
+          <DownloadButton latest={latest} loading={loading} className="btn-primary" />
           <Link href="/versions" className="btn-secondary">
             Browse all versions
           </Link>
@@ -96,13 +88,18 @@ export function InstallGuide() {
                 <h2 className="text-lg font-semibold text-slate-100">{step.title}</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-400">{step.description}</p>
                 <p className="mt-2 text-sm text-slate-500">{step.detail}</p>
-                {index === 0 && (
+                {index === 0 && !loading && downloadUrl && (
                   <a
                     href={downloadUrl}
                     className="mt-4 inline-flex text-sm font-semibold text-brand-blue hover:underline"
                   >
                     {downloadLabel} →
                   </a>
+                )}
+                {index === 0 && loading && (
+                  <p className="mt-4 text-sm text-slate-500" aria-busy="true">
+                    Loading latest release…
+                  </p>
                 )}
               </div>
             </div>
