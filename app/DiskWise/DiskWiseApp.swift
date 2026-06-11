@@ -4,7 +4,10 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
-        _ = SparkleUpdaterController.shared
+
+        DispatchQueue.main.async {
+            _ = SparkleUpdaterController.shared
+        }
 
         let icon: NSImage? = {
             if let icnsURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
@@ -110,8 +113,18 @@ struct ContentView: View {
                         }
                     }
             }
-            .blur(radius: viewModel.showFullDiskAccessPrompt || viewModel.showWhatsNewTour ? 8 : 0)
-            .allowsHitTesting(!viewModel.showFullDiskAccessPrompt && !viewModel.showWhatsNewTour)
+            .blur(radius: viewModel.isStartingUp || viewModel.showFullDiskAccessPrompt || viewModel.showWhatsNewTour ? 8 : 0)
+            .allowsHitTesting(!viewModel.isStartingUp && !viewModel.showFullDiskAccessPrompt && !viewModel.showWhatsNewTour)
+
+            if viewModel.isStartingUp {
+                StartupSplashOverlay(
+                    version: AppSettings.currentAppVersion,
+                    isPostUpgrade: viewModel.isPostUpgradeStartup,
+                    currentMessage: viewModel.startupMessage,
+                    completedSteps: viewModel.startupCompletedSteps,
+                    activeStep: viewModel.startupActiveStep
+                )
+            }
 
             if viewModel.showWhatsNewTour {
                 ReleaseNotesSplashOverlay(
@@ -138,12 +151,9 @@ struct ContentView: View {
                 )
             }
         }
+        .animation(.easeInOut(duration: 0.22), value: viewModel.isStartingUp)
         .animation(.easeInOut(duration: 0.22), value: viewModel.showFullDiskAccessPrompt)
         .animation(.easeInOut(duration: 0.22), value: viewModel.showWhatsNewTour)
-        .onAppear {
-            viewModel.presentFullDiskAccessPromptIfNeeded()
-            viewModel.presentWhatsNewIfNeeded()
-        }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             viewModel.checkPermissionOnAppActivation()
         }

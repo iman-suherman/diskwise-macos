@@ -12,6 +12,10 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
+        case "0.1.6":
+            return v016Pages
+        case "0.1.5":
+            return v015Pages
         case "0.1.4":
             return v014Pages
         case "0.1.3":
@@ -22,6 +26,54 @@ enum WhatsNewContent {
             return genericPages(version: version)
         }
     }
+
+    private static let v016Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "welcome",
+            icon: "sparkles",
+            title: "Welcome to DiskWise 0.1.6",
+            message: "First launch after updating is faster and clearer — you’ll see what DiskWise is doing instead of a long bouncing Dock icon.",
+            bullets: []
+        ),
+        WhatsNewPage(
+            id: "startup",
+            icon: "arrow.triangle.2.circlepath",
+            title: "Startup splash after updates",
+            message: "DiskWise now shows a setup screen on launch with live progress:",
+            bullets: [
+                "Database updates and saved scan loading run in the background",
+                "Step-by-step checklist: database, drives, scans, permissions",
+                "Recommendations load after the main window is ready",
+            ]
+        ),
+    ]
+
+    private static let v015Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "welcome",
+            icon: "sparkles",
+            title: "Welcome to DiskWise 0.1.5",
+            message: "This update adds a detailed About panel, sidebar Settings, and serves Sparkle updates through the registry API.",
+            bullets: []
+        ),
+        WhatsNewPage(
+            id: "about",
+            icon: "info.circle",
+            title: "About DiskWise",
+            message: "DiskWise → About DiskWise shows release notes and your current configuration.",
+            bullets: [
+                "What’s new for this version",
+                "Scan limits, presets, and update feed details",
+            ]
+        ),
+        WhatsNewPage(
+            id: "settings",
+            icon: "gearshape",
+            title: "Settings in the sidebar",
+            message: "Open Settings from the Actions section below View Duplicates, or use ⌘,.",
+            bullets: []
+        ),
+    ]
 
     private static let v014Pages: [WhatsNewPage] = [
         WhatsNewPage(

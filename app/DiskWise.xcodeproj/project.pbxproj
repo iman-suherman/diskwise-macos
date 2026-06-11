@@ -31,6 +31,7 @@
 		ED5041858F6D1AF22DCE4587 /* DiskScannerKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6953D9217C07B48CB1CA73C9 /* DiskScannerKit */; };
 		F07314D38ACD7FE6E5B9D233 /* FullDiskAccessPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */; };
 		F4D258718C504E7A6365ADB6 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61EB1B1E7AD0267851557FD9 /* DashboardView.swift */; };
+		FAB2B6356F46985804A0B25C /* StartupSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9632663F581782670036F59C /* StartupSplashView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -48,6 +49,7 @@
 		8D515CF1494436D3A33BC32C /* RecommendationReviewSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendationReviewSheet.swift; sourceTree = "<group>"; };
 		955E6302377D998824A2996E /* DiskWiseApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskWiseApp.swift; sourceTree = "<group>"; };
 		9604CB761CB34350EFF29978 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		9632663F581782670036F59C /* StartupSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupSplashView.swift; sourceTree = "<group>"; };
 		98EFAE1062F153FAFA7B0D8A /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		B21446A4062305538747C91B /* DiskWise.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DiskWise.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessPrompt.swift; sourceTree = "<group>"; };
@@ -100,6 +102,7 @@
 				61EB1B1E7AD0267851557FD9 /* DashboardView.swift */,
 				D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */,
 				8D515CF1494436D3A33BC32C /* RecommendationReviewSheet.swift */,
+				9632663F581782670036F59C /* StartupSplashView.swift */,
 				2BF737B0AA3066062F3881A4 /* StatusBadge.swift */,
 				D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */,
 				F9360EC36C59D568DEE4B034 /* WhatsNewTourView.swift */,
@@ -235,6 +238,7 @@
 				6364632C8485413073CA9BB3 /* MainScreens.swift in Sources */,
 				DD2F2233CFB17ABB37688ACD /* RecommendationReviewSheet.swift in Sources */,
 				2E51EA5FD30ECF1DA75CE384 /* SparkleUpdater.swift in Sources */,
+				FAB2B6356F46985804A0B25C /* StartupSplashView.swift in Sources */,
 				C61435492234EF4EFEB45B5C /* StatusBadge.swift in Sources */,
 				9163047ADC6314366674E59B /* StorageBreakdownView.swift in Sources */,
 				2E9B3F7F506A3D4BE5D8085A /* WhatsNewTourView.swift in Sources */,
