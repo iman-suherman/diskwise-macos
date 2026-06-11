@@ -165,14 +165,17 @@ async function uploadRelease(options = {}) {
     }
   }
 
-  let appcastPath = path.join(root, "website", "public", "appcast.xml");
+  let appcastPath = path.join(root, "releases", "sparkle", "appcast.xml");
   if (fs.existsSync(sparkleZipPath)) {
     const appcastArtifacts = generateAppcast({
       release,
       downloadBase: resolveDownloadBase({ ...process.env, SPARKLE_LOCAL: "0", LOCAL_RELEASE: "0" }),
     });
-    appcastPath = appcastArtifacts.websiteAppcastPath;
+    appcastPath = appcastArtifacts.appcastPath;
     console.log(`upload: Sparkle appcast → ${appcastPath}`);
+    if (fs.existsSync(appcastArtifacts.websiteAppcastPath)) {
+      console.log(`upload: website appcast copy → ${appcastArtifacts.websiteAppcastPath}`);
+    }
   }
 
   const bucket = resolveBucket(projectId);
