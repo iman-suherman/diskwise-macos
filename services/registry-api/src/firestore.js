@@ -79,6 +79,17 @@ async function getPluginVersion(pluginId, version) {
   }
 }
 
+async function getPluginCatalog(pluginId) {
+  try {
+    const doc = await firestore.collection(catalogCollection).doc(pluginId).get();
+    if (!doc.exists) return null;
+    return doc.data();
+  } catch (err) {
+    if (isFirestoreNotReady(err)) return null;
+    throw err;
+  }
+}
+
 async function getLatestPluginVersion(pluginId, options = {}) {
   const channel = normalizeChannel(options.channel);
   try {
@@ -107,5 +118,6 @@ module.exports = {
   listPlugins,
   listPluginVersions,
   getPluginVersion,
+  getPluginCatalog,
   getLatestPluginVersion,
 };

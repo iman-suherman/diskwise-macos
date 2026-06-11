@@ -43,6 +43,12 @@ function main() {
     process.env.PUBLIC_DOWNLOAD_BASE_URL?.trim() ||
     "https://diskwise-download.suherman.net/downloads";
   const defaultAppId = process.env.DEFAULT_APP_ID?.trim() || "diskwise-macos";
+  const gcsBucket = process.env.GCS_APP_BUCKET?.trim() || `${projectId}-diskwise`;
+  const gcsPrefix = process.env.GCS_APP_PREFIX?.trim() || "releases";
+  const registryApiPublicUrl =
+    process.env.REGISTRY_API_PUBLIC_URL?.trim() ||
+    process.env.NEXT_PUBLIC_REGISTRY_API_URL?.trim() ||
+    "https://diskwise-registry.suherman.net";
 
   const indexesPath = path.join(root, "firestore", "indexes.json");
   if (fs.existsSync(indexesPath)) {
@@ -92,7 +98,7 @@ function main() {
     "--allow-unauthenticated",
     "--quiet",
     "--set-env-vars",
-    `GCP_PROJECT_ID=${projectId},FIRESTORE_APP_COLLECTION=${collection},FIRESTORE_APP_CATALOG=${catalog},PUBLIC_DOWNLOAD_BASE_URL=${downloadBase},DEFAULT_APP_ID=${defaultAppId}`,
+    `GCP_PROJECT_ID=${projectId},FIRESTORE_APP_COLLECTION=${collection},FIRESTORE_APP_CATALOG=${catalog},PUBLIC_DOWNLOAD_BASE_URL=${downloadBase},DEFAULT_APP_ID=${defaultAppId},GCS_APP_BUCKET=${gcsBucket},GCS_APP_PREFIX=${gcsPrefix},REGISTRY_API_PUBLIC_URL=${registryApiPublicUrl}`,
   ]);
 
   console.log("deploy:registry: done");

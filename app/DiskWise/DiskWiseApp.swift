@@ -40,6 +40,11 @@ struct DiskWiseApp: App {
         }
         .commands {
             CommandGroup(replacing: .newItem) {}
+            CommandGroup(replacing: .appInfo) {
+                Button("About DiskWise") {
+                    viewModel.showAbout = true
+                }
+            }
             CommandGroup(after: .appInfo) {
                 Button("Check for Updates…") {
                     SparkleUpdaterController.shared.checkForUpdates()
@@ -56,6 +61,7 @@ struct DiskWiseApp: App {
 
 struct ContentView: View {
     @EnvironmentObject private var viewModel: AppViewModel
+    @EnvironmentObject private var appSettings: AppSettings
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
@@ -149,6 +155,10 @@ struct ContentView: View {
         }
         .sheet(isPresented: $viewModel.showActivityLog) {
             ActivityLogSheet(activityLog: viewModel.activityLog)
+        }
+        .sheet(isPresented: $viewModel.showAbout) {
+            AboutView(onOpenSettings: { openSettings() })
+                .environmentObject(appSettings)
         }
     }
 
@@ -278,6 +288,13 @@ struct ContentView: View {
                         .disabled((viewModel.isScanning || viewModel.isFindingDuplicates) && viewModel.selectedVolumePath == volume.mountPath)
                     }
                 }
+
+                Button {
+                    openSettings()
+                } label: {
+                    Label("Settings", systemImage: "gearshape")
+                }
+                .buttonStyle(.borderless)
             } header: {
                 Text("Actions")
             }

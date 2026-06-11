@@ -1,4 +1,5 @@
 const DEFAULT_DOWNLOAD_BASE = "https://diskwise-download.suherman.net/downloads";
+const { withPublicAppcastUrl } = require("./appcast-urls");
 
 function resolveDownloadBase() {
   return (
@@ -40,11 +41,11 @@ function latestFileName(version) {
 function withPublicDownloadUrls(version) {
   if (!version || typeof version !== "object") return version;
   const base = resolveDownloadBase();
-  return {
+  return withPublicAppcastUrl({
     ...version,
     publicDownloadUrl: `${base}/${artifactFileName(version)}`,
     publicLatestDownloadUrl: `${base}/${latestFileName(version)}`,
-  };
+  });
 }
 
 module.exports = {

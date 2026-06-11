@@ -40,6 +40,22 @@ function resolveLocalAppcastUrl(env = process.env) {
   return `${resolveLocalWebsiteBase(env)}/appcast.xml`;
 }
 
+function resolveRegistryApiBase(env = process.env) {
+  return (
+    env.REGISTRY_API_PUBLIC_URL?.trim() ||
+    env.NEXT_PUBLIC_REGISTRY_API_URL?.trim() ||
+    "https://diskwise-registry.suherman.net"
+  ).replace(/\/$/, "");
+}
+
+function resolvePublicAppcastUrl(env = process.env, pluginId) {
+  if (env.SPARKLE_LOCAL === "1" || env.LOCAL_RELEASE === "1") {
+    return resolveLocalAppcastUrl(env);
+  }
+  const id = pluginId || env.DEFAULT_APP_ID?.trim() || "diskwise-macos";
+  return `${resolveRegistryApiBase(env)}/api/v1/plugins/${id}/appcast.xml`;
+}
+
 function dmgFileName(objectPath, version, appId) {
   if (objectPath) return path.basename(objectPath);
   if (version && appId) return `${appId}-${version}.dmg`;
@@ -74,6 +90,8 @@ module.exports = {
   resolveLocalDownloadBase,
   resolveLocalWebsiteBase,
   resolveLocalAppcastUrl,
+  resolveRegistryApiBase,
+  resolvePublicAppcastUrl,
   dmgFileName,
   sparkleZipFileName,
   publicDownloadUrl,
