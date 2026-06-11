@@ -14,8 +14,9 @@ const c = {
 
 const stripAnsi = (value) => String(value).replace(/\x1b\[[0-9;]*m/g, '');
 
-const START_COMMAND = 'npm run dev';
+const START_COMMAND = 'npm run dev:app';
 const INSTALL_COMMAND = 'npm run start';
+const SETUP_COMMAND = 'npm run setup';
 
 const paint = {
   cmd: (text) => `${c.green}${text}${c.reset}`,
@@ -30,8 +31,12 @@ const paint = {
 const commands = [
   ['Start here', START_COMMAND, '★ Build, test, build app, launch on macOS'],
   ['Install', INSTALL_COMMAND, '★ Build release app + DMG → drag to Applications'],
+  ['Setup', SETUP_COMMAND, '★ generate-env + GCP login + git hooks (website deploy)'],
   ['Setup', 'npm run setup:xcodegen', 'Install XcodeGen (once)'],
   ['Setup', 'npm run setup:xcode', 'Xcode first-launch (if build fails)'],
+  ['Website', 'npm run dev:website', 'Local Next.js site at http://127.0.0.1:3000'],
+  ['Website', 'npm run deploy:website', 'Deploy site to Cloud Run'],
+  ['Website', 'npm run ci', 'Live deploy status dashboard'],
   ['Development', 'npm run build', 'Build Swift packages'],
   ['Development', 'npm run test', 'Run package tests'],
   ['Development', 'npm run build:app', 'Debug .app build'],
@@ -137,6 +142,14 @@ function styleCommandRow([phase, command, description]) {
     ];
   }
 
+  if (command === SETUP_COMMAND) {
+    return [
+      paint.highlight(phase),
+      paint.highlightCmd(command),
+      `${c.bold}${description}${c.reset}`,
+    ];
+  }
+
   return [paint.phase(phase), paint.cmd(command), paint.dim(description)];
 }
 
@@ -154,6 +167,12 @@ const startBanner = [
   '',
   paint.highlight(`Start here → ${START_COMMAND}`),
   paint.dim('Build + test packages, build DiskWise.app, launch on macOS.'),
+  '',
+];
+
+const setupBanner = [
+  paint.highlight(`Website / GCP setup → ${SETUP_COMMAND}`),
+  paint.dim('Runs generate-env, login, and install-hooks. Do this once after npm install.'),
   '',
 ];
 
@@ -196,5 +215,5 @@ const footer = [
 ];
 
 process.stdout.write(
-  [...startBanner, ...commandTable, ...guideTable, ...envTable, ...pathTable, ...footer].join('\n')
+  [...startBanner, ...setupBanner, ...commandTable, ...guideTable, ...envTable, ...pathTable, ...footer].join('\n')
 );

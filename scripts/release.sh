@@ -13,10 +13,13 @@ echo "    Team ID:  ${APPLE_TEAM_ID}"
 echo "    Notarize: ${MACOS_NOTARIZE} (profile: ${APPLE_NOTARIZE_KEYCHAIN_PROFILE:-none})"
 echo ""
 
+OUTPUT_DMG="${OUTPUT_DMG:-$ROOT_DIR/DiskWise.dmg}"
+mkdir -p "$(dirname "$OUTPUT_DMG")"
+
 bash "$ROOT_DIR/scripts/build.sh" release
 bash "$ROOT_DIR/scripts/sign.sh"
-bash "$ROOT_DIR/scripts/package.sh"
+bash "$ROOT_DIR/scripts/package.sh" "" "$OUTPUT_DMG"
 
 echo ""
-echo "Release complete: $ROOT_DIR/DiskWise.dmg"
+echo "Release complete: $OUTPUT_DMG"
 echo "Drag DiskWise.app to Applications — Gatekeeper should accept the notarized build."

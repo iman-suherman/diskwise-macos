@@ -12,7 +12,7 @@
 
 ```bash
 # Build, test packages, build app, launch on macOS
-npm run dev
+npm run dev:app
 
 # One-time setup
 npm run setup:xcodegen

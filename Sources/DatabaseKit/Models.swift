@@ -35,6 +35,32 @@ public enum FileCategory: String, Codable, Sendable, CaseIterable {
 
     /// Groups related categories for dashboard charts.
     public var chartGroup: String { displayName }
+
+    /// Finer-grained label for drill-down rows.
+    public var granularName: String {
+        switch self {
+        case .video: return "Videos"
+        case .photo: return "Photos"
+        default: return displayName
+        }
+    }
+
+    public var systemImage: String {
+        switch self {
+        case .video, .photo: return "photo.on.rectangle.angled"
+        case .document: return "doc.text"
+        case .archive: return "archivebox"
+        case .application: return "app"
+        case .backup: return "externaldrive.badge.timemachine"
+        case .temporary: return "clock.badge.exclamationmark"
+        case .cache: return "memorychip"
+        case .development: return "chevron.left.forwardslash.chevron.right"
+        case .downloads: return "arrow.down.circle"
+        case .containers: return "shippingbox"
+        case .virtualMachines: return "desktopcomputer"
+        case .other: return "questionmark.folder"
+        }
+    }
 }
 
 public struct DiskRecord: Codable, FetchableRecord, PersistableRecord, Identifiable, Sendable {

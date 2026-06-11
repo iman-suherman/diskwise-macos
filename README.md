@@ -24,6 +24,7 @@ Unlike traditional tools that only show category totals, DiskWise acts as an **A
 ```
 diskwise-macos/
 ├── app/                    # SwiftUI desktop app
+├── website/                # Next.js marketing site
 ├── Sources/                # Swift packages (kits)
 │   ├── DatabaseKit/
 │   ├── DiskScannerKit/
@@ -59,7 +60,7 @@ diskwise-macos/
 
 ```bash
 npm run info    # colored starter guide
-npm run dev     # build, test, build app, launch on macOS
+npm run dev:app     # build, test, build app, launch on macOS
 ```
 
 Package-only (without launching the app):
@@ -114,6 +115,7 @@ npm run open:xcode
 - [Architecture](docs/architecture.md)
 - [Database schema](docs/database.md)
 - [Local development](docs/local-development.md)
+- [Website](docs/website.md)
 
 ## License
 

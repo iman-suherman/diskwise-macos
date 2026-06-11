@@ -1,5 +1,6 @@
 import SwiftUI
 import Charts
+import AppKit
 import DatabaseKit
 import AIKit
 import DiskScannerKit
@@ -46,17 +47,160 @@ struct StorageRingChart: View {
 
 struct StorageCategoryChart: View {
     let summaries: [(name: String, totalSize: Int64, fileCount: Int)]
+    let totalSize: Int64
 
     var body: some View {
         Chart(summaries, id: \.name) { summary in
-            SectorMark(
-                angle: .value("Size", summary.totalSize),
-                innerRadius: .ratio(0.55),
-                angularInset: 1.5
+            BarMark(
+                x: .value("Size", summary.totalSize),
+                y: .value("Category", summary.name)
             )
-            .foregroundStyle(by: .value("Category", summary.name))
+            .foregroundStyle(CategoryPalette.color(for: summary.name).gradient)
+            .cornerRadius(4)
         }
-        .frame(height: 220)
+        .chartXAxis {
+            AxisMarks(preset: .aligned, position: .bottom)
+        }
+        .frame(height: max(180, CGFloat(summaries.count * 34)))
+    }
+}
+
+struct ScanProgressPanel: View {
+    @EnvironmentObject private var viewModel: AppViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 6) {
+                    if let volume = viewModel.selectedVolume {
+                        Text("Scanning \(volume.name)")
+                            .font(.title2.bold())
+                    }
+                    Label(viewModel.scanPhase.label, systemImage: phaseIcon)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                ZStack {
+                    Circle()
+                        .stroke(Color.accentColor.opacity(0.15), lineWidth: 8)
+                        .frame(width: 72, height: 72)
+                    Circle()
+                        .trim(from: 0, to: viewModel.scanProgressFraction)
+                        .stroke(Color.accentColor.gradient, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .frame(width: 72, height: 72)
+                        .animation(.easeInOut(duration: 0.35), value: viewModel.scanProgressFraction)
+                    Text(viewModel.scanProgressPercentLabel)
+                        .font(.title3.bold().monospacedDigit())
+                }
+
+                Button("Cancel") {
+                    viewModel.cancelScan()
+                }
+                .buttonStyle(.bordered)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(viewModel.scanProgressPercentLabel)
+                        .font(.caption.weight(.semibold).monospacedDigit())
+                        .foregroundStyle(Color.accentColor)
+                    Spacer()
+                    if let remaining = viewModel.scanEstimatedRemaining {
+                        Text("~\(DiskWiseFormatters.formatDuration(remaining)) left")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color.accentColor.opacity(0.12))
+                        Capsule()
+                            .fill(Color.accentColor.gradient)
+                            .frame(width: max(8, geometry.size.width * viewModel.scanProgressFraction))
+                            .animation(.easeInOut(duration: 0.35), value: viewModel.scanProgressFraction)
+                    }
+                }
+                .frame(height: 12)
+            }
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                if let progress = viewModel.scanProgress {
+                    ScanStatTile(
+                        title: "Files",
+                        value: progress.scannedCount.formatted(),
+                        icon: "doc.text"
+                    )
+                    ScanStatTile(
+                        title: "Processed",
+                        value: DiskWiseFormatters.bytes.string(fromByteCount: progress.bytesIndexed),
+                        icon: "externaldrive"
+                    )
+                    ScanStatTile(
+                        title: "Progress",
+                        value: viewModel.scanProgressPercentLabel,
+                        icon: "gauge.with.dots.needle.67percent"
+                    )
+                }
+            }
+
+            if let progress = viewModel.scanProgress {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Current file")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Text(progress.currentPath)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(2)
+                        .truncationMode(.middle)
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
+                }
+            }
+        }
+        .padding(22)
+        .background {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
+        }
+    }
+
+    private var phaseIcon: String {
+        switch viewModel.scanPhase {
+        case .scanning: return "doc.text.magnifyingglass"
+        case .findingDuplicates: return "doc.on.doc"
+        case .analyzing: return "sparkles"
+        case .idle: return "checkmark.circle"
+        }
+    }
+}
+
+private struct ScanStatTile: View {
+    let title: String
+    let value: String
+    let icon: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(title, systemImage: icon)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
     }
 }
 
@@ -84,62 +228,6 @@ struct InsightCard: View {
     }
 }
 
-struct ScanProgressPanel: View {
-    @EnvironmentObject private var viewModel: AppViewModel
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    if let volume = viewModel.selectedVolume {
-                        Text("Scanning \(volume.name)")
-                            .font(.title2.bold())
-                    }
-                    Text(viewModel.scanPhase.label)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Button("Cancel") {
-                    viewModel.cancelScan()
-                }
-                .buttonStyle(.bordered)
-            }
-
-            ProgressView(value: viewModel.scanProgressFraction)
-                .tint(.accentColor)
-
-            HStack(spacing: 24) {
-                if let progress = viewModel.scanProgress {
-                    Label("\(progress.scannedCount.formatted()) files", systemImage: "doc.text")
-                        .font(.caption)
-                    Label(
-                        "Processed \(DiskWiseFormatters.bytes.string(fromByteCount: progress.bytesIndexed))",
-                        systemImage: "externaldrive"
-                    )
-                    .font(.caption)
-                }
-
-                if let remaining = viewModel.scanEstimatedRemaining {
-                    Label("~\(DiskWiseFormatters.formatDuration(remaining)) remaining", systemImage: "clock")
-                        .font(.caption)
-                }
-            }
-            .foregroundStyle(.secondary)
-
-            if let progress = viewModel.scanProgress {
-                Text(progress.currentPath)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-            }
-        }
-        .padding(20)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-    }
-}
-
 struct WelcomeView: View {
     @EnvironmentObject private var viewModel: AppViewModel
 
@@ -147,10 +235,7 @@ struct WelcomeView: View {
         VStack(spacing: 32) {
             Spacer()
 
-            Image(systemName: "chart.pie.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(Color.accentColor)
-                .symbolRenderingMode(.hierarchical)
+            AppBrandIcon(size: 112)
 
             VStack(spacing: 12) {
                 Text("Welcome to DiskWise")
@@ -217,6 +302,37 @@ private struct FeatureRow: View {
     }
 }
 
+private struct AppBrandIcon: View {
+    var size: CGFloat = 96
+
+    var body: some View {
+        Group {
+            if let image = Self.loadImage() {
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.high)
+                    .aspectRatio(contentMode: .fit)
+            } else {
+                Image(systemName: "chart.pie.fill")
+                    .font(.system(size: size * 0.58))
+                    .foregroundStyle(Color.accentColor)
+                    .symbolRenderingMode(.hierarchical)
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
+        .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
+    }
+
+    private static func loadImage() -> NSImage? {
+        if let url = Bundle.main.url(forResource: "AppIconSource", withExtension: "png"),
+           let image = NSImage(contentsOf: url) {
+            return image
+        }
+        return NSImage(named: "AppIconSource")
+    }
+}
+
 struct DashboardView: View {
     @EnvironmentObject private var viewModel: AppViewModel
 
@@ -227,12 +343,21 @@ struct DashboardView: View {
                     ScanProgressPanel()
                 }
 
-                if let volume = viewModel.selectedVolume, let overview = viewModel.overview {
-                    storageHeader(volume: volume, overview: overview)
+                if let volume = viewModel.selectedVolume,
+                   viewModel.isScanning || viewModel.overview != nil {
+                    if let overview = viewModel.overview {
+                        storageHeader(volume: volume, overview: overview)
+                    } else {
+                        scanningHeader(volume: volume)
+                    }
 
                     HStack(alignment: .top, spacing: 24) {
                         storageRingSection(volume: volume)
-                        categorySection(overview: overview)
+                        if let overview = viewModel.overview {
+                            categorySection(overview: overview)
+                        } else {
+                            categorySectionPlaceholder
+                        }
                     }
 
                     if !viewModel.topConsumers.isEmpty {
@@ -311,30 +436,61 @@ struct DashboardView: View {
     }
 
     @ViewBuilder
+    private func scanningHeader(volume: MountedVolume) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(volume.name)
+                .font(.largeTitle.bold())
+            Text("Building storage breakdown…")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var categorySectionPlaceholder: some View {
+        GroupBox("Storage by Type") {
+            VStack(spacing: 12) {
+                ProgressView()
+                Text("Category breakdown appears as files are indexed.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 24)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder
     private func categorySection(overview: StorageOverview) -> some View {
         let grouped = viewModel.groupedCategorySummaries(from: overview.categorySummaries)
 
-        GroupBox("Storage Distribution") {
+        GroupBox("Storage by Type") {
             if grouped.isEmpty {
                 Text("No category data yet")
                     .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 8)
+            } else if let selected = viewModel.selectedStorageCategory {
+                StorageCategoryDetailPanel(
+                    groupName: selected,
+                    subSummaries: viewModel.subSummaries(forChartGroup: selected),
+                    files: viewModel.categoryDetailFiles,
+                    totalSize: grouped.first(where: { $0.name == selected })?.totalSize ?? overview.totalSize,
+                    onBack: { viewModel.clearStorageCategorySelection() }
+                )
             } else {
-                HStack(alignment: .top, spacing: 20) {
-                    StorageCategoryChart(summaries: grouped)
-                        .frame(maxWidth: 260)
+                VStack(alignment: .leading, spacing: 16) {
+                    StorageCategoryBarChart(
+                        items: grouped,
+                        totalSize: overview.totalSize,
+                        selectedName: viewModel.selectedStorageCategory,
+                        onSelect: { viewModel.selectStorageCategory($0) }
+                    )
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        ForEach(grouped.prefix(8), id: \.name) { item in
-                            HStack {
-                                Text(item.name)
-                                    .font(.subheadline)
-                                Spacer()
-                                Text(DiskWiseFormatters.bytes.string(fromByteCount: item.totalSize))
-                                    .font(.subheadline.weight(.medium))
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
+                    Divider()
+
+                    StorageCategoryChart(summaries: grouped, totalSize: overview.totalSize)
                 }
             }
         }

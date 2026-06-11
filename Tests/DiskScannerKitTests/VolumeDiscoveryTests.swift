@@ -17,5 +17,48 @@ final class VolumeDiscoveryTests: XCTestCase {
         XCTAssertFalse(VolumeDiscovery.isHiddenVolume(name: "Macintosh HD", mountPath: "/"))
         XCTAssertFalse(VolumeDiscovery.isHiddenVolume(name: "Samsung T9", mountPath: "/Volumes/Samsung T9"))
     }
+
+    func testSystemVolumeDetection() {
+        XCTAssertTrue(VolumeDiscovery.isSystemVolume(mountPath: "/"))
+        XCTAssertFalse(VolumeDiscovery.isSystemVolume(mountPath: "/Volumes/Media01"))
+    }
+
+    func testCanEjectExcludesSystemDrive() {
+        let system = MountedVolume(
+            name: "Macintosh HD",
+            mountPath: "/",
+            totalSize: 500_000_000_000,
+            freeSize: 100_000_000_000,
+            isInternal: true,
+            isRemovable: false
+        )
+        XCTAssertFalse(VolumeDiscovery.canEject(system))
+        XCTAssertFalse(system.isEjectable)
+    }
+
+    func testCanEjectAllowsExternalRemovableDrive() {
+        let external = MountedVolume(
+            name: "Media01",
+            mountPath: "/Volumes/Media01",
+            totalSize: 2_000_000_000_000,
+            freeSize: 500_000_000_000,
+            isInternal: false,
+            isRemovable: true
+        )
+        XCTAssertTrue(VolumeDiscovery.canEject(external))
+        XCTAssertTrue(external.isEjectable)
+    }
+
+    func testCanEjectRejectsInternalNonRemovableVolume() {
+        let internalData = MountedVolume(
+            name: "Macintosh HD - Data",
+            mountPath: "/System/Volumes/Data",
+            totalSize: 500_000_000_000,
+            freeSize: 100_000_000_000,
+            isInternal: true,
+            isRemovable: false
+        )
+        XCTAssertFalse(VolumeDiscovery.canEject(internalData))
+    }
 }
 #endif

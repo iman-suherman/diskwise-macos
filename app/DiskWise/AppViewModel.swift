@@ -114,11 +114,14 @@ final class AppViewModel: ObservableObject {
     @Published var selectedPane: DetailPane = .overview
     @Published var aiQuestion = ""
     @Published var aiResponses: [AIChatMessage] = []
+    @Published var selectedStorageCategory: String?
+    @Published var categoryDetailFiles: [FileRecord] = []
 
     private let database: DiskWiseDatabase
     private var permissionPollTask: Task<Void, Never>?
     private var scanTask: Task<Void, Never>?
     private var scanStartTime: Date?
+    private var lastInsightsRefreshCount = 0
     private let scanEngine: ScanEngine
     private let duplicateEngine: DuplicateEngine
     private let cleanupEngine: CleanupEngine
@@ -159,6 +162,10 @@ final class AppViewModel: ObservableObject {
         mountedVolumes.filter { !$0.isInternal }
     }
 
+    var canEjectSelectedVolume: Bool {
+        selectedVolume?.isEjectable ?? false
+    }
+
     var hasScanData: Bool {
         overview != nil
     }
@@ -185,12 +192,33 @@ final class AppViewModel: ObservableObject {
     }
 
     var scanProgressFraction: Double {
+        switch scanPhase {
+        case .findingDuplicates:
+            return max(scanProgressFractionFromBytes, 0.88)
+        case .analyzing:
+            return max(scanProgressFractionFromBytes, 0.94)
+        case .scanning:
+            return scanProgressFractionFromBytes
+        case .idle:
+            return 0
+        }
+    }
+
+    var scanProgressFractionFromBytes: Double {
         guard let progress = scanProgress,
               let volume = selectedVolume,
               volume.usedSize > 0 else {
-            return scanPhase == .idle ? 0 : 0.15
+            return isScanning ? 0.08 : 0
         }
         return min(1.0, Double(progress.bytesIndexed) / Double(volume.usedSize))
+    }
+
+    var scanProgressPercent: Int {
+        Int((scanProgressFraction * 100).rounded())
+    }
+
+    var scanProgressPercentLabel: String {
+        "\(scanProgressPercent)%"
     }
 
     func diskRecord(for volume: MountedVolume) -> DiskRecord? {
@@ -215,6 +243,48 @@ final class AppViewModel: ObservableObject {
             .sorted { $0.totalSize > $1.totalSize }
     }
 
+    func subSummaries(forChartGroup name: String) -> [CategorySummary] {
+        guard let overview else { return [] }
+        return overview.categorySummaries
+            .filter { $0.category.chartGroup == name }
+            .sorted { $0.totalSize > $1.totalSize }
+    }
+
+    func selectStorageCategory(_ name: String?) {
+        if selectedStorageCategory == name {
+            clearStorageCategorySelection()
+            return
+        }
+
+        selectedStorageCategory = name
+        guard let name, let diskID = selectedDiskID else {
+            categoryDetailFiles = []
+            return
+        }
+        categoryDetailFiles = (try? database.topFiles(inChartGroup: name, diskID: diskID, limit: 25)) ?? []
+    }
+
+    func clearStorageCategorySelection() {
+        selectedStorageCategory = nil
+        categoryDetailFiles = []
+    }
+
+    private func maybeRefreshInsightsDuringScan(_ progress: ScanProgress) {
+        guard isScanning, scanPhase == .scanning else { return }
+        guard progress.scannedCount - lastInsightsRefreshCount >= 5_000 else { return }
+
+        lastInsightsRefreshCount = progress.scannedCount
+
+        if selectedDiskID == nil {
+            disks = (try? database.allDisks()) ?? []
+            selectedDiskID = disks.first(where: { $0.mountPath == selectedVolumePath })?.id
+        }
+        guard let diskID = selectedDiskID else { return }
+
+        let threshold = Calendar.current.date(byAdding: .year, value: -2, to: Date())!
+        overview = try? database.storageOverview(forDiskID: diskID, oldFileThreshold: threshold)
+    }
+
     func reload() {
         disks = (try? database.allDisks()) ?? []
         refreshMountedVolumes()
@@ -231,9 +301,24 @@ final class AppViewModel: ObservableObject {
             if let disk = disks.first {
                 selectedVolumePath = disk.mountPath
             }
+        } else {
+            selectedDiskID = nil
         }
 
         refreshInsights()
+    }
+
+    func refreshFromError() {
+        reload()
+        refreshMountedVolumes()
+
+        guard let volume = selectedVolume ?? mountedVolumes.first else {
+            setStatus("Ready to scan", kind: .ready)
+            return
+        }
+
+        selectedVolumePath = volume.mountPath
+        scanVolume(at: URL(fileURLWithPath: volume.mountPath), name: volume.name)
     }
 
     func refreshMountedVolumes() {
@@ -425,6 +510,47 @@ final class AppViewModel: ObservableObject {
         }
     }
 
+    func ejectSelectedVolume() {
+        guard let volume = selectedVolume else {
+            setStatus("Select a drive to eject", kind: .error)
+            return
+        }
+        ejectVolume(volume)
+    }
+
+    func ejectVolume(_ volume: MountedVolume) {
+        guard volume.isEjectable else {
+            setStatus("\(volume.name) cannot be ejected", kind: .error)
+            return
+        }
+
+        if isScanning, selectedVolumePath == volume.mountPath {
+            cancelScan()
+        }
+
+        setStatus("Ejecting \(volume.name)…", kind: .working)
+
+        Task { @MainActor in
+            do {
+                try VolumeEject.eject(volume)
+                refreshMountedVolumes()
+                if selectedVolumePath == volume.mountPath {
+                    selectedVolumePath = mountedVolumes.first?.mountPath
+                    selectedDiskID = nil
+                    overview = nil
+                    topConsumers = []
+                    duplicateGroups = []
+                    analysisReport = nil
+                }
+                reload()
+                setStatus("Ejected \(volume.name)", kind: .success)
+            } catch {
+                refreshMountedVolumes()
+                setStatus("Could not eject \(volume.name): \(error.localizedDescription)", kind: .error)
+            }
+        }
+    }
+
     func cancelScan() {
         scanTask?.cancel()
         isScanning = false
@@ -455,6 +581,8 @@ final class AppViewModel: ObservableObject {
         isScanning = true
         scanPhase = .scanning
         scanStartTime = Date()
+        lastInsightsRefreshCount = 0
+        clearStorageCategorySelection()
         let volumeName = name ?? (url.lastPathComponent.isEmpty ? url.path : url.lastPathComponent)
         selectedVolumePath = url.path
         setStatus("Scanning \(volumeName)…", kind: .working)
@@ -468,8 +596,9 @@ final class AppViewModel: ObservableObject {
                     onProgress: { progress in
                         Task { @MainActor in
                             self.scanProgress = progress
+                            self.maybeRefreshInsightsDuringScan(progress)
                             self.setStatus(
-                                "Scanning \(volumeName) · \(progress.scannedCount.formatted()) files",
+                                "Scanning \(volumeName) · \(progress.scannedCount.formatted()) files · \(self.scanProgressPercentLabel)",
                                 kind: .working
                             )
                         }
