@@ -22,9 +22,18 @@ fi
 
 export APPLE_ID_PASSWORD="${APPLE_ID_PASSWORD:-${APPLE_APP_SPECIFIC_PASSWORD:-}}"
 
+notary_profile_exists() {
+  local profile="${1:-$APPLE_NOTARIZE_KEYCHAIN_PROFILE}"
+  [[ -n "$profile" ]] && xcrun notarytool history --keychain-profile "$profile" >/dev/null 2>&1
+}
+
 notary_credentials_configured() {
   if [[ -n "${APPLE_NOTARIZE_KEYCHAIN_PROFILE:-}" ]]; then
-    return 0
+    if notary_profile_exists; then
+      return 0
+    fi
+    echo "release: notary profile '${APPLE_NOTARIZE_KEYCHAIN_PROFILE}' is not in the Keychain — skipping notarization." >&2
+    return 1
   fi
   [[ -n "${APPLE_ID:-}" && -n "${APPLE_APP_SPECIFIC_PASSWORD:-}" && -n "${APPLE_TEAM_ID:-}" ]]
 }
