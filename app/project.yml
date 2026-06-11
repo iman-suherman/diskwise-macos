@@ -1,0 +1,57 @@
+name: DiskWise
+options:
+  bundleIdPrefix: net.suherman
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+packages:
+  DiskWisePackages:
+    path: ..
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+targets:
+  DiskWise:
+    type: application
+    platform: macOS
+    sources:
+      - path: DiskWise
+        excludes:
+          - Assets/AppIcon.icns
+          - Assets/AppIconSource.png
+          - Assets/AppIconSource.raw.png
+    resources:
+      - path: DiskWise/Assets/AppIcon.icns
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: net.suherman.diskwise
+        INFOPLIST_FILE: DiskWise/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 0.1.0
+        ENABLE_HARDENED_RUNTIME: YES
+    dependencies:
+      - package: DiskWisePackages
+        product: DatabaseKit
+      - package: DiskWisePackages
+        product: DiskScannerKit
+      - package: DiskWisePackages
+        product: MetadataKit
+      - package: DiskWisePackages
+        product: DuplicateKit
+      - package: DiskWisePackages
+        product: CleanupKit
+      - package: DiskWisePackages
+        product: AIKit
+    scheme:
+      testTargets: []
+
+schemes:
+  DiskWise:
+    build:
+      targets:
+        DiskWise: all
+    run:
+      config: Debug

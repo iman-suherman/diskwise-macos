@@ -1,0 +1,422 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		12181882218C57B9CAC4A122 /* DiskScannerKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6953D9217C07B48CB1CA73C9 /* DiskScannerKit */; };
+		2791E28A3F889BE0CA5591A3 /* DiskWiseApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955E6302377D998824A2996E /* DiskWiseApp.swift */; };
+		2A5FFCD2AAE4999E1A451013 /* DatabaseKit in Frameworks */ = {isa = PBXBuildFile; productRef = 603D826F44FE9A518C0D3BDD /* DatabaseKit */; };
+		36DBFBCADADF9C0C5B4BA080 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41738F52625CC6311842BB5E /* AppViewModel.swift */; };
+		4EF9EF0F2E65F2CA9C42005F /* AIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 268149F6EA534326414CF175 /* AIKit */; };
+		6364632C8485413073CA9BB3 /* MainScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7606C2E2E0391264171C1F55 /* MainScreens.swift */; };
+		91E4D218C3A7026E8D8F22CA /* DuplicateKit in Frameworks */ = {isa = PBXBuildFile; productRef = E44897D5C0C445D604A9F3CB /* DuplicateKit */; };
+		A1E6344A43CABB46455859D5 /* CleanupKit in Frameworks */ = {isa = PBXBuildFile; productRef = 873697E510808232A5864DDB /* CleanupKit */; };
+		BAC56BC5D44D164A6D1651C3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9604CB761CB34350EFF29978 /* Assets.xcassets */; };
+		C61435492234EF4EFEB45B5C /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BF737B0AA3066062F3881A4 /* StatusBadge.swift */; };
+		E559D2BF705EE1AB7F9CA4EA /* entitlements.mac.plist in Resources */ = {isa = PBXBuildFile; fileRef = 15BE9BA6642050B89F9552F0 /* entitlements.mac.plist */; };
+		ED5041858F6D1AF22DCE4587 /* MetadataKit in Frameworks */ = {isa = PBXBuildFile; productRef = E118092959DEFDD022BB88EC /* MetadataKit */; };
+		F07314D38ACD7FE6E5B9D233 /* FullDiskAccessPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */; };
+		F4D258718C504E7A6365ADB6 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61EB1B1E7AD0267851557FD9 /* DashboardView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		15BE9BA6642050B89F9552F0 /* entitlements.mac.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = entitlements.mac.plist; sourceTree = "<group>"; };
+		2BF737B0AA3066062F3881A4 /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
+		41738F52625CC6311842BB5E /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
+		61EB1B1E7AD0267851557FD9 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		7606C2E2E0391264171C1F55 /* MainScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainScreens.swift; sourceTree = "<group>"; };
+		7F81B798B01741C082A6B559 /* diskwise-macos */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "diskwise-macos"; path = ..; sourceTree = SOURCE_ROOT; };
+		955E6302377D998824A2996E /* DiskWiseApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskWiseApp.swift; sourceTree = "<group>"; };
+		9604CB761CB34350EFF29978 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B21446A4062305538747C91B /* DiskWise.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DiskWise.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessPrompt.swift; sourceTree = "<group>"; };
+		F1FC1DF0971CB5B4441676DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		53BE0238EFCC3D54112D48FA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A5FFCD2AAE4999E1A451013 /* DatabaseKit in Frameworks */,
+				12181882218C57B9CAC4A122 /* DiskScannerKit in Frameworks */,
+				ED5041858F6D1AF22DCE4587 /* MetadataKit in Frameworks */,
+				91E4D218C3A7026E8D8F22CA /* DuplicateKit in Frameworks */,
+				A1E6344A43CABB46455859D5 /* CleanupKit in Frameworks */,
+				4EF9EF0F2E65F2CA9C42005F /* AIKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A69AF2FE980B6111B2115F4B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B21446A4062305538747C91B /* DiskWise.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C3A4B002792C3C6BBF96728A = {
+			isa = PBXGroup;
+			children = (
+				ECFC4A48D6413A572E804BFB /* DiskWise */,
+				FD3041CF18E97593743F91FD /* Packages */,
+				A69AF2FE980B6111B2115F4B /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C9453DAD43B73221B0F7A838 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				61EB1B1E7AD0267851557FD9 /* DashboardView.swift */,
+				D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */,
+				2BF737B0AA3066062F3881A4 /* StatusBadge.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		ECFC4A48D6413A572E804BFB /* DiskWise */ = {
+			isa = PBXGroup;
+			children = (
+				41738F52625CC6311842BB5E /* AppViewModel.swift */,
+				9604CB761CB34350EFF29978 /* Assets.xcassets */,
+				955E6302377D998824A2996E /* DiskWiseApp.swift */,
+				15BE9BA6642050B89F9552F0 /* entitlements.mac.plist */,
+				F1FC1DF0971CB5B4441676DB /* Info.plist */,
+				C9453DAD43B73221B0F7A838 /* Components */,
+				F4DA758B64652374311F9BD9 /* Screens */,
+			);
+			path = DiskWise;
+			sourceTree = "<group>";
+		};
+		F4DA758B64652374311F9BD9 /* Screens */ = {
+			isa = PBXGroup;
+			children = (
+				7606C2E2E0391264171C1F55 /* MainScreens.swift */,
+			);
+			path = Screens;
+			sourceTree = "<group>";
+		};
+		FD3041CF18E97593743F91FD /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				7F81B798B01741C082A6B559 /* diskwise-macos */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A4B3D9367F1A7D327EB7CE34 /* DiskWise */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 173D6AD5DEF7EF6F96D36FA9 /* Build configuration list for PBXNativeTarget "DiskWise" */;
+			buildPhases = (
+				6C5768CBE3E569CC501A7EF1 /* Sources */,
+				82AEB93B51E839E2C6A572C8 /* Resources */,
+				53BE0238EFCC3D54112D48FA /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DiskWise;
+			packageProductDependencies = (
+				603D826F44FE9A518C0D3BDD /* DatabaseKit */,
+				6953D9217C07B48CB1CA73C9 /* DiskScannerKit */,
+				E118092959DEFDD022BB88EC /* MetadataKit */,
+				E44897D5C0C445D604A9F3CB /* DuplicateKit */,
+				873697E510808232A5864DDB /* CleanupKit */,
+				268149F6EA534326414CF175 /* AIKit */,
+			);
+			productName = DiskWise;
+			productReference = B21446A4062305538747C91B /* DiskWise.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		9D0B6F27C1D11C4D3019F3DF /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					A4B3D9367F1A7D327EB7CE34 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 48FA90ACEC13655543260150 /* Build configuration list for PBXProject "DiskWise" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = C3A4B002792C3C6BBF96728A;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				1AE79EFD7BFAC135785E9648 /* XCLocalSwiftPackageReference ".." */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = A69AF2FE980B6111B2115F4B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A4B3D9367F1A7D327EB7CE34 /* DiskWise */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		82AEB93B51E839E2C6A572C8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BAC56BC5D44D164A6D1651C3 /* Assets.xcassets in Resources */,
+				E559D2BF705EE1AB7F9CA4EA /* entitlements.mac.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		6C5768CBE3E569CC501A7EF1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				36DBFBCADADF9C0C5B4BA080 /* AppViewModel.swift in Sources */,
+				F4D258718C504E7A6365ADB6 /* DashboardView.swift in Sources */,
+				2791E28A3F889BE0CA5591A3 /* DiskWiseApp.swift in Sources */,
+				F07314D38ACD7FE6E5B9D233 /* FullDiskAccessPrompt.swift in Sources */,
+				6364632C8485413073CA9BB3 /* MainScreens.swift in Sources */,
+				C61435492234EF4EFEB45B5C /* StatusBadge.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0FBA174758CA814D9D9134C1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		21A162F00ADDF448B8E190F0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		43AE3D5FCA9216DC63957258 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = DiskWise/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		D92E6548CAC40F684F019579 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = DiskWise/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		173D6AD5DEF7EF6F96D36FA9 /* Build configuration list for PBXNativeTarget "DiskWise" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D92E6548CAC40F684F019579 /* Debug */,
+				43AE3D5FCA9216DC63957258 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		48FA90ACEC13655543260150 /* Build configuration list for PBXProject "DiskWise" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0FBA174758CA814D9D9134C1 /* Debug */,
+				21A162F00ADDF448B8E190F0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		1AE79EFD7BFAC135785E9648 /* XCLocalSwiftPackageReference ".." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		268149F6EA534326414CF175 /* AIKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AIKit;
+		};
+		603D826F44FE9A518C0D3BDD /* DatabaseKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DatabaseKit;
+		};
+		6953D9217C07B48CB1CA73C9 /* DiskScannerKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DiskScannerKit;
+		};
+		873697E510808232A5864DDB /* CleanupKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CleanupKit;
+		};
+		E118092959DEFDD022BB88EC /* MetadataKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MetadataKit;
+		};
+		E44897D5C0C445D604A9F3CB /* DuplicateKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DuplicateKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 9D0B6F27C1D11C4D3019F3DF /* Project object */;
+}

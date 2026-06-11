@@ -1,0 +1,83 @@
+---
+description: DiskWise macOS app architecture, technology stack, and agent conventions
+alwaysApply: true
+---
+
+# DiskWise macOS — Architecture & Conventions
+
+DiskWise is an **AI storage consultant** for macOS — not just a treemap viewer. It scans drives, detects duplicates (including video fingerprinting), classifies storage, and recommends safe cleanup actions.
+
+**Canonical docs:** `README.md`, `docs/architecture.md`, `docs/database.md`, `docs/local-development.md`.
+
+## Repository layout
+
+```
+diskwise-macos/
+├── app/DiskWise/           # SwiftUI desktop app
+├── Sources/                # Swift packages (kits)
+│   ├── DatabaseKit/
+│   ├── DiskScannerKit/
+│   ├── MetadataKit/
+│   ├── DuplicateKit/
+│   ├── CleanupKit/
+│   └── AIKit/
+├── Tests/
+├── database/migrations/
+├── scripts/
+└── Package.swift
+```
+
+## Module boundaries
+
+| Module | Owns | Does NOT own |
+|--------|------|--------------|
+| `DiskScannerKit` | Volume crawl, classification, scan persistence | UI, duplicate hashing |
+| `MetadataKit` | AVFoundation/ImageIO metadata extraction | File deletion |
+| `DuplicateKit` | Filename/size/hash/video fingerprint detection | Cleanup execution |
+| `CleanupKit` | Preview + Trash workflow | Permanent deletion by default |
+| `AIKit` | Insights, recommendations, optional Ollama reports | Cloud AI / data exfiltration |
+| `DatabaseKit` | GRDB schema, migrations, queries | Business UI logic |
+
+## Technology stack
+
+| Layer | Choice |
+|-------|--------|
+| Language | Swift |
+| UI | SwiftUI + Swift Charts |
+| IDE | VS Code (primary) + Xcode (build/sign/archive) |
+| Database | SQLite + GRDB |
+| AI | Rule-based analysis + optional local Ollama |
+| Distribution | Xcode Archive + Notarization + DMG |
+
+## Cleanup safety
+
+- Default destructive action: **Move to Trash** via `FileManager.trashItem`
+- Always preview before cleanup; never delete without explicit user confirmation
+- Grant Full Disk Access only when needed; explain why in UI
+
+## Agent conventions
+
+1. **Minimal diff** — match existing Swift/SwiftUI patterns; no drive-by refactors.
+2. **Docs** — cross-cutting updates go in `docs/` or `README.md`.
+3. **Performance** — scans are I/O heavy; use background queues, cancellation, incremental UI updates.
+4. **Privacy** — all analysis on-device; no path/content upload unless user adds sync explicitly.
+5. **Testing** — XCTest for scanners, classifiers, duplicate helpers, and database layer.
+
+## Phased scope
+
+| Phase | Scope |
+|-------|--------|
+| **Phase 1** | Disk scanning, folder analysis, duplicate detection, cleanup |
+| **Phase 2** | AI recommendations, large media analysis, duplicate videos |
+| **Phase 3** | Storage trends, scheduled scans, NAS/SMB/Synology |
+| **Phase 4** | Local LLM integration (Ollama / LM Studio) |
+
+Do not implement Phase 3 NAS/enterprise features unless explicitly requested.
+
+## Reference documents
+
+| Topic | Path |
+|-------|------|
+| Architecture | `docs/architecture.md` |
+| Database schema | `docs/database.md` |
+| Local development | `docs/local-development.md` |
