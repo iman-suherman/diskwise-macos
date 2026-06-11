@@ -69,64 +69,25 @@ struct ScanProgressPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
-                    if let volume = viewModel.selectedVolume {
-                        Text("Scanning \(volume.name)")
-                            .font(.title2.bold())
-                    }
-                    Label(viewModel.scanPhase.label, systemImage: phaseIcon)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
+            ScanPanelHeader(
+                title: viewModel.selectedVolume.map { "Scanning \($0.name)" } ?? "Scanning",
+                subtitle: viewModel.scanPhase.label,
+                icon: "doc.text.magnifyingglass",
+                progressFraction: viewModel.scanProgressFraction,
+                progressLabel: viewModel.scanProgressPercentLabel,
+                onCancel: { viewModel.cancelScan() }
+            )
 
-                Spacer()
+            ScanStepList(
+                activeStep: viewModel.scanPhase.stepNumber,
+                duplicateDetail: nil
+            )
 
-                ZStack {
-                    Circle()
-                        .stroke(Color.accentColor.opacity(0.15), lineWidth: 8)
-                        .frame(width: 72, height: 72)
-                    Circle()
-                        .trim(from: 0, to: viewModel.scanProgressFraction)
-                        .stroke(Color.accentColor.gradient, style: StrokeStyle(lineWidth: 8, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                        .frame(width: 72, height: 72)
-                        .animation(.easeInOut(duration: 0.35), value: viewModel.scanProgressFraction)
-                    Text(viewModel.scanProgressPercentLabel)
-                        .font(.title3.bold().monospacedDigit())
-                }
-
-                Button("Cancel") {
-                    viewModel.cancelScan()
-                }
-                .buttonStyle(.bordered)
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text(viewModel.scanProgressPercentLabel)
-                        .font(.caption.weight(.semibold).monospacedDigit())
-                        .foregroundStyle(Color.accentColor)
-                    Spacer()
-                    if let remaining = viewModel.scanEstimatedRemaining {
-                        Text("~\(DiskWiseFormatters.formatDuration(remaining)) left")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(Color.accentColor.opacity(0.12))
-                        Capsule()
-                            .fill(Color.accentColor.gradient)
-                            .frame(width: max(8, geometry.size.width * viewModel.scanProgressFraction))
-                            .animation(.easeInOut(duration: 0.35), value: viewModel.scanProgressFraction)
-                    }
-                }
-                .frame(height: 12)
-            }
+            ScanProgressBar(
+                progressFraction: viewModel.scanProgressFraction,
+                progressLabel: viewModel.scanProgressPercentLabel,
+                estimatedRemaining: viewModel.scanEstimatedRemaining
+            )
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 if let progress = viewModel.scanProgress {
@@ -149,36 +110,247 @@ struct ScanProgressPanel: View {
             }
 
             if let progress = viewModel.scanProgress {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Current file")
-                        .font(.caption.weight(.semibold))
+                currentPathPanel(title: "Current file", path: progress.currentPath)
+            }
+        }
+        .scanPanelStyle()
+    }
+}
+
+struct BackgroundScanBanner: View {
+    @EnvironmentObject private var viewModel: AppViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            ScanPanelHeader(
+                title: bannerTitle,
+                subtitle: bannerSubtitle,
+                icon: bannerIcon,
+                progressFraction: viewModel.scanProgressFraction,
+                progressLabel: viewModel.scanProgressPercentLabel,
+                onCancel: { viewModel.cancelDuplicateDetection() }
+            )
+
+            ScanStepList(
+                activeStep: viewModel.scanPhase.stepNumber,
+                duplicateDetail: viewModel.duplicateScanProgress?.level.detail
+            )
+
+            ScanProgressBar(
+                progressFraction: viewModel.scanProgressFraction,
+                progressLabel: viewModel.scanProgressPercentLabel,
+                estimatedRemaining: viewModel.scanEstimatedRemaining
+            )
+
+            if let progress = viewModel.duplicateScanProgress {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                    ScanStatTile(
+                        title: "Step",
+                        value: "\(progress.levelIndex + 1) of \(progress.levelCount)",
+                        icon: "list.number"
+                    )
+                    ScanStatTile(
+                        title: progress.level == .videoFingerprint ? "Videos" : "Files",
+                        value: "\(progress.processedCount.formatted()) / \(progress.totalCount.formatted())",
+                        icon: progress.level == .videoFingerprint ? "film" : "doc.text"
+                    )
+                    ScanStatTile(
+                        title: "Groups",
+                        value: progress.groupsFoundSoFar.formatted(),
+                        icon: "doc.on.doc"
+                    )
+                }
+
+                currentPathPanel(title: "Checking", path: progress.currentPath)
+            } else if viewModel.isAnalyzing {
+                HStack(spacing: 10) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Building recommendations from your indexed files…")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text(progress.currentPath)
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(2)
-                        .truncationMode(.middle)
-                        .padding(10)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
+                }
+            }
+
+            if viewModel.hasScanData {
+                Label("You can review storage breakdown below while this runs.", systemImage: "checkmark.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .scanPanelStyle()
+    }
+
+    private var bannerTitle: String {
+        if viewModel.isAnalyzing {
+            return "Analyzing storage"
+        }
+        if let volume = viewModel.selectedVolume {
+            return "Checking duplicates on \(volume.name)"
+        }
+        return "Checking duplicates"
+    }
+
+    private var bannerSubtitle: String {
+        viewModel.duplicateProgressDetail ?? viewModel.scanPhase.label
+    }
+
+    private var bannerIcon: String {
+        viewModel.isAnalyzing ? "sparkles" : "doc.on.doc"
+    }
+}
+
+private struct ScanStepList: View {
+    let activeStep: Int?
+    let duplicateDetail: String?
+
+    private let steps: [(number: Int, title: String, detail: String)] = [
+        (1, "Scan files", "Walk the drive and index every file"),
+        (2, "Find duplicates", "Match names, sizes, hashes, and video fingerprints"),
+        (3, "Analyze storage", "Build cleanup recommendations"),
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(steps, id: \.number) { step in
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: stepIcon(for: step.number))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(stepColor(for: step.number))
+                        .frame(width: 18)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Step \(step.number) · \(step.title)")
+                            .font(.subheadline.weight(step.number == activeStep ? .semibold : .regular))
+                        Text(stepDetail(for: step))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }
-        .padding(22)
-        .background {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
-        }
     }
 
-    private var phaseIcon: String {
-        switch viewModel.scanPhase {
-        case .scanning: return "doc.text.magnifyingglass"
-        case .findingDuplicates: return "doc.on.doc"
-        case .analyzing: return "sparkles"
-        case .idle: return "checkmark.circle"
+    private func stepIcon(for number: Int) -> String {
+        guard let activeStep else { return "circle" }
+        if number < activeStep { return "checkmark.circle.fill" }
+        if number == activeStep { return "arrow.triangle.2.circlepath.circle.fill" }
+        return "circle"
+    }
+
+    private func stepColor(for number: Int) -> Color {
+        guard let activeStep else { return .secondary }
+        if number < activeStep { return .green }
+        if number == activeStep { return .accentColor }
+        return .secondary.opacity(0.5)
+    }
+
+    private func stepDetail(for step: (number: Int, title: String, detail: String)) -> String {
+        if step.number == 2, let duplicateDetail, activeStep == 2 {
+            return duplicateDetail
         }
+        return step.detail
+    }
+}
+
+private struct ScanPanelHeader: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    let progressFraction: Double
+    let progressLabel: String
+    let onCancel: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title)
+                    .font(.title2.bold())
+                Label(subtitle, systemImage: icon)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            ZStack {
+                Circle()
+                    .stroke(Color.accentColor.opacity(0.15), lineWidth: 8)
+                    .frame(width: 72, height: 72)
+                Circle()
+                    .trim(from: 0, to: progressFraction)
+                    .stroke(Color.accentColor.gradient, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .frame(width: 72, height: 72)
+                    .animation(.easeInOut(duration: 0.35), value: progressFraction)
+                Text(progressLabel)
+                    .font(.title3.bold().monospacedDigit())
+            }
+
+            Button("Cancel", action: onCancel)
+                .buttonStyle(.bordered)
+        }
+    }
+}
+
+private struct ScanProgressBar: View {
+    let progressFraction: Double
+    let progressLabel: String
+    let estimatedRemaining: TimeInterval?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(progressLabel)
+                    .font(.caption.weight(.semibold).monospacedDigit())
+                    .foregroundStyle(Color.accentColor)
+                Spacer()
+                if let remaining = estimatedRemaining {
+                    Text("~\(DiskWiseFormatters.formatDuration(remaining)) left")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.accentColor.opacity(0.12))
+                    Capsule()
+                        .fill(Color.accentColor.gradient)
+                        .frame(width: max(8, geometry.size.width * progressFraction))
+                        .animation(.easeInOut(duration: 0.35), value: progressFraction)
+                }
+            }
+            .frame(height: 12)
+        }
+    }
+}
+
+private func currentPathPanel(title: String, path: String) -> some View {
+    VStack(alignment: .leading, spacing: 6) {
+        Text(title)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+        Text(path)
+            .font(.caption.monospaced())
+            .foregroundStyle(.tertiary)
+            .lineLimit(2)
+            .truncationMode(.middle)
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+private extension View {
+    func scanPanelStyle() -> some View {
+        padding(22)
+            .background {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
+            }
     }
 }
 
@@ -340,10 +512,12 @@ struct DashboardView: View {
             VStack(alignment: .leading, spacing: 28) {
                 if viewModel.isScanning {
                     ScanProgressPanel()
+                } else if viewModel.isBackgroundWorkActive {
+                    BackgroundScanBanner()
                 }
 
                 if let volume = viewModel.selectedVolume,
-                   viewModel.isScanning || viewModel.overview != nil {
+                   viewModel.isScanning || viewModel.isBackgroundWorkActive || viewModel.overview != nil {
                     if let overview = viewModel.overview {
                         storageHeader(volume: volume, overview: overview)
                     } else {
@@ -368,7 +542,7 @@ struct DashboardView: View {
                         storageIntelligenceSection(report: report)
                         recommendationsSection(report: report)
                     }
-                } else if !viewModel.isScanning {
+                } else if !viewModel.isScanning && !viewModel.isBackgroundWorkActive {
                     WelcomeView()
                 }
             }

@@ -64,7 +64,7 @@ struct ContentView: View {
                             StatusBadge(
                                 message: viewModel.toolbarStatusMessage,
                                 kind: viewModel.statusKind,
-                                isAnimating: viewModel.isScanning || viewModel.isAnalyzing,
+                                isAnimating: viewModel.isScanning || viewModel.isFindingDuplicates || viewModel.isAnalyzing,
                                 onRefresh: viewModel.statusKind == .error && viewModel.statusMessage.hasPrefix("Scan failed")
                                     ? { viewModel.refreshFromError() }
                                     : nil
@@ -191,7 +191,7 @@ struct ContentView: View {
                         viewModel.scanSelectedVolume()
                     } label: {
                         Label(
-                            viewModel.isScanning ? "Scanning…" : "Rescan \(volume.name)",
+                            viewModel.isScanning ? "Scanning…" : (viewModel.isFindingDuplicates ? "Checking duplicates…" : "Rescan \(volume.name)"),
                             systemImage: "arrow.triangle.2.circlepath"
                         )
                     }
@@ -203,7 +203,7 @@ struct ContentView: View {
                         } label: {
                             Label("Eject \(volume.name)", systemImage: "eject.fill")
                         }
-                        .disabled(viewModel.isScanning && viewModel.selectedVolumePath == volume.mountPath)
+                        .disabled((viewModel.isScanning || viewModel.isFindingDuplicates) && viewModel.selectedVolumePath == volume.mountPath)
                     }
                 }
             } header: {

@@ -16,7 +16,9 @@ struct DuplicatesView: View {
             VStack(alignment: .leading, spacing: 24) {
                 header
 
-                if viewModel.duplicateGroups.isEmpty {
+                if viewModel.isFindingDuplicates {
+                    duplicateScanInProgress
+                } else if viewModel.duplicateGroups.isEmpty {
                     ContentUnavailableView(
                         "No duplicates found",
                         systemImage: "doc.on.doc",
@@ -58,6 +60,56 @@ struct DuplicatesView: View {
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private var duplicateScanInProgress: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if let progress = viewModel.duplicateScanProgress {
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label(progress.level.label, systemImage: "doc.on.doc")
+                            .font(.headline)
+                        Text(progress.level.detail)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        ProgressView(value: progress.levelFraction)
+                        Text("\(progress.processedCount.formatted()) of \(progress.totalCount.formatted()) files checked")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(progress.currentPath)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(2)
+                            .truncationMode(.middle)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            } else {
+                GroupBox {
+                    HStack(spacing: 12) {
+                        ProgressView()
+                        Text("Preparing duplicate scan…")
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+
+            if !viewModel.duplicateGroups.isEmpty {
+                Text("Found so far")
+                    .font(.headline)
+                ForEach(viewModel.duplicateGroups) { group in
+                    DuplicateGroupCard(group: group) {
+                        selectedPreview = viewModel.previewCleanup(for: group)
+                    }
+                }
+            } else {
+                Text("Fingerprinting files can take several minutes on large drives. You can review storage in Overview while this runs.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 300, alignment: .topLeading)
     }
 }
 

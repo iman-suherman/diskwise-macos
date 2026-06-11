@@ -34,9 +34,18 @@ enum ScanPhase: String, Sendable {
     var label: String {
         switch self {
         case .idle: return "Ready"
-        case .scanning: return "Scanning files"
-        case .findingDuplicates: return "Finding duplicates"
-        case .analyzing: return "Analyzing storage"
+        case .scanning: return "Step 1 of 3 · Scanning files"
+        case .findingDuplicates: return "Step 2 of 3 · Finding duplicates"
+        case .analyzing: return "Step 3 of 3 · Analyzing storage"
+        }
+    }
+
+    var stepNumber: Int? {
+        switch self {
+        case .scanning: return 1
+        case .findingDuplicates: return 2
+        case .analyzing: return 3
+        case .idle: return nil
         }
     }
 }
@@ -101,8 +110,10 @@ final class AppViewModel: ObservableObject {
     @Published var duplicateGroups: [DuplicateGroup] = []
     @Published var analysisReport: AnalysisReport?
     @Published var scanProgress: ScanProgress?
+    @Published var duplicateScanProgress: DuplicateScanProgress?
     @Published var scanPhase: ScanPhase = .idle
     @Published var isScanning = false
+    @Published var isFindingDuplicates = false
     @Published var isAnalyzing = false
     @Published var statusMessage = "Ready to scan"
     @Published var statusKind: AppStatusKind = .ready
@@ -122,7 +133,9 @@ final class AppViewModel: ObservableObject {
     private let database: DiskWiseDatabase
     private var permissionPollTask: Task<Void, Never>?
     private var scanTask: Task<Void, Never>?
+    private var duplicateTask: Task<Void, Never>?
     private var scanStartTime: Date?
+    private var lastDuplicateGroupsRefreshCount = 0
     private var lastInsightsRefreshCount = 0
     private let scanEngine: ScanEngine
     private let duplicateEngine: DuplicateEngine
@@ -176,7 +189,20 @@ final class AppViewModel: ObservableObject {
         duplicateGroups.reduce(0) { $0 + $1.reclaimableSize }
     }
 
+    var isBackgroundWorkActive: Bool {
+        isFindingDuplicates || isAnalyzing
+    }
+
     var scanEstimatedRemaining: TimeInterval? {
+        if isFindingDuplicates, let progress = duplicateScanProgress {
+            guard let start = scanStartTime, progress.processedCount > 20 else { return nil }
+            let elapsed = Date().timeIntervalSince(start)
+            let rate = Double(progress.processedCount) / elapsed
+            guard rate > 0 else { return nil }
+            let remaining = Double(max(0, progress.totalCount - progress.processedCount))
+            return remaining / rate
+        }
+
         guard let progress = scanProgress,
               let start = scanStartTime,
               progress.scannedCount > 100,
@@ -194,16 +220,16 @@ final class AppViewModel: ObservableObject {
     }
 
     var scanProgressFraction: Double {
-        switch scanPhase {
-        case .findingDuplicates:
-            return max(scanProgressFractionFromBytes, 0.88)
-        case .analyzing:
-            return max(scanProgressFractionFromBytes, 0.94)
-        case .scanning:
-            return scanProgressFractionFromBytes
-        case .idle:
-            return 0
+        if isFindingDuplicates, let progress = duplicateScanProgress {
+            return 0.66 + (progress.overallFraction * 0.24)
         }
+        if isAnalyzing {
+            return 0.94
+        }
+        if isScanning {
+            return scanProgressFractionFromBytes
+        }
+        return 0
     }
 
     var scanProgressFractionFromBytes: Double {
@@ -223,10 +249,22 @@ final class AppViewModel: ObservableObject {
         "\(scanProgressPercent)%"
     }
 
+    var duplicateProgressDetail: String? {
+        guard let progress = duplicateScanProgress else { return nil }
+        let step = "Step \(progress.levelIndex + 1) of \(progress.levelCount)"
+        if progress.totalCount > 0 {
+            return "\(step) · \(progress.level.label) · \(progress.processedCount.formatted())/\(progress.totalCount.formatted())"
+        }
+        return "\(step) · \(progress.level.label)"
+    }
+
     /// Compact label for the toolbar badge while scanning.
     var toolbarStatusMessage: String {
         if isScanning, let volume = selectedVolume {
             return "Scanning \(volume.name) · \(scanProgressPercentLabel)"
+        }
+        if isFindingDuplicates, let detail = duplicateProgressDetail {
+            return "Checking duplicates · \(detail)"
         }
         if isAnalyzing {
             return "Analyzing storage…"
@@ -551,7 +589,7 @@ final class AppViewModel: ObservableObject {
             return
         }
 
-        if isScanning, selectedVolumePath == volume.mountPath {
+        if (isScanning || isFindingDuplicates), selectedVolumePath == volume.mountPath {
             cancelScan()
         }
 
@@ -580,11 +618,24 @@ final class AppViewModel: ObservableObject {
 
     func cancelScan() {
         scanTask?.cancel()
+        cancelDuplicateDetection()
         isScanning = false
         scanPhase = .idle
         scanProgress = nil
         scanStartTime = nil
         setStatus("Scan cancelled", kind: .ready)
+    }
+
+    func cancelDuplicateDetection() {
+        duplicateTask?.cancel()
+        duplicateTask = nil
+        isFindingDuplicates = false
+        isAnalyzing = false
+        duplicateScanProgress = nil
+        if !isScanning {
+            scanPhase = .idle
+            scanStartTime = nil
+        }
     }
 
     func refreshInsights() {
@@ -605,14 +656,16 @@ final class AppViewModel: ObservableObject {
 
     func scanVolume(at url: URL, name: String? = nil) {
         scanTask?.cancel()
+        cancelDuplicateDetection()
         isScanning = true
         scanPhase = .scanning
         scanStartTime = Date()
         lastInsightsRefreshCount = 0
+        lastDuplicateGroupsRefreshCount = 0
         clearStorageCategorySelection()
         let volumeName = name ?? (url.lastPathComponent.isEmpty ? url.path : url.lastPathComponent)
         selectedVolumePath = url.path
-        setStatus("Scanning \(volumeName)…", kind: .working)
+        setStatus("Step 1 of 3 · Scanning \(volumeName)…", kind: .working)
 
         scanTask = Task.detached { [weak self] in
             guard let self else { return }
@@ -625,7 +678,7 @@ final class AppViewModel: ObservableObject {
                             self.scanProgress = progress
                             self.maybeRefreshInsightsDuringScan(progress)
                             self.setStatus(
-                                "Scanning \(volumeName) · \(progress.scannedCount.formatted()) files · \(self.scanProgressPercentLabel)",
+                                "Step 1 of 3 · \(progress.scannedCount.formatted()) files · \(self.scanProgressPercentLabel)",
                                 kind: .working
                             )
                         }
@@ -636,31 +689,7 @@ final class AppViewModel: ObservableObject {
                 )
 
                 await MainActor.run {
-                    self.scanPhase = .findingDuplicates
-                    self.setStatus("Finding duplicates on \(volumeName)…", kind: .working)
-                }
-
-                let duplicateSummary = try self.duplicateEngine.detectAll(forDiskID: summary.diskID)
-
-                await MainActor.run {
-                    self.scanPhase = .analyzing
-                    self.setStatus("Analyzing storage on \(volumeName)…", kind: .working)
-                }
-
-                _ = try self.aiEngine.analyze(diskID: summary.diskID)
-
-                await MainActor.run {
-                    self.isScanning = false
-                    self.scanPhase = .idle
-                    self.scanProgress = nil
-                    self.scanStartTime = nil
-                    self.selectedDiskID = summary.diskID
-                    self.selectedVolumePath = url.path
-                    self.reload()
-                    self.setStatus(
-                        "Scan complete · \(duplicateSummary.groupsFound) duplicate groups · \(DiskWiseFormatters.bytes.string(fromByteCount: duplicateSummary.reclaimableBytes)) reclaimable",
-                        kind: .success
-                    )
+                    self.finishFilesystemScan(summary: summary, volumeName: volumeName, mountPath: url.path)
                 }
             } catch {
                 await MainActor.run {
@@ -668,7 +697,7 @@ final class AppViewModel: ObservableObject {
                     self.scanPhase = .idle
                     self.scanProgress = nil
                     self.scanStartTime = nil
-                    if error.localizedDescription.contains("cancelled") {
+                    if error is CancellationError || error.localizedDescription.contains("cancelled") {
                         self.setStatus("Scan cancelled", kind: .ready)
                     } else {
                         self.setStatus("Scan failed: \(error.localizedDescription)", kind: .error)
@@ -676,6 +705,95 @@ final class AppViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    private func finishFilesystemScan(summary: ScanSummary, volumeName: String, mountPath: String) {
+        isScanning = false
+        scanPhase = .idle
+        scanProgress = nil
+        selectedDiskID = summary.diskID
+        selectedVolumePath = mountPath
+        reload()
+        setStatus(
+            "Storage indexed on \(volumeName) — review results while duplicates are checked in the background",
+            kind: .working
+        )
+        startDuplicateDetection(diskID: summary.diskID, volumeName: volumeName)
+    }
+
+    private func startDuplicateDetection(diskID: Int64, volumeName: String) {
+        duplicateTask?.cancel()
+        isFindingDuplicates = true
+        scanPhase = .findingDuplicates
+        scanStartTime = Date()
+        lastDuplicateGroupsRefreshCount = 0
+
+        duplicateTask = Task.detached { [weak self] in
+            guard let self else { return }
+            do {
+                let duplicateSummary = try self.duplicateEngine.detectAll(
+                    forDiskID: diskID,
+                    onProgress: { progress in
+                        Task { @MainActor in
+                            self.duplicateScanProgress = progress
+                            self.maybeRefreshDuplicateGroupsDuringScan(progress, diskID: diskID)
+                            if let detail = self.duplicateProgressDetail {
+                                self.setStatus("Step 2 of 3 · \(detail)", kind: .working)
+                            } else {
+                                self.setStatus("Step 2 of 3 · Finding duplicates on \(volumeName)…", kind: .working)
+                            }
+                        }
+                    },
+                    isCancelled: {
+                        Task.isCancelled
+                    }
+                )
+
+                await MainActor.run {
+                    self.isFindingDuplicates = false
+                    self.duplicateScanProgress = nil
+                    self.scanPhase = .analyzing
+                    self.isAnalyzing = true
+                    self.setStatus("Step 3 of 3 · Analyzing storage on \(volumeName)…", kind: .working)
+                }
+
+                _ = try self.aiEngine.analyze(diskID: diskID)
+
+                await MainActor.run {
+                    self.isAnalyzing = false
+                    self.scanPhase = .idle
+                    self.scanStartTime = nil
+                    self.refreshInsights()
+                    self.setStatus(
+                        "Scan complete · \(duplicateSummary.groupsFound) duplicate groups · \(DiskWiseFormatters.bytes.string(fromByteCount: duplicateSummary.reclaimableBytes)) reclaimable",
+                        kind: .success
+                    )
+                }
+            } catch {
+                await MainActor.run {
+                    self.isFindingDuplicates = false
+                    self.isAnalyzing = false
+                    self.duplicateScanProgress = nil
+                    self.scanPhase = .idle
+                    self.scanStartTime = nil
+                    if error is CancellationError || error.localizedDescription.contains("cancelled") {
+                        self.setStatus("Duplicate check cancelled — storage overview is still available", kind: .ready)
+                    } else {
+                        self.setStatus(
+                            "Duplicate check failed: \(error.localizedDescription) — storage overview is still available",
+                            kind: .error
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private func maybeRefreshDuplicateGroupsDuringScan(_ progress: DuplicateScanProgress, diskID: Int64) {
+        guard isFindingDuplicates else { return }
+        guard progress.processedCount - lastDuplicateGroupsRefreshCount >= 250 else { return }
+        lastDuplicateGroupsRefreshCount = progress.processedCount
+        duplicateGroups = (try? duplicateEngine.loadGroups(forDiskID: diskID)) ?? duplicateGroups
     }
 
     func generateLLMReport() {

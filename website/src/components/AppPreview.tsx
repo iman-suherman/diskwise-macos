@@ -3,35 +3,32 @@ import { BRAND_NAME } from "@/lib/brand";
 
 const previews = [
   {
-    image: "/app-screenshot.png",
-    alt: `${BRAND_NAME} scanning Macintosh HD with live progress, capacity chart, and storage overview`,
-    title: "Scan volumes in real time",
-    headline:
-      "Pick a drive and watch live progress as DiskWise indexes every file.",
-    description:
-      "Select any internal or external drive from the sidebar — Macintosh HD, USB disks, or multi-terabyte volumes under /Volumes. DiskWise streams live scan progress with file counts, bytes processed, and an ETA while you watch. Capacity cards and the donut chart begin filling in as the index builds, so you always know how much has been analyzed and what is still in flight.",
-    imageFirst: true,
-    large: false,
-  },
-  {
     image: "/app-screenshot-overview.png",
-    alt: `${BRAND_NAME} overview with capacity stats, donut chart, and storage breakdown by file type`,
+    alt: `${BRAND_NAME} storage overview with capacity cards, donut chart, and storage breakdown by file type`,
     title: "Understand where your space goes",
-    headline:
-      "Capacity, potential savings, and storage by type — all in one Overview.",
+    headline: "Capacity, savings, and storage by type — all in one Overview.",
     description:
-      "After a scan completes, the Overview surfaces the full picture: total, used, and free capacity, indexed file count, and potential savings at a glance. A large donut chart shows used vs. free space, while Storage by Type breaks usage into Development, Media, Archives, Caches, Applications, and more — each with size, percentage, file count, and a color-coded bar so hotspots are obvious before you clean anything.",
-    imageFirst: false,
+      "After a scan completes, the Overview shows total, used, and free capacity alongside indexed file counts and potential savings. A donut chart breaks usage into Development, Other, Backups, Documents, Media, Caches, and more — each with size, percentage, and file count so hotspots are obvious before you clean anything.",
+    imageFirst: true,
     large: true,
   },
   {
     image: "/app-screenshot-insights.png",
-    alt: `${BRAND_NAME} showing biggest space consumers, storage intelligence savings, and recommended cleanup actions`,
-    title: "Act on AI storage intelligence",
-    headline:
-      "Rank your biggest folders, total reclaimable space, and cleanup suggestions you control.",
+    alt: `${BRAND_NAME} showing biggest space consumers, storage intelligence savings, and safe cleanup recommendations`,
+    title: "Act on safe cleanup suggestions",
+    headline: "Ranked hotspots, reclaimable space, and actions you control.",
     description:
-      "DiskWise ranks your biggest folders — Library, Xcode, Application Support, Java, and more — so you know exactly what to inspect first. Storage Intelligence totals reclaimable space across caches, old DMGs, temporary exports, and stale files, then turns findings into recommended actions with plain-language guidance. Review cache cleanup, installer images, temp exports, or old videos, and move ahead only when the suggestion makes sense.",
+      "DiskWise ranks your biggest folders — Library, Xcode, Application Support, and more — so you know what to inspect first. Storage Intelligence totals reclaimable space across caches, old DMGs, temporary exports, and stale files, then turns findings into recommended actions with plain-language guidance. Review each suggestion and move ahead only when it makes sense.",
+    imageFirst: false,
+    large: true,
+  },
+  {
+    image: "/app-screenshot-chat.png",
+    alt: `${BRAND_NAME} Ask DiskWise AI chat answering what is consuming the most disk space`,
+    title: "Ask DiskWise anything",
+    headline: "AI chat powered by your scan data — on your Mac.",
+    description:
+      "Open Ask DiskWise and get plain-language answers about your storage. Ask what is consuming the most space, which categories dominate, or where to start cleaning — responses are grounded in your latest scan, not generic advice. No cloud upload required; insights stay on-device.",
     imageFirst: true,
     large: true,
   },
@@ -54,8 +51,8 @@ export function AppPreview() {
           From first scan to confident cleanup.
         </h2>
         <p className="mt-3 text-base leading-7 text-slate-400">
-          {BRAND_NAME} keeps scanning, analysis, and recommendations in one focused SwiftUI
-          workspace — on your Mac, with your data.
+          {BRAND_NAME} keeps scanning, analysis, safe cleanup suggestions, and AI chat in one
+          focused SwiftUI workspace — on your Mac, with your data.
         </p>
       </div>
 
@@ -73,9 +70,9 @@ export function AppPreview() {
                 src={preview.image}
                 alt={preview.alt}
                 width={1024}
-                height={801}
+                height={622}
                 sizes={preview.large ? "(max-width: 1024px) 100vw, 42rem" : "(max-width: 1024px) 90vw, 32rem"}
-                className="relative h-auto w-full"
+                className="relative h-auto w-full rounded-xl border border-white/10 shadow-soft"
               />
             </div>
 
