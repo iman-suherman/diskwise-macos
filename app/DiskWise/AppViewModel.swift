@@ -416,7 +416,12 @@ final class AppViewModel: ObservableObject {
     }
 
     func isIndexed(_ volume: MountedVolume) -> Bool {
-        diskRecord(for: volume) != nil
+        guard let disk = diskRecord(for: volume), let diskID = disk.id else { return false }
+        return ((try? database.indexedFileCount(forDiskID: diskID)) ?? 0) > 0
+    }
+
+    func scanActionTitle(for volume: MountedVolume) -> String {
+        isIndexed(volume) ? "Rescan \(volume.name)" : "Scan \(volume.name)"
     }
 
     func groupedCategorySummaries(from summaries: [CategorySummary]) -> [(name: String, totalSize: Int64, fileCount: Int)] {
@@ -508,7 +513,7 @@ final class AppViewModel: ObservableObject {
         }
 
         selectedVolumePath = volume.mountPath
-        scanVolume(at: URL(fileURLWithPath: volume.mountPath), name: volume.name)
+        scan(volume: volume)
     }
 
     func refreshMountedVolumes() {
@@ -706,7 +711,7 @@ final class AppViewModel: ObservableObject {
         setStatus("Selected \(volume.name)", kind: .ready)
 
         if autoScan && !isIndexed(volume) && !isScanning {
-            scanVolume(at: URL(fileURLWithPath: volume.mountPath), name: volume.name)
+            scan(volume: volume)
         }
     }
 
@@ -715,16 +720,52 @@ final class AppViewModel: ObservableObject {
             setStatus("Select a drive from the sidebar first", kind: .error)
             return
         }
-        scanVolume(at: URL(fileURLWithPath: volume.mountPath), name: volume.name)
+        scan(volume: volume)
+    }
+
+    func scanFolderOnSelectedVolume() {
+        guard let volume = selectedVolume else {
+            setStatus("Select a drive from the sidebar first", kind: .error)
+            return
+        }
+        scanFolder(on: volume)
+    }
+
+    func scanFolder(on volume: MountedVolume) {
+        guard !isVolumeBusy(volume) else { return }
+        selectedVolumePath = volume.mountPath
+        if let disk = diskRecord(for: volume) {
+            selectedDiskID = disk.id
+        } else {
+            selectedDiskID = nil
+        }
+
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Scan"
+        panel.message = "Choose a folder on \(volume.name) to scan"
+        panel.directoryURL = URL(fileURLWithPath: volume.mountPath)
+
+        guard panel.runModal() == .OK, let folderURL = panel.url else { return }
+
+        guard folderIsOnVolume(folderURL, volume: volume) else {
+            setStatus("Choose a folder on \(volume.name)", kind: .error)
+            return
+        }
+
+        scan(volume: volume, folder: folderURL)
     }
 
     func scanInternalDrive() {
         if let internalVolume = internalVolumes.first {
             selectedVolumePath = internalVolume.mountPath
-            scanVolume(at: URL(fileURLWithPath: internalVolume.mountPath), name: internalVolume.name)
+            scan(volume: internalVolume)
         } else if let first = mountedVolumes.first {
             selectedVolumePath = first.mountPath
-            scanVolume(at: URL(fileURLWithPath: first.mountPath), name: first.name)
+            scan(volume: first)
         }
     }
 
@@ -823,7 +864,7 @@ final class AppViewModel: ObservableObject {
         refreshAnalysisReport()
     }
 
-    func scanVolume(at url: URL, name: String? = nil) {
+    func scan(volume: MountedVolume, folder: URL? = nil) {
         scanTask?.cancel()
         cancelDuplicateDetection()
         selectedPane = .overview
@@ -833,18 +874,37 @@ final class AppViewModel: ObservableObject {
         lastInsightsRefreshCount = 0
         lastDuplicateGroupsRefreshCount = 0
         clearStorageCategorySelection()
-        let volumeName = name ?? (url.lastPathComponent.isEmpty ? url.path : url.lastPathComponent)
-        selectedVolumePath = url.path
-        setStatus("Step 1 of 3 · Scanning \(volumeName)…", kind: .working)
-        logActivity(.scan, "Started filesystem scan", detail: volumeName)
+
+        let volumeURL = URL(fileURLWithPath: volume.mountPath)
+        let scanRoot = folder ?? volumeURL
+        let volumeRootPath = volumeURL.standardizedFileURL.path
+        let scanRootPath = scanRoot.standardizedFileURL.path
+        let isFolderScan = scanRootPath != volumeRootPath
+        let scanLabel = isFolderScan
+            ? (scanRoot.lastPathComponent.isEmpty ? scanRoot.path : scanRoot.lastPathComponent)
+            : volume.name
+
+        selectedVolumePath = volume.mountPath
+        if let disk = diskRecord(for: volume) {
+            selectedDiskID = disk.id
+        } else {
+            selectedDiskID = nil
+        }
+        setStatus("Step 1 of 3 · Scanning \(scanLabel)…", kind: .working)
+        logActivity(
+            .scan,
+            isFolderScan ? "Started folder scan" : "Started filesystem scan",
+            detail: isFolderScan ? "\(scanLabel) on \(volume.name)" : volume.name
+        )
 
         guard let scanEngine = self.scanEngine else { return }
         scanTask = Task.detached { [weak self, scanEngine] in
             guard let self else { return }
             do {
                 let summary = try scanEngine.scanVolume(
-                    name: volumeName,
-                    mountPath: url,
+                    name: volume.name,
+                    mountPath: volumeURL,
+                    scanRoot: isFolderScan ? scanRoot : nil,
                     onProgress: { progress in
                         Task { @MainActor in
                             self.scanProgress = progress
@@ -861,7 +921,12 @@ final class AppViewModel: ObservableObject {
                 )
 
                 await MainActor.run {
-                    self.finishFilesystemScan(summary: summary, volumeName: volumeName, mountPath: url.path)
+                    self.finishFilesystemScan(
+                        summary: summary,
+                        volumeName: volume.name,
+                        scanLabel: scanLabel,
+                        volumeMountPath: volume.mountPath
+                    )
                 }
             } catch {
                 await MainActor.run {
@@ -870,7 +935,7 @@ final class AppViewModel: ObservableObject {
                     self.scanProgress = nil
                     self.scanStartTime = nil
                     if error is CancellationError || error.localizedDescription.contains("cancelled") {
-                        self.logActivity(.scan, "Scan cancelled", detail: volumeName)
+                        self.logActivity(.scan, "Scan cancelled", detail: scanLabel)
                         self.setStatus("Scan cancelled", kind: .ready)
                     } else {
                         self.logActivity(.scan, "Scan failed", detail: error.localizedDescription)
@@ -881,13 +946,27 @@ final class AppViewModel: ObservableObject {
         }
     }
 
-    private func finishFilesystemScan(summary: ScanSummary, volumeName: String, mountPath: String) {
+    private func folderIsOnVolume(_ folder: URL, volume: MountedVolume) -> Bool {
+        let root = URL(fileURLWithPath: volume.mountPath).standardizedFileURL.path
+        let chosen = folder.standardizedFileURL.path
+        return chosen == root || chosen.hasPrefix(root + "/")
+    }
+
+    private func finishFilesystemScan(
+        summary: ScanSummary,
+        volumeName: String,
+        scanLabel: String,
+        volumeMountPath: String
+    ) {
         isScanning = false
         scanPhase = .idle
         scanProgress = nil
         selectedDiskID = summary.diskID
-        selectedVolumePath = mountPath
+        selectedVolumePath = volumeMountPath
         reload()
+        let completionDetail = scanLabel == volumeName
+            ? "\(summary.scannedFiles.formatted()) files indexed on \(volumeName)"
+            : "\(summary.scannedFiles.formatted()) files indexed in \(scanLabel) on \(volumeName)"
         setStatus(
             "Storage indexed on \(volumeName) — review results while duplicates are checked in the background",
             kind: .working
@@ -895,7 +974,7 @@ final class AppViewModel: ObservableObject {
         logActivity(
             .scan,
             "Filesystem scan complete",
-            detail: "\(summary.scannedFiles.formatted()) files indexed on \(volumeName)"
+            detail: completionDetail
         )
         startDuplicateDetection(diskID: summary.diskID, volumeName: volumeName)
     }

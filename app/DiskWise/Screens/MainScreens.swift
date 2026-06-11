@@ -107,7 +107,7 @@ struct DuplicatesView: View {
                 Text("This drive has no duplicate file groups from the latest scan. Try rescanning after copying or downloading more files.")
             } actions: {
                 if let volume = viewModel.selectedVolume {
-                    Button("Rescan \(volume.name)") {
+                    Button(viewModel.scanActionTitle(for: volume)) {
                         viewModel.scanSelectedVolume()
                     }
                     .buttonStyle(.borderedProminent)

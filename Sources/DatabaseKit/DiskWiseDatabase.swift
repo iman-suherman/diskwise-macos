@@ -72,6 +72,26 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         }
     }
 
+    public func indexedFileCount(forDiskID diskID: Int64) throws -> Int {
+        try dbQueue.read { db in
+            try Int.fetchOne(
+                db,
+                sql: "SELECT COUNT(*) FROM files WHERE disk_id = ?",
+                arguments: [diskID]
+            ) ?? 0
+        }
+    }
+
+    public func deleteFiles(forDiskID diskID: Int64, underPath pathPrefix: String) throws {
+        let normalized = pathPrefix.hasSuffix("/") ? String(pathPrefix.dropLast()) : pathPrefix
+        try dbQueue.write { db in
+            try db.execute(
+                sql: "DELETE FROM files WHERE disk_id = ? AND (path = ? OR path LIKE ?)",
+                arguments: [diskID, normalized, normalized + "/%"]
+            )
+        }
+    }
+
     public func files(forDiskID diskID: Int64, limit: Int = 500) throws -> [FileRecord] {
         try dbQueue.read { db in
             try FileRecord.fetchAll(
