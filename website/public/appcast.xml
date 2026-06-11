@@ -3,6 +3,26 @@
     <channel>
         <title>DiskWise</title>
         <item>
+            <title>0.1.4</title>
+            <pubDate>Thu, 11 Jun 2026 23:01:20 +1000</pubDate>
+            <sparkle:version>1004</sparkle:version>
+            <sparkle:shortVersionString>0.1.4</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<ul>
+<li><strong>Changed</strong><ul>
+<li>Add scan settings, release splash, icon fix, and website download improvements.</li>
+<li>Release v0.1.3 with cleanup recommendation fixes.</li>
+</ul></li>
+</ul>
+]]></description>
+            <enclosure url="http://127.0.0.1:3000/downloads/DiskWise-0.1.4.zip" length="11420907" type="application/octet-stream" sparkle:edSignature="bePbKVoobKRo+yceiCYqKCrtkpdB+xGYT7NwgDKwz2vs++EMsxVWKc1kX+sTXVXJv+6I8nftexfWSSrXHcKwBQ=="/>
+            <sparkle:deltas>
+                <enclosure url="http://127.0.0.1:3000/downloads/DiskWise1004-1003.delta" sparkle:deltaFrom="1003" length="5410294" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="D7g/iprElq++8RNGss2Xqz6fhXugPr5Q2n4/t+22s3WikmvdiqyfqM88RWEdIOkhLqva7Riug1O/TcH4w/ZRDQ=="/>
+                <enclosure url="http://127.0.0.1:3000/downloads/DiskWise1004-1002.delta" sparkle:deltaFrom="1002" length="5753110" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="2Mv+LbjY2a7jsUwPlQBVissbX2NWo6b1wboVgDxG7O2Uy0hPP3yG2Qg2Q3BeH5dQlTIQ/4CQki+JhxIWm6MkBw=="/>
+                <enclosure url="http://127.0.0.1:3000/downloads/DiskWise1004-1001.delta" sparkle:deltaFrom="1001" length="7471430" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="sds8kdMBr0BB0UsvdRBAQRY8Q3wH8Jm2aL8h/LVS4pD4qw/JPAemP87t3NNOM3OHkf4iuWvZ1Rs5VFModHa2Dg=="/>
+            </sparkle:deltas>
+        </item>
+        <item>
             <title>0.1.3</title>
             <pubDate>Thu, 11 Jun 2026 21:59:28 +1000</pubDate>
             <sparkle:version>1003</sparkle:version>
@@ -39,21 +59,6 @@
             <sparkle:deltas>
                 <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1002-1001.delta" sparkle:deltaFrom="1001" length="6502770" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="CxLVRsxgJWN+kSyN6GYIyd1pVBfahvULftemVCIpjoZrE7xwaVtebvTt68DweIlBeJTR4VJfpjqI5xpEcjbuAg=="/>
             </sparkle:deltas>
-        </item>
-        <item>
-            <title>0.1.1</title>
-            <pubDate>Thu, 11 Jun 2026 20:36:11 +1000</pubDate>
-            <sparkle:version>1001</sparkle:version>
-            <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <enclosure url="http://127.0.0.1:3000/downloads/DiskWise-0.1.1.zip" length="6174922" type="application/octet-stream" sparkle:edSignature="ZIhF08HrYbLweGxb8g3haRF73el4HWPKeH/hySYXCCLy/97pxBdf5T08rJnH3ZeuoNKPAR5+C6GvRl+82WIZBw=="/>
-            <description><![CDATA[<ul>
-<li><strong>Changed</strong><ul>
-<li>Improve scan progress UX and refresh marketing assets.</li>
-<li>Add recommendation review flow and refresh open-source marketing.</li>
-</ul></li>
-</ul>
-]]></description>
         </item>
     </channel>
 </rss>
