@@ -1,0 +1,21 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>DiskWise</title>
+        <item>
+            <title>0.1.1</title>
+            <pubDate>Thu, 11 Jun 2026 20:36:11 +1000</pubDate>
+            <sparkle:version>1001</sparkle:version>
+            <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.1.1.zip" length="6174922" type="application/octet-stream" sparkle:edSignature="ZIhF08HrYbLweGxb8g3haRF73el4HWPKeH/hySYXCCLy/97pxBdf5T08rJnH3ZeuoNKPAR5+C6GvRl+82WIZBw=="/>
+            <description><![CDATA[<ul>
+<li><strong>Changed</strong><ul>
+<li>Improve scan progress UX and refresh marketing assets.</li>
+<li>Add recommendation review flow and refresh open-source marketing.</li>
+</ul></li>
+</ul>
+]]></description>
+        </item>
+    </channel>
+</rss>

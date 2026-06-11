@@ -17,7 +17,7 @@ Unlike traditional tools that only show category totals, DiskWise acts as an **A
 | IDE | VS Code (primary) + Xcode (build/sign) |
 | Database | SQLite + GRDB |
 | AI | On-device analysis + optional local Ollama |
-| Distribution | Xcode Archive + Notarization + DMG |
+| Distribution | Xcode Archive + Notarization + DMG + Sparkle auto-updates |
 
 ## Repository layout
 
@@ -115,6 +115,7 @@ npm run open:xcode
 - [Architecture](docs/architecture.md)
 - [Database schema](docs/database.md)
 - [Local development](docs/local-development.md)
+- [Auto-updates (Sparkle)](docs/updates.md)
 - [Website](docs/website.md)
 
 ## Open source

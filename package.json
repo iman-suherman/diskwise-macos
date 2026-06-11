@@ -1,6 +1,6 @@
 {
   "name": "diskwise-macos",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "displayName": "DiskWise",
   "publisher": "Iman Suherman",
   "private": true,
@@ -30,6 +30,9 @@
     "release": "node scripts/release-publish.cjs",
     "release:local": "bash scripts/release.sh",
     "upload:release": "node scripts/upload-release.cjs",
+    "sparkle:setup-keys": "bash scripts/sparkle-setup-keys.sh",
+    "sparkle:appcast": "node scripts/generate-appcast.cjs",
+    "sparkle:local": "node scripts/sparkle-local-publish.cjs",
     "deploy:registry": "node scripts/deploy-registry-api.cjs",
     "login": "node scripts/gcp-adc-login.cjs",
     "generate-env": "node scripts/generate-env.cjs",

@@ -1,0 +1,106 @@
+/**
+ * Generate Sparkle appcast.xml from signed ZIP archives in releases/sparkle/.
+ */
+const { spawnSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+const { loadDotenv } = require("./load-dotenv.cjs");
+const { resolveDownloadBase } = require("./public-download-url.cjs");
+
+const root = path.join(__dirname, "..");
+const shell = process.platform === "win32";
+
+function run(command, args, options = {}) {
+  const r = spawnSync(command, args, {
+    stdio: "inherit",
+    cwd: options.cwd || root,
+    shell,
+    env: { ...process.env, ...options.env },
+  });
+  if (r.error) throw r.error;
+  if (r.status !== 0) process.exit(r.status ?? 1);
+}
+
+function sparkleReleaseNotesHtml(release) {
+  const lines = ["<ul>"];
+  const sections = [
+    ["Introduced", release.releaseNotes.introduced],
+    ["Changed", release.releaseNotes.changed],
+    ["Fixed", release.releaseNotes.fixed],
+    ["Updated", release.releaseNotes.updated],
+    ["Removed", release.releaseNotes.removed],
+    ["Breaking", release.releaseNotes.breaking],
+  ];
+
+  for (const [title, items] of sections) {
+    if (!items?.length) continue;
+    lines.push(`<li><strong>${title}</strong><ul>`);
+    for (const item of items) {
+      lines.push(`<li>${item}</li>`);
+    }
+    lines.push("</ul></li>");
+  }
+
+  if (lines.length === 1 && release.summary) {
+    lines.push(`<li>${release.summary}</li>`);
+  }
+
+  lines.push("</ul>");
+  return `${lines.join("\n")}\n`;
+}
+
+function generateAppcast(options = {}) {
+  loadDotenv(root);
+
+  const archivesDir = options.archivesDir || path.join(root, "releases", "sparkle");
+  const downloadBase = (options.downloadBase || resolveDownloadBase()).replace(/\/$/, "");
+  const websiteAppcast = path.join(root, "website", "public", "appcast.xml");
+  const releasesAppcast = path.join(archivesDir, "appcast.xml");
+
+  fs.mkdirSync(archivesDir, { recursive: true });
+
+  if (options.release) {
+    const version = options.release.version;
+    const htmlPath = path.join(archivesDir, `DiskWise-${version}.html`);
+    fs.writeFileSync(htmlPath, sparkleReleaseNotesHtml(options.release), "utf8");
+    console.log(`appcast: release notes → ${htmlPath}`);
+  }
+
+  run("bash", ["scripts/sparkle-tools.sh"], { cwd: root });
+
+  const sparkleBin = path.join(root, ".sparkle-tools", "bin", "generate_appcast");
+  const genArgs = [
+    "--download-url-prefix",
+    `${downloadBase}/`,
+    "--embed-release-notes",
+    "-o",
+    releasesAppcast,
+    archivesDir,
+  ];
+
+  if (options.channel) {
+    genArgs.splice(0, 0, "--channel", options.channel);
+  }
+
+  run(sparkleBin, genArgs, { cwd: root });
+
+  if (fs.existsSync(releasesAppcast)) {
+    fs.mkdirSync(path.dirname(websiteAppcast), { recursive: true });
+    fs.copyFileSync(releasesAppcast, websiteAppcast);
+    console.log(`appcast: copied → ${websiteAppcast}`);
+  }
+
+  return {
+    archivesDir,
+    appcastPath: releasesAppcast,
+    websiteAppcastPath: websiteAppcast,
+  };
+}
+
+if (require.main === module) {
+  const releasePath = process.argv[2];
+  const release = releasePath ? JSON.parse(fs.readFileSync(releasePath, "utf8")) : null;
+  generateAppcast({ release });
+}
+
+module.exports = { generateAppcast, sparkleReleaseNotesHtml };

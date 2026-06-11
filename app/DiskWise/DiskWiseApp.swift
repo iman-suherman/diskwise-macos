@@ -4,6 +4,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
+        _ = SparkleUpdaterController.shared
 
         let icon: NSImage? = {
             if let icnsURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
@@ -34,6 +35,11 @@ struct DiskWiseApp: App {
         .windowStyle(.automatic)
         .commands {
             CommandGroup(replacing: .newItem) {}
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") {
+                    SparkleUpdaterController.shared.checkForUpdates()
+                }
+            }
         }
     }
 }

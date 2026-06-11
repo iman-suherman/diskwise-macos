@@ -35,6 +35,17 @@ function syncAppVersion(version) {
   );
   fs.writeFileSync(infoPlistPath, infoPlist, "utf8");
 
+  const sparkleKeyPath = path.join(root, "config/sparkle-public-ed-key.txt");
+  if (fs.existsSync(sparkleKeyPath)) {
+    const publicKey = fs.readFileSync(sparkleKeyPath, "utf8").trim();
+    let projectYmlForKey = fs.readFileSync(projectYmlPath, "utf8");
+    projectYmlForKey = projectYmlForKey.replace(
+      /SPARKLE_PUBLIC_ED_KEY:\s*[^\n]+/,
+      `SPARKLE_PUBLIC_ED_KEY: ${publicKey}`
+    );
+    fs.writeFileSync(projectYmlPath, projectYmlForKey, "utf8");
+  }
+
   const pbxprojPath = path.join(root, "app/DiskWise.xcodeproj/project.pbxproj");
   if (fs.existsSync(pbxprojPath)) {
     let pbxproj = fs.readFileSync(pbxprojPath, "utf8");

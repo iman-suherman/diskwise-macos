@@ -23,15 +23,49 @@ fi
 echo "==> Signing $APP_PATH"
 echo "    Identity: $IDENTITY"
 
-sign_file() {
+sign_binary() {
   local target="$1"
-  codesign \
-    --force \
-    --options runtime \
-    --entitlements "$ENTITLEMENTS" \
-    --sign "$IDENTITY" \
-    --timestamp \
-    "$target"
+  local entitlements="${2:-}"
+  if [[ -n "$entitlements" ]]; then
+    codesign \
+      --force \
+      --options runtime \
+      --entitlements "$entitlements" \
+      --sign "$IDENTITY" \
+      --timestamp \
+      "$target"
+  else
+    codesign \
+      --force \
+      --options runtime \
+      --sign "$IDENTITY" \
+      --timestamp \
+      "$target"
+  fi
+}
+
+sign_sparkle_framework() {
+  local sparkle_root="$APP_PATH/Contents/Frameworks/Sparkle.framework"
+  [[ -d "$sparkle_root" ]] || return 0
+
+  echo "    Signing Sparkle.framework embedded helpers"
+
+  while IFS= read -r xpc; do
+    [[ -z "$xpc" ]] && continue
+    sign_binary "$xpc"
+  done < <(find "$sparkle_root" -name "*.xpc" -type d | sort -r)
+
+  while IFS= read -r helper; do
+    [[ -z "$helper" ]] && continue
+    sign_binary "$helper"
+  done < <(find "$sparkle_root" -name "*.app" -type d | sort -r)
+
+  while IFS= read -r file; do
+    [[ -z "$file" ]] && continue
+    sign_binary "$file"
+  done < <(find "$sparkle_root" \( -name "*.dylib" -o -perm -111 \) -type f | sort -r)
+
+  sign_binary "$sparkle_root"
 }
 
 while IFS= read -r file; do
@@ -39,14 +73,30 @@ while IFS= read -r file; do
   if [[ "$file" == *".app/Contents/MacOS/"* ]]; then
     continue
   fi
-  sign_file "$file" 2>/dev/null || true
+  if [[ "$file" == *"Sparkle.framework"* ]]; then
+    continue
+  fi
+  sign_binary "$file" 2>/dev/null || true
 done < <(find "$APP_PATH" \( -name "*.dylib" -o -name "*.node" -o -perm -111 \) -type f)
 
 while IFS= read -r helper; do
   [[ -z "$helper" ]] && continue
-  sign_file "$helper" 2>/dev/null || true
-done < <(find "$APP_PATH" -name "*.app" -path "*/Helpers/*")
+  [[ "$helper" == "$APP_PATH" ]] && continue
+  if [[ "$helper" == *"Sparkle.framework"* ]]; then
+    continue
+  fi
+  sign_binary "$helper" 2>/dev/null || true
+done < <(find "$APP_PATH" -name "*.app")
 
-sign_file "$APP_PATH"
+while IFS= read -r xpc; do
+  [[ -z "$xpc" ]] && continue
+  if [[ "$xpc" == *"Sparkle.framework"* ]]; then
+    continue
+  fi
+  sign_binary "$xpc" 2>/dev/null || true
+done < <(find "$APP_PATH" -name "*.xpc")
+
+sign_sparkle_framework
+sign_binary "$APP_PATH" "$ENTITLEMENTS"
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 echo "Signed successfully."

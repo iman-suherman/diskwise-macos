@@ -16,6 +16,7 @@ DiskWise.app
 DiskWise.dmg
 DiskWise.zip
 releases/
+.sparkle-tools/
 *.db
 *.db-shm
 *.db-wal
@@ -28,6 +29,9 @@ logs/*
 !logs/.gitkeep
 website/node_modules/
 website/.next/
+website/public/downloads/*.zip
+website/public/downloads/*.html
+!website/public/downloads/.gitkeep
 .venv/
 __pycache__/
 *.pyc
