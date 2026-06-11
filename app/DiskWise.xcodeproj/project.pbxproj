@@ -11,11 +11,13 @@
 		2791E28A3F889BE0CA5591A3 /* DiskWiseApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955E6302377D998824A2996E /* DiskWiseApp.swift */; };
 		2A5FFCD2AAE4999E1A451013 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = CA8CA1FCB359C47B036826D8 /* Sparkle */; };
 		2E51EA5FD30ECF1DA75CE384 /* SparkleUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F95E82B6008C61D7A885B07 /* SparkleUpdater.swift */; };
+		2E9B3F7F506A3D4BE5D8085A /* WhatsNewTourView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9360EC36C59D568DEE4B034 /* WhatsNewTourView.swift */; };
 		36DBFBCADADF9C0C5B4BA080 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41738F52625CC6311842BB5E /* AppViewModel.swift */; };
 		4709F41AF9D9E5ED27E3018D /* AIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 268149F6EA534326414CF175 /* AIKit */; };
 		4EF9EF0F2E65F2CA9C42005F /* CleanupKit in Frameworks */ = {isa = PBXBuildFile; productRef = 873697E510808232A5864DDB /* CleanupKit */; };
 		6364632C8485413073CA9BB3 /* MainScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7606C2E2E0391264171C1F55 /* MainScreens.swift */; };
 		75E2033E8389AC2CF2A55666 /* ActivityLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57BB2C32DA1EC6AD699DBDBD /* ActivityLog.swift */; };
+		896F6AD480A23BD1277843C2 /* AppSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAC0147A7FB6FEF4116785C /* AppSettingsView.swift */; };
 		9163047ADC6314366674E59B /* StorageBreakdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */; };
 		91E4D218C3A7026E8D8F22CA /* MetadataKit in Frameworks */ = {isa = PBXBuildFile; productRef = E118092959DEFDD022BB88EC /* MetadataKit */; };
 		A1E6344A43CABB46455859D5 /* DuplicateKit in Frameworks */ = {isa = PBXBuildFile; productRef = E44897D5C0C445D604A9F3CB /* DuplicateKit */; };
@@ -24,6 +26,7 @@
 		C9D4B856CC4D658C4888B06B /* ActivityLogSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9652CCD6DFF89AC365DBCD /* ActivityLogSheet.swift */; };
 		DD2F2233CFB17ABB37688ACD /* RecommendationReviewSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D515CF1494436D3A33BC32C /* RecommendationReviewSheet.swift */; };
 		E559D2BF705EE1AB7F9CA4EA /* entitlements.mac.plist in Resources */ = {isa = PBXBuildFile; fileRef = 15BE9BA6642050B89F9552F0 /* entitlements.mac.plist */; };
+		EB2F4F28688BDD100DBE6D78 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6930F12578EC666DA893730C /* AppSettings.swift */; };
 		ED5041858F6D1AF22DCE4587 /* DiskScannerKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6953D9217C07B48CB1CA73C9 /* DiskScannerKit */; };
 		F07314D38ACD7FE6E5B9D233 /* FullDiskAccessPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */; };
 		F4D258718C504E7A6365ADB6 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61EB1B1E7AD0267851557FD9 /* DashboardView.swift */; };
@@ -32,9 +35,11 @@
 /* Begin PBXFileReference section */
 		15BE9BA6642050B89F9552F0 /* entitlements.mac.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = entitlements.mac.plist; sourceTree = "<group>"; };
 		2BF737B0AA3066062F3881A4 /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
+		3EAC0147A7FB6FEF4116785C /* AppSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsView.swift; sourceTree = "<group>"; };
 		41738F52625CC6311842BB5E /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
 		57BB2C32DA1EC6AD699DBDBD /* ActivityLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityLog.swift; sourceTree = "<group>"; };
 		61EB1B1E7AD0267851557FD9 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		6930F12578EC666DA893730C /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		6F9652CCD6DFF89AC365DBCD /* ActivityLogSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityLogSheet.swift; sourceTree = "<group>"; };
 		7606C2E2E0391264171C1F55 /* MainScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainScreens.swift; sourceTree = "<group>"; };
 		7F81B798B01741C082A6B559 /* diskwise-macos */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "diskwise-macos"; path = ..; sourceTree = SOURCE_ROOT; };
@@ -46,6 +51,7 @@
 		D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessPrompt.swift; sourceTree = "<group>"; };
 		D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageBreakdownView.swift; sourceTree = "<group>"; };
 		F1FC1DF0971CB5B4441676DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		F9360EC36C59D568DEE4B034 /* WhatsNewTourView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewTourView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,11 +93,13 @@
 			isa = PBXGroup;
 			children = (
 				6F9652CCD6DFF89AC365DBCD /* ActivityLogSheet.swift */,
+				3EAC0147A7FB6FEF4116785C /* AppSettingsView.swift */,
 				61EB1B1E7AD0267851557FD9 /* DashboardView.swift */,
 				D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */,
 				8D515CF1494436D3A33BC32C /* RecommendationReviewSheet.swift */,
 				2BF737B0AA3066062F3881A4 /* StatusBadge.swift */,
 				D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */,
+				F9360EC36C59D568DEE4B034 /* WhatsNewTourView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -100,6 +108,7 @@
 			isa = PBXGroup;
 			children = (
 				57BB2C32DA1EC6AD699DBDBD /* ActivityLog.swift */,
+				6930F12578EC666DA893730C /* AppSettings.swift */,
 				41738F52625CC6311842BB5E /* AppViewModel.swift */,
 				9604CB761CB34350EFF29978 /* Assets.xcassets */,
 				955E6302377D998824A2996E /* DiskWiseApp.swift */,
@@ -213,6 +222,8 @@
 			files = (
 				75E2033E8389AC2CF2A55666 /* ActivityLog.swift in Sources */,
 				C9D4B856CC4D658C4888B06B /* ActivityLogSheet.swift in Sources */,
+				EB2F4F28688BDD100DBE6D78 /* AppSettings.swift in Sources */,
+				896F6AD480A23BD1277843C2 /* AppSettingsView.swift in Sources */,
 				36DBFBCADADF9C0C5B4BA080 /* AppViewModel.swift in Sources */,
 				F4D258718C504E7A6365ADB6 /* DashboardView.swift in Sources */,
 				2791E28A3F889BE0CA5591A3 /* DiskWiseApp.swift in Sources */,
@@ -222,6 +233,7 @@
 				2E51EA5FD30ECF1DA75CE384 /* SparkleUpdater.swift in Sources */,
 				C61435492234EF4EFEB45B5C /* StatusBadge.swift in Sources */,
 				9163047ADC6314366674E59B /* StorageBreakdownView.swift in Sources */,
+				2E9B3F7F506A3D4BE5D8085A /* WhatsNewTourView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

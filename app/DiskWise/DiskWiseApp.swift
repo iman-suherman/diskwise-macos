@@ -24,15 +24,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct DiskWiseApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var viewModel = AppViewModel()
+    @StateObject private var appSettings = AppSettings.shared
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(viewModel)
+                .environmentObject(appSettings)
                 .frame(minWidth: 1180, minHeight: 780)
         }
         .defaultSize(width: 1320, height: 880)
         .windowStyle(.automatic)
+        Settings {
+            AppSettingsView(settings: appSettings)
+        }
         .commands {
             CommandGroup(replacing: .newItem) {}
             CommandGroup(after: .appInfo) {
@@ -51,6 +56,7 @@ struct DiskWiseApp: App {
 
 struct ContentView: View {
     @EnvironmentObject private var viewModel: AppViewModel
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         ZStack {
@@ -98,8 +104,16 @@ struct ContentView: View {
                         }
                     }
             }
-            .blur(radius: viewModel.showFullDiskAccessPrompt ? 8 : 0)
-            .allowsHitTesting(!viewModel.showFullDiskAccessPrompt)
+            .blur(radius: viewModel.showFullDiskAccessPrompt || viewModel.showWhatsNewTour ? 8 : 0)
+            .allowsHitTesting(!viewModel.showFullDiskAccessPrompt && !viewModel.showWhatsNewTour)
+
+            if viewModel.showWhatsNewTour {
+                ReleaseNotesSplashOverlay(
+                    version: AppSettings.currentAppVersion,
+                    onOpenSettings: { openSettings() },
+                    onContinue: { viewModel.finishWhatsNewTour() }
+                )
+            }
 
             if viewModel.showFullDiskAccessPrompt {
                 FullDiskAccessGateOverlay(
@@ -119,8 +133,10 @@ struct ContentView: View {
             }
         }
         .animation(.easeInOut(duration: 0.22), value: viewModel.showFullDiskAccessPrompt)
+        .animation(.easeInOut(duration: 0.22), value: viewModel.showWhatsNewTour)
         .onAppear {
             viewModel.presentFullDiskAccessPromptIfNeeded()
+            viewModel.presentWhatsNewIfNeeded()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             viewModel.checkPermissionOnAppActivation()
@@ -128,6 +144,7 @@ struct ContentView: View {
         .onChange(of: viewModel.showFullDiskAccessPrompt) { _, isShowing in
             if !isShowing {
                 viewModel.stopPermissionPollingIfNeeded()
+                viewModel.presentWhatsNewIfNeeded()
             }
         }
         .sheet(isPresented: $viewModel.showActivityLog) {

@@ -131,8 +131,10 @@ final class AppViewModel: ObservableObject {
     @Published var hoveredStorageCategory: String?
     @Published var recommendationReview: RecommendationReviewState?
     @Published var showActivityLog = false
+    @Published var showWhatsNewTour = false
 
     let activityLog = ActivityLog.shared
+    let appSettings = AppSettings.shared
 
     private let database: DiskWiseDatabase
     private var permissionPollTask: Task<Void, Never>?
@@ -400,6 +402,7 @@ final class AppViewModel: ObservableObject {
             if isFirstLaunch {
                 UserDefaults.standard.set(true, forKey: fullDiskAccessPromptKey)
             }
+            presentWhatsNewIfNeeded()
             return
         }
 
@@ -441,6 +444,7 @@ final class AppViewModel: ObservableObject {
                 setStatus("Ready to scan", kind: .ready)
             }
         }
+        presentWhatsNewIfNeeded()
     }
 
     func dismissFullDiskAccessPrompt() {
@@ -456,6 +460,18 @@ final class AppViewModel: ObservableObject {
                 setStatus("Ready to scan", kind: .ready)
             }
         }
+        presentWhatsNewIfNeeded()
+    }
+
+    func presentWhatsNewIfNeeded() {
+        guard appSettings.shouldShowWhatsNew else { return }
+        guard !showFullDiskAccessPrompt else { return }
+        showWhatsNewTour = true
+    }
+
+    func finishWhatsNewTour() {
+        appSettings.markCurrentReleaseSeen()
+        showWhatsNewTour = false
     }
 
     func stopPermissionPollingIfNeeded() {
@@ -655,12 +671,16 @@ final class AppViewModel: ObservableObject {
         overview = try? database.storageOverview(forDiskID: diskID, oldFileThreshold: threshold)
         topConsumers = (try? database.topConsumers(forDiskID: diskID, limit: 8)) ?? []
         duplicateGroups = (try? duplicateEngine.loadGroups(forDiskID: diskID)) ?? []
-        analysisReport = try? aiEngine.analyze(diskID: diskID)
+        analysisReport = try? aiEngine.analyze(
+            diskID: diskID,
+            fileLimit: appSettings.analysisFileLimit
+        )
     }
 
     func scanVolume(at url: URL, name: String? = nil) {
         scanTask?.cancel()
         cancelDuplicateDetection()
+        selectedPane = .overview
         isScanning = true
         scanPhase = .scanning
         scanStartTime = Date()
@@ -739,13 +759,20 @@ final class AppViewModel: ObservableObject {
         scanPhase = .findingDuplicates
         scanStartTime = Date()
         lastDuplicateGroupsRefreshCount = 0
-        logActivity(.duplicate, "Started duplicate detection", detail: volumeName)
+        let duplicateFileLimit = appSettings.duplicateScanFileLimit
+        let analysisFileLimit = appSettings.analysisFileLimit
+        logActivity(
+            .duplicate,
+            "Started duplicate detection",
+            detail: "\(volumeName) · checking largest \(duplicateFileLimit.formatted()) files"
+        )
 
         duplicateTask = Task.detached { [weak self] in
             guard let self else { return }
             do {
                 let duplicateSummary = try self.duplicateEngine.detectAll(
                     forDiskID: diskID,
+                    fileLimit: duplicateFileLimit,
                     onProgress: { progress in
                         Task { @MainActor in
                             self.duplicateScanProgress = progress
@@ -770,7 +797,7 @@ final class AppViewModel: ObservableObject {
                     self.setStatus("Step 3 of 3 · Analyzing storage on \(volumeName)…", kind: .working)
                 }
 
-                _ = try self.aiEngine.analyze(diskID: diskID)
+                _ = try self.aiEngine.analyze(diskID: diskID, fileLimit: analysisFileLimit)
 
                 await MainActor.run {
                     self.isAnalyzing = false
@@ -789,6 +816,7 @@ final class AppViewModel: ObservableObject {
                             kind: .success
                         )
                     } else {
+                        self.selectedPane = .overview
                         self.logActivity(.duplicate, "Duplicate detection complete", detail: "No groups found")
                         self.setStatus("Scan complete — no duplicate groups found on this drive", kind: .success)
                     }

@@ -52,11 +52,12 @@ public final class AIAnalysisEngine: @unchecked Sendable {
         self.ollamaConfiguration = ollamaConfiguration
     }
 
-    public func analyze(diskID: Int64) throws -> AnalysisReport {
+    public func analyze(diskID: Int64, fileLimit: Int = 10_000) throws -> AnalysisReport {
         let oldThreshold = Calendar.current.date(byAdding: .year, value: -2, to: Date())!
         let overview = try database.storageOverview(forDiskID: diskID, oldFileThreshold: oldThreshold)
         let duplicateGroups = try database.duplicateGroups(forDiskID: diskID, limit: 50)
-        let allFiles = try database.files(forDiskID: diskID, limit: 10_000)
+        let cappedLimit = max(500, min(fileLimit, 500_000))
+        let allFiles = try database.files(forDiskID: diskID, limit: cappedLimit)
 
         let previewLikeFiles = allFiles.filter { file in
             let name = URL(fileURLWithPath: file.path).lastPathComponent.lowercased()

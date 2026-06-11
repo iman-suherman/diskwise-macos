@@ -15,10 +15,10 @@ if ! command -v xcodegen >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "==> Generating app icon from AppIconSource.png"
+echo "==> Generating app icon from website/public/app-icon.png"
 swift "$ROOT_DIR/scripts/generate-app-icon.swift" \
   "$APP_DIR/DiskWise/Assets.xcassets/AppIcon.appiconset" \
-  "$APP_DIR/DiskWise/Assets/AppIconSource.png"
+  "$ROOT_DIR/website/public/app-icon.png"
 
 echo "==> Generating Xcode project"
 cd "$APP_DIR"

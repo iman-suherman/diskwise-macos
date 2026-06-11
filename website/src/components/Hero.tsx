@@ -4,20 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { LocalReleaseDate } from "@/components/LocalReleaseDate";
 import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
+import { DownloadButton } from "@/components/DownloadButton";
 import { useLatestVersion } from "@/hooks/useRegistry";
 import {
   flattenReleaseNotes,
   formatBytes,
   publishedAtToIso,
-  DOWNLOAD_BASE_URL,
-  toPublicDownloadUrl,
 } from "@/lib/registry";
-
-const FALLBACK_DOWNLOAD_URL = `${DOWNLOAD_BASE_URL.replace(/\/$/, "")}/latest.dmg`;
 
 export function Hero() {
   const { data: latest, loading } = useLatestVersion();
-  const downloadUrl = latest ? toPublicDownloadUrl(latest) : FALLBACK_DOWNLOAD_URL;
   const versionLabel = latest?.version;
   const releasedAtIso = publishedAtToIso(latest?.publishedAt);
   const highlights = flattenReleaseNotes(latest?.releaseNotes).slice(0, 3);
@@ -40,12 +36,11 @@ export function Hero() {
 
           <div id="download" className="mt-6 flex flex-col gap-3 sm:mt-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-nowrap sm:items-center sm:gap-2 lg:gap-3">
-              <a
-                href={downloadUrl}
+              <DownloadButton
+                latest={latest}
+                loading={loading}
                 className="btn-primary w-full shrink-0 whitespace-nowrap px-5 py-3 text-sm sm:w-auto sm:px-6 sm:py-3 lg:px-5"
-              >
-                {loading || !versionLabel ? "Download for macOS" : `Download v${versionLabel}`}
-              </a>
+              />
               <Link
                 href="/versions"
                 className="btn-secondary w-full shrink-0 whitespace-nowrap px-5 py-3 text-sm sm:w-auto sm:px-6 sm:py-3 lg:px-5"

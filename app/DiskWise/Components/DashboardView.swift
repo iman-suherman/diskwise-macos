@@ -166,9 +166,14 @@ struct BackgroundScanBanner: View {
                 HStack(spacing: 10) {
                     ProgressView()
                         .controlSize(.small)
-                    Text("Building recommendations from your indexed files…")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Building recommendations from your indexed files…")
+                        Text("Analyzing largest \(viewModel.appSettings.analysisFileLimit.formatted()) files")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
             }
 
