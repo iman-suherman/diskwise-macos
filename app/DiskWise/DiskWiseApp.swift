@@ -62,7 +62,10 @@ struct ContentView: View {
                         StatusBadge(
                             message: viewModel.statusMessage,
                             kind: viewModel.statusKind,
-                            isAnimating: viewModel.isScanning || viewModel.isAnalyzing
+                            isAnimating: viewModel.isScanning || viewModel.isAnalyzing,
+                            onRefresh: viewModel.statusKind == .error && viewModel.statusMessage.hasPrefix("Scan failed")
+                                ? { viewModel.refreshFromError() }
+                                : nil
                         )
                     }
                 }
@@ -126,7 +129,8 @@ struct ContentView: View {
                         DeviceSidebarRow(
                             volume: volume,
                             isSelected: viewModel.selectedVolumePath == volume.mountPath,
-                            isIndexed: viewModel.isIndexed(volume)
+                            isIndexed: viewModel.isIndexed(volume),
+                            onEject: volume.isEjectable ? { viewModel.ejectVolume(volume) } : nil
                         )
                         .tag(volume.mountPath)
                     }
@@ -141,7 +145,8 @@ struct ContentView: View {
                         DeviceSidebarRow(
                             volume: volume,
                             isSelected: viewModel.selectedVolumePath == volume.mountPath,
-                            isIndexed: viewModel.isIndexed(volume)
+                            isIndexed: viewModel.isIndexed(volume),
+                            onEject: volume.isEjectable ? { viewModel.ejectVolume(volume) } : nil
                         )
                         .tag(volume.mountPath)
                     }
@@ -183,6 +188,15 @@ struct ContentView: View {
                         )
                     }
                     .disabled(viewModel.isScanning)
+
+                    if viewModel.canEjectSelectedVolume {
+                        Button {
+                            viewModel.ejectSelectedVolume()
+                        } label: {
+                            Label("Eject \(volume.name)", systemImage: "eject.fill")
+                        }
+                        .disabled(viewModel.isScanning && viewModel.selectedVolumePath == volume.mountPath)
+                    }
                 }
             } header: {
                 Text("Actions")

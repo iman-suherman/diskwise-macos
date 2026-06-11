@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "app_versions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "pluginId", "order": "ASCENDING" },
+        { "fieldPath": "versionSortKey", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

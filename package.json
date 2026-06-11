@@ -1,18 +1,25 @@
 {
   "name": "diskwise-macos",
+  "version": "0.1.0",
+  "displayName": "DiskWise",
+  "publisher": "Iman Suherman",
   "private": true,
   "description": "Intelligent macOS disk analyzer and cleanup assistant.",
+  "dependencies": {
+    "@google-cloud/firestore": "^8.6.0"
+  },
   "scripts": {
     "info": "node scripts/info.cjs",
     "init": "npm run info",
     "build": "swift build",
     "test": "swift test",
-    "dev": "swift build && swift test && npm run build:app && npm run run:app",
+    "dev:app": "swift build && swift test && npm run build:app && npm run run:app",
     "start": "bash scripts/start.sh",
     "setup:xcodegen": "brew install xcodegen",
     "setup:xcode": "xcodebuild -runFirstLaunch",
     "build:app": "bash scripts/build.sh",
     "prepare:icon": "swift scripts/generate-app-icon.swift app/DiskWise/Assets.xcassets/AppIcon.appiconset app/DiskWise/Assets/AppIconSource.png",
+    "prepare:website": "swift scripts/prepare-website-assets.swift",
     "build:app:release": "bash scripts/build.sh release",
     "run:app": "bash scripts/run-app.sh",
     "open:xcode": "open app/DiskWise.xcodeproj",
@@ -20,7 +27,20 @@
     "xcode": "npm run build:app && npm run open:xcode",
     "sign": "bash scripts/sign.sh",
     "package": "bash scripts/package.sh",
-    "release": "bash scripts/release.sh",
+    "release": "node scripts/release-publish.cjs",
+    "release:local": "bash scripts/release.sh",
+    "upload:release": "node scripts/upload-release.cjs",
+    "deploy:registry": "node scripts/deploy-registry-api.cjs",
+    "login": "node scripts/gcp-adc-login.cjs",
+    "generate-env": "node scripts/generate-env.cjs",
+    "setup": "node scripts/setup.cjs",
+    "deploy:website": "node scripts/deploy-website.cjs",
+    "deploy:retry": "node scripts/deploy-retry.cjs",
+    "deploy:stop": "node scripts/deploy-stop.cjs",
+    "ci": "node scripts/ci-deploy-status.cjs",
+    "postpush:website": "node scripts/post-push-website.cjs",
+    "install-hooks": "node scripts/install-git-hooks.cjs",
+    "dev:website": "npm install --prefix website && npm run dev --prefix website",
     "postinstall": "npm run info"
   }
 }

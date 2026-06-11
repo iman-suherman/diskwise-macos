@@ -23,6 +23,7 @@ targets:
           - Assets/AppIconSource.raw.png
     resources:
       - path: DiskWise/Assets/AppIcon.icns
+      - path: DiskWise/Assets/AppIconSource.png
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: net.suherman.diskwise

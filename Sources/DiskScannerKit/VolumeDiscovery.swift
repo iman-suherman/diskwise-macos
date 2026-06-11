@@ -33,6 +33,11 @@ public struct MountedVolume: Identifiable, Sendable, Hashable {
         guard totalSize > 0 else { return 0 }
         return Double(usedSize) / Double(totalSize)
     }
+
+    /// Whether the user can safely unmount and eject this volume (never the system boot volume).
+    public var isEjectable: Bool {
+        VolumeDiscovery.canEject(self)
+    }
 }
 
 public enum VolumeDiscovery {
@@ -70,6 +75,22 @@ public enum VolumeDiscovery {
         }
 
         return false
+    }
+
+    /// The primary macOS system volume (e.g. Macintosh HD at `/`).
+    public static func isSystemVolume(mountPath: String) -> Bool {
+        mountPath == "/"
+    }
+
+    /// Whether a volume can be unmounted and ejected. Excludes the system drive and non-removable internal volumes.
+    public static func canEject(_ volume: MountedVolume) -> Bool {
+        if isSystemVolume(mountPath: volume.mountPath) {
+            return false
+        }
+        if volume.isInternal && !volume.isRemovable {
+            return false
+        }
+        return volume.isRemovable || volume.mountPath.hasPrefix("/Volumes/")
     }
 
     public static func mountedVolumes(fileManager: FileManager = .default) -> [MountedVolume] {

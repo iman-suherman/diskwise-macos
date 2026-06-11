@@ -23,6 +23,7 @@ releases/
 .env.local
 .env.release
 .gcloud/application_default_credentials.json
+node_modules/
 logs/*
 !logs/.gitkeep
 website/node_modules/

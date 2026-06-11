@@ -253,6 +253,31 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         }
     }
 
+    public func topFiles(inChartGroup groupName: String, diskID: Int64, limit: Int = 25) throws -> [FileRecord] {
+        let categoryValues = FileCategory.allCases
+            .filter { $0.chartGroup == groupName }
+            .map(\.rawValue)
+        guard !categoryValues.isEmpty else { return [] }
+
+        let placeholders = Array(repeating: "?", count: categoryValues.count).joined(separator: ", ")
+        var arguments: [DatabaseValueConvertible?] = [diskID]
+        arguments.append(contentsOf: categoryValues)
+        arguments.append(limit)
+
+        return try dbQueue.read { db in
+            try FileRecord.fetchAll(
+                db,
+                sql: """
+                SELECT * FROM files
+                WHERE disk_id = ? AND category IN (\(placeholders))
+                ORDER BY size DESC
+                LIMIT ?
+                """,
+                arguments: StatementArguments(arguments)
+            )
+        }
+    }
+
     public func insertRecommendations(_ recommendations: [RecommendationRecord]) throws {
         try dbQueue.write { db in
             for recommendation in recommendations {

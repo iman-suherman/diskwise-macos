@@ -1,0 +1,30 @@
+#!/bin/bash
+# Schedule async diskwise.suherman.net deploy after a successful push with website/ changes.
+
+repo_root=$(git rev-parse --show-toplevel)
+
+if [ "${DISKWise_POST_PUSH_WEBSITE:-1}" = "0" ]; then
+  exit 0
+fi
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ -z "$local_sha" ] || [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+    continue
+  fi
+
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    push_range="$local_sha"
+  else
+    push_range="${remote_sha}..${local_sha}"
+  fi
+
+  log_file="$repo_root/.git/post-push-website.log"
+  DISKWise_PUSH_RANGE="$push_range" \
+    DISKWise_PUSH_TARGET="$local_sha" \
+    DISKWise_PUSH_REMOTE_REF="$remote_ref" \
+    DISKWise_WAIT_FOR_PUSH=1 \
+    nohup node "$repo_root/scripts/post-push-website.cjs" >> "$log_file" 2>&1 &
+  disown
+done
+
+exit 0

@@ -5,6 +5,11 @@ struct StatusBadge: View {
     let message: String
     let kind: AppStatusKind
     var isAnimating: Bool = false
+    var onRefresh: (() -> Void)? = nil
+
+    private var showsRefresh: Bool {
+        onRefresh != nil && kind == .error && !isAnimating
+    }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -21,6 +26,17 @@ struct StatusBadge: View {
                 .foregroundStyle(.primary)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
+
+            if showsRefresh {
+                Button {
+                    onRefresh?()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.borderless)
+                .help("Retry scan")
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -38,6 +54,7 @@ struct DeviceSidebarRow: View {
     let volume: MountedVolume
     let isSelected: Bool
     let isIndexed: Bool
+    var onEject: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 12) {
@@ -74,6 +91,15 @@ struct DeviceSidebarRow: View {
         }
         .padding(.vertical, 6)
         .contentShape(Rectangle())
+        .contextMenu {
+            if let onEject {
+                Button {
+                    onEject()
+                } label: {
+                    Label("Eject \"\(volume.name)\"", systemImage: "eject.fill")
+                }
+            }
+        }
     }
 
     private func usageColor(for fraction: Double) -> Color {

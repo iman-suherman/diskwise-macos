@@ -1,0 +1,21 @@
+#!/bin/bash
+# Auto-correct commit author, then schedule async website deploy checks.
+
+repo_root=$(git rev-parse --show-toplevel)
+
+author_email=$(git log -1 --format="%ae")
+committer_email=$(git log -1 --format="%ce")
+if [ "$author_email" != "iman.suherman@gmail.com" ] || [ "$committer_email" != "iman.suherman@gmail.com" ]; then
+  export GIT_COMMITTER_NAME="Iman Suherman"
+  export GIT_COMMITTER_EMAIL="iman.suherman@gmail.com"
+  git commit --amend --author="Iman Suherman <iman.suherman@gmail.com>" --no-edit --no-verify
+  exit 0
+fi
+
+if [ "${DISKWise_POST_COMMIT_WEBSITE:-1}" != "0" ]; then
+  log_file="$repo_root/.git/post-commit-website.log"
+  nohup node "$repo_root/scripts/post-commit-website.cjs" >> "$log_file" 2>&1 &
+  disown
+fi
+
+exit 0

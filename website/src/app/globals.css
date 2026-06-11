@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0a0a0b;
+  --foreground: #f1f5f9;
+  --muted: #94a3b8;
+  --surface: #141416;
+  --surface-elevated: #1c1c1f;
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+  color-scheme: dark;
+}
+
+body {
+  overflow-x: hidden;
+  color: var(--foreground);
+  background:
+    radial-gradient(circle at top left, rgba(0, 122, 255, 0.18), transparent 32%),
+    radial-gradient(circle at top right, rgba(88, 86, 214, 0.14), transparent 28%),
+    radial-gradient(circle at 80% 20%, rgba(76, 217, 100, 0.08), transparent 22%),
+    var(--background);
+  min-height: 100vh;
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #4da3ff 0%, #8b89ff 45%, #007aff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.card {
+  @apply rounded-2xl border border-white/10 bg-white/[0.04] shadow-soft backdrop-blur;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center rounded-xl bg-brand-blue px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#3395ff];
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/[0.06] px-5 py-3 text-sm font-semibold text-slate-200 transition hover:border-brand-blue/40 hover:bg-white/[0.1] hover:text-white;
+}
+
+.btn-cta-primary {
+  @apply flex h-11 w-full items-center justify-center whitespace-nowrap rounded-xl border border-transparent bg-white px-5 text-sm font-semibold text-brand-blue transition hover:bg-slate-100;
+}
+
+.btn-cta-secondary {
+  @apply flex h-11 w-full items-center justify-center whitespace-nowrap rounded-xl border border-white/30 px-5 text-sm font-semibold text-white transition hover:bg-white/10;
+}
+
+.app-icon-hero,
+.app-icon-mark {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
