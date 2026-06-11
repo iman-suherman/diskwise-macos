@@ -117,6 +117,11 @@ npm run open:xcode
 - [Local development](docs/local-development.md)
 - [Website](docs/website.md)
 
-## License
+## Open source
 
-Private project — all rights reserved.
+DiskWise is an open source project. Source code, issues, and contributions live on GitHub:
+
+**https://github.com/iman-suherman/diskwise-macos**
+
+- **Contribute** — pull requests for fixes, features, tests, and docs are welcome.
+- **Report issues** — [open a ticket](https://github.com/iman-suherman/diskwise-macos/issues) for bugs or feature requests.

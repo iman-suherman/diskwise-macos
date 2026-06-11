@@ -71,15 +71,19 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="relative flex items-center justify-center overflow-visible">
-          <div className="absolute inset-0 scale-90 rounded-full bg-gradient-to-br from-brand-blue/25 via-brand-purple/15 to-brand-green/10 blur-3xl" />
+        <div className="relative mx-auto flex w-full max-w-md items-center justify-center overflow-visible lg:mx-0 lg:max-w-lg">
+          <div
+            aria-hidden
+            className="absolute inset-0 scale-90 rounded-full bg-gradient-to-br from-brand-blue/35 via-brand-purple/20 to-brand-green/15 blur-3xl"
+          />
           <Image
             src="/hero.png"
             alt={`${BRAND_NAME} app icon`}
             width={1024}
             height={1024}
             priority
-            className="app-icon-hero relative h-auto w-full max-w-md drop-shadow-[0_20px_50px_rgba(0,122,255,0.25)]"
+            sizes="(max-width: 1024px) 90vw, 32rem"
+            className="app-icon-hero relative h-auto w-full object-contain drop-shadow-[0_20px_50px_rgba(0,122,255,0.45)]"
           />
         </div>
       </div>

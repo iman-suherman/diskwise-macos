@@ -39,9 +39,17 @@ export function PrivacySection() {
           <h2 className="mt-2 text-2xl font-bold text-slate-50 sm:mt-3 sm:text-3xl md:text-4xl">
             Intelligent analysis without sending your files to the cloud.
           </h2>
-          <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400">
+          <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400 sm:text-base sm:leading-7">
             Your storage data is yours. {BRAND_NAME} is designed as a private consultant, not a
-            data collection service.
+            data collection service — no accounts, no telemetry, and no path or file content upload
+            by default.
+          </p>
+          <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400 sm:text-base sm:leading-7">
+            Volume scans, classifications, duplicate hashes, and recommendations are indexed in a
+            local SQLite database on your Mac. Optional Ollama or LM Studio reports stay on-device
+            when you connect them. Cleanup always previews what will move to Trash before you
+            confirm, and Full Disk Access is requested only when broader visibility is needed —
+            with clear explanations in the app.
           </p>
         </div>
 

@@ -5,63 +5,62 @@ import DatabaseKit
 import AIKit
 import DiskScannerKit
 
-struct StorageRingChart: View {
-    let usedSize: Int64
-    let freeSize: Int64
+struct StorageTypePieChart: View {
+    let items: [(name: String, totalSize: Int64, fileCount: Int)]
     let totalSize: Int64
-
-    private var usedFraction: Double {
-        guard totalSize > 0 else { return 0 }
-        return Double(usedSize) / Double(totalSize)
-    }
+    let hoveredName: String?
 
     var body: some View {
         ZStack {
-            Chart {
+            Chart(items, id: \.name) { item in
                 SectorMark(
-                    angle: .value("Used", usedSize),
-                    innerRadius: .ratio(0.68),
+                    angle: .value("Size", item.totalSize),
+                    innerRadius: .ratio(0.58),
                     angularInset: 2
                 )
-                .foregroundStyle(Color.accentColor)
-
-                SectorMark(
-                    angle: .value("Free", freeSize),
-                    innerRadius: .ratio(0.68),
-                    angularInset: 2
-                )
-                .foregroundStyle(Color.accentColor.opacity(0.15))
+                .foregroundStyle(CategoryPalette.color(for: item.name).gradient)
+                .opacity(segmentOpacity(for: item.name))
             }
-            .frame(width: 180, height: 180)
+            .frame(width: 300, height: 300)
 
-            VStack(spacing: 2) {
-                Text("\(Int(usedFraction * 100))%")
-                    .font(.title.bold())
-                Text("Used")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            VStack(spacing: 4) {
+                if let hoveredName,
+                   let item = items.first(where: { $0.name == hoveredName }) {
+                    Image(systemName: CategoryPalette.icon(for: hoveredName))
+                        .font(.title3)
+                        .foregroundStyle(CategoryPalette.color(for: hoveredName))
+                    Text(hoveredName)
+                        .font(.headline)
+                    Text("\(Int(fraction(for: item.totalSize) * 100))%")
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                    Text(DiskWiseFormatters.bytes.string(fromByteCount: item.totalSize))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Indexed")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(DiskWiseFormatters.bytes.string(fromByteCount: totalSize))
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                    Text("\(items.count) types")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
+            .multilineTextAlignment(.center)
+            .frame(width: 140)
         }
+        .animation(.easeInOut(duration: 0.2), value: hoveredName)
     }
-}
 
-struct StorageCategoryChart: View {
-    let summaries: [(name: String, totalSize: Int64, fileCount: Int)]
-    let totalSize: Int64
+    private func fraction(for size: Int64) -> Double {
+        guard totalSize > 0 else { return 0 }
+        return Double(size) / Double(totalSize)
+    }
 
-    var body: some View {
-        Chart(summaries, id: \.name) { summary in
-            BarMark(
-                x: .value("Size", summary.totalSize),
-                y: .value("Category", summary.name)
-            )
-            .foregroundStyle(CategoryPalette.color(for: summary.name).gradient)
-            .cornerRadius(4)
-        }
-        .chartXAxis {
-            AxisMarks(preset: .aligned, position: .bottom)
-        }
-        .frame(height: max(180, CGFloat(summaries.count * 34)))
+    private func segmentOpacity(for name: String) -> Double {
+        guard let hoveredName else { return 1 }
+        return hoveredName == name ? 1 : 0.22
     }
 }
 
@@ -351,11 +350,12 @@ struct DashboardView: View {
                         scanningHeader(volume: volume)
                     }
 
-                    HStack(alignment: .top, spacing: 24) {
-                        storageRingSection(volume: volume)
+                    HStack(alignment: .top, spacing: 28) {
                         if let overview = viewModel.overview {
+                            storageTypePieSection(overview: overview)
                             categorySection(overview: overview)
                         } else {
+                            storageTypePiePlaceholder
                             categorySectionPlaceholder
                         }
                     }
@@ -373,6 +373,10 @@ struct DashboardView: View {
                 }
             }
             .padding(28)
+        }
+        .sheet(item: $viewModel.recommendationReview) { review in
+            RecommendationReviewSheet(state: review)
+                .environmentObject(viewModel)
         }
     }
 
@@ -415,24 +419,70 @@ struct DashboardView: View {
     }
 
     @ViewBuilder
-    private func storageRingSection(volume: MountedVolume) -> some View {
-        GroupBox("Capacity") {
-            VStack(spacing: 16) {
-                StorageRingChart(
-                    usedSize: volume.usedSize,
-                    freeSize: volume.freeSize,
-                    totalSize: volume.totalSize
+    private func storageTypePieSection(overview: StorageOverview) -> some View {
+        let grouped = viewModel.groupedCategorySummaries(from: overview.categorySummaries)
+
+        GroupBox("Storage by Type") {
+            VStack(spacing: 18) {
+                StorageTypePieChart(
+                    items: grouped,
+                    totalSize: overview.totalSize,
+                    hoveredName: viewModel.hoveredStorageCategory
                 )
 
-                HStack(spacing: 20) {
-                    legendItem(color: .accentColor, label: "Used", value: volume.usedSize)
-                    legendItem(color: .accentColor.opacity(0.2), label: "Free", value: volume.freeSize)
+                if !grouped.isEmpty {
+                    Divider()
+                    pieLegend(items: grouped, totalSize: overview.totalSize)
                 }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
         }
-        .frame(maxWidth: 320)
+        .frame(minWidth: 360, idealWidth: 400, maxWidth: 440)
+    }
+
+    private var storageTypePiePlaceholder: some View {
+        GroupBox("Storage by Type") {
+            VStack(spacing: 12) {
+                ProgressView()
+                Text("Pie chart appears as files are indexed.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 48)
+        }
+        .frame(minWidth: 360, idealWidth: 400, maxWidth: 440)
+    }
+
+    private func pieLegend(
+        items: [(name: String, totalSize: Int64, fileCount: Int)],
+        totalSize: Int64
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(items.prefix(6), id: \.name) { item in
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(CategoryPalette.color(for: item.name))
+                        .frame(width: 8, height: 8)
+                    Text(item.name)
+                        .font(.caption)
+                    Spacer()
+                    Text("\(Int(totalSize > 0 ? Double(item.totalSize) / Double(totalSize) * 100 : 0))%")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+                .opacity(
+                    viewModel.hoveredStorageCategory == nil || viewModel.hoveredStorageCategory == item.name
+                        ? 1
+                        : 0.35
+                )
+                .onHover { hovering in
+                    viewModel.hoveredStorageCategory = hovering ? item.name : nil
+                }
+            }
+        }
     }
 
     @ViewBuilder
@@ -447,7 +497,7 @@ struct DashboardView: View {
     }
 
     private var categorySectionPlaceholder: some View {
-        GroupBox("Storage by Type") {
+        GroupBox("Storage Breakdown") {
             VStack(spacing: 12) {
                 ProgressView()
                 Text("Category breakdown appears as files are indexed.")
@@ -465,7 +515,7 @@ struct DashboardView: View {
     private func categorySection(overview: StorageOverview) -> some View {
         let grouped = viewModel.groupedCategorySummaries(from: overview.categorySummaries)
 
-        GroupBox("Storage by Type") {
+        GroupBox("Storage Breakdown") {
             if grouped.isEmpty {
                 Text("No category data yet")
                     .foregroundStyle(.secondary)
@@ -480,18 +530,14 @@ struct DashboardView: View {
                     onBack: { viewModel.clearStorageCategorySelection() }
                 )
             } else {
-                VStack(alignment: .leading, spacing: 16) {
-                    StorageCategoryBarChart(
-                        items: grouped,
-                        totalSize: overview.totalSize,
-                        selectedName: viewModel.selectedStorageCategory,
-                        onSelect: { viewModel.selectStorageCategory($0) }
-                    )
-
-                    Divider()
-
-                    StorageCategoryChart(summaries: grouped, totalSize: overview.totalSize)
-                }
+                StorageCategoryBarChart(
+                    items: grouped,
+                    totalSize: overview.totalSize,
+                    selectedName: viewModel.selectedStorageCategory,
+                    hoveredName: viewModel.hoveredStorageCategory,
+                    onSelect: { viewModel.selectStorageCategory($0) },
+                    onHover: { viewModel.hoveredStorageCategory = $0 }
+                )
             }
         }
         .frame(maxWidth: .infinity)
@@ -566,18 +612,6 @@ struct DashboardView: View {
                     }
                 }
             }
-        }
-    }
-
-    private func legendItem(color: Color, label: String, value: Int64) -> some View {
-        HStack(spacing: 6) {
-            Circle()
-                .fill(color)
-                .frame(width: 8, height: 8)
-            Text(label)
-                .font(.caption)
-            Text(DiskWiseFormatters.bytes.string(fromByteCount: value))
-                .font(.caption.weight(.medium))
         }
     }
 }

@@ -32,6 +32,42 @@ enum FullDiskAccessSettings {
     }
 }
 
+struct FullDiskAccessGateOverlay: View {
+    let step: FullDiskAccessWizardStep
+    let mountedVolumeCount: Int
+    let missingVolumePaths: [String]
+    let onGrantAccess: () -> Void
+    let onDismiss: () -> Void
+    let onCancelWaiting: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.42)
+                .ignoresSafeArea()
+
+            FullDiskAccessPromptView(
+                step: step,
+                mountedVolumeCount: mountedVolumeCount,
+                missingVolumePaths: missingVolumePaths,
+                onGrantAccess: onGrantAccess,
+                onDismiss: onDismiss,
+                onCancelWaiting: onCancelWaiting
+            )
+            .padding(28)
+            .frame(maxWidth: 560)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+            }
+            .shadow(color: .black.opacity(0.28), radius: 28, y: 14)
+            .padding(32)
+        }
+        .transition(.opacity)
+        .zIndex(100)
+    }
+}
+
 struct FullDiskAccessPromptView: View {
     let step: FullDiskAccessWizardStep
     let mountedVolumeCount: Int
@@ -66,7 +102,7 @@ struct FullDiskAccessPromptView: View {
             footer
         }
         .padding(28)
-        .frame(width: 520)
+        .frame(maxWidth: 560)
     }
 
     @ViewBuilder
@@ -170,7 +206,7 @@ struct FullDiskAccessPromptView: View {
 
                 Spacer()
 
-                Button("Cancel", action: onCancelWaiting)
+                Button("Not Now", action: onCancelWaiting)
             }
 
         case .granted:
