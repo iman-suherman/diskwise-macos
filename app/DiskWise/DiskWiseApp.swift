@@ -220,6 +220,7 @@ struct ContentView: View {
                             volume: volume,
                             isSelected: viewModel.selectedVolumePath == volume.mountPath,
                             isIndexed: viewModel.isIndexed(volume),
+                            isEjectDisabled: viewModel.isVolumeBusy(volume),
                             onEject: volume.isEjectable ? { viewModel.ejectVolume(volume) } : nil
                         )
                         .tag(volume.mountPath)
@@ -295,7 +296,7 @@ struct ContentView: View {
                         } label: {
                             Label("Eject \(volume.name)", systemImage: "eject.fill")
                         }
-                        .disabled((viewModel.isScanning || viewModel.isFindingDuplicates) && viewModel.selectedVolumePath == volume.mountPath)
+                        .disabled(viewModel.isVolumeBusy(volume))
                     }
                 }
 

@@ -316,6 +316,10 @@ final class AppViewModel: ObservableObject {
         selectedVolume?.isEjectable ?? false
     }
 
+    func isVolumeBusy(_ volume: MountedVolume) -> Bool {
+        (isScanning || isFindingDuplicates) && selectedVolumePath == volume.mountPath
+    }
+
     var hasScanData: Bool {
         overview != nil
     }
