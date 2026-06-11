@@ -133,32 +133,160 @@ final class AppViewModel: ObservableObject {
     @Published var showActivityLog = false
     @Published var showAbout = false
     @Published var showWhatsNewTour = false
+    @Published var isStartingUp = true
+    @Published var startupMessage = "Preparing DiskWise…"
+    @Published var startupCompletedSteps: Set<StartupStep> = []
+    @Published var startupActiveStep: StartupStep?
 
     let activityLog = ActivityLog.shared
     let appSettings = AppSettings.shared
 
-    private let database: DiskWiseDatabase
+    private var database: DiskWiseDatabase!
     private var permissionPollTask: Task<Void, Never>?
+    private var startupTask: Task<Void, Never>?
     private var scanTask: Task<Void, Never>?
     private var duplicateTask: Task<Void, Never>?
     private var scanStartTime: Date?
     private var lastDuplicateGroupsRefreshCount = 0
     private var lastInsightsRefreshCount = 0
-    private let scanEngine: ScanEngine
-    private let duplicateEngine: DuplicateEngine
-    private let cleanupEngine: CleanupEngine
-    private let aiEngine: AIAnalysisEngine
+    private var scanEngine: ScanEngine!
+    private var duplicateEngine: DuplicateEngine!
+    private let cleanupEngine = CleanupEngine()
+    private var aiEngine: AIAnalysisEngine!
     private let fullDiskAccessPromptKey = "diskwise.hasSeenFullDiskAccessPrompt"
 
+    var isPostUpgradeStartup: Bool {
+        appSettings.shouldShowWhatsNew
+    }
+
     init() {
-        let databaseURL = (try? DiskWiseDatabase.defaultURL()) ?? URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("diskwise.sqlite")
-        let database = try! DiskWiseDatabase(path: databaseURL)
-        self.database = database
-        self.scanEngine = ScanEngine(database: database)
-        self.duplicateEngine = DuplicateEngine(database: database)
-        self.cleanupEngine = CleanupEngine()
-        self.aiEngine = AIAnalysisEngine(database: database)
-        reload()
+        startupTask = Task { @MainActor in
+            await performStartup()
+        }
+    }
+
+    private func beginStartupStep(_ step: StartupStep, message: String) {
+        startupActiveStep = step
+        startupMessage = message
+    }
+
+    private func completeStartupStep(_ step: StartupStep) {
+        startupCompletedSteps.insert(step)
+    }
+
+    private struct CachedScanSnapshot {
+        let overview: StorageOverview?
+        let topConsumers: [SpaceConsumer]
+        let duplicateGroups: [DuplicateGroup]
+    }
+
+    private func performStartup() async {
+        isStartingUp = true
+        startupCompletedSteps = []
+        startupMessage = isPostUpgradeStartup
+            ? "Preparing DiskWise \(AppSettings.currentAppVersion) after update…"
+            : "Preparing DiskWise…"
+
+        let databaseURL = (try? DiskWiseDatabase.defaultURL())
+            ?? URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("diskwise.sqlite")
+
+        beginStartupStep(.database, message: "Opening database and applying updates…")
+        await Task.yield()
+
+        let openedDatabase: DiskWiseDatabase
+        do {
+            openedDatabase = try await Task.detached(priority: .userInitiated) {
+                try DiskWiseDatabase(path: databaseURL)
+            }.value
+        } catch {
+            completeStartupStep(.database)
+            startupMessage = "Could not open database: \(error.localizedDescription)"
+            isStartingUp = false
+            setStatus(startupMessage, kind: .error)
+            return
+        }
+
+        database = openedDatabase
+        scanEngine = ScanEngine(database: openedDatabase)
+        duplicateEngine = DuplicateEngine(database: openedDatabase)
+        aiEngine = AIAnalysisEngine(database: openedDatabase)
+        completeStartupStep(.database)
+
+        beginStartupStep(.drives, message: "Discovering connected drives…")
+        await Task.yield()
+
+        let loadedDisks = (try? await Task.detached(priority: .userInitiated) {
+            try openedDatabase.allDisks()
+        }.value) ?? []
+
+        disks = loadedDisks
+        refreshMountedVolumes()
+        if selectedVolumePath == nil {
+            selectedVolumePath = mountedVolumes.first?.mountPath
+        }
+        if let selectedVolumePath,
+           let disk = disks.first(where: { $0.mountPath == selectedVolumePath }) {
+            selectedDiskID = disk.id
+        } else if selectedDiskID == nil {
+            selectedDiskID = disks.first?.id
+            if let disk = disks.first {
+                selectedVolumePath = disk.mountPath
+            }
+        } else {
+            selectedDiskID = nil
+        }
+
+        completeStartupStep(.drives)
+
+        beginStartupStep(.storageData, message: "Loading your saved storage scans…")
+        await Task.yield()
+
+        if let diskID = selectedDiskID {
+            let threshold = Calendar.current.date(byAdding: .year, value: -2, to: Date())!
+            let snapshot = await Task.detached(priority: .userInitiated) {
+                let overview = try? openedDatabase.storageOverview(forDiskID: diskID, oldFileThreshold: threshold)
+                let topConsumers = (try? openedDatabase.topConsumers(forDiskID: diskID, limit: 8)) ?? []
+                let duplicateEngine = DuplicateEngine(database: openedDatabase)
+                let duplicateGroups = (try? duplicateEngine.loadGroups(forDiskID: diskID)) ?? []
+                return CachedScanSnapshot(
+                    overview: overview,
+                    topConsumers: topConsumers,
+                    duplicateGroups: duplicateGroups
+                )
+            }.value
+
+            overview = snapshot.overview
+            topConsumers = snapshot.topConsumers
+            duplicateGroups = snapshot.duplicateGroups
+        } else {
+            overview = nil
+            topConsumers = []
+            duplicateGroups = []
+            analysisReport = nil
+        }
+
+        completeStartupStep(.storageData)
+
+        beginStartupStep(.permissions, message: "Checking Full Disk Access…")
+        await Task.yield()
+
+        FullDiskAccess.registerForFullDiskAccess()
+        hasFullDiskAccess = FullDiskAccess.hasFullDiskAccess()
+        completeStartupStep(.permissions)
+
+        startupActiveStep = nil
+        startupMessage = "Ready"
+        isStartingUp = false
+
+        presentFullDiskAccessPromptIfNeeded()
+        refreshAnalysisReportInBackground()
+    }
+
+    private func refreshAnalysisReportInBackground() {
+        guard selectedDiskID != nil else { return }
+        Task { @MainActor in
+            refreshAnalysisReport()
+        }
     }
 
     var isFirstLaunch: Bool {
@@ -659,7 +787,7 @@ final class AppViewModel: ObservableObject {
         }
     }
 
-    func refreshInsights() {
+    func refreshCachedScanResults() {
         guard let diskID = selectedDiskID else {
             overview = nil
             topConsumers = []
@@ -672,10 +800,23 @@ final class AppViewModel: ObservableObject {
         overview = try? database.storageOverview(forDiskID: diskID, oldFileThreshold: threshold)
         topConsumers = (try? database.topConsumers(forDiskID: diskID, limit: 8)) ?? []
         duplicateGroups = (try? duplicateEngine.loadGroups(forDiskID: diskID)) ?? []
+    }
+
+    func refreshAnalysisReport() {
+        guard let diskID = selectedDiskID else {
+            analysisReport = nil
+            return
+        }
+
         analysisReport = try? aiEngine.analyze(
             diskID: diskID,
             fileLimit: appSettings.analysisFileLimit
         )
+    }
+
+    func refreshInsights() {
+        refreshCachedScanResults()
+        refreshAnalysisReport()
     }
 
     func scanVolume(at url: URL, name: String? = nil) {
@@ -693,10 +834,11 @@ final class AppViewModel: ObservableObject {
         setStatus("Step 1 of 3 · Scanning \(volumeName)…", kind: .working)
         logActivity(.scan, "Started filesystem scan", detail: volumeName)
 
-        scanTask = Task.detached { [weak self] in
+        guard let scanEngine = self.scanEngine else { return }
+        scanTask = Task.detached { [weak self, scanEngine] in
             guard let self else { return }
             do {
-                let summary = try self.scanEngine.scanVolume(
+                let summary = try scanEngine.scanVolume(
                     name: volumeName,
                     mountPath: url,
                     onProgress: { progress in
@@ -768,10 +910,11 @@ final class AppViewModel: ObservableObject {
             detail: "\(volumeName) · checking largest \(duplicateFileLimit.formatted()) files"
         )
 
-        duplicateTask = Task.detached { [weak self] in
+        guard let duplicateEngine = self.duplicateEngine, let aiEngine = self.aiEngine else { return }
+        duplicateTask = Task.detached { [weak self, duplicateEngine, aiEngine] in
             guard let self else { return }
             do {
-                let duplicateSummary = try self.duplicateEngine.detectAll(
+                let duplicateSummary = try duplicateEngine.detectAll(
                     forDiskID: diskID,
                     fileLimit: duplicateFileLimit,
                     onProgress: { progress in
@@ -798,7 +941,7 @@ final class AppViewModel: ObservableObject {
                     self.setStatus("Step 3 of 3 · Analyzing storage on \(volumeName)…", kind: .working)
                 }
 
-                _ = try self.aiEngine.analyze(diskID: diskID, fileLimit: analysisFileLimit)
+                _ = try aiEngine.analyze(diskID: diskID, fileLimit: analysisFileLimit)
 
                 await MainActor.run {
                     self.isAnalyzing = false
