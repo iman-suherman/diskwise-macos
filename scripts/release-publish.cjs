@@ -101,6 +101,9 @@ function createGitTag(version) {
 
 async function main() {
   loadDotenv(root);
+  // Production releases must never use local Sparkle/download URLs from .env.example.
+  process.env.SPARKLE_LOCAL = "0";
+  process.env.LOCAL_RELEASE = "0";
 
   const pkg = readPackageJson();
   if (!pkg.version) {

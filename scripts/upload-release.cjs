@@ -14,6 +14,7 @@ const { generateAppcast } = require("./generate-appcast.cjs");
 const {
   sparkleZipFileName,
   publicSparkleDownloadUrl,
+  resolveDownloadBase,
 } = require("./public-download-url.cjs");
 
 const root = path.join(__dirname, "..");
@@ -166,7 +167,10 @@ async function uploadRelease(options = {}) {
 
   let appcastPath = path.join(root, "website", "public", "appcast.xml");
   if (fs.existsSync(sparkleZipPath)) {
-    const appcastArtifacts = generateAppcast({ release });
+    const appcastArtifacts = generateAppcast({
+      release,
+      downloadBase: resolveDownloadBase({ ...process.env, SPARKLE_LOCAL: "0", LOCAL_RELEASE: "0" }),
+    });
     appcastPath = appcastArtifacts.websiteAppcastPath;
     console.log(`upload: Sparkle appcast → ${appcastPath}`);
   }
