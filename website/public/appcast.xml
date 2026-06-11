@@ -15,11 +15,11 @@
 </ul></li>
 </ul>
 ]]></description>
-            <enclosure url="http://127.0.0.1:3000/downloads/DiskWise-0.1.4.zip" length="11420907" type="application/octet-stream" sparkle:edSignature="bePbKVoobKRo+yceiCYqKCrtkpdB+xGYT7NwgDKwz2vs++EMsxVWKc1kX+sTXVXJv+6I8nftexfWSSrXHcKwBQ=="/>
+            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.1.4.zip" length="11420907" type="application/octet-stream" sparkle:edSignature="bePbKVoobKRo+yceiCYqKCrtkpdB+xGYT7NwgDKwz2vs++EMsxVWKc1kX+sTXVXJv+6I8nftexfWSSrXHcKwBQ=="/>
             <sparkle:deltas>
-                <enclosure url="http://127.0.0.1:3000/downloads/DiskWise1004-1003.delta" sparkle:deltaFrom="1003" length="5410294" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="D7g/iprElq++8RNGss2Xqz6fhXugPr5Q2n4/t+22s3WikmvdiqyfqM88RWEdIOkhLqva7Riug1O/TcH4w/ZRDQ=="/>
-                <enclosure url="http://127.0.0.1:3000/downloads/DiskWise1004-1002.delta" sparkle:deltaFrom="1002" length="5753110" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="2Mv+LbjY2a7jsUwPlQBVissbX2NWo6b1wboVgDxG7O2Uy0hPP3yG2Qg2Q3BeH5dQlTIQ/4CQki+JhxIWm6MkBw=="/>
-                <enclosure url="http://127.0.0.1:3000/downloads/DiskWise1004-1001.delta" sparkle:deltaFrom="1001" length="7471430" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="sds8kdMBr0BB0UsvdRBAQRY8Q3wH8Jm2aL8h/LVS4pD4qw/JPAemP87t3NNOM3OHkf4iuWvZ1Rs5VFModHa2Dg=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1004-1002.delta" sparkle:deltaFrom="1002" length="5753110" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="2Mv+LbjY2a7jsUwPlQBVissbX2NWo6b1wboVgDxG7O2Uy0hPP3yG2Qg2Q3BeH5dQlTIQ/4CQki+JhxIWm6MkBw=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1004-1003.delta" sparkle:deltaFrom="1003" length="5410294" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="D7g/iprElq++8RNGss2Xqz6fhXugPr5Q2n4/t+22s3WikmvdiqyfqM88RWEdIOkhLqva7Riug1O/TcH4w/ZRDQ=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1004-1001.delta" sparkle:deltaFrom="1001" length="7471430" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="sds8kdMBr0BB0UsvdRBAQRY8Q3wH8Jm2aL8h/LVS4pD4qw/JPAemP87t3NNOM3OHkf4iuWvZ1Rs5VFModHa2Dg=="/>
             </sparkle:deltas>
         </item>
         <item>
@@ -36,7 +36,7 @@
 </ul></li>
 </ul>
 ]]></description>
-            <enclosure url="http://127.0.0.1:3000/downloads/DiskWise-0.1.3.zip" length="10361586" type="application/octet-stream" sparkle:edSignature="my8m3BfUxjgmBr0oiutnV/JfJ78qs23ChMatcuRLr2C50HdaSl1QX+NENKtPmVPWuI3kfUHDASPRL8k3QDLwAA=="/>
+            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.1.3.zip" length="10361586" type="application/octet-stream" sparkle:edSignature="my8m3BfUxjgmBr0oiutnV/JfJ78qs23ChMatcuRLr2C50HdaSl1QX+NENKtPmVPWuI3kfUHDASPRL8k3QDLwAA=="/>
             <sparkle:deltas>
                 <enclosure url="http://127.0.0.1:3000/downloads/DiskWise1003-1002.delta" sparkle:deltaFrom="1002" length="1157038" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="RUwHKwu/0ZJO5WLCH9BKbha719LgylHw6aXpKNr7SWbbXf6cLy6UAyefTOys5QSALc+SkNKYneh6Pp6NrE0kBg=="/>
                 <enclosure url="http://127.0.0.1:3000/downloads/DiskWise1003-1001.delta" sparkle:deltaFrom="1001" length="6608078" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="A1q3lnVJ9AzA5eeYAF4k/R1+E1VI3kWCkyic/0xAX9GvW7u3+Ap2Snw+sEn1LXeelqsR1lt5xlzTaOUU6esyBA=="/>
@@ -55,7 +55,7 @@
 </ul></li>
 </ul>
 ]]></description>
-            <enclosure url="http://127.0.0.1:3000/downloads/DiskWise-0.1.2.zip" length="10150759" type="application/octet-stream" sparkle:edSignature="0XEP9snjSr1q8wRMyWfNCi6XoE71mCljcu6iJEhY63KbnztOMJW+N77TeNv7dinS6sWTadZkHbooHy7l+nTTAw=="/>
+            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.1.2.zip" length="10150759" type="application/octet-stream" sparkle:edSignature="0XEP9snjSr1q8wRMyWfNCi6XoE71mCljcu6iJEhY63KbnztOMJW+N77TeNv7dinS6sWTadZkHbooHy7l+nTTAw=="/>
             <sparkle:deltas>
                 <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1002-1001.delta" sparkle:deltaFrom="1001" length="6502770" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="CxLVRsxgJWN+kSyN6GYIyd1pVBfahvULftemVCIpjoZrE7xwaVtebvTt68DweIlBeJTR4VJfpjqI5xpEcjbuAg=="/>
             </sparkle:deltas>
