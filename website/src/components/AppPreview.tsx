@@ -4,6 +4,8 @@ import { BRAND_NAME } from "@/lib/brand";
 const previews = [
   {
     image: "/app-screenshot-overview.png",
+    width: 913,
+    height: 542,
     alt: `${BRAND_NAME} storage overview with capacity cards, donut chart, and storage breakdown by file type`,
     title: "Understand where your space goes",
     headline: "Capacity, savings, and storage by type — all in one Overview.",
@@ -14,6 +16,8 @@ const previews = [
   },
   {
     image: "/app-screenshot-insights.png",
+    width: 920,
+    height: 511,
     alt: `${BRAND_NAME} showing biggest space consumers, storage intelligence savings, and safe cleanup recommendations`,
     title: "Act on safe cleanup suggestions",
     headline: "Ranked hotspots, reclaimable space, and actions you control.",
@@ -24,6 +28,8 @@ const previews = [
   },
   {
     image: "/app-screenshot-chat.png",
+    width: 930,
+    height: 534,
     alt: `${BRAND_NAME} Ask DiskWise AI chat answering what is consuming the most disk space`,
     title: "Ask DiskWise anything",
     headline: "AI chat powered by your scan data — on your Mac.",
@@ -66,14 +72,27 @@ export function AppPreview() {
           >
             <div className={imageWrapperClass(preview.large)}>
               <div className="absolute -inset-6 rounded-full bg-gradient-to-br from-brand-blue/10 via-brand-purple/5 to-transparent blur-3xl" />
-              <Image
-                src={preview.image}
-                alt={preview.alt}
-                width={1024}
-                height={622}
-                sizes={preview.large ? "(max-width: 1024px) 100vw, 42rem" : "(max-width: 1024px) 90vw, 32rem"}
-                className="relative h-auto w-full rounded-xl border border-white/10 shadow-soft"
-              />
+              <div className="relative rounded-[1.35rem] sm:rounded-[1.5rem]">
+                <div className="relative overflow-hidden rounded-xl shadow-[0_4px_14px_rgba(0,0,0,0.55),0_20px_48px_rgba(0,0,0,0.5),0_40px_80px_rgba(0,0,0,0.4)] sm:rounded-2xl">
+                  <Image
+                    src={preview.image}
+                    alt={preview.alt}
+                    width={preview.width}
+                    height={preview.height}
+                    unoptimized
+                    sizes={preview.large ? "(max-width: 1024px) 100vw, 42rem" : "(max-width: 1024px) 90vw, 32rem"}
+                    className="relative block h-auto w-full object-contain"
+                  />
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 rounded-xl bg-[linear-gradient(to_bottom,rgba(0,0,0,0.18)_0%,transparent_28%,transparent_72%,rgba(0,0,0,0.32)_100%)] sm:rounded-2xl"
+                  />
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.07),inset_0_-20px_40px_rgba(0,0,0,0.22)] sm:rounded-2xl"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className={preview.imageFirst ? "lg:pl-2" : "lg:pr-2"}>
