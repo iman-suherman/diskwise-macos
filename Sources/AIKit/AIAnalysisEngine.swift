@@ -1,0 +1,277 @@
+import Foundation
+import DatabaseKit
+
+public struct StorageInsight: Identifiable, Sendable {
+    public let id = UUID()
+    public let title: String
+    public let detail: String
+    public let estimatedSavings: Int64
+
+    public init(title: String, detail: String, estimatedSavings: Int64) {
+        self.title = title
+        self.detail = detail
+        self.estimatedSavings = estimatedSavings
+    }
+}
+
+public struct AnalysisReport: Sendable {
+    public let overview: StorageOverview
+    public let insights: [StorageInsight]
+    public let recommendations: [RecommendationRecord]
+    public let potentialReclaimableSpace: Int64
+
+    public init(
+        overview: StorageOverview,
+        insights: [StorageInsight],
+        recommendations: [RecommendationRecord],
+        potentialReclaimableSpace: Int64
+    ) {
+        self.overview = overview
+        self.insights = insights
+        self.recommendations = recommendations
+        self.potentialReclaimableSpace = potentialReclaimableSpace
+    }
+}
+
+public struct OllamaConfiguration: Sendable {
+    public let baseURL: URL
+    public let model: String
+
+    public init(baseURL: URL = URL(string: "http://127.0.0.1:11434")!, model: String = "llama3.1") {
+        self.baseURL = baseURL
+        self.model = model
+    }
+}
+
+public final class AIAnalysisEngine: @unchecked Sendable {
+    private let database: DiskWiseDatabase
+    private let ollamaConfiguration: OllamaConfiguration?
+
+    public init(database: DiskWiseDatabase, ollamaConfiguration: OllamaConfiguration? = nil) {
+        self.database = database
+        self.ollamaConfiguration = ollamaConfiguration
+    }
+
+    public func analyze(diskID: Int64) throws -> AnalysisReport {
+        let oldThreshold = Calendar.current.date(byAdding: .year, value: -2, to: Date())!
+        let overview = try database.storageOverview(forDiskID: diskID, oldFileThreshold: oldThreshold)
+        let duplicateGroups = try database.duplicateGroups(forDiskID: diskID, limit: 50)
+        let allFiles = try database.files(forDiskID: diskID, limit: 10_000)
+
+        let previewLikeFiles = allFiles.filter { file in
+            let name = URL(fileURLWithPath: file.path).lastPathComponent.lowercased()
+            return name.contains("preview") || name.contains("thumb") || name.contains(".tmp")
+        }
+
+        let cacheBytes = try database.categorySize(forDiskID: diskID, category: .cache)
+        let dmgBytes = allFiles
+            .filter { $0.path.lowercased().hasSuffix(".dmg") }
+            .reduce(Int64(0)) { $0 + $1.size }
+        let downloadBytes = try database.categorySize(forDiskID: diskID, category: .downloads)
+        let iosBackupBytes = allFiles
+            .filter { file in
+                let lower = file.path.lowercased()
+                return lower.contains("mobilesync/backup") || lower.contains("/ios backup")
+            }
+            .reduce(Int64(0)) { $0 + $1.size }
+        let tempExportBytes = allFiles
+            .filter { $0.category == .temporary }
+            .reduce(Int64(0)) { $0 + $1.size }
+
+        var insights: [StorageInsight] = []
+        var recommendations: [RecommendationRecord] = []
+
+        if overview.duplicateSavings > 0 {
+            insights.append(
+                StorageInsight(
+                    title: "Duplicate files",
+                    detail: "\(duplicateGroups.count) duplicate groups found.",
+                    estimatedSavings: overview.duplicateSavings
+                )
+            )
+            recommendations.append(
+                RecommendationRecord(
+                    type: "duplicate_cleanup",
+                    title: "Clean Duplicates",
+                    estimatedSavings: overview.duplicateSavings,
+                    reason: "Multiple files share identical or near-identical content."
+                )
+            )
+        }
+
+        if cacheBytes > 0 {
+            insights.append(
+                StorageInsight(
+                    title: "Cache files",
+                    detail: "Application and system cache data.",
+                    estimatedSavings: cacheBytes
+                )
+            )
+            recommendations.append(
+                RecommendationRecord(
+                    type: "delete_cache",
+                    title: "Delete Cache Files",
+                    estimatedSavings: cacheBytes,
+                    reason: "Caches can be safely cleared and will regenerate as needed."
+                )
+            )
+        }
+
+        if dmgBytes > 0 {
+            insights.append(
+                StorageInsight(
+                    title: "Old DMGs",
+                    detail: "Disk images left over from app installations.",
+                    estimatedSavings: dmgBytes
+                )
+            )
+            recommendations.append(
+                RecommendationRecord(
+                    type: "delete_dmg",
+                    title: "Remove Old DMGs",
+                    estimatedSavings: dmgBytes,
+                    reason: "Installer disk images are safe to delete after installation."
+                )
+            )
+        }
+
+        if iosBackupBytes > 0 {
+            insights.append(
+                StorageInsight(
+                    title: "Unused iOS backups",
+                    detail: "Local iPhone and iPad backup archives.",
+                    estimatedSavings: iosBackupBytes
+                )
+            )
+            recommendations.append(
+                RecommendationRecord(
+                    type: "delete_ios_backups",
+                    title: "Remove Old iOS Backups",
+                    estimatedSavings: iosBackupBytes,
+                    reason: "Old device backups can be removed if you use iCloud backup."
+                )
+            )
+        }
+
+        if tempExportBytes > 0 {
+            insights.append(
+                StorageInsight(
+                    title: "Temporary exports",
+                    detail: "Preview files, thumbnails, and temp exports.",
+                    estimatedSavings: tempExportBytes
+                )
+            )
+            recommendations.append(
+                RecommendationRecord(
+                    type: "delete_previews",
+                    title: "Clear Temporary Exports",
+                    estimatedSavings: tempExportBytes,
+                    reason: "Temporary files can usually be regenerated."
+                )
+            )
+        }
+
+        if downloadBytes > 50_000_000 {
+            insights.append(
+                StorageInsight(
+                    title: "Downloads folder",
+                    detail: "Files accumulated in Downloads.",
+                    estimatedSavings: downloadBytes
+                )
+            )
+            recommendations.append(
+                RecommendationRecord(
+                    type: "clean_downloads",
+                    title: "Remove Old Downloads",
+                    estimatedSavings: downloadBytes,
+                    reason: "Review and remove installers and files you no longer need."
+                )
+            )
+        }
+
+        if overview.oldFileSize > 0 {
+            insights.append(
+                StorageInsight(
+                    title: "Stale files",
+                    detail: "Not accessed in the last two years.",
+                    estimatedSavings: overview.oldFileSize
+                )
+            )
+            recommendations.append(
+                RecommendationRecord(
+                    type: "archive_old_files",
+                    title: "Archive Old Videos",
+                    estimatedSavings: overview.oldFileSize,
+                    reason: "Large files have not been accessed recently."
+                )
+            )
+        }
+
+        if let topCategory = overview.categorySummaries.first {
+            insights.append(
+                StorageInsight(
+                    title: "Largest category: \(topCategory.category.displayName)",
+                    detail: "\(topCategory.fileCount) files in this category.",
+                    estimatedSavings: 0
+                )
+            )
+        }
+
+        try database.insertRecommendations(recommendations)
+
+        let potential = recommendations.reduce(0) { $0 + $1.estimatedSavings }
+        return AnalysisReport(
+            overview: overview,
+            insights: insights,
+            recommendations: recommendations,
+            potentialReclaimableSpace: potential
+        )
+    }
+
+    public func generateLLMReportPrompt(for diskID: Int64) throws -> String {
+        let report = try analyze(diskID: diskID)
+        let categories = report.overview.categorySummaries
+            .map { "\($0.category.rawValue): \(ByteCountFormatter.string(fromByteCount: $0.totalSize, countStyle: .file))" }
+            .joined(separator: "\n")
+
+        return """
+        Analyze this macOS storage scan and produce a human-readable optimization plan.
+
+        Total indexed: \(ByteCountFormatter.string(fromByteCount: report.overview.totalSize, countStyle: .file))
+        Potential reclaimable: \(ByteCountFormatter.string(fromByteCount: report.potentialReclaimableSpace, countStyle: .file))
+
+        Categories:
+        \(categories)
+
+        Recommendations:
+        \(report.recommendations.map { "- \($0.title): \($0.reason)" }.joined(separator: "\n"))
+        """
+    }
+
+    public func requestLLMReport(for diskID: Int64) async throws -> String {
+        guard let configuration = ollamaConfiguration else {
+            let report = try analyze(diskID: diskID)
+            return report.insights
+                .map { "- \($0.title): \(ByteCountFormatter.string(fromByteCount: $0.estimatedSavings, countStyle: .file)) — \($0.detail)" }
+                .joined(separator: "\n")
+        }
+
+        let prompt = try generateLLMReportPrompt(for: diskID)
+        var request = URLRequest(url: configuration.baseURL.appendingPathComponent("api/generate"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "model": configuration.model,
+            "prompt": prompt,
+            "stream": false,
+        ])
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        return json?["response"] as? String ?? "No response from Ollama."
+    }
+}

@@ -1,0 +1,184 @@
+import Foundation
+import DatabaseKit
+
+public enum FileScannerError: Error, LocalizedError {
+    case mountPathUnavailable(String)
+    case cancelled
+
+    public var errorDescription: String? {
+        switch self {
+        case .mountPathUnavailable(let path):
+            return "Mount path is unavailable: \(path)"
+        case .cancelled:
+            return "Scan was cancelled."
+        }
+    }
+}
+
+public final class FileScanner: @unchecked Sendable {
+    private let fileManager: FileManager
+    private let batchSize: Int
+
+    public init(fileManager: FileManager = .default, batchSize: Int = 250) {
+        self.fileManager = fileManager
+        self.batchSize = batchSize
+    }
+
+    public func scan(
+        mountPath: URL,
+        onProgress: (@Sendable (ScanProgress) -> Void)? = nil,
+        isCancelled: (@Sendable () -> Bool)? = nil
+    ) throws -> [ScannedFile] {
+        guard fileManager.fileExists(atPath: mountPath.path) else {
+            throw FileScannerError.mountPathUnavailable(mountPath.path)
+        }
+
+        var results: [ScannedFile] = []
+        var scannedCount = 0
+        var indexedBytes: Int64 = 0
+
+        let enumerator = fileManager.enumerator(
+            at: mountPath,
+            includingPropertiesForKeys: [
+                .isRegularFileKey,
+                .isDirectoryKey,
+                .fileSizeKey,
+                .creationDateKey,
+                .contentModificationDateKey,
+                .contentAccessDateKey,
+            ],
+            options: [.skipsHiddenFiles, .skipsPackageDescendants]
+        )
+
+        while let item = enumerator?.nextObject() as? URL {
+            if isCancelled?() == true {
+                throw FileScannerError.cancelled
+            }
+
+            let values = try item.resourceValues(forKeys: [
+                .isRegularFileKey,
+                .isDirectoryKey,
+                .fileSizeKey,
+                .creationDateKey,
+                .contentModificationDateKey,
+                .contentAccessDateKey,
+            ])
+
+            let isDirectory = values.isDirectory ?? false
+            guard values.isRegularFile == true || isDirectory else {
+                continue
+            }
+
+            let size = Int64(values.fileSize ?? 0)
+            if !isDirectory {
+                indexedBytes += size
+            }
+
+            let scanned = ScannedFile(
+                path: item.path,
+                size: size,
+                createdAt: values.creationDate,
+                modifiedAt: values.contentModificationDate,
+                lastAccessed: values.contentAccessDate,
+                extensionName: item.pathExtension.isEmpty ? nil : item.pathExtension.lowercased(),
+                isDirectory: isDirectory
+            )
+            results.append(scanned)
+            scannedCount += 1
+
+            if scannedCount.isMultiple(of: batchSize) {
+                onProgress?(ScanProgress(scannedCount: scannedCount, currentPath: item.path, bytesIndexed: indexedBytes))
+            }
+        }
+
+        onProgress?(ScanProgress(scannedCount: scannedCount, currentPath: mountPath.path, bytesIndexed: indexedBytes))
+        return results
+    }
+}
+
+public final class ScanEngine: @unchecked Sendable {
+    private let scanner: FileScanner
+    private let database: DiskWiseDatabase
+
+    public init(database: DiskWiseDatabase, scanner: FileScanner = FileScanner()) {
+        self.database = database
+        self.scanner = scanner
+    }
+
+    public func scanVolume(
+        name: String,
+        mountPath: URL,
+        onProgress: (@Sendable (ScanProgress) -> Void)? = nil,
+        isCancelled: (@Sendable () -> Bool)? = nil
+    ) throws -> ScanSummary {
+        let start = Date()
+        let resourceValues = try mountPath.resourceValues(forKeys: [
+            .volumeTotalCapacityKey,
+            .volumeAvailableCapacityKey,
+        ])
+
+        var disk = try database.upsertDisk(
+            DiskRecord(
+                name: name,
+                mountPath: mountPath.path,
+                totalSize: Int64(resourceValues.volumeTotalCapacity ?? 0),
+                freeSize: Int64(resourceValues.volumeAvailableCapacity ?? 0),
+                scannedAt: Date()
+            )
+        )
+
+        guard let diskID = disk.id else {
+            throw DiskWiseDatabaseError.diskNotFound
+        }
+
+        try database.deleteFiles(forDiskID: diskID)
+
+        let scannedFiles = try scanner.scan(
+            mountPath: mountPath,
+            onProgress: onProgress,
+            isCancelled: isCancelled
+        )
+
+        var batch: [FileRecord] = []
+        var indexedBytes: Int64 = 0
+        var fileCount = 0
+
+        for scanned in scannedFiles where !scanned.isDirectory {
+            let url = URL(fileURLWithPath: scanned.path)
+            batch.append(
+                FileRecord(
+                    diskID: diskID,
+                    path: scanned.path,
+                    size: scanned.size,
+                    mimeType: FileClassifier.mimeType(for: url),
+                    category: FileClassifier.category(for: url, isDirectory: false),
+                    createdAt: scanned.createdAt,
+                    modifiedAt: scanned.modifiedAt,
+                    lastAccessed: scanned.lastAccessed,
+                    extensionName: scanned.extensionName
+                )
+            )
+            indexedBytes += scanned.size
+            fileCount += 1
+
+            if batch.count >= 250 {
+                try database.insertFiles(batch)
+                batch.removeAll(keepingCapacity: true)
+            }
+        }
+
+        if !batch.isEmpty {
+            try database.insertFiles(batch)
+        }
+
+        disk.scannedAt = Date()
+        _ = try database.upsertDisk(disk)
+
+        return ScanSummary(
+            diskID: diskID,
+            scannedFiles: fileCount,
+            indexedBytes: indexedBytes,
+            duration: Date().timeIntervalSince(start)
+        )
+    }
+}

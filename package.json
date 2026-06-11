@@ -1,0 +1,26 @@
+{
+  "name": "diskwise-macos",
+  "private": true,
+  "description": "Intelligent macOS disk analyzer and cleanup assistant.",
+  "scripts": {
+    "info": "node scripts/info.cjs",
+    "init": "npm run info",
+    "build": "swift build",
+    "test": "swift test",
+    "dev": "swift build && swift test && npm run build:app && npm run run:app",
+    "start": "bash scripts/start.sh",
+    "setup:xcodegen": "brew install xcodegen",
+    "setup:xcode": "xcodebuild -runFirstLaunch",
+    "build:app": "bash scripts/build.sh",
+    "prepare:icon": "swift scripts/generate-app-icon.swift app/DiskWise/Assets.xcassets/AppIcon.appiconset app/DiskWise/Assets/AppIconSource.png",
+    "build:app:release": "bash scripts/build.sh release",
+    "run:app": "bash scripts/run-app.sh",
+    "open:xcode": "open app/DiskWise.xcodeproj",
+    "app": "npm run build:app && npm run run:app",
+    "xcode": "npm run build:app && npm run open:xcode",
+    "sign": "bash scripts/sign.sh",
+    "package": "bash scripts/package.sh",
+    "release": "bash scripts/release.sh",
+    "postinstall": "npm run info"
+  }
+}

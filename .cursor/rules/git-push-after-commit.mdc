@@ -1,0 +1,24 @@
+---
+description: Push every git commit to remote immediately after creating it
+alwaysApply: true
+---
+
+# Git — Push After Every Commit
+
+When you create a git commit in this repository, **push it to the remote** in the same workflow. Do not leave commits only on the local machine unless the user explicitly asks not to push.
+
+## Agent workflow
+
+1. Create the commit (only when the user asked for a commit).
+2. Push to the tracked upstream branch: `git push` (use `-u origin <branch>` if no upstream is set).
+3. Confirm push succeeded (`git status` should not show "ahead of origin").
+
+## Safety
+
+- Never `git push --force` to `main` or `master` unless the user explicitly requests it.
+- Never update git config.
+- If push is rejected (non-fast-forward, auth, hooks), report the error and stop; do not force-push unless explicitly asked.
+
+## Exceptions
+
+Skip push only when the user clearly says not to push (e.g. "commit but don't push yet").
