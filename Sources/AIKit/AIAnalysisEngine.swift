@@ -65,7 +65,7 @@ public final class AIAnalysisEngine: @unchecked Sendable {
 
         let cacheBytes = try database.categorySize(forDiskID: diskID, category: .cache)
         let dmgBytes = allFiles
-            .filter { $0.path.lowercased().hasSuffix(".dmg") }
+            .filter { RemovablePathRules.isUserManagedInstallerArtifact($0.path) }
             .reduce(Int64(0)) { $0 + $1.size }
         let downloadBytes = try database.categorySize(forDiskID: diskID, category: .downloads)
         let iosBackupBytes = allFiles
@@ -76,6 +76,16 @@ public final class AIAnalysisEngine: @unchecked Sendable {
             .reduce(Int64(0)) { $0 + $1.size }
         let tempExportBytes = allFiles
             .filter { $0.category == .temporary }
+            .reduce(Int64(0)) { $0 + $1.size }
+        let oldVideoBytes = allFiles
+            .filter { file in
+                guard VideoFileRules.isArchivableOldVideo(file.path) else { return false }
+                if let accessed = file.lastAccessed, accessed < oldThreshold { return true }
+                if file.lastAccessed == nil, let modified = file.modifiedAt, modified < oldThreshold {
+                    return true
+                }
+                return false
+            }
             .reduce(Int64(0)) { $0 + $1.size }
 
         var insights: [StorageInsight] = []
@@ -130,7 +140,7 @@ public final class AIAnalysisEngine: @unchecked Sendable {
                     type: "delete_dmg",
                     title: "Remove Old DMGs",
                     estimatedSavings: dmgBytes,
-                    reason: "Installer disk images are safe to delete after installation."
+                    reason: "Installer images only from Downloads, Desktop, and Documents — never Preboot or system folders. Review large os.dmg files carefully."
                 )
             )
         }
@@ -189,20 +199,20 @@ public final class AIAnalysisEngine: @unchecked Sendable {
             )
         }
 
-        if overview.oldFileSize > 0 {
+        if oldVideoBytes > 0 {
             insights.append(
                 StorageInsight(
-                    title: "Stale files",
-                    detail: "Not accessed in the last two years.",
-                    estimatedSavings: overview.oldFileSize
+                    title: "Old videos",
+                    detail: "Video files not opened in the last two years.",
+                    estimatedSavings: oldVideoBytes
                 )
             )
             recommendations.append(
                 RecommendationRecord(
                     type: "archive_old_files",
                     title: "Archive Old Videos",
-                    estimatedSavings: overview.oldFileSize,
-                    reason: "Large files have not been accessed recently."
+                    estimatedSavings: oldVideoBytes,
+                    reason: "Large video files have not been accessed recently."
                 )
             )
         }

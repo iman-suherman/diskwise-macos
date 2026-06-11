@@ -40,6 +40,11 @@ struct DiskWiseApp: App {
                     SparkleUpdaterController.shared.checkForUpdates()
                 }
             }
+            CommandGroup(replacing: .help) {
+                Button("Activity Log…") {
+                    viewModel.showActivityLog = true
+                }
+            }
         }
     }
 }
@@ -59,7 +64,22 @@ struct ContentView: View {
                         ToolbarItem(placement: .principal) {
                             Picker("View", selection: $viewModel.selectedPane) {
                                 ForEach(DetailPane.allCases) { pane in
-                                    Label(pane.title, systemImage: pane.icon).tag(pane)
+                                    Label {
+                                        HStack(spacing: 6) {
+                                            Text(pane.title)
+                                            if pane == .duplicates, viewModel.duplicateGroups.count > 0 {
+                                                Text("\(viewModel.duplicateGroups.count)")
+                                                    .font(.caption2.weight(.bold))
+                                                    .padding(.horizontal, 6)
+                                                    .padding(.vertical, 2)
+                                                    .background(Color.orange.opacity(0.9), in: Capsule())
+                                                    .foregroundStyle(.white)
+                                            }
+                                        }
+                                    } icon: {
+                                        Image(systemName: pane.icon)
+                                    }
+                                    .tag(pane)
                                 }
                             }
                             .pickerStyle(.segmented)
@@ -109,6 +129,9 @@ struct ContentView: View {
             if !isShowing {
                 viewModel.stopPermissionPollingIfNeeded()
             }
+        }
+        .sheet(isPresented: $viewModel.showActivityLog) {
+            ActivityLogSheet(activityLog: viewModel.activityLog)
         }
     }
 
@@ -202,6 +225,32 @@ struct ContentView: View {
                         )
                     }
                     .disabled(viewModel.isScanning)
+
+                    Button {
+                        viewModel.showActivityLog = true
+                    } label: {
+                        Label("Activity Log", systemImage: "list.bullet.rectangle")
+                    }
+                    .buttonStyle(.borderless)
+
+                    if viewModel.hasScanData {
+                        Button {
+                            viewModel.openDuplicatesPane()
+                        } label: {
+                            Label {
+                                if viewModel.totalDuplicateSavings > 0 {
+                                    Text("Duplicates · \(DiskWiseFormatters.bytes.string(fromByteCount: viewModel.totalDuplicateSavings))")
+                                } else if viewModel.isFindingDuplicates {
+                                    Text("Checking duplicates…")
+                                } else {
+                                    Text("View Duplicates")
+                                }
+                            } icon: {
+                                Image(systemName: "doc.on.doc")
+                            }
+                        }
+                        .buttonStyle(.borderless)
+                    }
 
                     if viewModel.canEjectSelectedVolume {
                         Button {

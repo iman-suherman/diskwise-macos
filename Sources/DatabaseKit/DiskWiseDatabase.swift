@@ -275,16 +275,32 @@ public final class DiskWiseDatabase: @unchecked Sendable {
 
         case "delete_dmg":
             return try dbQueue.read { db in
-                try FileRecord.fetchAll(
+                let candidates = try FileRecord.fetchAll(
                     db,
                     sql: """
                     SELECT * FROM files
-                    WHERE disk_id = ? AND LOWER(path) LIKE '%.dmg'
+                    WHERE disk_id = ?
+                      AND (
+                        LOWER(path) LIKE '%.dmg'
+                        OR LOWER(path) LIKE '%.dmg.aea'
+                        OR LOWER(path) LIKE '%.trustcache'
+                        OR LOWER(path) LIKE '%.integrity_catalog'
+                      )
                     ORDER BY size DESC
                     LIMIT ?
                     """,
-                    arguments: [diskID, limit]
+                    arguments: [diskID, max(limit * 4, 1_000)]
                 )
+                return candidates
+                    .filter { RemovablePathRules.isUserManagedInstallerArtifact($0.path) }
+                    .sorted { lhs, rhs in
+                        let left = RemovablePathRules.classifyInstallerArtifact(path: lhs.path, size: lhs.size)
+                        let right = RemovablePathRules.classifyInstallerArtifact(path: rhs.path, size: rhs.size)
+                        return sortRank(for: left?.level) < sortRank(for: right?.level)
+                            || (sortRank(for: left?.level) == sortRank(for: right?.level) && lhs.size > rhs.size)
+                    }
+                    .prefix(limit)
+                    .map { $0 }
             }
 
         case "delete_ios_backups":
@@ -330,7 +346,7 @@ public final class DiskWiseDatabase: @unchecked Sendable {
 
         case "archive_old_files":
             return try dbQueue.read { db in
-                try FileRecord.fetchAll(
+                let candidates = try FileRecord.fetchAll(
                     db,
                     sql: """
                     SELECT * FROM files
@@ -342,8 +358,12 @@ public final class DiskWiseDatabase: @unchecked Sendable {
                     ORDER BY size DESC
                     LIMIT ?
                     """,
-                    arguments: [diskID, oldFileThreshold, oldFileThreshold, limit]
+                    arguments: [diskID, oldFileThreshold, oldFileThreshold, max(limit * 4, 2_000)]
                 )
+                return candidates
+                    .filter { VideoFileRules.isArchivableOldVideo($0.path) }
+                    .prefix(limit)
+                    .map { $0 }
             }
 
         default:
@@ -487,5 +507,14 @@ public final class DiskWiseDatabase: @unchecked Sendable {
                 oldFileSize: oldFileSize
             )
         }
+    }
+}
+
+private func sortRank(for level: DMGSafetyLevel?) -> Int {
+    switch level {
+    case .safeInstaller: return 0
+    case .appleDownloadArtifact: return 1
+    case .cautionOSImage: return 2
+    case .none: return 3
     }
 }

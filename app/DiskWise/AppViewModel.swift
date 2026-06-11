@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import SwiftUI
 import DatabaseKit
@@ -129,6 +130,9 @@ final class AppViewModel: ObservableObject {
     @Published var categoryDetailFiles: [FileRecord] = []
     @Published var hoveredStorageCategory: String?
     @Published var recommendationReview: RecommendationReviewState?
+    @Published var showActivityLog = false
+
+    let activityLog = ActivityLog.shared
 
     private let database: DiskWiseDatabase
     private var permissionPollTask: Task<Void, Never>?
@@ -666,6 +670,7 @@ final class AppViewModel: ObservableObject {
         let volumeName = name ?? (url.lastPathComponent.isEmpty ? url.path : url.lastPathComponent)
         selectedVolumePath = url.path
         setStatus("Step 1 of 3 · Scanning \(volumeName)…", kind: .working)
+        logActivity(.scan, "Started filesystem scan", detail: volumeName)
 
         scanTask = Task.detached { [weak self] in
             guard let self else { return }
@@ -698,8 +703,10 @@ final class AppViewModel: ObservableObject {
                     self.scanProgress = nil
                     self.scanStartTime = nil
                     if error is CancellationError || error.localizedDescription.contains("cancelled") {
+                        self.logActivity(.scan, "Scan cancelled", detail: volumeName)
                         self.setStatus("Scan cancelled", kind: .ready)
                     } else {
+                        self.logActivity(.scan, "Scan failed", detail: error.localizedDescription)
                         self.setStatus("Scan failed: \(error.localizedDescription)", kind: .error)
                     }
                 }
@@ -718,6 +725,11 @@ final class AppViewModel: ObservableObject {
             "Storage indexed on \(volumeName) — review results while duplicates are checked in the background",
             kind: .working
         )
+        logActivity(
+            .scan,
+            "Filesystem scan complete",
+            detail: "\(summary.scannedFiles.formatted()) files indexed on \(volumeName)"
+        )
         startDuplicateDetection(diskID: summary.diskID, volumeName: volumeName)
     }
 
@@ -727,6 +739,7 @@ final class AppViewModel: ObservableObject {
         scanPhase = .findingDuplicates
         scanStartTime = Date()
         lastDuplicateGroupsRefreshCount = 0
+        logActivity(.duplicate, "Started duplicate detection", detail: volumeName)
 
         duplicateTask = Task.detached { [weak self] in
             guard let self else { return }
@@ -764,10 +777,21 @@ final class AppViewModel: ObservableObject {
                     self.scanPhase = .idle
                     self.scanStartTime = nil
                     self.refreshInsights()
-                    self.setStatus(
-                        "Scan complete · \(duplicateSummary.groupsFound) duplicate groups · \(DiskWiseFormatters.bytes.string(fromByteCount: duplicateSummary.reclaimableBytes)) reclaimable",
-                        kind: .success
-                    )
+                    if duplicateSummary.groupsFound > 0 {
+                        self.selectedPane = .duplicates
+                        self.logActivity(
+                            .duplicate,
+                            "Duplicate detection complete",
+                            detail: "\(duplicateSummary.groupsFound) groups · \(DiskWiseFormatters.bytes.string(fromByteCount: duplicateSummary.reclaimableBytes)) reclaimable"
+                        )
+                        self.setStatus(
+                            "Found \(duplicateSummary.groupsFound) duplicate groups — open Duplicates to move extras to Trash",
+                            kind: .success
+                        )
+                    } else {
+                        self.logActivity(.duplicate, "Duplicate detection complete", detail: "No groups found")
+                        self.setStatus("Scan complete — no duplicate groups found on this drive", kind: .success)
+                    }
                 }
             } catch {
                 await MainActor.run {
@@ -777,8 +801,10 @@ final class AppViewModel: ObservableObject {
                     self.scanPhase = .idle
                     self.scanStartTime = nil
                     if error is CancellationError || error.localizedDescription.contains("cancelled") {
+                        self.logActivity(.duplicate, "Duplicate detection cancelled")
                         self.setStatus("Duplicate check cancelled — storage overview is still available", kind: .ready)
                     } else {
+                        self.logActivity(.duplicate, "Duplicate detection failed", detail: error.localizedDescription)
                         self.setStatus(
                             "Duplicate check failed: \(error.localizedDescription) — storage overview is still available",
                             kind: .error
@@ -904,7 +930,12 @@ final class AppViewModel: ObservableObject {
         recommendationReview = RecommendationReviewState(
             recommendation: recommendation,
             files: files,
-            selectedFileIDs: Set(files.compactMap(\.id))
+            selectedFileIDs: defaultSelectedFileIDs(for: recommendation.type, files: files)
+        )
+        logActivity(
+            .recommendation,
+            "Opened recommendation review",
+            detail: "\(recommendation.title) · \(files.count) files · \(recommendation.type)"
         )
     }
 
@@ -912,28 +943,118 @@ final class AppViewModel: ObservableObject {
         recommendationReview = nil
     }
 
-    func executeRecommendationCleanup(files: [FileRecord], recommendation: RecommendationRecord) {
+    @discardableResult
+    func executeRecommendationCleanup(files: [FileRecord], recommendation: RecommendationRecord) -> CleanupResult {
         let preview = cleanupEngine.preview(files: files, keepFirstInEachGroup: false)
-        executeCleanup(preview: preview)
-        recommendationReview = nil
-        setStatus("Completed \(recommendation.title)", kind: .success)
+        let result = executeCleanup(preview: preview, revealTrash: true)
+        if result.movedCount > 0 {
+            recommendationReview = nil
+        }
+        return result
     }
 
     func previewCleanup(for group: DuplicateGroup) -> CleanupPreview {
         cleanupEngine.preview(files: group.files, keepFirstInEachGroup: true)
     }
 
-    func executeCleanup(preview: CleanupPreview) {
-        do {
-            let result = try cleanupEngine.execute(preview: preview)
+    func previewAllDuplicatesCleanup() -> CleanupPreview? {
+        guard !duplicateGroups.isEmpty else { return nil }
+
+        var items: [CleanupItem] = []
+        var totalBytes: Int64 = 0
+        for group in duplicateGroups {
+            let preview = cleanupEngine.preview(files: group.files, keepFirstInEachGroup: true)
+            items.append(contentsOf: preview.items)
+            totalBytes += preview.totalBytes
+        }
+        guard !items.isEmpty else { return nil }
+        return CleanupPreview(items: items, totalBytes: totalBytes)
+    }
+
+    func openDuplicatesPane() {
+        selectedPane = .duplicates
+    }
+
+    @discardableResult
+    func executeCleanup(preview: CleanupPreview, revealTrash: Bool = false) -> CleanupResult {
+        let result = cleanupEngine.execute(preview: preview)
+        reportCleanupResult(result)
+
+        if result.movedCount > 0 {
+            refreshInsights()
+            if revealTrash {
+                revealTrashedFiles(result.trashedURLs)
+            }
+        }
+
+        return result
+    }
+
+    private func reportCleanupResult(_ result: CleanupResult) {
+        if result.movedCount == 0 {
+            if let firstFailure = result.failures.first {
+                logActivity(
+                    .cleanup,
+                    "Cleanup moved 0 files",
+                    detail: "\(firstFailure.path): \(firstFailure.reason)"
+                )
+                setStatus(
+                    "Nothing moved to Trash — \(firstFailure.reason)",
+                    kind: .error
+                )
+            } else {
+                logActivity(.cleanup, "Cleanup moved 0 files", detail: "No eligible files selected")
+                setStatus("No files were selected to move to Trash", kind: .error)
+            }
+            return
+        }
+
+        let movedDetail = "\(result.movedCount) files · \(DiskWiseFormatters.bytes.string(fromByteCount: result.movedBytes))"
+        if result.failures.isEmpty {
+            logActivity(.cleanup, "Moved files to Trash", detail: movedDetail)
             setStatus(
                 "Moved \(result.movedCount) files to Trash (\(DiskWiseFormatters.bytes.string(fromByteCount: result.movedBytes)))",
                 kind: .success
             )
-            refreshInsights()
-        } catch {
-            setStatus("Cleanup failed: \(error.localizedDescription)", kind: .error)
+            return
         }
+
+        let failureDetail = result.failures
+            .prefix(3)
+            .map { "\($0.path): \($0.reason)" }
+            .joined(separator: " | ")
+        logActivity(
+            .cleanup,
+            "Partial cleanup",
+            detail: "\(movedDetail) · failures: \(failureDetail)"
+        )
+        setStatus(
+            "Moved \(result.movedCount) of \(result.attemptedCount) files to Trash · \(result.failures.count) could not be removed",
+            kind: .error
+        )
+    }
+
+    private func logActivity(_ category: ActivityCategory, _ message: String, detail: String? = nil) {
+        activityLog.log(category, message, detail: detail)
+    }
+
+    private func defaultSelectedFileIDs(for recommendationType: String, files: [FileRecord]) -> Set<Int64> {
+        guard recommendationType == "delete_dmg" else {
+            return Set(files.compactMap(\.id))
+        }
+
+        return Set(
+            files.compactMap { file -> Int64? in
+                guard let id = file.id else { return nil }
+                let classification = RemovablePathRules.classifyInstallerArtifact(path: file.path, size: file.size)
+                return classification?.selectedByDefault == true ? id : nil
+            }
+        )
+    }
+
+    private func revealTrashedFiles(_ urls: [URL]) {
+        guard !urls.isEmpty else { return }
+        NSWorkspace.shared.activateFileViewerSelecting(urls)
     }
 
     private func setStatus(_ message: String, kind: AppStatusKind) {

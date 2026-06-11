@@ -16,18 +16,17 @@ struct DuplicatesView: View {
             VStack(alignment: .leading, spacing: 24) {
                 header
 
+                if !viewModel.duplicateGroups.isEmpty {
+                    cleanupActionBar
+                }
+
                 if viewModel.isFindingDuplicates {
                     duplicateScanInProgress
                 } else if viewModel.duplicateGroups.isEmpty {
-                    ContentUnavailableView(
-                        "No duplicates found",
-                        systemImage: "doc.on.doc",
-                        description: Text(viewModel.hasScanData
-                            ? "Your scanned drive has no duplicate file groups."
-                            : "Scan a drive to detect duplicate files.")
-                    )
-                    .frame(maxWidth: .infinity, minHeight: 300)
+                    duplicatesEmptyState
                 } else {
+                    howToCleanHint
+
                     ForEach(viewModel.duplicateGroups) { group in
                         DuplicateGroupCard(group: group) {
                             selectedPreview = viewModel.previewCleanup(for: group)
@@ -38,9 +37,10 @@ struct DuplicatesView: View {
             .padding(28)
         }
         .sheet(item: $selectedPreview) { preview in
-            CleanupPreviewSheet(preview: preview) {
-                viewModel.executeCleanup(preview: preview)
-                selectedPreview = nil
+            CleanupPreviewSheet(preview: preview) { result in
+                if result.movedCount > 0 {
+                    selectedPreview = nil
+                }
             }
         }
     }
@@ -54,11 +54,73 @@ struct DuplicatesView: View {
                 Text("\(DiskWiseFormatters.bytes.string(fromByteCount: totalReclaimable)) reclaimable across \(viewModel.duplicateGroups.count) groups")
                     .font(.title3)
                     .foregroundStyle(.orange)
+            } else if viewModel.isFindingDuplicates {
+                Text("Still checking your drive for duplicate files…")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             } else {
-                Text("Review duplicate groups and safely remove extra copies")
+                Text("Extra copies of the same file show up here after a scan")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
+        }
+    }
+
+    private var cleanupActionBar: some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Ready to free up space")
+                    .font(.headline)
+                Text("DiskWise keeps one copy per group and moves the rest to Trash. Empty Trash when you're sure.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button {
+                selectedPreview = viewModel.previewAllDuplicatesCleanup()
+            } label: {
+                Label("Move All Duplicates to Trash", systemImage: "trash.fill")
+                    .frame(minWidth: 220)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.orange)
+            .controlSize(.large)
+        }
+        .padding(18)
+        .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private var howToCleanHint: some View {
+        Label("Use Move to Trash on any group below to remove extra copies safely.", systemImage: "hand.tap.fill")
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+    }
+
+    @ViewBuilder
+    private var duplicatesEmptyState: some View {
+        if viewModel.hasScanData {
+            ContentUnavailableView {
+                Label("No duplicates found yet", systemImage: "doc.on.doc")
+            } description: {
+                Text("This drive has no duplicate file groups from the latest scan. Try rescanning after copying or downloading more files.")
+            } actions: {
+                if let volume = viewModel.selectedVolume {
+                    Button("Rescan \(volume.name)") {
+                        viewModel.scanSelectedVolume()
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 300)
+        } else {
+            ContentUnavailableView(
+                "Scan a drive first",
+                systemImage: "externaldrive",
+                description: Text("Select a drive in the sidebar and run a scan. Duplicate groups will appear in this tab.")
+            )
+            .frame(maxWidth: .infinity, minHeight: 300)
         }
     }
 
@@ -124,23 +186,28 @@ struct DuplicateGroupCard: View {
         return group.fingerprint
     }
 
+    private var extraCopyCount: Int {
+        max(0, group.files.count - 1)
+    }
+
     var body: some View {
         GroupBox {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "doc.on.doc.fill")
+                        .font(.title2)
+                        .foregroundStyle(.orange)
+
                     VStack(alignment: .leading, spacing: 4) {
                         Text(displayName)
                             .font(.headline)
-                        Text("\(group.files.count) copies · \(DiskWiseFormatters.bytes.string(fromByteCount: group.reclaimableSize)) reclaimable")
+                        Text("\(group.files.count) copies · keep 1 · remove \(extraCopyCount)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                        Text("\(DiskWiseFormatters.bytes.string(fromByteCount: group.reclaimableSize)) reclaimable")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.orange)
                     }
-                    Spacer()
-                    Button("Keep Newest") {
-                        onCleanup()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -162,6 +229,27 @@ struct DuplicateGroupCard: View {
                             .foregroundStyle(.tertiary)
                     }
                 }
+
+                Divider()
+
+                Button(action: onCleanup) {
+                    Label {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Move \(extraCopyCount) Duplicate\(extraCopyCount == 1 ? "" : "s") to Trash")
+                                .font(.headline)
+                            Text("Keeps one copy · you can empty Trash later")
+                                .font(.caption)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    } icon: {
+                        Image(systemName: "trash.fill")
+                            .font(.title3)
+                    }
+                    .padding(.vertical, 4)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+                .controlSize(.large)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -283,27 +371,71 @@ private struct ChatBubble: View {
 
 struct CleanupPreviewSheet: View {
     let preview: CleanupPreview
-    let onConfirm: () -> Void
+    let onConfirm: (CleanupResult) -> Void
+    @EnvironmentObject private var viewModel: AppViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var failureMessage: String?
+    @State private var showFailureAlert = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Cleanup Preview")
+        VStack(alignment: .leading, spacing: 20) {
+            Label("Confirm cleanup", systemImage: "trash.fill")
                 .font(.title.bold())
-            Text("\(preview.items.count) files will move to Trash (\(DiskWiseFormatters.bytes.string(fromByteCount: preview.totalBytes))).")
-                .foregroundStyle(.secondary)
-            List(preview.items) { item in
-                Text(item.path).font(.caption)
+                .foregroundStyle(.orange)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("\(preview.items.count) duplicate file\(preview.items.count == 1 ? "" : "s") will move to Trash")
+                    .font(.headline)
+                Text("Frees \(DiskWiseFormatters.bytes.string(fromByteCount: preview.totalBytes)). Nothing is deleted permanently — empty Trash later when you're sure.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
-            HStack {
+
+            List(preview.items) { item in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(URL(fileURLWithPath: item.path).lastPathComponent)
+                        .font(.subheadline.weight(.medium))
+                    Text(item.path)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+            }
+
+            HStack(spacing: 12) {
                 Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
                 Spacer()
-                Button("Move To Trash", role: .destructive, action: onConfirm)
-                    .buttonStyle(.borderedProminent)
+                Button {
+                    let result = viewModel.executeCleanup(preview: preview, revealTrash: true)
+                    if result.movedCount > 0 {
+                        onConfirm(result)
+                        dismiss()
+                    } else if let first = result.failures.first {
+                        failureMessage = "\(URL(fileURLWithPath: first.path).lastPathComponent): \(first.reason)"
+                        showFailureAlert = true
+                    } else {
+                        failureMessage = "No files were moved to Trash."
+                        showFailureAlert = true
+                    }
+                } label: {
+                    Label("Move to Trash", systemImage: "trash.fill")
+                        .frame(minWidth: 180)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+                .controlSize(.large)
+                .keyboardShortcut(.defaultAction)
             }
         }
         .padding(24)
-        .frame(minWidth: 520, minHeight: 420)
+        .frame(minWidth: 560, minHeight: 460)
+        .alert("Could not move to Trash", isPresented: $showFailureAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(failureMessage ?? "DiskWise could not move these files to Trash.")
+        }
     }
 }
 
