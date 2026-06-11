@@ -7,7 +7,6 @@ let screenshotsDir = repoRoot.appendingPathComponent("website/public", isDirecto
 
 let matteThreshold = 42
 let peelThreshold = 82
-let peelPasses = 48
 let featherRange = 16
 
 func luminance(_ r: Int, _ g: Int, _ b: Int) -> Int {
@@ -105,44 +104,67 @@ func removeOuterMatte(_ rep: NSBitmapImageRep) {
         enqueueIfMatte(x, y + 1)
     }
 
-    for _ in 0..<peelPasses {
-        var peeled: [Int] = []
+    var peelQueue: [Int] = []
+    var peelVisited = [Bool](repeating: false, count: pixelCount)
 
-        for y in 0..<height {
-            for x in 0..<width {
-                let offset = y * bytesPerRow + x * 4
-                let alpha = Int(data[offset + 3])
-                guard alpha > 12 else { continue }
-
-                let red = Int(data[offset])
-                let green = Int(data[offset + 1])
-                let blue = Int(data[offset + 2])
-                let lum = luminance(red, green, blue)
-                guard lum <= peelThreshold else { continue }
-
-                let touchesTransparency = [
-                    (x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1),
-                    (x - 1, y - 1), (x + 1, y - 1), (x - 1, y + 1), (x + 1, y + 1),
-                ].contains { nx, ny in
-                    guard nx >= 0, ny >= 0, nx < width, ny < height else { return true }
-                    return data[ny * bytesPerRow + nx * 4 + 3] <= 12
-                }
-
-                guard touchesTransparency else { continue }
-                peeled.append(offset)
-            }
+    func touchesTransparency(_ x: Int, _ y: Int) -> Bool {
+        [
+            (x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1),
+            (x - 1, y - 1), (x + 1, y - 1), (x - 1, y + 1), (x + 1, y + 1),
+        ].contains { nx, ny in
+            guard nx >= 0, ny >= 0, nx < width, ny < height else { return true }
+            return data[ny * bytesPerRow + nx * 4 + 3] <= 12
         }
+    }
 
-        if peeled.isEmpty {
-            break
-        }
+    func enqueuePeelCandidate(_ x: Int, _ y: Int) {
+        guard x >= 0, y >= 0, x < width, y < height else { return }
+        let idx = index(x, y)
+        guard !peelVisited[idx] else { return }
 
-        for offset in peeled {
-            data[offset] = 0
-            data[offset + 1] = 0
-            data[offset + 2] = 0
-            data[offset + 3] = 0
-        }
+        let offset = y * bytesPerRow + x * 4
+        let alpha = Int(data[offset + 3])
+        guard alpha > 12 else { return }
+
+        let lum = luminance(
+            Int(data[offset]),
+            Int(data[offset + 1]),
+            Int(data[offset + 2])
+        )
+        guard lum <= peelThreshold, touchesTransparency(x, y) else { return }
+
+        peelVisited[idx] = true
+        peelQueue.append(idx)
+    }
+
+    for idx in 0..<pixelCount where visited[idx] {
+        let x = idx % width
+        let y = idx / width
+        enqueuePeelCandidate(x, y)
+    }
+
+    var peelHead = 0
+    while peelHead < peelQueue.count {
+        let idx = peelQueue[peelHead]
+        peelHead += 1
+
+        let x = idx % width
+        let y = idx / width
+        let offset = y * bytesPerRow + x * 4
+
+        data[offset] = 0
+        data[offset + 1] = 0
+        data[offset + 2] = 0
+        data[offset + 3] = 0
+
+        enqueuePeelCandidate(x - 1, y)
+        enqueuePeelCandidate(x + 1, y)
+        enqueuePeelCandidate(x, y - 1)
+        enqueuePeelCandidate(x, y + 1)
+        enqueuePeelCandidate(x - 1, y - 1)
+        enqueuePeelCandidate(x + 1, y - 1)
+        enqueuePeelCandidate(x - 1, y + 1)
+        enqueuePeelCandidate(x + 1, y + 1)
     }
 
     for y in 0..<height {
