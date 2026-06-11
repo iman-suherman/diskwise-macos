@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { BRAND_NAME } from "@/lib/brand";
+import { BRAND_NAME, GITHUB_REPO_URL } from "@/lib/brand";
 
 const nav = [
   { href: "/", label: "Home" },
@@ -12,6 +13,8 @@ const nav = [
   { href: "/#preview", label: "Preview" },
   { href: "/#features", label: "Features" },
   { href: "/#privacy", label: "Privacy" },
+  { href: "/#opensource", label: "Open source" },
+  { href: GITHUB_REPO_URL, label: "GitHub", external: true },
 ];
 
 export function Header() {
@@ -21,28 +24,48 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0a0a0b]/85 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
         <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <img
-            src="/app-icon.png"
-            alt={BRAND_NAME}
-            width={56}
-            height={56}
-            className="app-icon-mark h-10 w-10 shrink-0 sm:h-14 sm:w-14"
-          />
+          <span className="relative flex h-10 w-10 shrink-0 items-center justify-center sm:h-12 sm:w-12">
+            <span
+              aria-hidden
+              className="absolute inset-0 rounded-xl bg-gradient-to-br from-brand-blue/30 via-brand-purple/15 to-brand-green/10 blur-md"
+            />
+            <Image
+              src="/app-icon.png"
+              alt=""
+              width={794}
+              height={757}
+              priority
+              sizes="48px"
+              className="app-icon-mark relative h-10 w-10 rounded-lg object-contain drop-shadow-[0_4px_12px_rgba(0,122,255,0.45)] sm:h-12 sm:w-12"
+            />
+          </span>
           <span className="hidden truncate text-sm font-bold leading-snug tracking-tight text-slate-50 min-[420px]:block sm:max-w-xs sm:text-base lg:max-w-md lg:text-lg">
             {BRAND_NAME}
           </span>
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-medium text-slate-400 md:flex lg:gap-8">
-          {nav.map((item) => (
-            <Link
-              key={`${item.href}-${item.label}`}
-              href={item.href}
-              className="transition hover:text-brand-blue"
-            >
-              {item.label}
-            </Link>
-          ))}
+          {nav.map((item) =>
+            "external" in item && item.external ? (
+              <a
+                key={`${item.href}-${item.label}`}
+                href={item.href}
+                className="transition hover:text-brand-blue"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {item.label}
+              </a>
+            ) : (
+              <Link
+                key={`${item.href}-${item.label}`}
+                href={item.href}
+                className="transition hover:text-brand-blue"
+              >
+                {item.label}
+              </Link>
+            ),
+          )}
         </nav>
 
         <div className="flex shrink-0 items-center gap-2">
@@ -84,13 +107,25 @@ export function Header() {
           <ul className="space-y-1">
             {nav.map((item) => (
               <li key={`${item.href}-${item.label}-mobile`}>
-                <Link
-                  href={item.href}
-                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-brand-blue/10 hover:text-brand-blue"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {item.label}
-                </Link>
+                {"external" in item && item.external ? (
+                  <a
+                    href={item.href}
+                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-brand-blue/10 hover:text-brand-blue"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {item.label}
+                  </a>
+                ) : (
+                  <Link
+                    href={item.href}
+                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-brand-blue/10 hover:text-brand-blue"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>

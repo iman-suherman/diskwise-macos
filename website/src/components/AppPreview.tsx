@@ -1,6 +1,48 @@
 import Image from "next/image";
 import { BRAND_NAME } from "@/lib/brand";
 
+const previews = [
+  {
+    image: "/app-screenshot.png",
+    alt: `${BRAND_NAME} scanning Macintosh HD with live progress, capacity chart, and storage overview`,
+    title: "Scan volumes in real time",
+    headline:
+      "Pick a drive and watch live progress as DiskWise indexes every file.",
+    description:
+      "Select any internal or external drive from the sidebar — Macintosh HD, USB disks, or multi-terabyte volumes under /Volumes. DiskWise streams live scan progress with file counts, bytes processed, and an ETA while you watch. Capacity cards and the donut chart begin filling in as the index builds, so you always know how much has been analyzed and what is still in flight.",
+    imageFirst: true,
+    large: false,
+  },
+  {
+    image: "/app-screenshot-overview.png",
+    alt: `${BRAND_NAME} overview with capacity stats, donut chart, and storage breakdown by file type`,
+    title: "Understand where your space goes",
+    headline:
+      "Capacity, potential savings, and storage by type — all in one Overview.",
+    description:
+      "After a scan completes, the Overview surfaces the full picture: total, used, and free capacity, indexed file count, and potential savings at a glance. A large donut chart shows used vs. free space, while Storage by Type breaks usage into Development, Media, Archives, Caches, Applications, and more — each with size, percentage, file count, and a color-coded bar so hotspots are obvious before you clean anything.",
+    imageFirst: false,
+    large: true,
+  },
+  {
+    image: "/app-screenshot-insights.png",
+    alt: `${BRAND_NAME} showing biggest space consumers, storage intelligence savings, and recommended cleanup actions`,
+    title: "Act on AI storage intelligence",
+    headline:
+      "Rank your biggest folders, total reclaimable space, and cleanup suggestions you control.",
+    description:
+      "DiskWise ranks your biggest folders — Library, Xcode, Application Support, Java, and more — so you know exactly what to inspect first. Storage Intelligence totals reclaimable space across caches, old DMGs, temporary exports, and stale files, then turns findings into recommended actions with plain-language guidance. Review cache cleanup, installer images, temp exports, or old videos, and move ahead only when the suggestion makes sense.",
+    imageFirst: true,
+    large: true,
+  },
+] as const;
+
+function imageWrapperClass(large: boolean) {
+  return large
+    ? "relative mx-auto w-full max-w-3xl sm:max-w-4xl lg:mx-0 lg:max-w-none"
+    : "relative mx-auto w-full max-w-2xl lg:mx-0 lg:max-w-none";
+}
+
 export function AppPreview() {
   return (
     <section id="preview" className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 md:py-10">
@@ -9,24 +51,47 @@ export function AppPreview() {
           Native macOS app
         </p>
         <h2 className="mt-2 text-2xl font-bold text-slate-50 sm:text-3xl md:text-4xl">
-          Scan drives, track progress, and act on insights from one place.
+          From first scan to confident cleanup.
         </h2>
         <p className="mt-3 text-base leading-7 text-slate-400">
-          Browse internal and external volumes, monitor live scan progress, and review capacity,
-          distribution, and AI recommendations in a focused SwiftUI workspace.
+          {BRAND_NAME} keeps scanning, analysis, and recommendations in one focused SwiftUI
+          workspace — on your Mac, with your data.
         </p>
       </div>
 
-      <div className="relative mx-auto mt-8 max-w-6xl">
-        <div className="absolute -inset-6 rounded-[2rem] bg-gradient-to-br from-brand-blue/20 via-brand-purple/10 to-transparent blur-3xl" />
-        <Image
-          src="/app-screenshot.png"
-          alt={`${BRAND_NAME} scanning Macintosh HD with storage overview, capacity chart, and AI recommendations`}
-          width={2400}
-          height={1500}
-          className="relative h-auto w-full rounded-2xl shadow-card ring-1 ring-white/10"
-          priority={false}
-        />
+      <div className="mt-10 space-y-12 lg:space-y-20">
+        {previews.map((preview) => (
+          <article
+            key={preview.image}
+            className={`grid items-center gap-8 ${
+              preview.large ? "lg:grid-cols-[1.15fr_0.85fr] lg:gap-12" : "lg:grid-cols-2 lg:gap-10"
+            } ${preview.imageFirst ? "" : "lg:[&>div:first-child]:order-2 lg:[&>div:last-child]:order-1"}`}
+          >
+            <div className={imageWrapperClass(preview.large)}>
+              <div className="absolute -inset-6 rounded-full bg-gradient-to-br from-brand-blue/10 via-brand-purple/5 to-transparent blur-3xl" />
+              <Image
+                src={preview.image}
+                alt={preview.alt}
+                width={1024}
+                height={801}
+                sizes={preview.large ? "(max-width: 1024px) 100vw, 42rem" : "(max-width: 1024px) 90vw, 32rem"}
+                className="relative h-auto w-full"
+              />
+            </div>
+
+            <div className={preview.imageFirst ? "lg:pl-2" : "lg:pr-2"}>
+              <p className="text-sm font-semibold uppercase tracking-wide text-brand-blue">
+                {preview.title}
+              </p>
+              <h3 className="mt-2 text-2xl font-bold text-slate-50 sm:mt-3 sm:text-3xl md:text-4xl">
+                {preview.headline}
+              </h3>
+              <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400 sm:text-base sm:leading-7">
+                {preview.description}
+              </p>
+            </div>
+          </article>
+        ))}
       </div>
     </section>
   );

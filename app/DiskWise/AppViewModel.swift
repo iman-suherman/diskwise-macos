@@ -116,6 +116,8 @@ final class AppViewModel: ObservableObject {
     @Published var aiResponses: [AIChatMessage] = []
     @Published var selectedStorageCategory: String?
     @Published var categoryDetailFiles: [FileRecord] = []
+    @Published var hoveredStorageCategory: String?
+    @Published var recommendationReview: RecommendationReviewState?
 
     private let database: DiskWiseDatabase
     private var permissionPollTask: Task<Void, Never>?
@@ -219,6 +221,17 @@ final class AppViewModel: ObservableObject {
 
     var scanProgressPercentLabel: String {
         "\(scanProgressPercent)%"
+    }
+
+    /// Compact label for the toolbar badge while scanning.
+    var toolbarStatusMessage: String {
+        if isScanning, let volume = selectedVolume {
+            return "Scanning \(volume.name) · \(scanProgressPercentLabel)"
+        }
+        if isAnalyzing {
+            return "Analyzing storage…"
+        }
+        return statusMessage
     }
 
     func diskRecord(for volume: MountedVolume) -> DiskRecord? {
@@ -331,6 +344,11 @@ final class AppViewModel: ObservableObject {
         }
     }
 
+    func presentFullDiskAccessOverlay() {
+        fullDiskAccessWizardStep = .needsPermission
+        showFullDiskAccessPrompt = true
+    }
+
     func presentFullDiskAccessPromptIfNeeded() {
         FullDiskAccess.registerForFullDiskAccess()
         hasFullDiskAccess = FullDiskAccess.hasFullDiskAccess()
@@ -371,7 +389,16 @@ final class AppViewModel: ObservableObject {
     func cancelFullDiskAccessWaiting() {
         stopPermissionPolling()
         fullDiskAccessWizardStep = .needsPermission
-        setStatus("Full Disk Access still required", kind: .error)
+        showFullDiskAccessPrompt = false
+        UserDefaults.standard.set(true, forKey: fullDiskAccessPromptKey)
+
+        if !hasFullDiskAccess {
+            if !missingExternalVolumePaths.isEmpty || mountedVolumes.isEmpty {
+                setStatus("External drives may still be hidden without Full Disk Access", kind: .error)
+            } else {
+                setStatus("Ready to scan", kind: .ready)
+            }
+        }
     }
 
     func dismissFullDiskAccessPrompt() {
@@ -733,13 +760,45 @@ final class AppViewModel: ObservableObject {
     }
 
     func handleRecommendation(_ recommendation: RecommendationRecord) {
-        switch recommendation.type {
-        case "duplicate_cleanup":
-            selectedPane = .duplicates
-        default:
-            selectedPane = .overview
+        reviewRecommendation(recommendation)
+    }
+
+    func reviewRecommendation(_ recommendation: RecommendationRecord) {
+        guard let diskID = selectedDiskID else {
+            setStatus("Scan a drive first", kind: .error)
+            return
         }
-        setStatus(recommendation.title, kind: .ready)
+
+        let threshold = Calendar.current.date(byAdding: .year, value: -2, to: Date())!
+        let files = (try? database.files(
+            forRecommendationType: recommendation.type,
+            diskID: diskID,
+            oldFileThreshold: threshold,
+            limit: 500
+        )) ?? []
+
+        if recommendation.type == "duplicate_cleanup" && files.isEmpty {
+            selectedPane = .duplicates
+            setStatus("Review duplicate groups in the Duplicates tab", kind: .ready)
+            return
+        }
+
+        recommendationReview = RecommendationReviewState(
+            recommendation: recommendation,
+            files: files,
+            selectedFileIDs: Set(files.compactMap(\.id))
+        )
+    }
+
+    func dismissRecommendationReview() {
+        recommendationReview = nil
+    }
+
+    func executeRecommendationCleanup(files: [FileRecord], recommendation: RecommendationRecord) {
+        let preview = cleanupEngine.preview(files: files, keepFirstInEachGroup: false)
+        executeCleanup(preview: preview)
+        recommendationReview = nil
+        setStatus("Completed \(recommendation.title)", kind: .success)
     }
 
     func previewCleanup(for group: DuplicateGroup) -> CleanupPreview {

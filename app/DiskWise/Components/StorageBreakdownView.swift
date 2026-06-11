@@ -7,7 +7,9 @@ struct StorageCategoryBarChart: View {
     let items: [(name: String, totalSize: Int64, fileCount: Int)]
     let totalSize: Int64
     let selectedName: String?
+    let hoveredName: String?
     let onSelect: (String) -> Void
+    let onHover: (String?) -> Void
 
     var body: some View {
         VStack(spacing: 10) {
@@ -20,7 +22,11 @@ struct StorageCategoryBarChart: View {
                     color: CategoryPalette.color(for: item.name),
                     icon: CategoryPalette.icon(for: item.name),
                     isSelected: selectedName == item.name,
-                    onTap: { onSelect(item.name) }
+                    isHovered: hoveredName == item.name,
+                    onTap: { onSelect(item.name) },
+                    onHover: { hovering in
+                        onHover(hovering ? item.name : nil)
+                    }
                 )
             }
         }
@@ -40,7 +46,9 @@ struct CategoryBarRow: View {
     let color: Color
     let icon: String
     let isSelected: Bool
+    let isHovered: Bool
     let onTap: () -> Void
+    let onHover: (Bool) -> Void
 
     var body: some View {
         Button(action: onTap) {
@@ -82,14 +90,31 @@ struct CategoryBarRow: View {
             .padding(12)
             .background {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(isSelected ? color.opacity(0.14) : Color.primary.opacity(0.04))
+                    .fill(rowBackground)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(isSelected ? color.opacity(0.45) : .clear, lineWidth: 1.5)
+                    .strokeBorder(rowBorder, lineWidth: isSelected || isHovered ? 1.5 : 0)
             }
+            .scaleEffect(isHovered ? 1.01 : 1)
+            .animation(.easeInOut(duration: 0.15), value: isHovered)
         }
         .buttonStyle(.plain)
+        .onHover(perform: onHover)
+    }
+
+    private var rowBackground: Color {
+        if isSelected || isHovered {
+            return color.opacity(0.14)
+        }
+        return Color.primary.opacity(0.04)
+    }
+
+    private var rowBorder: Color {
+        if isSelected || isHovered {
+            return color.opacity(0.45)
+        }
+        return .clear
     }
 }
 

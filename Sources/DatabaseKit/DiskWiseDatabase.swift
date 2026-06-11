@@ -253,6 +253,119 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         }
     }
 
+    public func files(
+        forRecommendationType type: String,
+        diskID: Int64,
+        oldFileThreshold: Date,
+        limit: Int = 500
+    ) throws -> [FileRecord] {
+        switch type {
+        case "duplicate_cleanup":
+            let groups = try duplicateGroups(forDiskID: diskID, limit: limit)
+            var extras: [FileRecord] = []
+            for group in groups {
+                guard let groupID = group.id else { continue }
+                let members = try members(forGroupID: groupID)
+                extras.append(contentsOf: members.dropFirst())
+            }
+            return extras.sorted { $0.size > $1.size }
+
+        case "delete_cache":
+            return try files(inCategory: .cache, diskID: diskID, limit: limit)
+
+        case "delete_dmg":
+            return try dbQueue.read { db in
+                try FileRecord.fetchAll(
+                    db,
+                    sql: """
+                    SELECT * FROM files
+                    WHERE disk_id = ? AND LOWER(path) LIKE '%.dmg'
+                    ORDER BY size DESC
+                    LIMIT ?
+                    """,
+                    arguments: [diskID, limit]
+                )
+            }
+
+        case "delete_ios_backups":
+            return try dbQueue.read { db in
+                try FileRecord.fetchAll(
+                    db,
+                    sql: """
+                    SELECT * FROM files
+                    WHERE disk_id = ?
+                      AND (
+                        LOWER(path) LIKE '%mobilesync/backup%'
+                        OR LOWER(path) LIKE '%/ios backup%'
+                      )
+                    ORDER BY size DESC
+                    LIMIT ?
+                    """,
+                    arguments: [diskID, limit]
+                )
+            }
+
+        case "delete_previews":
+            return try dbQueue.read { db in
+                try FileRecord.fetchAll(
+                    db,
+                    sql: """
+                    SELECT * FROM files
+                    WHERE disk_id = ?
+                      AND (
+                        category = ?
+                        OR LOWER(path) LIKE '%preview%'
+                        OR LOWER(path) LIKE '%thumb%'
+                        OR LOWER(path) LIKE '%.tmp'
+                      )
+                    ORDER BY size DESC
+                    LIMIT ?
+                    """,
+                    arguments: [diskID, FileCategory.temporary.rawValue, limit]
+                )
+            }
+
+        case "clean_downloads":
+            return try files(inCategory: .downloads, diskID: diskID, limit: limit)
+
+        case "archive_old_files":
+            return try dbQueue.read { db in
+                try FileRecord.fetchAll(
+                    db,
+                    sql: """
+                    SELECT * FROM files
+                    WHERE disk_id = ?
+                      AND (
+                        (last_accessed IS NOT NULL AND last_accessed < ?)
+                        OR (last_accessed IS NULL AND modified_at IS NOT NULL AND modified_at < ?)
+                      )
+                    ORDER BY size DESC
+                    LIMIT ?
+                    """,
+                    arguments: [diskID, oldFileThreshold, oldFileThreshold, limit]
+                )
+            }
+
+        default:
+            return try files(forDiskID: diskID, limit: limit)
+        }
+    }
+
+    public func files(inCategory category: FileCategory, diskID: Int64, limit: Int = 500) throws -> [FileRecord] {
+        try dbQueue.read { db in
+            try FileRecord.fetchAll(
+                db,
+                sql: """
+                SELECT * FROM files
+                WHERE disk_id = ? AND category = ?
+                ORDER BY size DESC
+                LIMIT ?
+                """,
+                arguments: [diskID, category.rawValue, limit]
+            )
+        }
+    }
+
     public func topFiles(inChartGroup groupName: String, diskID: Int64, limit: Int = 25) throws -> [FileRecord] {
         let categoryValues = FileCategory.allCases
             .filter { $0.chartGroup == groupName }

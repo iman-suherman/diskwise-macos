@@ -145,7 +145,5 @@ try FileManager.default.createDirectory(
 )
 try png.write(to: outputURL)
 
-let heroURL = outputURL.deletingLastPathComponent().appendingPathComponent("hero.png")
-try png.write(to: heroURL)
-
 fputs("prepare-website-assets: wrote \(outputPath)\n", stderr)
+fputs("prepare-website-assets: hero.png is maintained separately in website/public/\n", stderr)

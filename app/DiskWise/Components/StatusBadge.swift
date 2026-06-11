@@ -13,19 +13,21 @@ struct StatusBadge: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: kind.icon)
-                .foregroundStyle(kind.tint)
-                .rotationEffect(.degrees(isAnimating ? 360 : 0))
-                .animation(
-                    isAnimating ? .linear(duration: 1).repeatForever(autoreverses: false) : .default,
-                    value: isAnimating
-                )
+            if isAnimating {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(width: 16, height: 16)
+            } else {
+                Image(systemName: kind.icon)
+                    .foregroundStyle(kind.tint)
+                    .frame(width: 16, height: 16)
+            }
 
             Text(message)
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(.primary)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
+                .lineLimit(1)
+                .truncationMode(.middle)
 
             if showsRefresh {
                 Button {
@@ -39,12 +41,13 @@ struct StatusBadge: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.vertical, 7)
         .background(kind.tint.opacity(0.12), in: Capsule())
         .overlay {
             Capsule()
                 .strokeBorder(kind.tint.opacity(0.25), lineWidth: 1)
         }
+        .frame(maxWidth: 360, alignment: .trailing)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(message)
     }

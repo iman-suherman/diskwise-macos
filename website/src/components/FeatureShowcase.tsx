@@ -52,57 +52,40 @@ const footerHighlights = [
 export function FeatureShowcase() {
   return (
     <section id="features" className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 md:py-10">
-      <div className="grid gap-6 lg:grid-cols-2 lg:items-start lg:gap-8">
-        <div>
+      <div className="grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-12">
+        <ul className="space-y-4">
+          {highlights.map((item) => (
+            <li key={item.title} className="flex gap-4">
+              <div
+                className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl ${item.tint}`}
+              >
+                {item.icon}
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-100">{item.title}</h3>
+                <p className="mt-1 text-sm leading-6 text-slate-400">{item.description}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <div className="lg:pl-2">
           <p className="text-sm font-semibold uppercase tracking-wide text-brand-blue">
             Intelligent storage analysis
           </p>
           <h2 className="mt-2 text-2xl font-bold text-slate-50 sm:mt-3 sm:text-3xl md:text-4xl">
             More than a treemap — {BRAND_NAME} acts as your AI storage consultant.
           </h2>
-
-          <ul className="mt-6 space-y-4">
-            {highlights.map((item) => (
-              <li key={item.title} className="flex gap-4">
-                <div
-                  className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl ${item.tint}`}
-                >
-                  {item.icon}
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-100">{item.title}</h3>
-                  <p className="mt-1 text-sm leading-6 text-slate-400">{item.description}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="card p-6 shadow-card">
-          <p className="text-sm font-semibold uppercase tracking-wide text-brand-purple">
-            Storage breakdown
+          <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400 sm:text-base sm:leading-7">
+            {BRAND_NAME} goes beyond folder sizes and pie charts. It classifies storage into
+            meaningful categories, surfaces duplicate videos and stale exports, and estimates how
+            much space you can safely reclaim — with plain-language guidance instead of raw numbers
+            alone.
           </p>
-          <div className="mt-6 flex h-48 items-end justify-center gap-3">
-            <div className="flex w-16 flex-col items-center gap-2">
-              <div className="w-full rounded-t-xl bg-brand-green" style={{ height: "70%" }} />
-              <span className="text-xs font-medium text-slate-400">Media</span>
-            </div>
-            <div className="flex w-16 flex-col items-center gap-2">
-              <div className="w-full rounded-t-xl bg-brand-orange" style={{ height: "55%" }} />
-              <span className="text-xs font-medium text-slate-400">Apps</span>
-            </div>
-            <div className="flex w-16 flex-col items-center gap-2">
-              <div className="w-full rounded-t-xl bg-brand-purple" style={{ height: "35%" }} />
-              <span className="text-xs font-medium text-slate-400">Other</span>
-            </div>
-            <div className="flex w-16 flex-col items-center gap-2">
-              <div className="w-full rounded-t-xl bg-brand-blue" style={{ height: "85%" }} />
-              <span className="text-xs font-medium text-slate-400">Duplicates</span>
-            </div>
-          </div>
-          <p className="mt-6 text-sm leading-6 text-slate-400">
-            Color palette inspired by the app icon — blue for discovery, green for reclaimable space,
-            orange for hotspots, and purple for categories.
+          <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400 sm:text-base sm:leading-7">
+            Scan internal or external volumes, review ranked hotspots and recommended actions, then
+            preview cleanup before anything moves to Trash. Every step stays on your Mac, backed by
+            modular Swift kits for scanning, metadata, duplicates, cleanup, and optional local AI.
           </p>
         </div>
       </div>

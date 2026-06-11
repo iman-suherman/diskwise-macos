@@ -28,8 +28,9 @@ struct DiskWiseApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(viewModel)
-                .frame(minWidth: 980, minHeight: 680)
+                .frame(minWidth: 1180, minHeight: 780)
         }
+        .defaultSize(width: 1320, height: 880)
         .windowStyle(.automatic)
         .commands {
             CommandGroup(replacing: .newItem) {}
@@ -41,60 +42,67 @@ struct ContentView: View {
     @EnvironmentObject private var viewModel: AppViewModel
 
     var body: some View {
-        NavigationSplitView {
-            sidebar
-                .navigationTitle("DiskWise")
-                .navigationSplitViewColumnWidth(min: 260, ideal: 280, max: 340)
-        } detail: {
-            detailContent
-                .toolbar {
-                    ToolbarItem(placement: .principal) {
-                        Picker("View", selection: $viewModel.selectedPane) {
-                            ForEach(DetailPane.allCases) { pane in
-                                Label(pane.title, systemImage: pane.icon).tag(pane)
+        ZStack {
+            NavigationSplitView {
+                sidebar
+                    .navigationTitle("DiskWise")
+                    .navigationSplitViewColumnWidth(min: 260, ideal: 280, max: 340)
+            } detail: {
+                detailContent
+                    .toolbar {
+                        ToolbarItem(placement: .principal) {
+                            Picker("View", selection: $viewModel.selectedPane) {
+                                ForEach(DetailPane.allCases) { pane in
+                                    Label(pane.title, systemImage: pane.icon).tag(pane)
+                                }
                             }
+                            .pickerStyle(.segmented)
+                            .frame(maxWidth: 420)
                         }
-                        .pickerStyle(.segmented)
-                        .frame(maxWidth: 420)
-                    }
 
-                    ToolbarItem(placement: .primaryAction) {
-                        StatusBadge(
-                            message: viewModel.statusMessage,
-                            kind: viewModel.statusKind,
-                            isAnimating: viewModel.isScanning || viewModel.isAnalyzing,
-                            onRefresh: viewModel.statusKind == .error && viewModel.statusMessage.hasPrefix("Scan failed")
-                                ? { viewModel.refreshFromError() }
-                                : nil
-                        )
+                        ToolbarItem(placement: .status) {
+                            StatusBadge(
+                                message: viewModel.toolbarStatusMessage,
+                                kind: viewModel.statusKind,
+                                isAnimating: viewModel.isScanning || viewModel.isAnalyzing,
+                                onRefresh: viewModel.statusKind == .error && viewModel.statusMessage.hasPrefix("Scan failed")
+                                    ? { viewModel.refreshFromError() }
+                                    : nil
+                            )
+                        }
                     }
-                }
-        }
-        .sheet(isPresented: $viewModel.showFullDiskAccessPrompt) {
-            FullDiskAccessPromptView(
-                step: viewModel.fullDiskAccessWizardStep,
-                mountedVolumeCount: viewModel.mountedVolumes.count,
-                missingVolumePaths: viewModel.missingExternalVolumePaths,
-                onGrantAccess: {
-                    viewModel.grantFullDiskAccess()
-                },
-                onDismiss: {
-                    viewModel.dismissFullDiskAccessPrompt()
-                },
-                onCancelWaiting: {
-                    viewModel.cancelFullDiskAccessWaiting()
-                }
-            )
-            .interactiveDismissDisabled(viewModel.fullDiskAccessWizardStep == .waiting)
-            .onDisappear {
-                viewModel.stopPermissionPollingIfNeeded()
+            }
+            .blur(radius: viewModel.showFullDiskAccessPrompt ? 8 : 0)
+            .allowsHitTesting(!viewModel.showFullDiskAccessPrompt)
+
+            if viewModel.showFullDiskAccessPrompt {
+                FullDiskAccessGateOverlay(
+                    step: viewModel.fullDiskAccessWizardStep,
+                    mountedVolumeCount: viewModel.mountedVolumes.count,
+                    missingVolumePaths: viewModel.missingExternalVolumePaths,
+                    onGrantAccess: {
+                        viewModel.grantFullDiskAccess()
+                    },
+                    onDismiss: {
+                        viewModel.dismissFullDiskAccessPrompt()
+                    },
+                    onCancelWaiting: {
+                        viewModel.cancelFullDiskAccessWaiting()
+                    }
+                )
             }
         }
+        .animation(.easeInOut(duration: 0.22), value: viewModel.showFullDiskAccessPrompt)
         .onAppear {
             viewModel.presentFullDiskAccessPromptIfNeeded()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             viewModel.checkPermissionOnAppActivation()
+        }
+        .onChange(of: viewModel.showFullDiskAccessPrompt) { _, isShowing in
+            if !isShowing {
+                viewModel.stopPermissionPollingIfNeeded()
+            }
         }
     }
 
@@ -117,7 +125,7 @@ struct ContentView: View {
                     FullDiskAccessBanner(
                         missingVolumePaths: viewModel.missingExternalVolumePaths,
                         onGrantAccess: {
-                            viewModel.grantFullDiskAccess()
+                            viewModel.presentFullDiskAccessOverlay()
                         }
                     )
                 }
@@ -164,7 +172,7 @@ struct ContentView: View {
                     )
 
                     Button("Grant Permission") {
-                        viewModel.grantFullDiskAccess()
+                        viewModel.presentFullDiskAccessOverlay()
                     }
                     .buttonStyle(.borderedProminent)
                 }
