@@ -131,6 +131,7 @@ final class AppViewModel: ObservableObject {
     @Published var hoveredStorageCategory: String?
     @Published var recommendationReview: RecommendationReviewState?
     @Published var showActivityLog = false
+    @Published var showAbout = false
     @Published var showWhatsNewTour = false
 
     let activityLog = ActivityLog.shared

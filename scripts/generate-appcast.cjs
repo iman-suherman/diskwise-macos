@@ -85,9 +85,16 @@ function generateAppcast(options = {}) {
   run(sparkleBin, genArgs, { cwd: root });
 
   if (fs.existsSync(releasesAppcast)) {
-    fs.mkdirSync(path.dirname(websiteAppcast), { recursive: true });
-    fs.copyFileSync(releasesAppcast, websiteAppcast);
-    console.log(`appcast: copied → ${websiteAppcast}`);
+    const copyToWebsite =
+      options.copyToWebsite ??
+      (process.env.SPARKLE_LOCAL === "1" || process.env.LOCAL_RELEASE === "1");
+    if (copyToWebsite) {
+      fs.mkdirSync(path.dirname(websiteAppcast), { recursive: true });
+      fs.copyFileSync(releasesAppcast, websiteAppcast);
+      console.log(`appcast: copied → ${websiteAppcast} (local website)`);
+    } else {
+      console.log(`appcast: skipped website copy — production feed served by registry API from GCS`);
+    }
   }
 
   return {

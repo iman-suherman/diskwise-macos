@@ -41,7 +41,7 @@ targets:
         Debug:
           SPARKLE_FEED_URL: http://127.0.0.1:3000/appcast.xml
         Release:
-          SPARKLE_FEED_URL: https://diskwise.suherman.net/appcast.xml
+          SPARKLE_FEED_URL: https://diskwise-registry.suherman.net/appcast.xml
     dependencies:
       - package: Sparkle
         product: Sparkle

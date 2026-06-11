@@ -7,6 +7,7 @@ const {
 } = require("./firestore");
 const { normalizeChannel } = require("./channels");
 const { withPublicDownloadUrls } = require("./download-urls");
+const { fetchAppcastXml } = require("./appcast");
 
 const DEFAULT_PLUGIN_ID =
   process.env.DEFAULT_APP_ID?.trim() || "diskwise-macos";
@@ -30,9 +31,28 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+async function serveAppcast(req, res, next) {
+  try {
+    const pluginId = req.params.pluginId || DEFAULT_PLUGIN_ID;
+    const xml = await fetchAppcastXml(pluginId);
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=300");
+    res.send(xml);
+  } catch (err) {
+    if (err.status === 404) {
+      res.status(404).json({ error: err.message || "Appcast not found" });
+      return;
+    }
+    next(err);
+  }
+}
+
+app.get("/appcast.xml", serveAppcast);
+app.get("/api/v1/plugins/:pluginId/appcast.xml", serveAppcast);
+
 app.get("/api/v1/plugins", async (_req, res, next) => {
   try {
-    const plugins = await listPlugins();
+    const plugins = (await listPlugins()).map(withPublicDownloadUrls);
     res.json({ plugins });
   } catch (err) {
     next(err);

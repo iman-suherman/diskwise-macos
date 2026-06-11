@@ -49,6 +49,7 @@ export type AppVersion = {
   releaseNotesMarkdown?: string;
   downloadUrl?: string;
   publicDownloadUrl?: string;
+  publicAppcastUrl?: string;
   gcs?: {
     bucket?: string;
     objectPath?: string;

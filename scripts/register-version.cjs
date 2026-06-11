@@ -11,6 +11,7 @@ const {
   publicDownloadUrl,
   publicLatestDownloadUrl,
   resolveDownloadBase,
+  resolvePublicAppcastUrl,
 } = require("./public-download-url.cjs");
 
 const root = path.join(__dirname, "..");
@@ -95,7 +96,7 @@ async function registerPluginVersion({
         }
       : null,
     appcastUrl: appcastObjectPath ? `gs://${bucket}/${appcastObjectPath}` : null,
-    publicAppcastUrl: `${(process.env.WEBSITE_BASE_URL?.trim() || "https://diskwise.suherman.net").replace(/\/$/, "")}/appcast.xml`,
+    publicAppcastUrl: resolvePublicAppcastUrl(process.env, release.pluginId),
     gitCommit: release.gitCommit || null,
     gitTag: release.gitTag || null,
     previousTag: release.previousTag || null,
@@ -119,6 +120,9 @@ async function registerPluginVersion({
         latestVersionSortKey: sortKey,
         lastReleasedCommit: release.gitCommit || null,
         lastReleasedVersion: release.version,
+        appcastBucket: appcastObjectPath ? bucket : null,
+        appcastObjectPath: appcastObjectPath || null,
+        publicAppcastUrl: resolvePublicAppcastUrl(process.env, release.pluginId),
         updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true }
