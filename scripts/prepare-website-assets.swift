@@ -54,6 +54,9 @@ func makeTransparentBitmap(from path: String) -> (rep: NSBitmapImageRep, width: 
             let luminance = (red * 299 + green * 587 + blue * 114) / 1000
 
             if luminance <= blackThreshold {
+                data[offset] = 0
+                data[offset + 1] = 0
+                data[offset + 2] = 0
                 data[offset + 3] = 0
             } else if luminance < blackThreshold + feather {
                 let alpha = (luminance - blackThreshold) * 255 / feather
@@ -156,7 +159,9 @@ try png.write(to: outputURL)
 
 fputs("prepare-website-assets: wrote \(outputPath)\n", stderr)
 
-guard let heroPNG = initial.rep.representation(using: .png, properties: [:]) else {
+let heroCropped = cropToOpaqueBounds(initial.rep, width: initial.width, height: initial.height, padding: 0)
+
+guard let heroPNG = heroCropped.representation(using: .png, properties: [:]) else {
     fputs("prepare-website-assets: failed to encode hero PNG\n", stderr)
     exit(1)
 }

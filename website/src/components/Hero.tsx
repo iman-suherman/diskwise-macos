@@ -79,8 +79,8 @@ export function Hero() {
           <Image
             src="/hero.png"
             alt={`${BRAND_NAME} app icon`}
-            width={1024}
-            height={1024}
+            width={896}
+            height={878}
             priority
             unoptimized
             sizes="(max-width: 1024px) 90vw, 32rem"
