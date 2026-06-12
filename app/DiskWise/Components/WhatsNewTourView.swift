@@ -12,8 +12,10 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
+        case "0.3.0":
+            return v030Pages
         case "1.0.0":
-            return v100Pages
+            return v030Pages
         case "0.2.4":
             return v024Pages
         case "0.2.3":
@@ -43,12 +45,12 @@ enum WhatsNewContent {
         }
     }
 
-    private static let v100Pages: [WhatsNewPage] = [
+    private static let v030Pages: [WhatsNewPage] = [
         WhatsNewPage(
             id: "welcome",
             icon: "sparkles",
-            title: "Welcome to DiskWise 1.0",
-            message: "DiskWise is now a three-phase storage consultant — not just a scan-and-duplicate pipeline.",
+            title: "Welcome to DiskWise 0.3",
+            message: "A major update: DiskWise is now a three-phase storage consultant — not just a scan-and-duplicate pipeline.",
             bullets: [
                 "Phase 1: Identify disk usage on APFS volumes",
                 "Phase 2: Analyze into safe, review-first, and personal buckets",

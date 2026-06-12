@@ -1,6 +1,6 @@
 {
   "name": "diskwise-macos",
-  "version": "1.0.0",
+  "version": "0.3.0",
   "displayName": "DiskWise",
   "publisher": "Iman Suherman",
   "private": true,
@@ -28,6 +28,7 @@
     "sign": "bash scripts/sign.sh",
     "package": "bash scripts/package.sh",
     "release": "node scripts/release-publish.cjs",
+    "delete:version": "node scripts/delete-version.cjs",
     "release:local": "bash scripts/release.sh",
     "upload:release": "node scripts/upload-release.cjs",
     "sparkle:setup-keys": "bash scripts/sparkle-setup-keys.sh",

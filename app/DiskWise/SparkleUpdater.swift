@@ -2,19 +2,20 @@ import AppKit
 import Sparkle
 
 /// Sparkle auto-updates — Debug uses local website (`npm run dev:website`), Release uses production appcast.
-final class SparkleUpdaterController: NSObject {
+final class SparkleUpdaterController: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelegate {
     static let shared = SparkleUpdaterController()
 
-    private let controller: SPUStandardUpdaterController
+    private var controller: SPUStandardUpdaterController!
     private var didCheckOnLaunch = false
+    private var postUpgradeCompletion: (() -> Void)?
 
     override private init() {
+        super.init()
         controller = SPUStandardUpdaterController(
             startingUpdater: false,
-            updaterDelegate: nil,
-            userDriverDelegate: nil
+            updaterDelegate: self,
+            userDriverDelegate: self
         )
-        super.init()
         configureUpdater()
         controller.startUpdater()
     }
@@ -33,6 +34,24 @@ final class SparkleUpdaterController: NSObject {
         guard !didCheckOnLaunch else { return }
         didCheckOnLaunch = true
         updater.checkForUpdatesInBackground()
+    }
+
+    /// After a version upgrade: show Sparkle UI (update available or up to date), then run completion.
+    func checkForUpdatesBeforeWhatsNew(completion: @escaping () -> Void) {
+        postUpgradeCompletion = completion
+        controller.checkForUpdates(nil)
+    }
+
+    private func finishPostUpgradeSessionIfNeeded() {
+        guard let completion = postUpgradeCompletion else { return }
+        postUpgradeCompletion = nil
+        completion()
+    }
+
+    // MARK: - SPUStandardUserDriverDelegate
+
+    func standardUserDriverWillFinishUpdateSession(_ userDriver: SPUStandardUserDriver) {
+        finishPostUpgradeSessionIfNeeded()
     }
 
     private func configureUpdater() {

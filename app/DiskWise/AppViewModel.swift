@@ -173,6 +173,7 @@ final class AppViewModel: ObservableObject {
     private var maintenanceEngine = MaintenanceEngine()
     private var aiEngine: AIAnalysisEngine!
     private let fullDiskAccessPromptKey = "diskwise.hasSeenFullDiskAccessPrompt"
+    private var didRunPostUpgradeUpdateCheck = false
 
     var isPostUpgradeStartup: Bool {
         appSettings.shouldShowWhatsNew
@@ -182,19 +183,39 @@ final class AppViewModel: ObservableObject {
         isStartingUp || showFullDiskAccessPrompt || showWhatsNewTour || showIndexRebuildPrompt
     }
 
+    func schedulePostUpgradePresentation() {
+        guard !showFullDiskAccessPrompt, !showIndexRebuildPrompt else { return }
+
+        if appSettings.shouldShowWhatsNew {
+            SparkleUpdaterController.shared.checkForUpdatesBeforeWhatsNew { [weak self] in
+                guard let self else { return }
+                self.didRunPostUpgradeUpdateCheck = true
+                self.presentWhatsNewIfNeeded()
+                if !self.isBlockingLaunchFlow {
+                    self.schedulePostLaunchWork(skipUpdateCheck: true)
+                }
+            }
+        } else if !isBlockingLaunchFlow {
+            schedulePostLaunchWork()
+        }
+    }
+
     func scheduleLaunchUpdateCheckIfReady() {
         guard !isBlockingLaunchFlow else { return }
+        guard !didRunPostUpgradeUpdateCheck else { return }
         SparkleUpdaterController.shared.checkForUpdatesOnLaunchIfNeeded()
     }
 
     /// Deferred work after startup overlays (What's New, FDA) so the main UI stays responsive.
-    func schedulePostLaunchWork() {
+    func schedulePostLaunchWork(skipUpdateCheck: Bool = false) {
         guard !isBlockingLaunchFlow else { return }
         refreshAnalysisReportInBackground()
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(400))
             guard !isBlockingLaunchFlow else { return }
-            scheduleLaunchUpdateCheckIfReady()
+            if !skipUpdateCheck {
+                scheduleLaunchUpdateCheckIfReady()
+            }
         }
     }
 
@@ -320,7 +341,7 @@ final class AppViewModel: ObservableObject {
         presentIndexRebuildPromptIfNeeded()
         presentFullDiskAccessPromptIfNeeded()
         if !isBlockingLaunchFlow {
-            schedulePostLaunchWork()
+            schedulePostUpgradePresentation()
         }
     }
 
@@ -336,7 +357,7 @@ final class AppViewModel: ObservableObject {
             rebuildStorageIndex(rescan: true)
         } else {
             appSettings.markIndexSchemaCurrent()
-            presentWhatsNewIfNeeded()
+            schedulePostUpgradePresentation()
         }
     }
 
@@ -362,7 +383,7 @@ final class AppViewModel: ObservableObject {
             scan(volume: volume)
         } else {
             setStatus("Storage index cleared — scan a drive to rebuild", kind: .success)
-            presentWhatsNewIfNeeded()
+            schedulePostUpgradePresentation()
         }
     }
 
@@ -605,7 +626,7 @@ final class AppViewModel: ObservableObject {
             if isFirstLaunch {
                 UserDefaults.standard.set(true, forKey: fullDiskAccessPromptKey)
             }
-            presentWhatsNewIfNeeded()
+            schedulePostUpgradePresentation()
             return
         }
 
@@ -652,7 +673,7 @@ final class AppViewModel: ObservableObject {
                 setStatus("Ready to scan", kind: .ready)
             }
         }
-        presentWhatsNewIfNeeded()
+        schedulePostUpgradePresentation()
     }
 
     func dismissFullDiskAccessPrompt() {
@@ -668,7 +689,7 @@ final class AppViewModel: ObservableObject {
                 setStatus("Ready to scan", kind: .ready)
             }
         }
-        presentWhatsNewIfNeeded()
+        schedulePostUpgradePresentation()
     }
 
     func presentWhatsNewIfNeeded() {
