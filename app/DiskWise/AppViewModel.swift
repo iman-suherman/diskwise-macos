@@ -144,6 +144,10 @@ final class AppViewModel: ObservableObject {
     @Published var showAbout = false
     @Published var showWhatsNewTour = false
     @Published var showIndexRebuildPrompt = false
+    @Published var isRebuildingIndex = false
+    @Published var indexRebuildMessage = "Preparing to rebuild…"
+    @Published var indexRebuildCompletedSteps: Set<IndexRebuildStep> = []
+    @Published var indexRebuildActiveStep: IndexRebuildStep?
     @Published var showSavedScanPrompt = false
     @Published var selectedMaintenanceKind: MaintenanceKind = .appCaches
     @Published var maintenanceScanResult: MaintenanceScanResult?
@@ -165,6 +169,7 @@ final class AppViewModel: ObservableObject {
     private var database: DiskWiseDatabase!
     private var permissionPollTask: Task<Void, Never>?
     private var startupTask: Task<Void, Never>?
+    private var indexRebuildTask: Task<Void, Never>?
     private var scanTask: Task<Void, Never>?
     private var duplicateTask: Task<Void, Never>?
     private var analysisRefreshTask: Task<Void, Never>?
@@ -377,37 +382,92 @@ final class AppViewModel: ObservableObject {
     func dismissIndexRebuildPrompt(rebuildNow: Bool) {
         showIndexRebuildPrompt = false
         if rebuildNow {
-            rebuildStorageIndex(rescan: true)
+            isRebuildingIndex = true
+            indexRebuildCompletedSteps = []
+            beginIndexRebuildStep(.clearing, message: "Clearing saved storage index…")
+            indexRebuildTask?.cancel()
+            indexRebuildTask = Task { await rebuildStorageIndex(rescan: true) }
         } else {
             appSettings.markIndexSchemaCurrent()
             schedulePostUpgradePresentation()
         }
     }
 
-    func rebuildStorageIndex(rescan: Bool) {
-        do {
-            try database.clearAllStorageIndexes()
-        } catch {
-            setStatus("Could not clear storage index: \(error.localizedDescription)", kind: .error)
-            return
-        }
-
+    func rebuildStorageIndex(rescan: Bool) async {
         overview = nil
         topConsumers = []
         duplicateGroups = []
         analysisReport = nil
+        clearStorageCategorySelection()
+        cachedResultsRefreshTask?.cancel()
+        analysisRefreshTask?.cancel()
+
+        await Task.yield()
+
+        guard !Task.isCancelled else {
+            finishIndexRebuild(success: false, message: "Index rebuild cancelled", kind: .ready)
+            return
+        }
+
+        do {
+            try await Task.detached(priority: .userInitiated) { [database] in
+                try database.clearAllStorageIndexes()
+            }.value
+        } catch {
+            finishIndexRebuild(
+                success: false,
+                message: "Could not clear storage index: \(error.localizedDescription)",
+                kind: .error
+            )
+            return
+        }
+
+        completeIndexRebuildStep(.clearing)
         appSettings.markIndexSchemaCurrent()
         reload()
 
         logActivity(.scan, "Cleared storage index", detail: "Index schema upgraded to v\(AppSettings.currentIndexSchemaVersion)")
 
         if rescan, let volume = selectedVolume ?? mountedVolumes.first {
+            beginIndexRebuildStep(.identifying, message: "Identifying disk usage on \(volume.name)…")
             setStatus("Storage index cleared — rescanning \(volume.name)…", kind: .working)
             scan(volume: volume)
         } else {
-            setStatus("Storage index cleared — scan a drive to rebuild", kind: .success)
+            finishIndexRebuild(
+                success: true,
+                message: "Storage index cleared — scan a drive to rebuild",
+                kind: .success
+            )
             schedulePostUpgradePresentation()
         }
+    }
+
+    private func beginIndexRebuildStep(_ step: IndexRebuildStep, message: String) {
+        indexRebuildActiveStep = step
+        indexRebuildMessage = message
+    }
+
+    private func completeIndexRebuildStep(_ step: IndexRebuildStep) {
+        indexRebuildCompletedSteps.insert(step)
+    }
+
+    private func finishIndexRebuild(success: Bool, message: String, kind: AppStatusKind) {
+        isRebuildingIndex = false
+        indexRebuildActiveStep = nil
+        indexRebuildCompletedSteps = []
+        setStatus(message, kind: kind)
+        if success {
+            schedulePostUpgradePresentation()
+        }
+    }
+
+    private func finishIndexRebuildAfterScan(volumeName: String, success: Bool, message: String, kind: AppStatusKind) {
+        guard isRebuildingIndex else { return }
+        if success {
+            completeIndexRebuildStep(.analyzing)
+            indexRebuildMessage = "Action plan ready for \(volumeName)"
+        }
+        finishIndexRebuild(success: success, message: message, kind: kind)
     }
 
     var isFirstLaunch: Bool {
@@ -1151,6 +1211,9 @@ final class AppViewModel: ObservableObject {
                         Task { @MainActor in
                             self.scanProgress = progress
                             self.maybeRefreshInsightsDuringScan(progress)
+                            if self.isRebuildingIndex {
+                                self.indexRebuildMessage = "Identifying disk usage · \(progress.scannedCount.formatted()) files…"
+                            }
                             self.setStatus(
                                 "Phase 1 of 3 · \(progress.scannedCount.formatted()) files · \(self.scanProgressPercentLabel)",
                                 kind: .working
@@ -1172,17 +1235,26 @@ final class AppViewModel: ObservableObject {
                 }
             } catch {
                 await MainActor.run {
-                    self.isScanning = false
-                    self.scanPhase = .idle
-                    self.scanProgress = nil
-                    self.scanStartTime = nil
-                    if error is CancellationError || error.localizedDescription.contains("cancelled") {
+                    if self.isRebuildingIndex {
+                        self.finishIndexRebuildAfterScan(
+                            volumeName: scanLabel,
+                            success: false,
+                            message: error is CancellationError || error.localizedDescription.contains("cancelled")
+                                ? "Index rebuild cancelled"
+                                : "Index rebuild failed: \(error.localizedDescription)",
+                            kind: error is CancellationError || error.localizedDescription.contains("cancelled") ? .ready : .error
+                        )
+                    } else if error is CancellationError || error.localizedDescription.contains("cancelled") {
                         self.logActivity(.scan, "Scan cancelled", detail: scanLabel)
                         self.setStatus("Scan cancelled", kind: .ready)
                     } else {
                         self.logActivity(.scan, "Scan failed", detail: error.localizedDescription)
                         self.setStatus("Scan failed: \(error.localizedDescription)", kind: .error)
                     }
+                    self.isScanning = false
+                    self.scanPhase = .idle
+                    self.scanProgress = nil
+                    self.scanStartTime = nil
                 }
             }
         }
@@ -1207,6 +1279,10 @@ final class AppViewModel: ObservableObject {
         selectedVolumePath = volumeMountPath
         reload()
         refreshInsights()
+        if isRebuildingIndex {
+            completeIndexRebuildStep(.identifying)
+            beginIndexRebuildStep(.analyzing, message: "Analyzing storage on \(volumeName)…")
+        }
         let completionDetail = scanLabel == volumeName
             ? "\(summary.scannedFiles.formatted()) files indexed on \(volumeName)"
             : "\(summary.scannedFiles.formatted()) files indexed in \(scanLabel) on \(volumeName)"
@@ -1238,10 +1314,17 @@ final class AppViewModel: ObservableObject {
                     self.refreshInsights()
                     self.selectedPane = .overview
                     self.logActivity(.recommendation, "Action plan ready", detail: volumeName)
-                    self.setStatus(
-                        "Phase 3 of 3 · Action plan ready for \(volumeName)",
-                        kind: .success
-                    )
+                    let statusMessage = "Phase 3 of 3 · Action plan ready for \(volumeName)"
+                    if self.isRebuildingIndex {
+                        self.finishIndexRebuildAfterScan(
+                            volumeName: volumeName,
+                            success: true,
+                            message: statusMessage,
+                            kind: .success
+                        )
+                    } else {
+                        self.setStatus(statusMessage, kind: .success)
+                    }
                 }
             } catch {
                 await MainActor.run {
@@ -1250,10 +1333,17 @@ final class AppViewModel: ObservableObject {
                     self.scanStartTime = nil
                     self.refreshInsights()
                     self.logActivity(.recommendation, "Analysis failed", detail: error.localizedDescription)
-                    self.setStatus(
-                        "Analysis failed: \(error.localizedDescription) — indexed data is still available",
-                        kind: .error
-                    )
+                    let statusMessage = "Analysis failed: \(error.localizedDescription) — indexed data is still available"
+                    if self.isRebuildingIndex {
+                        self.finishIndexRebuildAfterScan(
+                            volumeName: volumeName,
+                            success: false,
+                            message: statusMessage,
+                            kind: .error
+                        )
+                    } else {
+                        self.setStatus(statusMessage, kind: .error)
+                    }
                 }
             }
         }

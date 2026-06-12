@@ -1,0 +1,6 @@
+{
+  "summary": "Index rebuild after upgrade now shows live progress instead of freezing the app.",
+  "fixed": [
+    "Rebuild storage index runs in the background with a dedicated progress screen through all three phases"
+  ]
+}

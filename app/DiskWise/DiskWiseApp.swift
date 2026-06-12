@@ -127,8 +127,8 @@ struct ContentView: View {
                         }
                     }
             }
-            .blur(radius: viewModel.isStartingUp || viewModel.showFullDiskAccessPrompt || viewModel.showWhatsNewTour || viewModel.showIndexRebuildPrompt || viewModel.showSavedScanPrompt ? 8 : 0)
-            .allowsHitTesting(!viewModel.isStartingUp && !viewModel.showFullDiskAccessPrompt && !viewModel.showWhatsNewTour && !viewModel.showIndexRebuildPrompt && !viewModel.showSavedScanPrompt)
+            .blur(radius: viewModel.isStartingUp || viewModel.isRebuildingIndex || viewModel.showFullDiskAccessPrompt || viewModel.showWhatsNewTour || viewModel.showIndexRebuildPrompt || viewModel.showSavedScanPrompt ? 8 : 0)
+            .allowsHitTesting(!viewModel.isStartingUp && !viewModel.isRebuildingIndex && !viewModel.showFullDiskAccessPrompt && !viewModel.showWhatsNewTour && !viewModel.showIndexRebuildPrompt && !viewModel.showSavedScanPrompt)
 
             if viewModel.isStartingUp {
                 StartupSplashOverlay(
@@ -145,6 +145,17 @@ struct ContentView: View {
                     version: AppSettings.currentAppVersion,
                     onRebuild: { viewModel.dismissIndexRebuildPrompt(rebuildNow: true) },
                     onSkip: { viewModel.dismissIndexRebuildPrompt(rebuildNow: false) }
+                )
+            }
+
+            if viewModel.isRebuildingIndex {
+                IndexRebuildProgressOverlay(
+                    version: AppSettings.currentAppVersion,
+                    volumeName: viewModel.selectedVolume?.name ?? viewModel.mountedVolumes.first?.name,
+                    currentMessage: viewModel.indexRebuildMessage,
+                    completedSteps: viewModel.indexRebuildCompletedSteps,
+                    activeStep: viewModel.indexRebuildActiveStep,
+                    scanProgress: viewModel.scanProgress
                 )
             }
 
@@ -183,6 +194,7 @@ struct ContentView: View {
             }
         }
         .animation(.easeInOut(duration: 0.22), value: viewModel.isStartingUp)
+        .animation(.easeInOut(duration: 0.22), value: viewModel.isRebuildingIndex)
         .animation(.easeInOut(duration: 0.22), value: viewModel.showFullDiskAccessPrompt)
         .animation(.easeInOut(duration: 0.22), value: viewModel.showIndexRebuildPrompt)
         .animation(.easeInOut(duration: 0.22), value: viewModel.showSavedScanPrompt)
