@@ -1,0 +1,12 @@
+{
+  "summary": "More control over scan performance, plus a What's New splash after each update.",
+  "introduced": [
+    "Scan performance settings — limits for duplicate detection and analysis",
+    "What's New splash on first launch after updating",
+    "Refreshed app icon matching the website artwork"
+  ],
+  "changed": [
+    "Overview stays visible when a scan finds no duplicates"
+  ],
+  "fixed": []
+}

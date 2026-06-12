@@ -1,0 +1,11 @@
+{
+  "summary": "First launch after updating feels faster and more transparent.",
+  "introduced": [
+    "Startup splash with step-by-step progress after updates"
+  ],
+  "changed": [
+    "Database updates and saved scans load in the background before the main window appears",
+    "Recommendations load after the main window is ready"
+  ],
+  "fixed": []
+}

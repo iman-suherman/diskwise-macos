@@ -1,0 +1,11 @@
+{
+  "summary": "DiskWise can now update itself — no more manual downloads.",
+  "introduced": [
+    "Automatic update checks via Sparkle",
+    "Check for Updates in the DiskWise menu"
+  ],
+  "changed": [
+    "Refreshed app icon and website marketing assets"
+  ],
+  "fixed": []
+}

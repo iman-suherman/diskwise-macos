@@ -1,0 +1,16 @@
+{
+  "summary": "Cleanup suggestions you can trust, plus smoother duplicate discovery on large drives.",
+  "introduced": [
+    "Activity Log for troubleshooting — open from Help → Activity Log"
+  ],
+  "changed": [
+    "Duplicate detection runs in the background while you browse Overview",
+    "Bulk Move to Trash for duplicate groups",
+    "Clearer progress while finding duplicates",
+    "Archive Old Videos now lists real video files only",
+    "Installer DMG recommendations exclude system folders like Preboot and MobileAsset"
+  ],
+  "fixed": [
+    "Move to Trash reports failures clearly instead of failing silently"
+  ]
+}

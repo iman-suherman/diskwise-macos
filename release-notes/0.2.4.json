@@ -1,0 +1,10 @@
+{
+  "summary": "Startup after updating feels snappier — less waiting, more doing.",
+  "introduced": [],
+  "changed": [
+    "Heavy storage analysis runs after What's New closes, not during it",
+    "Update check waits until the main window is ready",
+    "Continue after What's New no longer stalls the UI"
+  ],
+  "fixed": []
+}

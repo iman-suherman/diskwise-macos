@@ -1,0 +1,11 @@
+{
+  "summary": "Scan a full drive or just one folder — directly from the sidebar.",
+  "introduced": [
+    "Scan and Rescan buttons on each drive in the sidebar",
+    "Scan Folder for targeting a single directory without re-indexing the whole volume"
+  ],
+  "changed": [
+    "Right-click any drive for Scan, Scan Folder, or Eject"
+  ],
+  "fixed": []
+}

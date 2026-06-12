@@ -1,0 +1,10 @@
+{
+  "summary": "New Maintenance tools for caches, project artifacts, and app cleanup.",
+  "introduced": [
+    "Maintenance tab with Deep Clean, Project Purge, and Installers",
+    "App uninstall helper for removing applications and their support files",
+    "System Status and Optimize panels for live disk health"
+  ],
+  "changed": [],
+  "fixed": []
+}

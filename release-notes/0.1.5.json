@@ -1,0 +1,11 @@
+{
+  "summary": "Easier access to settings, release notes, and update info.",
+  "introduced": [
+    "About DiskWise panel with version details and release notes",
+    "Settings shortcut in the sidebar Actions section"
+  ],
+  "changed": [
+    "Sparkle update feed served through the registry API"
+  ],
+  "fixed": []
+}

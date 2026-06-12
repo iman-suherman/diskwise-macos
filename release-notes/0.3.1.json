@@ -1,0 +1,11 @@
+{
+  "summary": "Release notes across every version now read like a product update, not a git log.",
+  "introduced": [
+    "Curated release notes for all versions from 0.1.0 through 0.3.0",
+    "Batch republish script to refresh notes in the registry"
+  ],
+  "changed": [
+    "Website and Sparkle appcast show friendly What's new, Improvements, and Fixes sections"
+  ],
+  "fixed": []
+}

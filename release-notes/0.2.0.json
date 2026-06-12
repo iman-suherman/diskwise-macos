@@ -1,0 +1,12 @@
+{
+  "summary": "Faster scans when you want speed, deeper scans when you need detail — plus simpler Full Disk Access setup.",
+  "introduced": [
+    "Fast and Deep scan modes in Settings",
+    "DiskWise auto-registers for Full Disk Access — just flip the toggle"
+  ],
+  "changed": [
+    "Scanning resumes automatically after you grant permission",
+    "Balanced preset uses Fast scan by default"
+  ],
+  "fixed": []
+}
