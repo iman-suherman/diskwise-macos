@@ -138,11 +138,10 @@ export function publishedAtToIso(value?: AppVersion["publishedAt"]): string | nu
 export function flattenReleaseNotes(notes?: ReleaseNotes): string[] {
   if (!notes) return [];
   return [
-    ...(notes.breaking ?? []).map((item) => `Breaking: ${item}`),
-    ...(notes.introduced ?? []).map((item) => `Introduced: ${item}`),
-    ...(notes.changed ?? []).map((item) => `Changed: ${item}`),
-    ...(notes.updated ?? []).map((item) => `Updated: ${item}`),
-    ...(notes.fixed ?? []).map((item) => `Fixed: ${item}`),
+    ...(notes.introduced ?? []),
+    ...(notes.changed ?? []),
+    ...(notes.fixed ?? []),
+    ...(notes.breaking ?? []).map((item) => `Important: ${item}`),
     ...(notes.removed ?? []).map((item) => `Removed: ${item}`),
   ];
 }
