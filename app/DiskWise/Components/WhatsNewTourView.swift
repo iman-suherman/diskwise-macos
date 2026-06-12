@@ -12,6 +12,8 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
+        case "0.2.1":
+            return v021Pages
         case "0.2.0":
             return v020Pages
         case "0.1.8":
@@ -32,6 +34,33 @@ enum WhatsNewContent {
             return genericPages(version: version)
         }
     }
+
+    private static let v021Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "welcome",
+            icon: "sparkles",
+            title: "Welcome to DiskWise 0.2.1",
+            message: "Scans now account for app bundles and show how much space is still unmapped.",
+            bullets: []
+        ),
+        WhatsNewPage(
+            id: "apps",
+            icon: "app.fill",
+            title: "Applications are counted correctly",
+            message: "Apps like Xcode and Chrome are sized as a whole instead of showing as empty folders.",
+            bullets: [
+                "Rescan your drive to refresh totals",
+                "Applications should appear as a major category",
+            ]
+        ),
+        WhatsNewPage(
+            id: "gap",
+            icon: "questionmark.folder",
+            title: "See unmapped storage",
+            message: "If indexed space is still below Used, DiskWise shows a Not Indexed card with next steps.",
+            bullets: []
+        ),
+    ]
 
     private static let v020Pages: [WhatsNewPage] = [
         WhatsNewPage(
