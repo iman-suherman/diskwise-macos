@@ -111,17 +111,19 @@ public final class DuplicateDetector: @unchecked Sendable {
     }
 
     public func sha256(for url: URL, chunkSize: Int = 1_048_576) throws -> String {
-        let handle = try FileHandle(forReadingFrom: url)
-        defer { try? handle.close() }
+        try autoreleasepool {
+            let handle = try FileHandle(forReadingFrom: url)
+            defer { try? handle.close() }
 
-        var hasher = SHA256()
-        while true {
-            let data = try handle.read(upToCount: chunkSize) ?? Data()
-            if data.isEmpty { break }
-            hasher.update(data: data)
+            var hasher = SHA256()
+            while true {
+                let data = try handle.read(upToCount: chunkSize) ?? Data()
+                if data.isEmpty { break }
+                hasher.update(data: data)
+            }
+
+            return hasher.finalize().map { String(format: "%02x", $0) }.joined()
         }
-
-        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 
     public func normalizedFilename(_ path: String) -> String {
@@ -134,36 +136,38 @@ public final class DuplicateDetector: @unchecked Sendable {
     }
 
     public func videoFingerprint(for url: URL) -> String? {
-        guard let metadata = metadataExtractor.extract(for: url),
-              case .video(let video) = metadata.payload else {
-            return nil
-        }
-
-        let asset = AVURLAsset(url: url)
-        let generator = AVAssetImageGenerator(asset: asset)
-        generator.appliesPreferredTrackTransform = true
-        generator.maximumSize = CGSize(width: 160, height: 90)
-
-        var frameHashes: [String] = []
-        let duration = asset.duration.seconds
-        let sampleTimes: [Double] = duration.isFinite && duration > 0
-            ? [0.1, duration * 0.5, max(duration - 0.2, 0.2)]
-            : [0.1]
-
-        for seconds in sampleTimes {
-            let time = CMTime(seconds: seconds, preferredTimescale: 600)
-            if let image = try? generator.copyCGImage(at: time, actualTime: nil) {
-                frameHashes.append(hash(image: image))
+        autoreleasepool {
+            guard let metadata = metadataExtractor.extract(for: url),
+                  case .video(let video) = metadata.payload else {
+                return nil
             }
+
+            let asset = AVURLAsset(url: url)
+            let generator = AVAssetImageGenerator(asset: asset)
+            generator.appliesPreferredTrackTransform = true
+            generator.maximumSize = CGSize(width: 160, height: 90)
+
+            var frameHashes: [String] = []
+            let duration = asset.duration.seconds
+            let sampleTimes: [Double] = duration.isFinite && duration > 0
+                ? [0.1, duration * 0.5, max(duration - 0.2, 0.2)]
+                : [0.1]
+
+            for seconds in sampleTimes {
+                let time = CMTime(seconds: seconds, preferredTimescale: 600)
+                if let image = try? generator.copyCGImage(at: time, actualTime: nil) {
+                    frameHashes.append(hash(image: image))
+                }
+            }
+
+            let signature = [
+                video.resolution ?? "unknown",
+                String(format: "%.2f", video.duration ?? 0),
+                frameHashes.joined(separator: "|"),
+            ].joined(separator: "::")
+
+            return SHA256.hash(data: Data(signature.utf8)).compactMap { String(format: "%02x", $0) }.joined()
         }
-
-        let signature = [
-            video.resolution ?? "unknown",
-            String(format: "%.2f", video.duration ?? 0),
-            frameHashes.joined(separator: "|"),
-        ].joined(separator: "::")
-
-        return SHA256.hash(data: Data(signature.utf8)).compactMap { String(format: "%02x", $0) }.joined()
     }
 
     private func hash(image: CGImage) -> String {
@@ -184,14 +188,18 @@ public final class DuplicateDetector: @unchecked Sendable {
         context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
         guard let data = context.data else { return "invalid" }
         let buffer = data.bindMemory(to: UInt8.self, capacity: width * height * 4)
-        let bytes = (0..<(width * height * 4)).map { buffer[$0] }
-        return SHA256.hash(data: Data(bytes)).compactMap { String(format: "%02x", $0) }.joined()
+        let byteCount = width * height * 4
+        return SHA256.hash(data: Data(bytes: buffer, count: byteCount))
+            .compactMap { String(format: "%02x", $0) }
+            .joined()
     }
 }
 
 public final class DuplicateEngine: @unchecked Sendable {
     private let database: DiskWiseDatabase
     private let detector: DuplicateDetector
+    private let hashUpdateBatchSize = 100
+    private let progressReportInterval = 25
 
     public init(database: DiskWiseDatabase, detector: DuplicateDetector = DuplicateDetector()) {
         self.database = database
@@ -206,6 +214,8 @@ public final class DuplicateEngine: @unchecked Sendable {
         isCancelled: (@Sendable () -> Bool)? = nil
     ) throws -> DuplicateScanSummary {
         let cappedLimit = max(1_000, min(fileLimit, 1_000_000))
+        try database.deleteDuplicateGroups(forDiskID: diskID)
+
         let files = try database.files(forDiskID: diskID, limit: cappedLimit)
         var groupsFound = 0
         var reclaimableBytes: Int64 = 0
@@ -238,7 +248,8 @@ public final class DuplicateEngine: @unchecked Sendable {
                 )
             case .hash:
                 summary = try detectByHash(
-                    files,
+                    forDiskID: diskID,
+                    fileLimit: cappedLimit,
                     levelIndex: levelIndex,
                     levelCount: activeLevels.count,
                     groupsFoundSoFar: groupsFound,
@@ -247,7 +258,8 @@ public final class DuplicateEngine: @unchecked Sendable {
                 )
             case .videoFingerprint:
                 summary = try detectByVideoFingerprint(
-                    files,
+                    forDiskID: diskID,
+                    fileLimit: cappedLimit,
                     levelIndex: levelIndex,
                     levelCount: activeLevels.count,
                     groupsFoundSoFar: groupsFound,
@@ -261,6 +273,10 @@ public final class DuplicateEngine: @unchecked Sendable {
         }
 
         return DuplicateScanSummary(groupsFound: groupsFound, reclaimableBytes: reclaimableBytes)
+    }
+
+    private func shouldReportProgress(processedCount: Int, totalCount: Int) -> Bool {
+        processedCount == 0 || processedCount >= totalCount || processedCount % progressReportInterval == 0
     }
 
     private func reportProgress(
@@ -310,7 +326,11 @@ public final class DuplicateEngine: @unchecked Sendable {
         let grouped = Dictionary(grouping: files) { detector.normalizedFilename($0.path) }
         let entries = grouped
             .filter { $0.value.count > 1 }
-            .map { (fingerprint: $0.key, members: $0.value) }
+            .compactMap { group -> (fingerprint: String, memberIDs: [Int64])? in
+                let memberIDs = group.value.compactMap(\.id)
+                guard memberIDs.count > 1 else { return nil }
+                return (fingerprint: group.key, memberIDs: memberIDs)
+            }
 
         reportProgress(
             level: .filename,
@@ -352,7 +372,11 @@ public final class DuplicateEngine: @unchecked Sendable {
         let grouped = Dictionary(grouping: sizedFiles) { $0.size }
         let entries = grouped
             .filter { $0.value.count > 1 }
-            .map { (fingerprint: "size:\($0.key)", members: $0.value) }
+            .compactMap { group -> (fingerprint: String, memberIDs: [Int64])? in
+                let memberIDs = group.value.compactMap(\.id)
+                guard memberIDs.count > 1 else { return nil }
+                return (fingerprint: "size:\(group.key)", memberIDs: memberIDs)
+            }
 
         reportProgress(
             level: .size,
@@ -369,37 +393,69 @@ public final class DuplicateEngine: @unchecked Sendable {
     }
 
     private func detectByHash(
-        _ files: [FileRecord],
+        forDiskID diskID: Int64,
+        fileLimit: Int,
         levelIndex: Int,
         levelCount: Int,
         groupsFoundSoFar: Int,
         onProgress: (@Sendable (DuplicateScanProgress) -> Void)?,
         isCancelled: (@Sendable () -> Bool)?
     ) throws -> DuplicateScanSummary {
-        var buckets: [String: [FileRecord]] = [:]
-        let totalCount = files.count
+        let candidates = try database.filesWithDuplicateSizes(forDiskID: diskID, limit: fileLimit)
+        var buckets: [String: [Int64]] = [:]
+        var hashUpdates: [(fileID: Int64, hash: String)] = []
+        let totalCount = candidates.count
 
-        for (index, file) in files.enumerated() {
+        reportProgress(
+            level: .hash,
+            levelIndex: levelIndex,
+            levelCount: levelCount,
+            processedCount: 0,
+            totalCount: totalCount,
+            currentPath: totalCount == 0
+                ? "No size matches to hash"
+                : "Hashing \(totalCount.formatted()) size-matched files…",
+            groupsFoundSoFar: groupsFoundSoFar,
+            onProgress: onProgress
+        )
+
+        for (index, file) in candidates.enumerated() {
             if isCancelled?() == true { throw CancellationError() }
 
-            reportProgress(
-                level: .hash,
-                levelIndex: levelIndex,
-                levelCount: levelCount,
-                processedCount: index,
-                totalCount: totalCount,
-                currentPath: file.path,
-                groupsFoundSoFar: groupsFoundSoFar,
-                onProgress: onProgress
-            )
-
-            let url = URL(fileURLWithPath: file.path)
-            guard FileManager.default.isReadableFile(atPath: url.path) else { continue }
-            let hash = try detector.sha256(for: url)
-            if let fileID = file.id {
-                try database.updateHash(forFileID: fileID, hash: hash)
+            if shouldReportProgress(processedCount: index, totalCount: totalCount) {
+                reportProgress(
+                    level: .hash,
+                    levelIndex: levelIndex,
+                    levelCount: levelCount,
+                    processedCount: index,
+                    totalCount: totalCount,
+                    currentPath: file.path,
+                    groupsFoundSoFar: groupsFoundSoFar,
+                    onProgress: onProgress
+                )
             }
-            buckets[hash, default: []].append(file)
+
+            guard let fileID = file.id else { continue }
+
+            let hash: String
+            if let cached = file.hash, !cached.isEmpty {
+                hash = cached
+            } else {
+                let url = URL(fileURLWithPath: file.path)
+                guard FileManager.default.isReadableFile(atPath: url.path) else { continue }
+                hash = try detector.sha256(for: url)
+                hashUpdates.append((fileID: fileID, hash: hash))
+                if hashUpdates.count >= hashUpdateBatchSize {
+                    try database.updateHashes(hashUpdates)
+                    hashUpdates.removeAll(keepingCapacity: true)
+                }
+            }
+
+            buckets[hash, default: []].append(fileID)
+        }
+
+        if !hashUpdates.isEmpty {
+            try database.updateHashes(hashUpdates)
         }
 
         reportProgress(
@@ -415,46 +471,65 @@ public final class DuplicateEngine: @unchecked Sendable {
 
         let entries = buckets
             .filter { $0.value.count > 1 }
-            .map { (fingerprint: $0.key, members: $0.value) }
+            .map { (fingerprint: $0.key, memberIDs: $0.value) }
         return try persistGroups(entries: entries, level: .hash)
     }
 
     private func detectByVideoFingerprint(
-        _ files: [FileRecord],
+        forDiskID diskID: Int64,
+        fileLimit: Int,
         levelIndex: Int,
         levelCount: Int,
         groupsFoundSoFar: Int,
         onProgress: (@Sendable (DuplicateScanProgress) -> Void)?,
         isCancelled: (@Sendable () -> Bool)?
     ) throws -> DuplicateScanSummary {
-        let videos = files.filter { $0.category == .video }
-        var buckets: [String: [FileRecord]] = [:]
+        let videos = try database.videosWithDuplicateSizes(forDiskID: diskID, limit: fileLimit)
+        var buckets: [String: [Int64]] = [:]
+        let totalCount = videos.count
+
+        reportProgress(
+            level: .videoFingerprint,
+            levelIndex: levelIndex,
+            levelCount: levelCount,
+            processedCount: 0,
+            totalCount: totalCount,
+            currentPath: totalCount == 0
+                ? "No size-matched videos to fingerprint"
+                : "Fingerprinting \(totalCount.formatted()) size-matched videos…",
+            groupsFoundSoFar: groupsFoundSoFar,
+            onProgress: onProgress
+        )
 
         for (index, file) in videos.enumerated() {
             if isCancelled?() == true { throw CancellationError() }
 
-            reportProgress(
-                level: .videoFingerprint,
-                levelIndex: levelIndex,
-                levelCount: levelCount,
-                processedCount: index,
-                totalCount: videos.count,
-                currentPath: file.path,
-                groupsFoundSoFar: groupsFoundSoFar,
-                onProgress: onProgress
-            )
+            if shouldReportProgress(processedCount: index, totalCount: totalCount) {
+                reportProgress(
+                    level: .videoFingerprint,
+                    levelIndex: levelIndex,
+                    levelCount: levelCount,
+                    processedCount: index,
+                    totalCount: totalCount,
+                    currentPath: file.path,
+                    groupsFoundSoFar: groupsFoundSoFar,
+                    onProgress: onProgress
+                )
+            }
+
+            guard let fileID = file.id else { continue }
 
             let url = URL(fileURLWithPath: file.path)
             guard let fingerprint = detector.videoFingerprint(for: url) else { continue }
-            buckets[fingerprint, default: []].append(file)
+            buckets[fingerprint, default: []].append(fileID)
         }
 
         reportProgress(
             level: .videoFingerprint,
             levelIndex: levelIndex,
             levelCount: levelCount,
-            processedCount: videos.count,
-            totalCount: videos.count,
+            processedCount: totalCount,
+            totalCount: totalCount,
             currentPath: "Saving video matches…",
             groupsFoundSoFar: groupsFoundSoFar,
             onProgress: onProgress
@@ -462,21 +537,23 @@ public final class DuplicateEngine: @unchecked Sendable {
 
         let entries = buckets
             .filter { $0.value.count > 1 }
-            .map { (fingerprint: $0.key, members: $0.value) }
+            .map { (fingerprint: $0.key, memberIDs: $0.value) }
         return try persistGroups(entries: entries, level: .videoFingerprint)
     }
 
     private func persistGroups(
-        entries: [(fingerprint: String, members: [FileRecord])],
+        entries: [(fingerprint: String, memberIDs: [Int64])],
         level: DuplicateDetectionLevel
     ) throws -> DuplicateScanSummary {
         var groupsFound = 0
         var reclaimableBytes: Int64 = 0
 
         for entry in entries {
-            let members = entry.members
-            let fileIDs = members.compactMap(\.id)
+            let fileIDs = entry.memberIDs
             guard fileIDs.count > 1 else { continue }
+
+            let members = try database.files(withIDs: fileIDs)
+            guard members.count > 1 else { continue }
 
             let totalSize = members.reduce(0) { $0 + $1.size }
             let reclaimable = totalSize - (members.first?.size ?? 0)
