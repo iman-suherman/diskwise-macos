@@ -6,6 +6,7 @@ import DiskScannerKit
 import DuplicateKit
 import CleanupKit
 import AIKit
+import MaintenanceKit
 
 enum DiskWiseFormatters {
     static let bytes: ByteCountFormatter = {
@@ -53,6 +54,7 @@ enum ScanPhase: String, Sendable {
 
 enum DetailPane: String, CaseIterable, Identifiable {
     case overview
+    case maintenance
     case duplicates
     case ai
 
@@ -61,6 +63,7 @@ enum DetailPane: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .overview: return "Overview"
+        case .maintenance: return "Maintenance"
         case .duplicates: return "Duplicates"
         case .ai: return "Ask DiskWise"
         }
@@ -69,6 +72,7 @@ enum DetailPane: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .overview: return "chart.pie"
+        case .maintenance: return "wrench.and.screwdriver.fill"
         case .duplicates: return "doc.on.doc"
         case .ai: return "sparkles"
         }
@@ -133,6 +137,15 @@ final class AppViewModel: ObservableObject {
     @Published var showActivityLog = false
     @Published var showAbout = false
     @Published var showWhatsNewTour = false
+    @Published var selectedMaintenanceKind: MaintenanceKind = .deepClean
+    @Published var maintenanceScanResult: MaintenanceScanResult?
+    @Published var maintenanceSelectedEntryIDs: Set<String> = []
+    @Published var installedApps: [InstalledApp] = []
+    @Published var selectedAppForUninstall: InstalledApp?
+    @Published var systemSnapshot: SystemSnapshot?
+    @Published var isMaintenanceScanning = false
+    @Published var maintenanceStatusMessage = ""
+    @Published var optimizationResults: [OptimizationResult] = []
     @Published var isStartingUp = true
     @Published var startupMessage = "Preparing DiskWise…"
     @Published var startupCompletedSteps: Set<StartupStep> = []
@@ -152,6 +165,7 @@ final class AppViewModel: ObservableObject {
     private var scanEngine: ScanEngine!
     private var duplicateEngine: DuplicateEngine!
     private let cleanupEngine = CleanupEngine()
+    private var maintenanceEngine = MaintenanceEngine()
     private var aiEngine: AIAnalysisEngine!
     private let fullDiskAccessPromptKey = "diskwise.hasSeenFullDiskAccessPrompt"
 
@@ -1159,7 +1173,20 @@ final class AppViewModel: ObservableObject {
     }
 
     func handleRecommendation(_ recommendation: RecommendationRecord) {
-        reviewRecommendation(recommendation)
+        switch recommendation.type {
+        case "duplicate_cleanup":
+            reviewRecommendation(recommendation)
+        case "project_purge":
+            selectedPane = .maintenance
+            selectedMaintenanceKind = .projectPurge
+            scanMaintenance(.projectPurge)
+        case "delete_logs":
+            selectedPane = .maintenance
+            selectedMaintenanceKind = .deepClean
+            scanMaintenance(.deepClean)
+        default:
+            reviewRecommendation(recommendation)
+        }
     }
 
     func reviewRecommendation(_ recommendation: RecommendationRecord) {
@@ -1310,6 +1337,129 @@ final class AppViewModel: ObservableObject {
     private func revealTrashedFiles(_ urls: [URL]) {
         guard !urls.isEmpty else { return }
         NSWorkspace.shared.activateFileViewerSelecting(urls)
+    }
+
+    // MARK: - Maintenance (Mole-inspired)
+
+    func scanMaintenance(_ kind: MaintenanceKind) {
+        selectedMaintenanceKind = kind
+        isMaintenanceScanning = true
+        maintenanceStatusMessage = "Scanning \(kind.title.lowercased())…"
+        setStatus(maintenanceStatusMessage, kind: .working)
+
+        Task.detached { [weak self, maintenanceEngine] in
+            guard let self else { return }
+            let result: MaintenanceScanResult
+            switch kind {
+            case .appUninstall:
+                let apps = maintenanceEngine.scanInstalledApps()
+                await MainActor.run {
+                    self.installedApps = apps
+                    self.maintenanceScanResult = nil
+                    self.isMaintenanceScanning = false
+                    self.maintenanceStatusMessage = "Found \(apps.count) installed apps"
+                    self.setStatus(self.maintenanceStatusMessage, kind: .success)
+                    self.logActivity(.scan, "Scanned installed apps", detail: "\(apps.count) apps")
+                }
+                return
+            case .systemStatus:
+                let snapshot = maintenanceEngine.systemSnapshot()
+                await MainActor.run {
+                    self.systemSnapshot = snapshot
+                    self.maintenanceScanResult = nil
+                    self.isMaintenanceScanning = false
+                    self.maintenanceStatusMessage = "Health score: \(snapshot.healthScore)"
+                    self.setStatus("System health: \(snapshot.healthScore)/100", kind: .success)
+                }
+                return
+            case .optimize:
+                await MainActor.run {
+                    self.optimizationResults = []
+                    self.isMaintenanceScanning = false
+                    self.maintenanceStatusMessage = "Choose an optimization task below"
+                    self.setStatus("Ready to optimize", kind: .ready)
+                }
+                return
+            default:
+                result = maintenanceEngine.scan(kind)
+            }
+
+            await MainActor.run {
+                self.maintenanceScanResult = result
+                self.maintenanceSelectedEntryIDs = Set(
+                    result.entries.filter(\.selectedByDefault).map(\.id)
+                )
+                self.isMaintenanceScanning = false
+                let sizeLabel = DiskWiseFormatters.bytes.string(fromByteCount: result.totalBytes)
+                self.maintenanceStatusMessage = "\(result.entries.count) items · \(sizeLabel) reclaimable"
+                self.setStatus("Found \(result.entries.count) items (\(sizeLabel))", kind: .success)
+                self.logActivity(.scan, "Maintenance scan complete", detail: "\(kind.title) · \(sizeLabel)")
+            }
+        }
+    }
+
+    func toggleMaintenanceEntry(_ entry: MaintenanceEntry) {
+        if maintenanceSelectedEntryIDs.contains(entry.id) {
+            maintenanceSelectedEntryIDs.remove(entry.id)
+        } else {
+            maintenanceSelectedEntryIDs.insert(entry.id)
+        }
+    }
+
+    func selectAllMaintenanceEntries(_ selected: Bool) {
+        guard let result = maintenanceScanResult else { return }
+        maintenanceSelectedEntryIDs = selected ? Set(result.entries.map(\.id)) : []
+    }
+
+    var selectedMaintenanceEntries: [MaintenanceEntry] {
+        maintenanceScanResult?.entries.filter { maintenanceSelectedEntryIDs.contains($0.id) } ?? []
+    }
+
+    var selectedMaintenanceBytes: Int64 {
+        selectedMaintenanceEntries.reduce(0) { $0 + $1.size }
+    }
+
+    func executeMaintenanceCleanup() {
+        let entries = selectedMaintenanceEntries
+        guard !entries.isEmpty else {
+            setStatus("Select items to clean", kind: .error)
+            return
+        }
+
+        setStatus("Moving \(entries.count) items to Trash…", kind: .working)
+        let result = maintenanceEngine.executeCleanup(entries: entries)
+        reportCleanupResult(result)
+
+        if result.movedCount > 0 {
+            maintenanceSelectedEntryIDs = []
+            scanMaintenance(selectedMaintenanceKind)
+        }
+    }
+
+    func uninstallSelectedApp(_ app: InstalledApp) {
+        setStatus("Uninstalling \(app.name)…", kind: .working)
+        let result = maintenanceEngine.uninstallApp(app)
+        reportCleanupResult(result)
+        selectedAppForUninstall = nil
+        if result.movedCount > 0 {
+            scanMaintenance(.appUninstall)
+        }
+    }
+
+    func runOptimizationTask(_ task: OptimizationTask) {
+        setStatus("Running \(task.title)…", kind: .working)
+        let result = maintenanceEngine.runOptimization(taskID: task.id)
+        optimizationResults.insert(result, at: 0)
+        setStatus(result.message, kind: result.succeeded ? .success : .error)
+        logActivity(.cleanup, task.title, detail: result.message)
+    }
+
+    func refreshSystemSnapshot() {
+        systemSnapshot = maintenanceEngine.systemSnapshot()
+    }
+
+    var optimizationTasks: [OptimizationTask] {
+        maintenanceEngine.optimizationTasks()
     }
 
     private func setStatus(_ message: String, kind: AppStatusKind) {

@@ -13,6 +13,7 @@ let package = Package(
         .library(name: "DuplicateKit", targets: ["DuplicateKit"]),
         .library(name: "CleanupKit", targets: ["CleanupKit"]),
         .library(name: "AIKit", targets: ["AIKit"]),
+        .library(name: "MaintenanceKit", targets: ["MaintenanceKit"]),
     ],
     dependencies: [
         .package(url: "https://github.com/groue/GRDB.swift.git", from: "7.0.0"),
@@ -55,6 +56,14 @@ let package = Package(
         .target(
             name: "AIKit",
             dependencies: ["DatabaseKit"]
+        ),
+        .target(
+            name: "MaintenanceKit",
+            dependencies: ["DatabaseKit", "CleanupKit"]
+        ),
+        .testTarget(
+            name: "MaintenanceKitTests",
+            dependencies: ["MaintenanceKit"]
         ),
     ]
 )

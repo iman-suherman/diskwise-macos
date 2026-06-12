@@ -57,6 +57,8 @@ targets:
         product: CleanupKit
       - package: DiskWisePackages
         product: AIKit
+      - package: DiskWisePackages
+        product: MaintenanceKit
     scheme:
       testTargets: []
 
