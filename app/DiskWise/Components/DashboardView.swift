@@ -648,12 +648,15 @@ struct DashboardView: View {
             ? Int((Double(overview.totalSize) / Double(volume.usedSize) * 100).rounded())
             : 0
         if !viewModel.hasFullDiskAccess {
-            return "Only \(coverage)% mapped — grant Full Disk Access and rescan"
+            return "Only \(coverage)% mapped — grant Full Disk Access, then rescan"
+        }
+        if coverage < 50 {
+            return "Only \(coverage)% mapped — rescan after granting Full Disk Access"
         }
         if viewModel.appSettings.scanMode == .fast {
             return "Only \(coverage)% mapped — try Deep scan or rescan"
         }
-        return "Only \(coverage)% mapped — rescan or check system snapshots"
+        return "Only \(coverage)% mapped — may include APFS snapshots or purgeable space"
     }
 
     @ViewBuilder
@@ -666,7 +669,7 @@ struct DashboardView: View {
                     Label("About \(DiskWiseFormatters.bytes.string(fromByteCount: unaccounted)) is not mapped yet", systemImage: "questionmark.folder")
                         .font(.headline)
                         .foregroundStyle(.orange)
-                    Text(unaccountedDetail(for: volume, overview: overview) + ". Apps and bundles are now sized as a whole — rescan to refresh totals.")
+                    Text(unaccountedDetail(for: volume, overview: overview) + ". Rescan after granting Full Disk Access if needed.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)

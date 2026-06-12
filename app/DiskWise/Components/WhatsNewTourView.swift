@@ -12,6 +12,8 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
+        case "0.2.3":
+            return v023Pages
         case "0.2.2":
             return v022Pages
         case "0.2.1":
@@ -36,6 +38,20 @@ enum WhatsNewContent {
             return genericPages(version: version)
         }
     }
+
+    private static let v023Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "welcome",
+            icon: "internaldrive.fill",
+            title: "Welcome to DiskWise 0.2.3",
+            message: "Full-volume scans now map much more of your used storage.",
+            bullets: [
+                "Scans the Data volume where your files actually live (not the sealed system snapshot)",
+                "Uses disk usage totals for protected folders File Manager cannot list",
+                "Rescan Macintosh HD after updating — old scan data will not refresh automatically",
+            ]
+        ),
+    ]
 
     private static let v022Pages: [WhatsNewPage] = [
         WhatsNewPage(

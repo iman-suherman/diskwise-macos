@@ -254,10 +254,12 @@ public final class ScanEngine: @unchecked Sendable {
         isCancelled: (@Sendable () -> Bool)? = nil
     ) throws -> ScanSummary {
         let start = Date()
-        let root = scanRoot ?? mountPath
-        let isFolderScan = root.standardizedFileURL.path != mountPath.standardizedFileURL.path
+        let volumeRoot = mountPath.standardizedFileURL
+        let defaultRoot = VolumeScanRoot.effectiveScanRoot(for: volumeRoot)
+        let root = (scanRoot ?? defaultRoot).standardizedFileURL
+        let isFolderScan = root.path != volumeRoot.path
 
-        let resourceValues = try mountPath.resourceValues(forKeys: [
+        let resourceValues = try volumeRoot.resourceValues(forKeys: [
             .volumeTotalCapacityKey,
             .volumeAvailableCapacityKey,
         ])
@@ -265,7 +267,7 @@ public final class ScanEngine: @unchecked Sendable {
         var disk = try database.upsertDisk(
             DiskRecord(
                 name: name,
-                mountPath: mountPath.path,
+                mountPath: volumeRoot.path,
                 totalSize: Int64(resourceValues.volumeTotalCapacity ?? 0),
                 freeSize: Int64(resourceValues.volumeAvailableCapacity ?? 0),
                 scannedAt: Date()
@@ -282,10 +284,16 @@ public final class ScanEngine: @unchecked Sendable {
             try database.deleteFiles(forDiskID: diskID)
         }
 
-        let scannedFiles = try scanner.scan(
+        var scannedFiles = try scanner.scan(
             mountPath: root,
             mode: mode,
             onProgress: onProgress,
+            isCancelled: isCancelled
+        )
+
+        StorageGapFill.appendGaps(
+            scanRoot: root,
+            to: &scannedFiles,
             isCancelled: isCancelled
         )
 
