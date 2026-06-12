@@ -1,0 +1,8 @@
+{
+  "summary": "DiskWise quietly checks for updates every time you open the app.",
+  "introduced": [
+    "Automatic update check on launch when a newer version is available"
+  ],
+  "changed": [],
+  "fixed": []
+}

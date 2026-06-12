@@ -1,0 +1,12 @@
+{
+  "summary": "DiskWise now works like a storage consultant — find what's eating your disk space, get a prioritized cleanup plan, and reclaim space safely.",
+  "introduced": [
+    "Three-phase workflow: identify disk usage, analyze findings, then take action",
+    "Action buckets that label items safe to clean, worth reviewing first, or personal to keep",
+    "Fourteen focused Maintenance tools — from App Caches and node_modules to APFS Snapshot thinning",
+    "Duplicate finder moved to its own tab — run it when you want, not on every scan",
+    "Option to rebuild your storage index after a major scan-model upgrade"
+  ],
+  "changed": [],
+  "fixed": []
+}

@@ -1,0 +1,8 @@
+{
+  "summary": "Eject external drives right from the sidebar.",
+  "introduced": [
+    "One-click eject button on external drive rows in the sidebar"
+  ],
+  "changed": [],
+  "fixed": []
+}

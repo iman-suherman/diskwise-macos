@@ -1,0 +1,9 @@
+{
+  "summary": "Full-volume scans now reflect where your files actually live on APFS Macs.",
+  "introduced": [],
+  "changed": [
+    "Scans the Data volume where your files live, not the read-only system snapshot",
+    "Uses disk usage totals for protected folders macOS won't let apps list"
+  ],
+  "fixed": []
+}

@@ -28,9 +28,12 @@
             <sparkle:shortVersionString>0.2.5</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[<ul>
-<li><strong>Changed</strong><ul>
-<li>Release 1.0.0: three-phase storage consultant workflow.</li>
-<li>Release v0.2.4 with faster post-What's New startup.</li>
+<li><strong>What's new</strong><ul>
+<li>Three-phase workflow: identify disk usage, analyze findings, then take action</li>
+<li>Action buckets that label items safe to clean, worth reviewing first, or personal to keep</li>
+<li>Fourteen focused Maintenance tools — from App Caches and node_modules to APFS Snapshot thinning</li>
+<li>Duplicate finder moved to its own tab — run it when you want, not on every scan</li>
+<li>Option to rebuild your storage index after a major scan-model upgrade</li>
 </ul></li>
 </ul>
 ]]></description>
@@ -50,11 +53,10 @@
             <sparkle:shortVersionString>0.2.4</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[<ul>
-<li><strong>Changed</strong><ul>
-<li>Release v0.2.3 with Data volume scan and storage gap fill.</li>
-</ul></li>
-<li><strong>Fixed</strong><ul>
-<li>defer post-launch analysis until What's New closes.</li>
+<li><strong>Improvements</strong><ul>
+<li>Heavy storage analysis runs after What's New closes, not during it</li>
+<li>Update check waits until the main window is ready</li>
+<li>Continue after What's New no longer stalls the UI</li>
 </ul></li>
 </ul>
 ]]></description>

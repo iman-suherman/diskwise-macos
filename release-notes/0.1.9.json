@@ -1,0 +1,10 @@
+{
+  "summary": "Duplicate scans on large drives use less memory.",
+  "introduced": [],
+  "changed": [
+    "Hash and video fingerprint phases only process size-matched candidates"
+  ],
+  "fixed": [
+    "Duplicate detection no longer spikes RAM on drives with millions of files"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "summary": "The first public release of DiskWise — scan your Mac, see where space goes, find duplicates, and get AI-powered cleanup recommendations.",
+  "introduced": [
+    "Drive scanning with storage breakdown by category",
+    "Duplicate detection with hash and video fingerprinting",
+    "AI-powered cleanup recommendations with safe Trash-based actions",
+    "Marketing website and automatic release publishing"
+  ],
+  "changed": [
+    "Richer scan progress and storage breakdown in the main window"
+  ],
+  "fixed": []
+}

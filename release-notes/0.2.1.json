@@ -1,0 +1,12 @@
+{
+  "summary": "Applications like Xcode and Chrome now show their true size, and you can see storage DiskWise hasn't indexed yet.",
+  "introduced": [
+    "Not Indexed card when indexed total is below disk usage, with next steps"
+  ],
+  "changed": [
+    "App bundles counted as a single item instead of empty folders"
+  ],
+  "fixed": [
+    "Application sizes now appear correctly in category breakdown — rescan to refresh"
+  ]
+}
