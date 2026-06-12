@@ -73,6 +73,10 @@ public enum FileClassifier {
         let path = url.path
         let pathLower = path.lowercased()
 
+        if url.pathExtension.lowercased() == "app" {
+            return .application
+        }
+
         if pathLower.contains("/downloads/") || pathLower.hasSuffix("/downloads") {
             return .downloads
         }

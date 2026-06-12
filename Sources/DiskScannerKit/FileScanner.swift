@@ -53,6 +53,7 @@ public final class FileScanner: @unchecked Sendable {
             includingPropertiesForKeys: [
                 .isRegularFileKey,
                 .isDirectoryKey,
+                .isPackageKey,
                 .fileSizeKey,
                 .creationDateKey,
                 .contentModificationDateKey,
@@ -69,6 +70,7 @@ public final class FileScanner: @unchecked Sendable {
             let values = try item.resourceValues(forKeys: [
                 .isRegularFileKey,
                 .isDirectoryKey,
+                .isPackageKey,
                 .fileSizeKey,
                 .creationDateKey,
                 .contentModificationDateKey,
@@ -81,6 +83,26 @@ public final class FileScanner: @unchecked Sendable {
             }
 
             if isDirectory {
+                if PackageBundlePatterns.shouldSummarizePackage(at: item, isPackage: values.isPackage) {
+                    appendAggregateDirectory(
+                        at: item,
+                        createdAt: values.creationDate,
+                        modifiedAt: values.contentModificationDate,
+                        lastAccessed: values.contentAccessDate,
+                        to: &results,
+                        scannedCount: &scannedCount,
+                        indexedBytes: &indexedBytes
+                    )
+                    enumerator?.skipDescendants()
+                    reportProgressIfNeeded(
+                        scannedCount: scannedCount,
+                        currentPath: item.path,
+                        indexedBytes: indexedBytes,
+                        onProgress: onProgress
+                    )
+                    continue
+                }
+
                 let name = item.lastPathComponent
                 if DirectorySizeOnlyPatterns.shouldSummarizeDirectory(named: name, mode: mode) {
                     appendAggregateDirectory(

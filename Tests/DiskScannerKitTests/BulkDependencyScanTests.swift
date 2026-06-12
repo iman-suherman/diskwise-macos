@@ -95,5 +95,25 @@ final class BulkDependencyScanTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(venvEntry?.size ?? 0, 8192)
         XCTAssertFalse(results.contains { $0.path.contains("/.venv/lib/") })
     }
+
+    func testPackageBundleSummarizedWithoutEnumeratingContents() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("diskwise-app-\(UUID().uuidString)")
+        let appBundle = root.appendingPathComponent("Sample.app/Contents/MacOS")
+        try FileManager.default.createDirectory(at: appBundle, withIntermediateDirectories: true)
+        let binaryURL = appBundle.appendingPathComponent("Sample")
+        try Data(repeating: 0xFE, count: 8192).write(to: binaryURL)
+
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let scanner = FileScanner()
+        let results = try scanner.scan(mountPath: root)
+
+        let appEntry = results.first { $0.path.hasSuffix("/Sample.app") }
+        XCTAssertNotNil(appEntry)
+        XCTAssertFalse(appEntry?.isDirectory ?? true)
+        XCTAssertGreaterThanOrEqual(appEntry?.size ?? 0, 8192)
+        XCTAssertFalse(results.contains { $0.path.contains("/Sample.app/Contents/") })
+    }
 }
 #endif

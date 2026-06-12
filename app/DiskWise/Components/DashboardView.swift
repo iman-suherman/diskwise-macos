@@ -525,6 +525,7 @@ struct DashboardView: View {
                    viewModel.isScanning || viewModel.isBackgroundWorkActive || viewModel.overview != nil {
                     if let overview = viewModel.overview {
                         storageHeader(volume: volume, overview: overview)
+                        unaccountedSpaceBanner(volume: volume, overview: overview)
                     } else {
                         scanningHeader(volume: volume)
                     }
@@ -628,6 +629,62 @@ struct DashboardView: View {
                     detail: "From recommendations",
                     accent: .orange
                 )
+            }
+
+            let unaccounted = max(0, volume.usedSize - overview.totalSize)
+            if unaccounted > 1_073_741_824 {
+                InsightCard(
+                    title: "Not Indexed",
+                    value: DiskWiseFormatters.bytes.string(fromByteCount: unaccounted),
+                    detail: unaccountedDetail(for: volume, overview: overview),
+                    accent: .red
+                )
+            }
+        }
+    }
+
+    private func unaccountedDetail(for volume: MountedVolume, overview: StorageOverview) -> String {
+        let coverage = volume.usedSize > 0
+            ? Int((Double(overview.totalSize) / Double(volume.usedSize) * 100).rounded())
+            : 0
+        if !viewModel.hasFullDiskAccess {
+            return "Only \(coverage)% mapped — grant Full Disk Access and rescan"
+        }
+        if viewModel.appSettings.scanMode == .fast {
+            return "Only \(coverage)% mapped — try Deep scan or rescan"
+        }
+        return "Only \(coverage)% mapped — rescan or check system snapshots"
+    }
+
+    @ViewBuilder
+    private func unaccountedSpaceBanner(volume: MountedVolume, overview: StorageOverview) -> some View {
+        let unaccounted = max(0, volume.usedSize - overview.totalSize)
+        let fraction = volume.usedSize > 0 ? Double(unaccounted) / Double(volume.usedSize) : 0
+        if unaccounted > 1_073_741_824, fraction > 0.1 {
+            GroupBox {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("About \(DiskWiseFormatters.bytes.string(fromByteCount: unaccounted)) is not mapped yet", systemImage: "questionmark.folder")
+                        .font(.headline)
+                        .foregroundStyle(.orange)
+                    Text(unaccountedDetail(for: volume, overview: overview) + ". Apps and bundles are now sized as a whole — rescan to refresh totals.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 12) {
+                        if !viewModel.hasFullDiskAccess {
+                            Button("Grant Full Disk Access") {
+                                viewModel.presentFullDiskAccessOverlay()
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                        if let volume = viewModel.selectedVolume {
+                            Button("Rescan \(volume.name)") {
+                                viewModel.scan(volume: volume)
+                            }
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
