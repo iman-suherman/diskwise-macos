@@ -98,7 +98,7 @@ struct ContentView: View {
                                 }
                             }
                             .pickerStyle(.segmented)
-                            .frame(maxWidth: 420)
+                            .frame(maxWidth: 520)
                         }
 
                         ToolbarItem(placement: .status) {
@@ -177,6 +177,8 @@ struct ContentView: View {
         switch viewModel.selectedPane {
         case .overview:
             DashboardView()
+        case .maintenance:
+            MaintenanceView()
         case .duplicates:
             DuplicatesView()
         case .ai:
@@ -292,6 +294,13 @@ struct ContentView: View {
                     .buttonStyle(.borderless)
 
                     if viewModel.hasScanData {
+                        Button {
+                            viewModel.selectedPane = .maintenance
+                        } label: {
+                            Label("Maintenance", systemImage: "wrench.and.screwdriver.fill")
+                        }
+                        .buttonStyle(.borderless)
+
                         Button {
                             viewModel.openDuplicatesPane()
                         } label: {

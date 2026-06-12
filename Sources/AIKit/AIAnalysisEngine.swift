@@ -218,6 +218,49 @@ public final class AIAnalysisEngine: @unchecked Sendable {
             )
         }
 
+        let devBytes = try database.categorySize(forDiskID: diskID, category: .development)
+        if devBytes > 100_000_000 {
+            insights.append(
+                StorageInsight(
+                    title: "Developer artifacts",
+                    detail: "DerivedData, Docker, node_modules, and build caches.",
+                    estimatedSavings: devBytes
+                )
+            )
+            recommendations.append(
+                RecommendationRecord(
+                    type: "project_purge",
+                    title: "Purge Project Artifacts",
+                    estimatedSavings: devBytes,
+                    reason: "Build folders and dependencies can be regenerated. Use Maintenance → Project Purge for a targeted scan."
+                )
+            )
+        }
+
+        let logBytes = allFiles
+            .filter { file in
+                let lower = file.path.lowercased()
+                return lower.contains("/library/logs/") && file.category != .application
+            }
+            .reduce(Int64(0)) { $0 + $1.size }
+        if logBytes > 50_000_000 {
+            insights.append(
+                StorageInsight(
+                    title: "Log files",
+                    detail: "Diagnostic and application logs.",
+                    estimatedSavings: logBytes
+                )
+            )
+            recommendations.append(
+                RecommendationRecord(
+                    type: "delete_logs",
+                    title: "Clear Log Files",
+                    estimatedSavings: logBytes,
+                    reason: "Logs are safe to remove and will regenerate. Use Maintenance → Deep Clean for a full scan."
+                )
+            )
+        }
+
         if let topCategory = overview.categorySummaries.first {
             insights.append(
                 StorageInsight(
