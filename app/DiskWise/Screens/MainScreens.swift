@@ -261,12 +261,16 @@ struct DuplicateGroupCard: View {
 struct AskDiskWiseView: View {
     @EnvironmentObject private var viewModel: AppViewModel
 
-    private let suggestedQuestions = [
-        "What is consuming most of my disk?",
-        "Can I safely remove anything?",
-        "Why is my SSD almost full?",
-        "Find old videos I haven't watched.",
-    ]
+    private var suggestedQuestions: [String] {
+        viewModel.aiSuggestedQuestions.isEmpty
+            ? [
+                "What is consuming most of my disk?",
+                "Can I safely remove anything?",
+                "Why is my SSD almost full?",
+                "Find old videos I haven't watched.",
+            ]
+            : viewModel.aiSuggestedQuestions
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -276,9 +280,11 @@ struct AskDiskWiseView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Ask DiskWise")
                                 .font(.largeTitle.bold())
-                            Text("Get storage insights powered by your scan data")
+                            Text(viewModel.aiProviderStatus.detail)
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
+
+                            aiProviderBadge
                         }
 
                         if viewModel.aiResponses.isEmpty {
@@ -289,13 +295,21 @@ struct AskDiskWiseView: View {
                             ChatBubble(message: message)
                                 .id(message.id)
                         }
+
+                        if viewModel.isAITyping {
+                            typingIndicator
+                                .id("typing-indicator")
+                        }
                     }
                     .padding(28)
                 }
                 .onChange(of: viewModel.aiResponses.count) { _, _ in
-                    if let last = viewModel.aiResponses.last {
+                    scrollToLatest(with: proxy)
+                }
+                .onChange(of: viewModel.isAITyping) { _, isTyping in
+                    if isTyping {
                         withAnimation {
-                            proxy.scrollTo(last.id, anchor: .bottom)
+                            proxy.scrollTo("typing-indicator", anchor: .bottom)
                         }
                     }
                 }
@@ -303,23 +317,93 @@ struct AskDiskWiseView: View {
 
             Divider()
 
-            HStack(spacing: 12) {
-                TextField("Ask about your storage…", text: $viewModel.aiQuestion)
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit {
-                        viewModel.askAI(question: viewModel.aiQuestion)
-                    }
-
-                Button {
-                    viewModel.askAI(question: viewModel.aiQuestion)
-                } label: {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.title2)
+            VStack(spacing: 8) {
+                if !viewModel.aiAutocompleteSuggestions.isEmpty {
+                    autocompleteSection
                 }
-                .buttonStyle(.borderless)
-                .disabled(viewModel.aiQuestion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                HStack(spacing: 12) {
+                    TextField("Ask about your storage…", text: $viewModel.aiQuestion)
+                        .textFieldStyle(.roundedBorder)
+                        .onSubmit {
+                            viewModel.askAI(question: viewModel.aiQuestion)
+                        }
+                        .onChange(of: viewModel.aiQuestion) { _, _ in
+                            viewModel.updateAIAutocomplete()
+                        }
+
+                    Button {
+                        viewModel.askAI(question: viewModel.aiQuestion)
+                    } label: {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.title2)
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(viewModel.aiQuestion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isAITyping)
+                }
             }
             .padding(16)
+        }
+    }
+
+    private var aiProviderBadge: some View {
+        Label {
+            Text(viewModel.aiProviderStatus.displayName)
+                .font(.caption.weight(.semibold))
+        } icon: {
+            Image(systemName: viewModel.aiProviderStatus.isGenerativeAvailable ? "sparkles" : "text.book.closed")
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(
+            viewModel.aiProviderStatus.isGenerativeAvailable
+                ? Color.accentColor.opacity(0.12)
+                : Color.secondary.opacity(0.12),
+            in: Capsule()
+        )
+        .foregroundStyle(viewModel.aiProviderStatus.isGenerativeAvailable ? Color.accentColor : Color.secondary)
+    }
+
+    private var autocompleteSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Suggestions")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+
+            ForEach(viewModel.aiAutocompleteSuggestions, id: \.self) { suggestion in
+                Button {
+                    viewModel.aiQuestion = suggestion
+                    viewModel.askAI(question: suggestion)
+                } label: {
+                    Text(suggestion)
+                        .font(.caption)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var typingIndicator: some View {
+        HStack {
+            ProgressView()
+                .controlSize(.small)
+            Text("DiskWise is thinking…")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 60)
+        }
+    }
+
+    private func scrollToLatest(with proxy: ScrollViewProxy) {
+        if let last = viewModel.aiResponses.last {
+            withAnimation {
+                proxy.scrollTo(last.id, anchor: .bottom)
+            }
         }
     }
 

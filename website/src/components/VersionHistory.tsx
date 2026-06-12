@@ -1,11 +1,12 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { LocalReleaseDate } from "@/components/LocalReleaseDate";
 import { useAllVersions } from "@/hooks/useRegistry";
 import {
   flattenReleaseNotes,
   formatBytes,
-  formatDate,
+  publishedAtToIso,
   toPublicDownloadUrl,
   type AppVersion,
 } from "@/lib/registry";
@@ -20,6 +21,7 @@ function ReleaseCard({
   isLatest: boolean;
 }) {
   const notes = flattenReleaseNotes(version.releaseNotes).slice(0, 4);
+  const releasedAtIso = publishedAtToIso(version.publishedAt);
 
   return (
     <article className="card p-6">
@@ -37,7 +39,15 @@ function ReleaseCard({
             {version.summary ?? "DiskWise release"}
           </p>
           <p className="mt-2 text-xs text-slate-500">
-            Released {formatDate(version.publishedAt)} · {formatBytes(version.sizeBytes)}
+            {releasedAtIso ? (
+              <>
+                <LocalReleaseDate iso={releasedAtIso} />
+                {" · "}
+                {formatBytes(version.sizeBytes)}
+              </>
+            ) : (
+              <>Released — · {formatBytes(version.sizeBytes)}</>
+            )}
           </p>
           {notes.length > 0 && (
             <ul className="mt-4 space-y-1 text-sm text-slate-400">

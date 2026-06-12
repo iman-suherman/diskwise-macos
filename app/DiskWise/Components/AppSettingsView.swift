@@ -1,5 +1,6 @@
 import SwiftUI
 import DiskScannerKit
+import AIKit
 
 struct AppSettingsView: View {
     @ObservedObject var settings: AppSettings
@@ -61,6 +62,28 @@ struct AppSettingsView: View {
                     step: 1_000,
                     help: "Samples the largest files when building cleanup recommendations and AI insights."
                 )
+            }
+
+            Section("AI assistant") {
+                Picker("Provider", selection: $settings.aiProviderPreference) {
+                    Text("Automatic").tag(AIProviderKind.automatic)
+                    Text("Apple Intelligence").tag(AIProviderKind.foundationModels)
+                    Text("Ollama (developer)").tag(AIProviderKind.ollama)
+                    Text("Rule-based only").tag(AIProviderKind.ruleBased)
+                }
+
+                Toggle("Enable Ollama developer mode", isOn: $settings.enableOllamaDevMode)
+
+                TextField("Ollama base URL", text: $settings.ollamaBaseURL)
+                    .disabled(!settings.enableOllamaDevMode)
+
+                TextField("Ollama model", text: $settings.ollamaModel)
+                    .disabled(!settings.enableOllamaDevMode)
+
+                Text("Automatic prefers Apple Intelligence on supported Macs, then local MLX models, then Ollama when developer mode is enabled.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Section {

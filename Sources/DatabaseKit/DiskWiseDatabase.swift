@@ -92,6 +92,37 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         }
     }
 
+    /// Replaces indexed files atomically after an uninterrupted scan completes.
+    public func replaceIndexedFiles(
+        forDiskID diskID: Int64,
+        files: [FileRecord],
+        folderPathPrefix: String?,
+        scannedAt: Date
+    ) throws {
+        try dbQueue.write { db in
+            if let folderPathPrefix {
+                let normalized = folderPathPrefix.hasSuffix("/")
+                    ? String(folderPathPrefix.dropLast())
+                    : folderPathPrefix
+                try db.execute(
+                    sql: "DELETE FROM files WHERE disk_id = ? AND (path = ? OR path LIKE ?)",
+                    arguments: [diskID, normalized, normalized + "/%"]
+                )
+            } else {
+                try db.execute(sql: "DELETE FROM files WHERE disk_id = ?", arguments: [diskID])
+            }
+
+            for file in files {
+                try file.insert(db, onConflict: .replace)
+            }
+
+            try db.execute(
+                sql: "UPDATE disks SET scanned_at = ? WHERE id = ?",
+                arguments: [scannedAt, diskID]
+            )
+        }
+    }
+
     /// Clears indexed files, duplicate groups, and recommendations for a disk.
     public func clearStorageIndex(forDiskID diskID: Int64) throws {
         try dbQueue.write { db in

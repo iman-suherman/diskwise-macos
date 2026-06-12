@@ -32,6 +32,11 @@ if command -v create-dmg >/dev/null 2>&1; then
     CREATE_DMG_ARGS=(--volicon "$ICON_PATH" "${CREATE_DMG_ARGS[@]}")
   fi
   create-dmg "${CREATE_DMG_ARGS[@]}" "$OUTPUT_DMG" "$APP_PATH"
+  bash "$ROOT_DIR/scripts/configure-dmg-statusbar.sh" "$OUTPUT_DMG" "$VOLUME_NAME" || {
+    echo "Warning: DMG status bar configuration skipped"
+  } || {
+    echo "Warning: DMG status bar configuration skipped"
+  }
 else
   echo "==> Creating DMG with hdiutil (install create-dmg for a richer layout: brew install create-dmg)"
   STAGING_DIR="$(mktemp -d)"
@@ -44,6 +49,9 @@ else
     -ov \
     -format UDZO \
     "$OUTPUT_DMG" >/dev/null
+  bash "$ROOT_DIR/scripts/configure-dmg-statusbar.sh" "$OUTPUT_DMG" "$VOLUME_NAME" || {
+    echo "Warning: DMG status bar configuration skipped"
+  }
 fi
 
 echo "Created: $OUTPUT_DMG"

@@ -819,6 +819,20 @@ struct DashboardView: View {
                         .foregroundStyle(.orange)
                 }
 
+                if !viewModel.aiAnalysisSummary.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label(viewModel.aiProviderStatus.displayName, systemImage: "brain.head.profile")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.accentColor)
+                        Text(viewModel.aiAnalysisSummary)
+                            .font(.subheadline)
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(12)
+                    .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+                }
+
                 VStack(alignment: .leading, spacing: 10) {
                     ForEach(report.insights.filter { $0.estimatedSavings > 0 }, id: \.id) { insight in
                         HStack(alignment: .top, spacing: 10) {
@@ -833,6 +847,16 @@ struct DashboardView: View {
                             }
                         }
                     }
+                }
+
+                if viewModel.aiProviderStatus.isGenerativeAvailable {
+                    Button {
+                        viewModel.generateLLMReport()
+                    } label: {
+                        Label("Regenerate AI Summary", systemImage: "arrow.clockwise")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(viewModel.isAnalyzing)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
