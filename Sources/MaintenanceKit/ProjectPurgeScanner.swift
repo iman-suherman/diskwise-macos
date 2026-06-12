@@ -55,21 +55,37 @@ public final class ProjectPurgeScanner: @unchecked Sendable {
         self.configuration = configuration
     }
 
-    public func scan(isCancelled: (@Sendable () -> Bool)? = nil) -> MaintenanceScanResult {
+    public func scan(
+        categories: Set<MaintenanceCategory>? = nil,
+        isCancelled: (@Sendable () -> Bool)? = nil
+    ) -> MaintenanceScanResult {
         var entries: [MaintenanceEntry] = []
 
         for root in configuration.scanRoots {
             if isCancelled?() == true { break }
             guard ProtectedPathRules.isUserHomePath(root, homeDirectory: homeDirectory) else { continue }
             guard fileManager.fileExists(atPath: root) else { continue }
-            scanDirectory(root, into: &entries, isCancelled: isCancelled)
+            scanDirectory(root, categories: categories, into: &entries, isCancelled: isCancelled)
         }
 
-        return MaintenanceScanResult(kind: .projectPurge, entries: entries.sorted { $0.size > $1.size })
+        let kind: MaintenanceKind = {
+            guard let categories, categories.count == 1, let only = categories.first else {
+                return .nodeModules
+            }
+            switch only {
+            case .nodeModules: return .nodeModules
+            case .buildArtifacts: return .buildArtifacts
+            case .virtualEnv: return .virtualEnvironments
+            default: return .nodeModules
+            }
+        }()
+
+        return MaintenanceScanResult(kind: kind, entries: entries.sorted { $0.size > $1.size })
     }
 
     private func scanDirectory(
         _ root: String,
+        categories: Set<MaintenanceCategory>?,
         into entries: inout [MaintenanceEntry],
         isCancelled: (@Sendable () -> Bool)?
     ) {
@@ -97,6 +113,7 @@ public final class ProjectPurgeScanner: @unchecked Sendable {
             let projectName = projectName(for: url)
             let isRecent = DirectorySizeCalculator.isRecent(at: path, days: configuration.recentProjectDays, fileManager: fileManager)
             let category = category(for: name)
+            if let categories, !categories.contains(category) { continue }
 
             entries.append(
                 MaintenanceEntry(

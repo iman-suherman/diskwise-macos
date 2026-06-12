@@ -71,7 +71,11 @@ final class AppSettings: ObservableObject {
         static let duplicateScanFileLimit = "diskwise.settings.duplicateScanFileLimit"
         static let analysisFileLimit = "diskwise.settings.analysisFileLimit"
         static let lastSeenReleaseVersion = "diskwise.settings.lastSeenReleaseVersion"
+        static let indexSchemaVersion = "diskwise.settings.indexSchemaVersion"
     }
+
+    /// Bump when the storage index format or scan pipeline changes materially.
+    static let currentIndexSchemaVersion = 1
 
     @Published var scanMode: ScanMode {
         didSet {
@@ -129,6 +133,19 @@ final class AppSettings: ObservableObject {
 
     var shouldShowWhatsNew: Bool {
         lastSeenReleaseVersion != Self.currentAppVersion
+    }
+
+    var storedIndexSchemaVersion: Int {
+        let stored = UserDefaults.standard.integer(forKey: Keys.indexSchemaVersion)
+        return stored > 0 ? stored : 0
+    }
+
+    var needsIndexRebuild: Bool {
+        storedIndexSchemaVersion < Self.currentIndexSchemaVersion
+    }
+
+    func markIndexSchemaCurrent() {
+        UserDefaults.standard.set(Self.currentIndexSchemaVersion, forKey: Keys.indexSchemaVersion)
     }
 
     func markCurrentReleaseSeen() {

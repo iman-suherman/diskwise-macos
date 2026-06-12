@@ -21,7 +21,7 @@ final class MaintenanceKitTests: XCTestCase {
 
         let scanner = DeepCleanScanner(fileManager: .default, homeDirectory: tempHome.path)
         let result = scanner.scan()
-        XCTAssertEqual(result.kind, .deepClean)
+        XCTAssertEqual(result.kind, .appCaches)
         XCTAssertTrue(result.entries.isEmpty)
     }
 

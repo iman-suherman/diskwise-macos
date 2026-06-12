@@ -9,39 +9,70 @@ public final class DeepCleanScanner: @unchecked Sendable {
         self.homeDirectory = homeDirectory ?? fileManager.homeDirectoryForCurrentUser.path
     }
 
-    public func scan(isCancelled: (@Sendable () -> Bool)? = nil) -> MaintenanceScanResult {
+    public func scan(
+        categories: Set<MaintenanceCategory>? = nil,
+        isCancelled: (@Sendable () -> Bool)? = nil
+    ) -> MaintenanceScanResult {
         var entries: [MaintenanceEntry] = []
+        let filter = categories
 
-        for target in cacheTargets() {
-            if isCancelled?() == true { break }
-            appendIfPresent(target, category: .userAppCache, to: &entries)
+        if filter == nil || filter?.contains(.userAppCache) == true {
+            for target in cacheTargets() {
+                if isCancelled?() == true { break }
+                appendIfPresent(target, category: .userAppCache, to: &entries)
+            }
         }
 
-        for target in browserTargets() {
-            if isCancelled?() == true { break }
-            appendIfPresent(target, category: .browserCache, to: &entries)
+        if filter == nil || filter?.contains(.browserCache) == true {
+            for target in browserTargets() {
+                if isCancelled?() == true { break }
+                appendIfPresent(target, category: .browserCache, to: &entries)
+            }
         }
 
-        for target in developerTargets() {
-            if isCancelled?() == true { break }
-            appendIfPresent(target, category: .developerTools, to: &entries)
+        if filter == nil || filter?.contains(.developerTools) == true {
+            for target in developerTargets() {
+                if isCancelled?() == true { break }
+                appendIfPresent(target, category: .developerTools, to: &entries)
+            }
         }
 
-        for target in logTargets() {
-            if isCancelled?() == true { break }
-            appendIfPresent(target, category: .systemLogs, to: &entries, selectedByDefault: true)
+        if filter == nil || filter?.contains(.systemLogs) == true {
+            for target in logTargets() {
+                if isCancelled?() == true { break }
+                appendIfPresent(target, category: .systemLogs, to: &entries, selectedByDefault: true)
+            }
         }
 
-        for target in tempTargets() {
-            if isCancelled?() == true { break }
-            appendIfPresent(target, category: .tempFiles, to: &entries)
+        if filter == nil || filter?.contains(.tempFiles) == true {
+            for target in tempTargets() {
+                if isCancelled?() == true { break }
+                appendIfPresent(target, category: .tempFiles, to: &entries)
+            }
         }
 
-        if isCancelled?() != true {
-            appendTrash(to: &entries)
+        if filter == nil || filter?.contains(.trash) == true {
+            if isCancelled?() != true {
+                appendTrash(to: &entries)
+            }
         }
 
-        return MaintenanceScanResult(kind: .deepClean, entries: entries.sorted { $0.size > $1.size })
+        let kind: MaintenanceKind = {
+            guard let filter, filter.count == 1, let only = filter.first else {
+                return .appCaches
+            }
+            switch only {
+            case .userAppCache: return .appCaches
+            case .browserCache: return .browserCaches
+            case .developerTools: return .developerCaches
+            case .systemLogs: return .logs
+            case .tempFiles: return .tempFiles
+            case .trash: return .trash
+            default: return .appCaches
+            }
+        }()
+
+        return MaintenanceScanResult(kind: kind, entries: entries.sorted { $0.size > $1.size })
     }
 
     private func cacheTargets() -> [(path: String, label: String)] {

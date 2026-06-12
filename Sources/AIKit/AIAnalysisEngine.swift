@@ -96,16 +96,8 @@ public final class AIAnalysisEngine: @unchecked Sendable {
             insights.append(
                 StorageInsight(
                     title: "Duplicate files",
-                    detail: "\(duplicateGroups.count) duplicate groups found.",
+                    detail: "\(duplicateGroups.count) duplicate groups found — use the Duplicates tab to review.",
                     estimatedSavings: overview.duplicateSavings
-                )
-            )
-            recommendations.append(
-                RecommendationRecord(
-                    type: "duplicate_cleanup",
-                    title: "Clean Duplicates",
-                    estimatedSavings: overview.duplicateSavings,
-                    reason: "Multiple files share identical or near-identical content."
                 )
             )
         }
@@ -121,9 +113,9 @@ public final class AIAnalysisEngine: @unchecked Sendable {
             recommendations.append(
                 RecommendationRecord(
                     type: "delete_cache",
-                    title: "Delete Cache Files",
+                    title: "Clear App & System Caches",
                     estimatedSavings: cacheBytes,
-                    reason: "Caches can be safely cleared and will regenerate as needed."
+                    reason: "Caches regenerate automatically. Use Maintenance → App Caches or Browser Caches for targeted cleanup."
                 )
             )
         }
@@ -230,9 +222,9 @@ public final class AIAnalysisEngine: @unchecked Sendable {
             recommendations.append(
                 RecommendationRecord(
                     type: "project_purge",
-                    title: "Purge Project Artifacts",
+                    title: "Purge node_modules & Build Artifacts",
                     estimatedSavings: devBytes,
-                    reason: "Build folders and dependencies can be regenerated. Use Maintenance → Project Purge for a targeted scan."
+                    reason: "Dependencies and build output can be regenerated. Use Maintenance → node_modules or Build Artifacts."
                 )
             )
         }
@@ -256,7 +248,45 @@ public final class AIAnalysisEngine: @unchecked Sendable {
                     type: "delete_logs",
                     title: "Clear Log Files",
                     estimatedSavings: logBytes,
-                    reason: "Logs are safe to remove and will regenerate. Use Maintenance → Deep Clean for a full scan."
+                    reason: "Logs are safe to remove and will regenerate. Use Maintenance → Logs."
+                )
+            )
+        }
+
+        let photoBytes = try database.categorySize(forDiskID: diskID, category: .photo)
+        if photoBytes > 100_000_000 {
+            insights.append(
+                StorageInsight(
+                    title: "Photos library",
+                    detail: "Personal media — review before any cleanup.",
+                    estimatedSavings: 0
+                )
+            )
+            recommendations.append(
+                RecommendationRecord(
+                    type: "archive_old_files",
+                    title: "Review Photos Library",
+                    estimatedSavings: photoBytes,
+                    reason: "Your Photos library is personal data. Archive or export before removing anything."
+                )
+            )
+        }
+
+        let snapshotCount = APFSSnapshotInsightProvider.localSnapshotCount()
+        if snapshotCount > 0 {
+            insights.append(
+                StorageInsight(
+                    title: "APFS local snapshots",
+                    detail: "\(snapshotCount) Time Machine snapshot(s) may pin deleted file blocks.",
+                    estimatedSavings: 0
+                )
+            )
+            recommendations.append(
+                RecommendationRecord(
+                    type: "thin_apfs_snapshots",
+                    title: "Thin APFS Snapshots",
+                    estimatedSavings: 0,
+                    reason: "Deleting files won't free space while local snapshots reference them. Use Maintenance → APFS Snapshots."
                 )
             )
         }

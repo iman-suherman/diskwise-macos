@@ -12,6 +12,8 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
+        case "1.0.0":
+            return v100Pages
         case "0.2.4":
             return v024Pages
         case "0.2.3":
@@ -40,6 +42,40 @@ enum WhatsNewContent {
             return genericPages(version: version)
         }
     }
+
+    private static let v100Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "welcome",
+            icon: "sparkles",
+            title: "Welcome to DiskWise 1.0",
+            message: "DiskWise is now a three-phase storage consultant — not just a scan-and-duplicate pipeline.",
+            bullets: [
+                "Phase 1: Identify disk usage on APFS volumes",
+                "Phase 2: Analyze into safe, review-first, and personal buckets",
+                "Phase 3: Take action via individual Maintenance tools",
+            ]
+        ),
+        WhatsNewPage(
+            id: "duplicates",
+            icon: "doc.on.doc",
+            title: "Duplicates on demand",
+            message: "Duplicate detection now lives in the Duplicates tab only — run it when you need it.",
+            bullets: [
+                "Main scan focuses on usage identification and action planning",
+                "Open Duplicates → Find Duplicates to fingerprint files",
+            ]
+        ),
+        WhatsNewPage(
+            id: "maintenance",
+            icon: "wrench.and.screwdriver.fill",
+            title: "Individual maintenance actions",
+            message: "Every cleanup category has its own menu — App Caches, node_modules, APFS Snapshots, and more.",
+            bullets: [
+                "Thin APFS snapshots when deletions don't free space",
+                "Rebuild your storage index after updating for best results",
+            ]
+        ),
+    ]
 
     private static let v024Pages: [WhatsNewPage] = [
         WhatsNewPage(
