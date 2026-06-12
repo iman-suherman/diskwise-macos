@@ -1,6 +1,7 @@
 import Combine
 import Foundation
 import SwiftUI
+import DiskScannerKit
 
 enum ScanPerformancePreset: String, CaseIterable, Identifiable {
     case fast
@@ -21,10 +22,17 @@ enum ScanPerformancePreset: String, CaseIterable, Identifiable {
 
     var detail: String {
         switch self {
-        case .fast: return "Quicker scans on very large drives"
-        case .balanced: return "Recommended for most Macs"
-        case .thorough: return "More coverage, longer duplicate checks"
-        case .maximum: return "Slowest — checks the most files"
+        case .fast: return "Fast scan + lighter duplicate checks — usually under 5 minutes"
+        case .balanced: return "Fast scan with recommended duplicate coverage"
+        case .thorough: return "Deep scan with broader duplicate checks"
+        case .maximum: return "Deep scan — indexes every file, slowest option"
+        }
+    }
+
+    var scanMode: ScanMode {
+        switch self {
+        case .fast, .balanced: return .fast
+        case .thorough, .maximum: return .deep
         }
     }
 
@@ -53,14 +61,22 @@ final class AppSettings: ObservableObject {
 
     static let defaultDuplicateScanFileLimit = 100_000
     static let defaultAnalysisFileLimit = 10_000
+    static let defaultScanMode = ScanMode.fast
 
     static let duplicateScanFileLimitRange = 10_000...500_000
     static let analysisFileLimitRange = 1_000...100_000
 
     private enum Keys {
+        static let scanMode = "diskwise.settings.scanMode"
         static let duplicateScanFileLimit = "diskwise.settings.duplicateScanFileLimit"
         static let analysisFileLimit = "diskwise.settings.analysisFileLimit"
         static let lastSeenReleaseVersion = "diskwise.settings.lastSeenReleaseVersion"
+    }
+
+    @Published var scanMode: ScanMode {
+        didSet {
+            UserDefaults.standard.set(scanMode.rawValue, forKey: Keys.scanMode)
+        }
     }
 
     @Published var duplicateScanFileLimit: Int {
@@ -87,6 +103,12 @@ final class AppSettings: ObservableObject {
 
     private init() {
         let defaults = UserDefaults.standard
+        if let rawMode = defaults.string(forKey: Keys.scanMode),
+           let storedMode = ScanMode(rawValue: rawMode) {
+            scanMode = storedMode
+        } else {
+            scanMode = Self.defaultScanMode
+        }
         duplicateScanFileLimit = Self.clamp(
             defaults.object(forKey: Keys.duplicateScanFileLimit) as? Int ?? Self.defaultDuplicateScanFileLimit,
             to: Self.duplicateScanFileLimitRange
@@ -115,17 +137,20 @@ final class AppSettings: ObservableObject {
 
     var activePreset: ScanPerformancePreset? {
         ScanPerformancePreset.allCases.first { preset in
-            preset.duplicateScanFileLimit == duplicateScanFileLimit
+            preset.scanMode == scanMode
+                && preset.duplicateScanFileLimit == duplicateScanFileLimit
                 && preset.analysisFileLimit == analysisFileLimit
         }
     }
 
     func applyPreset(_ preset: ScanPerformancePreset) {
+        scanMode = preset.scanMode
         duplicateScanFileLimit = preset.duplicateScanFileLimit
         analysisFileLimit = preset.analysisFileLimit
     }
 
     func resetToDefaults() {
+        scanMode = Self.defaultScanMode
         duplicateScanFileLimit = Self.defaultDuplicateScanFileLimit
         analysisFileLimit = Self.defaultAnalysisFileLimit
     }

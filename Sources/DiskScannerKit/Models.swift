@@ -47,12 +47,20 @@ public struct ScanSummary: Sendable {
     public let scannedFiles: Int
     public let indexedBytes: Int64
     public let duration: TimeInterval
+    public let mode: ScanMode
 
-    public init(diskID: Int64, scannedFiles: Int, indexedBytes: Int64, duration: TimeInterval) {
+    public init(
+        diskID: Int64,
+        scannedFiles: Int,
+        indexedBytes: Int64,
+        duration: TimeInterval,
+        mode: ScanMode = .fast
+    ) {
         self.diskID = diskID
         self.scannedFiles = scannedFiles
         self.indexedBytes = indexedBytes
         self.duration = duration
+        self.mode = mode
     }
 }
 
@@ -77,6 +85,10 @@ public enum FileClassifier {
         if pathLower.contains("/library/developer/") || pathLower.contains("/deriveddata/")
             || pathLower.contains("/.docker/") || pathLower.contains("/library/application support/docker")
             || pathLower.contains("/.npm/") || pathLower.contains("/.cargo/") || pathLower.contains("/node_modules/")
+            || pathLower.contains("/vendor/") || pathLower.contains("/.venv/") || pathLower.contains("/venv/")
+            || pathLower.contains("/pods/") || pathLower.contains("/__pycache__/")
+            || pathLower.contains("/target/") || pathLower.contains("/deriveddata/")
+            || pathLower.contains("/.next/") || pathLower.contains("/.turbo/")
         {
             return .development
         }

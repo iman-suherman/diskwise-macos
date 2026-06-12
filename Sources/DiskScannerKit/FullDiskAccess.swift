@@ -1,11 +1,17 @@
 import Foundation
+import System
 
 public enum FullDiskAccess {
     private static let tccDirectory = "/Library/Application Support/com.apple.TCC"
     private static let tccDatabase = "\(tccDirectory)/TCC.db"
+    private static let stocksContainer = NSHomeDirectory() + "/Library/Containers/com.apple.stocks"
 
     /// Returns true when the app can read macOS TCC protected paths (Full Disk Access granted).
     public static func hasFullDiskAccess(fileManager: FileManager = .default) -> Bool {
+        if (try? fileManager.contentsOfDirectory(atPath: stocksContainer)) != nil {
+            return true
+        }
+
         if fileManager.isReadableFile(atPath: tccDatabase) {
             return true
         }
@@ -17,12 +23,20 @@ public enum FullDiskAccess {
         return false
     }
 
-    /// Triggers protected-resource access attempts so macOS can register DiskWise in Full Disk Access.
-    /// Note: locally built debug apps usually still need to be added manually with the + button.
+    /// True when the app is running from Xcode DerivedData and may not auto-appear in the FDA list.
+    public static var requiresManualRegistration: Bool {
+        Bundle.main.bundlePath.contains("DerivedData")
+    }
+
+    /// Triggers protected-resource access attempts so macOS registers DiskWise in Full Disk Access.
+    /// Opening protected files (not just `access(2)`) is required for the app to appear in the list.
     public static func registerForFullDiskAccess(fileManager: FileManager = .default) {
+        if let fd = try? FileDescriptor.open(tccDatabase, .readOnly) {
+            try? fd.close()
+        }
+
         let protectedPaths = [
-            tccDatabase,
-            tccDirectory,
+            stocksContainer,
             NSHomeDirectory() + "/Library/Mail",
             NSHomeDirectory() + "/Library/Messages",
             NSHomeDirectory() + "/Library/Safari",
@@ -31,7 +45,6 @@ public enum FullDiskAccess {
 
         for path in protectedPaths {
             _ = try? fileManager.contentsOfDirectory(atPath: path)
-            _ = fileManager.isReadableFile(atPath: path)
         }
     }
 

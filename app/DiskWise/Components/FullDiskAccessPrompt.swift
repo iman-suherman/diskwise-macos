@@ -128,14 +128,21 @@ struct FullDiskAccessPromptView: View {
         case .needsPermission:
             VStack(alignment: .leading, spacing: 12) {
                 Text("To scan all disks, DiskWise requires Full Disk Access.")
-                Text("DiskWise may not appear in the list until you add it manually.")
-                    .foregroundStyle(.secondary)
+                Text(
+                    FullDiskAccess.requiresManualRegistration
+                        ? "When running from Xcode, you may need to add DiskWise manually with the + button."
+                        : "DiskWise will appear in the list — enable the toggle to grant access."
+                )
+                .foregroundStyle(.secondary)
                 Text("System Settings → Privacy & Security → Full Disk Access")
                     .font(.body.monospaced())
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
-                manualAddSteps
+
+                if FullDiskAccess.requiresManualRegistration {
+                    manualAddSteps
+                }
             }
 
         case .waiting:
@@ -148,14 +155,22 @@ struct FullDiskAccessPromptView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    instructionRow(number: 1, text: "Click + in Full Disk Access")
-                    instructionRow(number: 2, text: "Choose Reveal in Finder below, then select DiskWise.app")
-                    instructionRow(number: 3, text: "Enable the toggle next to DiskWise")
-                    instructionRow(number: 4, text: "Return here — scanning starts automatically")
+                    if FullDiskAccess.requiresManualRegistration {
+                        instructionRow(number: 1, text: "Click + in Full Disk Access")
+                        instructionRow(number: 2, text: "Choose Reveal in Finder below, then select DiskWise.app")
+                        instructionRow(number: 3, text: "Enable the toggle next to DiskWise")
+                        instructionRow(number: 4, text: "Return here — scanning starts automatically")
+                    } else {
+                        instructionRow(number: 1, text: "Find DiskWise in the Full Disk Access list")
+                        instructionRow(number: 2, text: "Enable the toggle next to DiskWise")
+                        instructionRow(number: 3, text: "Return here — scanning starts automatically")
+                    }
                 }
                 .foregroundStyle(.secondary)
 
-                manualAddSteps
+                if FullDiskAccess.requiresManualRegistration {
+                    manualAddSteps
+                }
             }
 
         case .granted:
@@ -184,8 +199,10 @@ struct FullDiskAccessPromptView: View {
                         .buttonStyle(.borderedProminent)
                         .keyboardShortcut(.defaultAction)
 
-                    Button("Reveal in Finder") {
-                        FullDiskAccessSettings.revealAppInFinder()
+                    if FullDiskAccess.requiresManualRegistration {
+                        Button("Reveal in Finder") {
+                            FullDiskAccessSettings.revealAppInFinder()
+                        }
                     }
 
                     Spacer()
@@ -200,8 +217,10 @@ struct FullDiskAccessPromptView: View {
                     FullDiskAccessSettings.open()
                 }
 
-                Button("Reveal in Finder") {
-                    FullDiskAccessSettings.revealAppInFinder()
+                if FullDiskAccess.requiresManualRegistration {
+                    Button("Reveal in Finder") {
+                        FullDiskAccessSettings.revealAppInFinder()
+                    }
                 }
 
                 Spacer()

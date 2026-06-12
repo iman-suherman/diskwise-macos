@@ -26,6 +26,7 @@ public final class FileScanner: @unchecked Sendable {
 
     public func scan(
         mountPath: URL,
+        mode: ScanMode = .fast,
         onProgress: (@Sendable (ScanProgress) -> Void)? = nil,
         isCancelled: (@Sendable () -> Bool)? = nil
     ) throws -> [ScannedFile] {
@@ -36,6 +37,16 @@ public final class FileScanner: @unchecked Sendable {
         var results: [ScannedFile] = []
         var scannedCount = 0
         var indexedBytes: Int64 = 0
+
+        if DirectorySizeOnlyPatterns.shouldProbeForHiddenDirectories(at: mountPath, mode: mode) {
+            appendHiddenSummarizedDirectories(
+                under: mountPath,
+                to: &results,
+                scannedCount: &scannedCount,
+                indexedBytes: &indexedBytes,
+                isCancelled: isCancelled
+            )
+        }
 
         let enumerator = fileManager.enumerator(
             at: mountPath,
@@ -69,6 +80,39 @@ public final class FileScanner: @unchecked Sendable {
                 continue
             }
 
+            if isDirectory {
+                let name = item.lastPathComponent
+                if DirectorySizeOnlyPatterns.shouldSummarizeDirectory(named: name, mode: mode) {
+                    appendAggregateDirectory(
+                        at: item,
+                        createdAt: values.creationDate,
+                        modifiedAt: values.contentModificationDate,
+                        lastAccessed: values.contentAccessDate,
+                        to: &results,
+                        scannedCount: &scannedCount,
+                        indexedBytes: &indexedBytes
+                    )
+                    enumerator?.skipDescendants()
+                    reportProgressIfNeeded(
+                        scannedCount: scannedCount,
+                        currentPath: item.path,
+                        indexedBytes: indexedBytes,
+                        onProgress: onProgress
+                    )
+                    continue
+                }
+
+                if DirectorySizeOnlyPatterns.shouldProbeForHiddenDirectories(at: item, mode: mode) {
+                    appendHiddenSummarizedDirectories(
+                        under: item,
+                        to: &results,
+                        scannedCount: &scannedCount,
+                        indexedBytes: &indexedBytes,
+                        isCancelled: isCancelled
+                    )
+                }
+            }
+
             let size = Int64(values.fileSize ?? 0)
             if !isDirectory {
                 indexedBytes += size
@@ -86,13 +130,87 @@ public final class FileScanner: @unchecked Sendable {
             results.append(scanned)
             scannedCount += 1
 
-            if scannedCount.isMultiple(of: batchSize) {
-                onProgress?(ScanProgress(scannedCount: scannedCount, currentPath: item.path, bytesIndexed: indexedBytes))
-            }
+            reportProgressIfNeeded(
+                scannedCount: scannedCount,
+                currentPath: item.path,
+                indexedBytes: indexedBytes,
+                onProgress: onProgress
+            )
         }
 
         onProgress?(ScanProgress(scannedCount: scannedCount, currentPath: mountPath.path, bytesIndexed: indexedBytes))
         return results
+    }
+
+    private func appendAggregateDirectory(
+        at url: URL,
+        createdAt: Date?,
+        modifiedAt: Date?,
+        lastAccessed: Date?,
+        to results: inout [ScannedFile],
+        scannedCount: inout Int,
+        indexedBytes: inout Int64
+    ) {
+        let size = FastDirectorySize.sizeOfDirectory(at: url.path, fileManager: fileManager)
+        indexedBytes += size
+        results.append(
+            ScannedFile(
+                path: url.path,
+                size: size,
+                createdAt: createdAt,
+                modifiedAt: modifiedAt,
+                lastAccessed: lastAccessed,
+                extensionName: nil,
+                isDirectory: false
+            )
+        )
+        scannedCount += 1
+    }
+
+    private func appendHiddenSummarizedDirectories(
+        under parent: URL,
+        to results: inout [ScannedFile],
+        scannedCount: inout Int,
+        indexedBytes: inout Int64,
+        isCancelled: (@Sendable () -> Bool)?
+    ) {
+        for name in DirectorySizeOnlyPatterns.hiddenFolderNames {
+            if isCancelled?() == true { return }
+
+            let child = parent.appendingPathComponent(name)
+            var isDirectory: ObjCBool = false
+            guard fileManager.fileExists(atPath: child.path, isDirectory: &isDirectory),
+                  isDirectory.boolValue else {
+                continue
+            }
+
+            let values = try? child.resourceValues(forKeys: [
+                .creationDateKey,
+                .contentModificationDateKey,
+                .contentAccessDateKey,
+            ])
+
+            appendAggregateDirectory(
+                at: child,
+                createdAt: values?.creationDate,
+                modifiedAt: values?.contentModificationDate,
+                lastAccessed: values?.contentAccessDate,
+                to: &results,
+                scannedCount: &scannedCount,
+                indexedBytes: &indexedBytes
+            )
+        }
+    }
+
+    private func reportProgressIfNeeded(
+        scannedCount: Int,
+        currentPath: String,
+        indexedBytes: Int64,
+        onProgress: (@Sendable (ScanProgress) -> Void)?
+    ) {
+        if scannedCount.isMultiple(of: batchSize) {
+            onProgress?(ScanProgress(scannedCount: scannedCount, currentPath: currentPath, bytesIndexed: indexedBytes))
+        }
     }
 }
 
@@ -109,6 +227,7 @@ public final class ScanEngine: @unchecked Sendable {
         name: String,
         mountPath: URL,
         scanRoot: URL? = nil,
+        mode: ScanMode = .fast,
         onProgress: (@Sendable (ScanProgress) -> Void)? = nil,
         isCancelled: (@Sendable () -> Bool)? = nil
     ) throws -> ScanSummary {
@@ -143,6 +262,7 @@ public final class ScanEngine: @unchecked Sendable {
 
         let scannedFiles = try scanner.scan(
             mountPath: root,
+            mode: mode,
             onProgress: onProgress,
             isCancelled: isCancelled
         )
@@ -186,7 +306,8 @@ public final class ScanEngine: @unchecked Sendable {
             diskID: diskID,
             scannedFiles: fileCount,
             indexedBytes: indexedBytes,
-            duration: Date().timeIntervalSince(start)
+            duration: Date().timeIntervalSince(start),
+            mode: mode
         )
     }
 }

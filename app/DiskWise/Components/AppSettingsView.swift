@@ -1,4 +1,5 @@
 import SwiftUI
+import DiskScannerKit
 
 struct AppSettingsView: View {
     @ObservedObject var settings: AppSettings
@@ -7,11 +8,24 @@ struct AppSettingsView: View {
         Form {
             Section {
                 Text(
-                    "DiskWise always indexes every file during Step 1. These limits control how many of the largest files are checked for duplicates and used to build cleanup recommendations."
+                    "Step 1 can run in Fast mode (sizes dependency folders like node_modules in one step) or Deep mode (indexes every file). Steps 2 and 3 limits apply after the filesystem scan."
                 )
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Section("Filesystem scan (Step 1)") {
+                Picker("Scan mode", selection: $settings.scanMode) {
+                    ForEach(ScanMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+
+                Text(settings.scanMode.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Section("Performance preset") {
@@ -56,7 +70,7 @@ struct AppSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 520, height: 420)
+        .frame(width: 520, height: 500)
         .navigationTitle("Settings")
     }
 

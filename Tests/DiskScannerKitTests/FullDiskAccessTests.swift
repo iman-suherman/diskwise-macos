@@ -3,6 +3,15 @@ import XCTest
 @testable import DiskScannerKit
 
 final class FullDiskAccessTests: XCTestCase {
+    func testHasFullDiskAccessWhenStocksContainerReadable() {
+        let stocksPath = NSHomeDirectory() + "/Library/Containers/com.apple.stocks"
+        let fileManager = StubFileManager(
+            readablePaths: [],
+            directoryContents: [stocksPath: ["Library"]]
+        )
+        XCTAssertTrue(FullDiskAccess.hasFullDiskAccess(fileManager: fileManager))
+    }
+
     func testHasFullDiskAccessWhenTCCDatabaseReadable() {
         let fileManager = StubFileManager(
             readablePaths: ["/Library/Application Support/com.apple.TCC/TCC.db"]
