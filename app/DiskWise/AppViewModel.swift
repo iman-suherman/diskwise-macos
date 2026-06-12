@@ -131,6 +131,11 @@ final class AppViewModel: ObservableObject {
     @Published var selectedPane: DetailPane = .overview
     @Published var aiQuestion = ""
     @Published var aiResponses: [AIChatMessage] = []
+    @Published var aiProviderStatus: AIProviderStatus = .unavailable
+    @Published var aiSuggestedQuestions: [String] = []
+    @Published var aiAutocompleteSuggestions: [String] = []
+    @Published var aiAnalysisSummary = ""
+    @Published var isAITyping = false
     @Published var selectedStorageCategory: String?
     @Published var categoryDetailFiles: [FileRecord] = []
     @Published var hoveredStorageCategory: String?
@@ -139,6 +144,7 @@ final class AppViewModel: ObservableObject {
     @Published var showAbout = false
     @Published var showWhatsNewTour = false
     @Published var showIndexRebuildPrompt = false
+    @Published var showSavedScanPrompt = false
     @Published var selectedMaintenanceKind: MaintenanceKind = .appCaches
     @Published var maintenanceScanResult: MaintenanceScanResult?
     @Published var maintenanceSelectedEntryIDs: Set<String> = []
@@ -172,6 +178,7 @@ final class AppViewModel: ObservableObject {
     private let cleanupEngine = CleanupEngine()
     private var maintenanceEngine = MaintenanceEngine()
     private var aiEngine: AIAnalysisEngine!
+    private var aiConsultant: AIConsultantService!
     private let fullDiskAccessPromptKey = "diskwise.hasSeenFullDiskAccessPrompt"
     private var didRunPostUpgradeUpdateCheck = false
 
@@ -196,6 +203,7 @@ final class AppViewModel: ObservableObject {
                 }
             }
         } else if !isBlockingLaunchFlow {
+            presentSavedScanPromptIfNeeded()
             schedulePostLaunchWork()
         }
     }
@@ -269,7 +277,8 @@ final class AppViewModel: ObservableObject {
         database = openedDatabase
         scanEngine = ScanEngine(database: openedDatabase)
         duplicateEngine = DuplicateEngine(database: openedDatabase)
-        aiEngine = AIAnalysisEngine(database: openedDatabase)
+        aiConsultant = AIConsultantService(configuration: appSettings.aiProviderConfiguration)
+        aiEngine = AIAnalysisEngine(database: openedDatabase, consultant: aiConsultant)
         completeStartupStep(.database)
 
         beginStartupStep(.drives, message: "Discovering connected drives…")
@@ -298,35 +307,6 @@ final class AppViewModel: ObservableObject {
 
         completeStartupStep(.drives)
 
-        beginStartupStep(.storageData, message: "Loading your saved storage scans…")
-        await Task.yield()
-
-        if let diskID = selectedDiskID {
-            let threshold = Calendar.current.date(byAdding: .year, value: -2, to: Date())!
-            let snapshot = await Task.detached(priority: .userInitiated) {
-                let overview = try? openedDatabase.storageOverview(forDiskID: diskID, oldFileThreshold: threshold)
-                let topConsumers = (try? openedDatabase.topConsumers(forDiskID: diskID, limit: 8)) ?? []
-                let duplicateEngine = DuplicateEngine(database: openedDatabase)
-                let duplicateGroups = (try? duplicateEngine.loadGroups(forDiskID: diskID)) ?? []
-                return CachedScanSnapshot(
-                    overview: overview,
-                    topConsumers: topConsumers,
-                    duplicateGroups: duplicateGroups
-                )
-            }.value
-
-            overview = snapshot.overview
-            topConsumers = snapshot.topConsumers
-            duplicateGroups = snapshot.duplicateGroups
-        } else {
-            overview = nil
-            topConsumers = []
-            duplicateGroups = []
-            analysisReport = nil
-        }
-
-        completeStartupStep(.storageData)
-
         beginStartupStep(.permissions, message: "Checking Full Disk Access…")
         await Task.yield()
 
@@ -334,15 +314,58 @@ final class AppViewModel: ObservableObject {
         hasFullDiskAccess = FullDiskAccess.hasFullDiskAccess()
         completeStartupStep(.permissions)
 
+        overview = nil
+        topConsumers = []
+        duplicateGroups = []
+        analysisReport = nil
+
         startupActiveStep = nil
         startupMessage = "Ready"
         isStartingUp = false
+
+        refreshAIConfiguration()
+        Task { await refreshAIAvailability() }
 
         presentIndexRebuildPromptIfNeeded()
         presentFullDiskAccessPromptIfNeeded()
         if !isBlockingLaunchFlow {
             schedulePostUpgradePresentation()
         }
+    }
+
+    func presentSavedScanPromptIfNeeded() {
+        guard !showFullDiskAccessPrompt, !showIndexRebuildPrompt, !showWhatsNewTour else { return }
+        guard !appSettings.shouldShowWhatsNew else { return }
+        guard let volume = selectedVolume, isIndexed(volume) else { return }
+        showSavedScanPrompt = true
+    }
+
+    func dismissSavedScanPrompt(loadSaved: Bool, rebuild: Bool) {
+        showSavedScanPrompt = false
+        guard let volume = selectedVolume else { return }
+
+        if rebuild {
+            scan(volume: volume)
+            return
+        }
+
+        if loadSaved {
+            refreshInsights()
+            setStatus("Loaded saved scan for \(volume.name)", kind: .success)
+        } else {
+            clearLoadedScanPresentation()
+            setStatus("Selected \(volume.name)", kind: .ready)
+        }
+    }
+
+    private func clearLoadedScanPresentation() {
+        overview = nil
+        topConsumers = []
+        duplicateGroups = []
+        analysisReport = nil
+        clearStorageCategorySelection()
+        cachedResultsRefreshTask?.cancel()
+        analysisRefreshTask?.cancel()
     }
 
     func presentIndexRebuildPromptIfNeeded() {
@@ -585,8 +608,6 @@ final class AppViewModel: ObservableObject {
         } else {
             selectedDiskID = nil
         }
-
-        refreshInsights()
     }
 
     func refreshFromError() {
@@ -702,6 +723,7 @@ final class AppViewModel: ObservableObject {
     func finishWhatsNewTour() {
         appSettings.markCurrentReleaseSeen()
         showWhatsNewTour = false
+        presentSavedScanPromptIfNeeded()
     }
 
     func stopPermissionPollingIfNeeded() {
@@ -793,14 +815,24 @@ final class AppViewModel: ObservableObject {
     }
 
     func selectVolume(_ volume: MountedVolume, autoScan: Bool = false) {
+        let volumeChanged = selectedVolumePath != volume.mountPath
         selectedVolumePath = volume.mountPath
         if let disk = diskRecord(for: volume) {
             selectedDiskID = disk.id
         } else {
             selectedDiskID = nil
         }
-        refreshInsights()
+
+        if volumeChanged {
+            clearLoadedScanPresentation()
+        }
+
         setStatus("Selected \(volume.name)", kind: .ready)
+
+        if volumeChanged, isIndexed(volume) {
+            showSavedScanPrompt = true
+            return
+        }
 
         if autoScan && !isIndexed(volume) && !isScanning {
             scan(volume: volume)
@@ -983,6 +1015,7 @@ final class AppViewModel: ObservableObject {
             diskID: diskID,
             fileLimit: appSettings.analysisFileLimit
         )
+        refreshAIInsights(for: analysisReport)
     }
 
     private func refreshAnalysisReportInBackground() {
@@ -1003,6 +1036,66 @@ final class AppViewModel: ObservableObject {
 
             guard !Task.isCancelled else { return }
             analysisReport = report
+            refreshAIInsights(for: report)
+        }
+    }
+
+    func refreshAIConfiguration() {
+        let configuration = appSettings.aiProviderConfiguration
+        aiEngine?.updateConsultantConfiguration(configuration)
+        aiConsultant?.updateConfiguration(configuration)
+        Task { await refreshAIAvailability() }
+    }
+
+    func refreshAIAvailability() async {
+        guard let consultant = aiConsultant else { return }
+        let status = await consultant.providerStatus()
+        aiProviderStatus = status
+
+        if let report = analysisReport {
+            let context = AIChatContext(report: report, topConsumers: topConsumers)
+            aiSuggestedQuestions = await consultant.suggestQuestions(context: context)
+        } else {
+            aiSuggestedQuestions = []
+        }
+    }
+
+    func updateAIAutocomplete() {
+        guard aiProviderStatus.isGenerativeAvailable else {
+            aiAutocompleteSuggestions = []
+            return
+        }
+        guard let report = analysisReport, let consultant = aiConsultant else {
+            aiAutocompleteSuggestions = []
+            return
+        }
+
+        let partial = aiQuestion
+        let context = AIChatContext(report: report, topConsumers: topConsumers)
+        Task {
+            let suggestions = await consultant.autocompleteSuggestions(for: partial, context: context)
+            await MainActor.run {
+                guard self.aiQuestion == partial else { return }
+                self.aiAutocompleteSuggestions = suggestions
+            }
+        }
+    }
+
+    private func refreshAIInsights(for report: AnalysisReport?) {
+        guard let report, let consultant = aiConsultant else {
+            aiAnalysisSummary = ""
+            aiSuggestedQuestions = []
+            return
+        }
+
+        let context = AIChatContext(report: report, topConsumers: topConsumers)
+        Task {
+            let suggestions = await consultant.suggestQuestions(context: context)
+            let summary = await consultant.enrichAnalysis(context: context)
+            await MainActor.run {
+                self.aiSuggestedQuestions = suggestions
+                self.aiAnalysisSummary = summary ?? ""
+            }
         }
     }
 
@@ -1113,6 +1206,7 @@ final class AppViewModel: ObservableObject {
         selectedDiskID = summary.diskID
         selectedVolumePath = volumeMountPath
         reload()
+        refreshInsights()
         let completionDetail = scanLabel == volumeName
             ? "\(summary.scannedFiles.formatted()) files indexed on \(volumeName)"
             : "\(summary.scannedFiles.formatted()) files indexed in \(scanLabel) on \(volumeName)"
@@ -1268,9 +1362,14 @@ final class AppViewModel: ObservableObject {
 
         Task {
             do {
-                let report = try await aiEngine.requestLLMReport(for: diskID)
+                let report = try await aiEngine.requestLLMReport(
+                    for: diskID,
+                    topConsumers: topConsumers,
+                    fileLimit: appSettings.analysisFileLimit
+                )
                 await MainActor.run {
                     self.llmReport = report
+                    self.aiAnalysisSummary = report
                     self.isAnalyzing = false
                     self.setStatus("AI report ready", kind: .success)
                 }
@@ -1288,6 +1387,7 @@ final class AppViewModel: ObservableObject {
         guard !trimmed.isEmpty else { return }
 
         aiQuestion = ""
+        aiAutocompleteSuggestions = []
         aiResponses.append(AIChatMessage(role: .user, text: trimmed))
 
         guard let report = analysisReport else {
@@ -1298,8 +1398,24 @@ final class AppViewModel: ObservableObject {
             return
         }
 
-        let answer = Self.answerQuestion(trimmed, report: report, consumers: topConsumers)
-        aiResponses.append(AIChatMessage(role: .assistant, text: answer))
+        let context = AIChatContext(report: report, topConsumers: topConsumers)
+        isAITyping = true
+
+        Task {
+            do {
+                let answer = try await aiConsultant.respond(to: trimmed, context: context)
+                await MainActor.run {
+                    self.isAITyping = false
+                    self.aiResponses.append(AIChatMessage(role: .assistant, text: answer))
+                }
+            } catch {
+                let fallback = Self.answerQuestion(trimmed, report: report, consumers: topConsumers)
+                await MainActor.run {
+                    self.isAITyping = false
+                    self.aiResponses.append(AIChatMessage(role: .assistant, text: fallback))
+                }
+            }
+        }
     }
 
     private static func answerQuestion(_ question: String, report: AnalysisReport, consumers: [SpaceConsumer]) -> String {

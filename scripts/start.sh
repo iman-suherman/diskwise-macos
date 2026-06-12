@@ -42,3 +42,19 @@ echo "  Open the disk image, drag DiskWise.app to Applications, then launch from
 echo ""
 
 open "$OUTPUT_DMG"
+
+if command -v osascript >/dev/null 2>&1; then
+  sleep 2
+  osascript <<'EOF' || true
+tell application "Finder"
+  repeat with dmgDisk in disks
+    if name of dmgDisk is "DiskWise" then
+      tell container window of dmgDisk
+        set toolbar visible to false
+        set statusbar visible to true
+      end tell
+    end if
+  end repeat
+end tell
+EOF
+fi

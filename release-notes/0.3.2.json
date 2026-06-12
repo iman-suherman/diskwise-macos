@@ -1,0 +1,16 @@
+{
+  "summary": "Apple Intelligence powers chat and storage analysis on supported Macs, with layered local AI fallbacks.",
+  "introduced": [
+    "Layered AI provider architecture: Apple Foundation Models, MLX, Ollama developer mode, and rule-based fallback",
+    "Ask DiskWise chat with autocomplete and dynamic suggested questions when Apple Intelligence is available",
+    "AI executive summary in Storage Intelligence after each scan",
+    "AI assistant settings for provider preference and Ollama developer mode"
+  ],
+  "changed": [
+    "DMG installer windows always show the Finder status bar when opened",
+    "Saved scan prompt after startup when cached scan data is available"
+  ],
+  "fixed": [
+    "DMG status bar configuration no longer fails during release packaging"
+  ]
+}

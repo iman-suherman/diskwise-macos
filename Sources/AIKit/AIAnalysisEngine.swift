@@ -33,23 +33,17 @@ public struct AnalysisReport: Sendable {
     }
 }
 
-public struct OllamaConfiguration: Sendable {
-    public let baseURL: URL
-    public let model: String
-
-    public init(baseURL: URL = URL(string: "http://127.0.0.1:11434")!, model: String = "llama3.1") {
-        self.baseURL = baseURL
-        self.model = model
-    }
-}
-
 public final class AIAnalysisEngine: @unchecked Sendable {
     private let database: DiskWiseDatabase
-    private let ollamaConfiguration: OllamaConfiguration?
+    private let consultant: AIConsultantService
 
-    public init(database: DiskWiseDatabase, ollamaConfiguration: OllamaConfiguration? = nil) {
+    public init(database: DiskWiseDatabase, consultant: AIConsultantService = AIConsultantService()) {
         self.database = database
-        self.ollamaConfiguration = ollamaConfiguration
+        self.consultant = consultant
+    }
+
+    public func updateConsultantConfiguration(_ configuration: AIProviderConfiguration) {
+        consultant.updateConfiguration(configuration)
     }
 
     public func analyze(diskID: Int64, fileLimit: Int = 10_000) throws -> AnalysisReport {
@@ -332,30 +326,13 @@ public final class AIAnalysisEngine: @unchecked Sendable {
         """
     }
 
-    public func requestLLMReport(for diskID: Int64) async throws -> String {
-        guard let configuration = ollamaConfiguration else {
-            let report = try analyze(diskID: diskID)
-            return report.insights
-                .map { "- \($0.title): \(ByteCountFormatter.string(fromByteCount: $0.estimatedSavings, countStyle: .file)) — \($0.detail)" }
-                .joined(separator: "\n")
-        }
-
-        let prompt = try generateLLMReportPrompt(for: diskID)
-        var request = URLRequest(url: configuration.baseURL.appendingPathComponent("api/generate"))
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: [
-            "model": configuration.model,
-            "prompt": prompt,
-            "stream": false,
-        ])
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw URLError(.badServerResponse)
-        }
-
-        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        return json?["response"] as? String ?? "No response from Ollama."
+    public func requestLLMReport(
+        for diskID: Int64,
+        topConsumers: [SpaceConsumer] = [],
+        fileLimit: Int = 10_000
+    ) async throws -> String {
+        let report = try analyze(diskID: diskID, fileLimit: fileLimit)
+        let context = AIChatContext(report: report, topConsumers: topConsumers)
+        return try await consultant.generateReport(context: context)
     }
 }

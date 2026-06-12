@@ -2,6 +2,7 @@ import Combine
 import Foundation
 import SwiftUI
 import DiskScannerKit
+import AIKit
 
 enum ScanPerformancePreset: String, CaseIterable, Identifiable {
     case fast
@@ -72,6 +73,10 @@ final class AppSettings: ObservableObject {
         static let analysisFileLimit = "diskwise.settings.analysisFileLimit"
         static let lastSeenReleaseVersion = "diskwise.settings.lastSeenReleaseVersion"
         static let indexSchemaVersion = "diskwise.settings.indexSchemaVersion"
+        static let aiProviderPreference = "diskwise.settings.aiProviderPreference"
+        static let ollamaBaseURL = "diskwise.settings.ollamaBaseURL"
+        static let ollamaModel = "diskwise.settings.ollamaModel"
+        static let enableOllamaDevMode = "diskwise.settings.enableOllamaDevMode"
     }
 
     /// Bump when the storage index format or scan pipeline changes materially.
@@ -105,6 +110,30 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    @Published var aiProviderPreference: AIProviderKind {
+        didSet {
+            UserDefaults.standard.set(aiProviderPreference.rawValue, forKey: Keys.aiProviderPreference)
+        }
+    }
+
+    @Published var ollamaBaseURL: String {
+        didSet {
+            UserDefaults.standard.set(ollamaBaseURL, forKey: Keys.ollamaBaseURL)
+        }
+    }
+
+    @Published var ollamaModel: String {
+        didSet {
+            UserDefaults.standard.set(ollamaModel, forKey: Keys.ollamaModel)
+        }
+    }
+
+    @Published var enableOllamaDevMode: Bool {
+        didSet {
+            UserDefaults.standard.set(enableOllamaDevMode, forKey: Keys.enableOllamaDevMode)
+        }
+    }
+
     private init() {
         let defaults = UserDefaults.standard
         if let rawMode = defaults.string(forKey: Keys.scanMode),
@@ -121,6 +150,15 @@ final class AppSettings: ObservableObject {
             defaults.object(forKey: Keys.analysisFileLimit) as? Int ?? Self.defaultAnalysisFileLimit,
             to: Self.analysisFileLimitRange
         )
+        if let rawPreference = defaults.string(forKey: Keys.aiProviderPreference),
+           let storedPreference = AIProviderKind(rawValue: rawPreference) {
+            aiProviderPreference = storedPreference
+        } else {
+            aiProviderPreference = .automatic
+        }
+        ollamaBaseURL = defaults.string(forKey: Keys.ollamaBaseURL) ?? "http://127.0.0.1:11434"
+        ollamaModel = defaults.string(forKey: Keys.ollamaModel) ?? "llama3.1"
+        enableOllamaDevMode = defaults.bool(forKey: Keys.enableOllamaDevMode)
     }
 
     static var currentAppVersion: String {
@@ -170,6 +208,19 @@ final class AppSettings: ObservableObject {
         scanMode = Self.defaultScanMode
         duplicateScanFileLimit = Self.defaultDuplicateScanFileLimit
         analysisFileLimit = Self.defaultAnalysisFileLimit
+        aiProviderPreference = .automatic
+        ollamaBaseURL = "http://127.0.0.1:11434"
+        ollamaModel = "llama3.1"
+        enableOllamaDevMode = false
+    }
+
+    var aiProviderConfiguration: AIProviderConfiguration {
+        AIProviderConfiguration(
+            preference: aiProviderPreference,
+            ollamaBaseURL: URL(string: ollamaBaseURL) ?? URL(string: "http://127.0.0.1:11434")!,
+            ollamaModel: ollamaModel,
+            enableOllamaDevMode: enableOllamaDevMode
+        )
     }
 
     private static func clamp(_ value: Int, to range: ClosedRange<Int>) -> Int {

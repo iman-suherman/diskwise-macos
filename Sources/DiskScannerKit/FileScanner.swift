@@ -264,24 +264,19 @@ public final class ScanEngine: @unchecked Sendable {
             .volumeAvailableCapacityKey,
         ])
 
+        let existingDisk = try database.allDisks().first { $0.mountPath == volumeRoot.path }
         var disk = try database.upsertDisk(
             DiskRecord(
                 name: name,
                 mountPath: volumeRoot.path,
                 totalSize: Int64(resourceValues.volumeTotalCapacity ?? 0),
                 freeSize: Int64(resourceValues.volumeAvailableCapacity ?? 0),
-                scannedAt: Date()
+                scannedAt: existingDisk?.scannedAt
             )
         )
 
         guard let diskID = disk.id else {
             throw DiskWiseDatabaseError.diskNotFound
-        }
-
-        if isFolderScan {
-            try database.deleteFiles(forDiskID: diskID, underPath: root.path)
-        } else {
-            try database.deleteFiles(forDiskID: diskID)
         }
 
         var scannedFiles = try scanner.scan(
@@ -297,13 +292,18 @@ public final class ScanEngine: @unchecked Sendable {
             isCancelled: isCancelled
         )
 
-        var batch: [FileRecord] = []
+        if isCancelled?() == true {
+            throw FileScannerError.cancelled
+        }
+
+        var fileRecords: [FileRecord] = []
+        fileRecords.reserveCapacity(scannedFiles.count)
         var indexedBytes: Int64 = 0
         var fileCount = 0
 
         for scanned in scannedFiles where !scanned.isDirectory {
             let url = URL(fileURLWithPath: scanned.path)
-            batch.append(
+            fileRecords.append(
                 FileRecord(
                     diskID: diskID,
                     path: scanned.path,
@@ -318,19 +318,15 @@ public final class ScanEngine: @unchecked Sendable {
             )
             indexedBytes += scanned.size
             fileCount += 1
-
-            if batch.count >= 250 {
-                try database.insertFiles(batch)
-                batch.removeAll(keepingCapacity: true)
-            }
         }
 
-        if !batch.isEmpty {
-            try database.insertFiles(batch)
-        }
-
-        disk.scannedAt = Date()
-        _ = try database.upsertDisk(disk)
+        let scannedAt = Date()
+        try database.replaceIndexedFiles(
+            forDiskID: diskID,
+            files: fileRecords,
+            folderPathPrefix: isFolderScan ? root.path : nil,
+            scannedAt: scannedAt
+        )
 
         return ScanSummary(
             diskID: diskID,

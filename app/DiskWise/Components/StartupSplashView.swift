@@ -95,7 +95,6 @@ struct StartupSplashOverlay: View {
 enum StartupStep: String, CaseIterable, Identifiable {
     case database
     case drives
-    case storageData
     case permissions
 
     var id: String { rawValue }
@@ -104,7 +103,6 @@ enum StartupStep: String, CaseIterable, Identifiable {
         switch self {
         case .database: return "Open database"
         case .drives: return "Discover drives"
-        case .storageData: return "Load saved scans"
         case .permissions: return "Check permissions"
         }
     }
@@ -113,7 +111,6 @@ enum StartupStep: String, CaseIterable, Identifiable {
         switch self {
         case .database: return "cylinder"
         case .drives: return "externaldrive"
-        case .storageData: return "chart.pie"
         case .permissions: return "lock.shield"
         }
     }

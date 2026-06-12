@@ -1,0 +1,114 @@
+import Foundation
+
+public actor AIProviderResolver {
+    private var configuration: AIProviderConfiguration
+    private let foundationModelsProvider = FoundationModelsProvider()
+    private let mlxProvider = MLXProvider()
+    private let ruleBasedProvider = RuleBasedChatProvider()
+
+    public init(configuration: AIProviderConfiguration) {
+        self.configuration = configuration
+    }
+
+    public func updateConfiguration(_ configuration: AIProviderConfiguration) {
+        self.configuration = configuration
+    }
+
+    private func ollamaProvider() -> OllamaProvider {
+        OllamaProvider(
+            baseURL: configuration.ollamaBaseURL,
+            model: configuration.ollamaModel
+        )
+    }
+
+    public func resolveStatus() async -> AIProviderStatus {
+        let provider = await resolveActiveProvider()
+        let detail = await provider.availabilityDetail()
+        let isGenerative = provider.kind != .ruleBased
+        return AIProviderStatus(
+            activeProvider: provider.kind,
+            isGenerativeAvailable: isGenerative,
+            displayName: provider.kind.displayName,
+            detail: detail
+        )
+    }
+
+    public func resolveActiveProvider() async -> any GenerativeAIProvider {
+        switch configuration.preference {
+        case .automatic:
+            if await foundationModelsProvider.isAvailable() {
+                return foundationModelsProvider
+            }
+            if await mlxProvider.isAvailable() {
+                return mlxProvider
+            }
+            if configuration.enableOllamaDevMode, await ollamaProvider().isAvailable() {
+                return ollamaProvider()
+            }
+            return ruleBasedProvider
+        case .foundationModels:
+            if await foundationModelsProvider.isAvailable() {
+                return foundationModelsProvider
+            }
+            return ruleBasedProvider
+        case .mlx:
+            if await mlxProvider.isAvailable() {
+                return mlxProvider
+            }
+            return ruleBasedProvider
+        case .ollama:
+            if configuration.enableOllamaDevMode, await ollamaProvider().isAvailable() {
+                return ollamaProvider()
+            }
+            return ruleBasedProvider
+        case .ruleBased:
+            return ruleBasedProvider
+        }
+    }
+
+    public func respond(to question: String, context: AIChatContext) async throws -> String {
+        let provider = await resolveActiveProvider()
+        if provider.kind == .ruleBased {
+            return try await provider.respond(to: question, context: context)
+        }
+        do {
+            return try await provider.respond(to: question, context: context)
+        } catch {
+            return try await ruleBasedProvider.respond(to: question, context: context)
+        }
+    }
+
+    public func suggestQuestions(context: AIChatContext) async -> [String] {
+        let provider = await resolveActiveProvider()
+        return await provider.suggestQuestions(context: context)
+    }
+
+    public func enrichAnalysis(context: AIChatContext) async -> String? {
+        if await foundationModelsProvider.isAvailable() {
+            if let summary = try? await foundationModelsProvider.enrichAnalysis(context: context) {
+                return summary
+            }
+        }
+        if await mlxProvider.isAvailable() {
+            if let summary = try? await mlxProvider.enrichAnalysis(context: context) {
+                return summary
+            }
+        }
+        if configuration.enableOllamaDevMode, await ollamaProvider().isAvailable() {
+            if let summary = try? await ollamaProvider().enrichAnalysis(context: context) {
+                return summary
+            }
+        }
+        return nil
+    }
+
+    public func generateReport(context: AIChatContext) async throws -> String {
+        if let summary = await enrichAnalysis(context: context) {
+            return summary
+        }
+        return try await ruleBasedProvider.respond(
+            to: "Summarize my storage and recommend safe cleanup steps.",
+            context: context
+        )
+    }
+}

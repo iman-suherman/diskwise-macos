@@ -42,6 +42,18 @@ struct DiskWiseApp: App {
         .windowStyle(.automatic)
         Settings {
             AppSettingsView(settings: appSettings)
+                .onChange(of: appSettings.aiProviderPreference) { _, _ in
+                    viewModel.refreshAIConfiguration()
+                }
+                .onChange(of: appSettings.enableOllamaDevMode) { _, _ in
+                    viewModel.refreshAIConfiguration()
+                }
+                .onChange(of: appSettings.ollamaBaseURL) { _, _ in
+                    viewModel.refreshAIConfiguration()
+                }
+                .onChange(of: appSettings.ollamaModel) { _, _ in
+                    viewModel.refreshAIConfiguration()
+                }
         }
         .commands {
             CommandGroup(replacing: .newItem) {}
@@ -115,8 +127,8 @@ struct ContentView: View {
                         }
                     }
             }
-            .blur(radius: viewModel.isStartingUp || viewModel.showFullDiskAccessPrompt || viewModel.showWhatsNewTour || viewModel.showIndexRebuildPrompt ? 8 : 0)
-            .allowsHitTesting(!viewModel.isStartingUp && !viewModel.showFullDiskAccessPrompt && !viewModel.showWhatsNewTour && !viewModel.showIndexRebuildPrompt)
+            .blur(radius: viewModel.isStartingUp || viewModel.showFullDiskAccessPrompt || viewModel.showWhatsNewTour || viewModel.showIndexRebuildPrompt || viewModel.showSavedScanPrompt ? 8 : 0)
+            .allowsHitTesting(!viewModel.isStartingUp && !viewModel.showFullDiskAccessPrompt && !viewModel.showWhatsNewTour && !viewModel.showIndexRebuildPrompt && !viewModel.showSavedScanPrompt)
 
             if viewModel.isStartingUp {
                 StartupSplashOverlay(
@@ -133,6 +145,15 @@ struct ContentView: View {
                     version: AppSettings.currentAppVersion,
                     onRebuild: { viewModel.dismissIndexRebuildPrompt(rebuildNow: true) },
                     onSkip: { viewModel.dismissIndexRebuildPrompt(rebuildNow: false) }
+                )
+            }
+
+            if viewModel.showSavedScanPrompt, let volume = viewModel.selectedVolume {
+                SavedScanPromptOverlay(
+                    volumeName: volume.name,
+                    onLoadSaved: { viewModel.dismissSavedScanPrompt(loadSaved: true, rebuild: false) },
+                    onRebuild: { viewModel.dismissSavedScanPrompt(loadSaved: false, rebuild: true) },
+                    onSkip: { viewModel.dismissSavedScanPrompt(loadSaved: false, rebuild: false) }
                 )
             }
 
@@ -164,6 +185,7 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.22), value: viewModel.isStartingUp)
         .animation(.easeInOut(duration: 0.22), value: viewModel.showFullDiskAccessPrompt)
         .animation(.easeInOut(duration: 0.22), value: viewModel.showIndexRebuildPrompt)
+        .animation(.easeInOut(duration: 0.22), value: viewModel.showSavedScanPrompt)
         .onChange(of: viewModel.showFullDiskAccessPrompt) { _, isShowing in
             if !isShowing {
                 viewModel.stopPermissionPollingIfNeeded()
@@ -361,7 +383,7 @@ struct ContentView: View {
                   let volume = viewModel.mountedVolumes.first(where: { $0.mountPath == newValue }) else {
                 return
             }
-            viewModel.selectVolume(volume, autoScan: !viewModel.isIndexed(volume))
+            viewModel.selectVolume(volume)
         }
     }
 }
