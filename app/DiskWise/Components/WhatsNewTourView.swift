@@ -12,8 +12,8 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
-        case "0.1.11":
-            return v0111Pages
+        case "0.2.0":
+            return v020Pages
         case "0.1.8":
             return v018Pages
         case "0.1.7":
@@ -33,11 +33,11 @@ enum WhatsNewContent {
         }
     }
 
-    private static let v0111Pages: [WhatsNewPage] = [
+    private static let v020Pages: [WhatsNewPage] = [
         WhatsNewPage(
             id: "welcome",
             icon: "sparkles",
-            title: "Welcome to DiskWise 0.1.11",
+            title: "Welcome to DiskWise 0.2.0",
             message: "Faster scans, smoother permissions, and clearer control over how DiskWise indexes your drives.",
             bullets: []
         ),
