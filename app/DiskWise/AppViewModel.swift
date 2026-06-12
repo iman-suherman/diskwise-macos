@@ -578,9 +578,14 @@ final class AppViewModel: ObservableObject {
         fullDiskAccessWizardStep = .waiting
         showFullDiskAccessPrompt = true
         FullDiskAccess.registerForFullDiskAccess()
-        FullDiskAccessSettings.open()
         setStatus("Waiting for Full Disk Access…", kind: .working)
         startPermissionPolling()
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(400))
+            guard showFullDiskAccessPrompt, fullDiskAccessWizardStep == .waiting else { return }
+            FullDiskAccessSettings.open()
+        }
     }
 
     func cancelFullDiskAccessWaiting() {
@@ -904,21 +909,23 @@ final class AppViewModel: ObservableObject {
         } else {
             selectedDiskID = nil
         }
-        setStatus("Step 1 of 3 · Scanning \(scanLabel)…", kind: .working)
+        setStatus("Step 1 of 3 · \(appSettings.scanMode.title) scan · \(scanLabel)…", kind: .working)
         logActivity(
             .scan,
             isFolderScan ? "Started folder scan" : "Started filesystem scan",
-            detail: isFolderScan ? "\(scanLabel) on \(volume.name)" : volume.name
+            detail: "\(appSettings.scanMode.title) · \(isFolderScan ? "\(scanLabel) on \(volume.name)" : volume.name)"
         )
 
+        let scanMode = appSettings.scanMode
         guard let scanEngine = self.scanEngine else { return }
-        scanTask = Task.detached { [weak self, scanEngine] in
+        scanTask = Task.detached { [weak self, scanEngine, scanMode] in
             guard let self else { return }
             do {
                 let summary = try scanEngine.scanVolume(
                     name: volume.name,
                     mountPath: volumeURL,
                     scanRoot: isFolderScan ? scanRoot : nil,
+                    mode: scanMode,
                     onProgress: { progress in
                         Task { @MainActor in
                             self.scanProgress = progress

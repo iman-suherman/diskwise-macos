@@ -1,9 +1,11 @@
 import SwiftUI
 import AppKit
+import DiskScannerKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
+        FullDiskAccess.registerForFullDiskAccess()
 
         DispatchQueue.main.async {
             _ = SparkleUpdaterController.shared
