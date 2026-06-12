@@ -164,19 +164,13 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.22), value: viewModel.isStartingUp)
         .animation(.easeInOut(duration: 0.22), value: viewModel.showFullDiskAccessPrompt)
         .animation(.easeInOut(duration: 0.22), value: viewModel.showIndexRebuildPrompt)
-        .onChange(of: viewModel.showIndexRebuildPrompt) { _, isShowing in
+        .onChange(of: viewModel.showFullDiskAccessPrompt) { _, isShowing in
             if !isShowing {
-                viewModel.presentWhatsNewIfNeeded()
+                viewModel.stopPermissionPollingIfNeeded()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             viewModel.checkPermissionOnAppActivation()
-        }
-        .onChange(of: viewModel.showFullDiskAccessPrompt) { _, isShowing in
-            if !isShowing {
-                viewModel.stopPermissionPollingIfNeeded()
-                viewModel.presentWhatsNewIfNeeded()
-            }
         }
         .onChange(of: viewModel.isBlockingLaunchFlow) { _, isBlocking in
             if !isBlocking {
