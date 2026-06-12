@@ -173,6 +173,15 @@ final class AppViewModel: ObservableObject {
         appSettings.shouldShowWhatsNew
     }
 
+    var isBlockingLaunchFlow: Bool {
+        isStartingUp || showFullDiskAccessPrompt || showWhatsNewTour
+    }
+
+    func scheduleLaunchUpdateCheckIfReady() {
+        guard !isBlockingLaunchFlow else { return }
+        SparkleUpdaterController.shared.checkForUpdatesOnLaunchIfNeeded()
+    }
+
     init() {
         startupTask = Task { @MainActor in
             await performStartup()
@@ -294,6 +303,7 @@ final class AppViewModel: ObservableObject {
 
         presentFullDiskAccessPromptIfNeeded()
         refreshAnalysisReportInBackground()
+        scheduleLaunchUpdateCheckIfReady()
     }
 
     private func refreshAnalysisReportInBackground() {
@@ -629,6 +639,7 @@ final class AppViewModel: ObservableObject {
     func finishWhatsNewTour() {
         appSettings.markCurrentReleaseSeen()
         showWhatsNewTour = false
+        scheduleLaunchUpdateCheckIfReady()
     }
 
     func stopPermissionPollingIfNeeded() {
