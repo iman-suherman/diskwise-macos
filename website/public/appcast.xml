@@ -3,6 +3,51 @@
     <channel>
         <title>DiskWise</title>
         <item>
+            <title>0.2.0</title>
+            <pubDate>Fri, 12 Jun 2026 19:11:47 +1000</pubDate>
+            <sparkle:version>2000</sparkle:version>
+            <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<ul>
+<li><strong>Introduced</strong><ul>
+<li>add fast/deep scan modes and improve Full Disk Access flow.</li>
+</ul></li>
+<li><strong>Changed</strong><ul>
+<li>Release v0.1.10 with Maintenance tab and Mole-inspired cleanup tools.</li>
+</ul></li>
+</ul>
+]]></description>
+            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.2.0.zip" length="11966369" type="application/octet-stream" sparkle:edSignature="RtHOGQGA7urjYJldP41Zvq9LEo9cm8/n+WrjvoO/jedre6NLsYgrCwCCpIxfopGlvsCnh1bm/8DAvtL/CiRJAw=="/>
+            <sparkle:deltas>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise2000-1010.delta" sparkle:deltaFrom="1010" length="900446" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="0JbXKzwqzp8SeZZYkcst/dza3MvXHZfjwdeVy5D9FGu/8LPadDTcLulpPpL5Zalgl96Qsyldbbe2rAHuDHNtBA=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise2000-1007.delta" sparkle:deltaFrom="1007" length="1374250" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="1Vgc9/YOJiraoO9q/3/Q1WOWe70Szg+wl2KevilaAvnSqh7OWUc5mQehWjyrdjA1z76cUk0JQdtgy+XnsRt5Dw=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise2000-1006.delta" sparkle:deltaFrom="1006" length="1422454" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="cPnCF2jfWiZP+vXV4hWZwky/0ET77ycLuQArIwkWmCD7UcdMbMPSYXK5lTRzZARzsunD4Hr4bvtujuOqefeGAA=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise2000-1009.delta" sparkle:deltaFrom="1009" length="1334082" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="g+P/D2htGgpPm4sjMwHql98HJiqhOgURhpN15Jurl77n1TEVofu7OBCrV1Rl2B3GD2avudduLGj1lkHtyXxFAw=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise2000-1008.delta" sparkle:deltaFrom="1008" length="1367254" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="uPIQoNuNbMfKc8qtSeRRBAVf3ROZ6ApPzkCrTW1GVB4Chfv0FACVu32H4QZvmK2RUQ5lHG2vPNiVfv2lpT87Cw=="/>
+            </sparkle:deltas>
+        </item>
+        <item>
+            <title>0.1.10</title>
+            <pubDate>Fri, 12 Jun 2026 14:40:58 +1000</pubDate>
+            <sparkle:version>1010</sparkle:version>
+            <sparkle:shortVersionString>0.1.10</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<ul>
+<li><strong>Changed</strong><ul>
+<li>Add Maintenance tab with Mole-inspired cleanup tools.</li>
+</ul></li>
+</ul>
+]]></description>
+            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.1.10.zip" length="11924452" type="application/octet-stream" sparkle:edSignature="R9NIsb1pnJ4KcNteyv1hu0tByS9WJy31RQAdmQDy4YViTp1cimuiNyU74R8lXUCrE+LCRXsLkVMtkjKXSg6eAQ=="/>
+            <sparkle:deltas>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1010-1009.delta" sparkle:deltaFrom="1009" length="1249546" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="USejxexWrgWy+9WSr3FrU6PbQubJ4zuv9yqQt4o5RvNZp/y4SGL9vLRAMUlSnZ1NJIb1r+x8nUPdm+JVjfXtAQ=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1010-1008.delta" sparkle:deltaFrom="1008" length="1297606" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="8FJS/+Dwx3l2ITCXVPOV534PaWqtjTkpZb0Rj1yhwoUBpg1Tu71+znE/5TbkZF853Xs4o9R7EPZ3J7TX+Y+bCg=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1010-1007.delta" sparkle:deltaFrom="1007" length="1328774" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="kB1MKCDYewqaVxeGwR2DHXZWUQBx3uqKaBBuUwpaihahJnBxOkBaQVJh64544hv22rtyHwqAVzhJqDbzOUo8BA=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1010-1006.delta" sparkle:deltaFrom="1006" length="1370946" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="iF1IluMw82ccatNyZznli5DnW7lSpkhRBWveqklEcuUL0ykEYhTi5/JUWv8tbw18P6irhR82/XO+KsVRt4osBA=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1010-1005.delta" sparkle:deltaFrom="1005" length="1423042" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="/T9FsIj8YWnWe4V4Swl+5A8W2BgkjSKShPmbhvieq7ftvEltXDR8bRxHISEnz6ZS6F0y4YMVW/3DuYYoi+owDw=="/>
+            </sparkle:deltas>
+        </item>
+        <item>
             <title>0.1.9</title>
             <pubDate>Fri, 12 Jun 2026 11:32:30 +1000</pubDate>
             <sparkle:version>1009</sparkle:version>
@@ -10,6 +55,7 @@
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[<ul>
 <li><strong>Changed</strong><ul>
+<li>Release v0.1.9 with duplicate scan memory fix.</li>
 <li>Ignore TypeScript build info cache files.</li>
 <li>Release v0.1.8 with sidebar scan controls and folder scanning.</li>
 </ul></li>
@@ -21,53 +67,10 @@
             <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.1.9.zip" length="11583833" type="application/octet-stream" sparkle:edSignature="bxnUGsJhnjcej7smW56psui0aiXHCkPy2oY1B4G8VQ1IVFZ3CYYsH+Ukq4Yb936rYqNKgv3D1ONsgfk3n2bDDA=="/>
             <sparkle:deltas>
                 <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1009-1008.delta" sparkle:deltaFrom="1008" length="645238" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="ae/jrcCcyPve607VFLwk23LLJFnFfLOQQogvW6Sy3kI/G2aQNZkNNG+/PFRiM0TOJBw/gtKSUzdwGjYTKhKIAw=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1009-1007.delta" sparkle:deltaFrom="1007" length="822642" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="DqFa1B7fGTgZ7zog951rDHzSGg1Er6a/5I5khwjViORhzPZpHwyAmzssttMIDeaSG/Ce/tFtu6E9EZqr8AD9AQ=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1009-1005.delta" sparkle:deltaFrom="1005" length="1033382" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="dj9gqUqwm6C9n4jEp2TlBwi4e6A8aPkYd4mfDKrR1DANmekmftdul72zTCdodcwSd8WBghci2KUAqHIot+oVBQ=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1009-1004.delta" sparkle:deltaFrom="1004" length="1151250" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="hmIZ1HjfnDL6Gaz8MccmYKgD1CGztMTPw9ay2IBjNs//1ETRff8SNF5HVMbFMZk0JK9j8jf//CGUPjfPUeRaAg=="/>
                 <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1009-1006.delta" sparkle:deltaFrom="1006" length="818846" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="vGTGwHL1HtRTYWyu4t0cbVvuk4MOYc/QXOUl6Z8D4KaicRs5iJQ+J5GnBPgzchW27fCsyngWACCI3AKBv2H4Ag=="/>
-            </sparkle:deltas>
-        </item>
-        <item>
-            <title>0.1.8</title>
-            <pubDate>Fri, 12 Jun 2026 05:44:32 +1000</pubDate>
-            <sparkle:version>1008</sparkle:version>
-            <sparkle:shortVersionString>0.1.8</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<ul>
-<li><strong>Changed</strong><ul>
-<li>Add sidebar scan controls and folder-scoped scanning.</li>
-<li>Release v0.1.7 with sidebar eject buttons for external drives.</li>
-</ul></li>
-</ul>
-]]></description>
-            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.1.8.zip" length="11574582" type="application/octet-stream" sparkle:edSignature="y5FNvH/iufFMdNptPo3qAqku+29VfqclcjmXhtgNAU2IeXjL5sFka2ThJqh4vGyb3iEW/HVPWvXn9rsqJ/3aCw=="/>
-            <sparkle:deltas>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1008-1007.delta" sparkle:deltaFrom="1007" length="764630" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="uVOjLvp4gtlv/xrkRyFxYIdZuY597smU+eUbIIbvvjI55ZLgzIfND4nSL12idXTLTut/SWK2HFiHa97hyI3qCA=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1008-1006.delta" sparkle:deltaFrom="1006" length="767338" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="0LNo4tp1mGnp2Vurk1oLd6Lt2tQEN3/ZpMa4Lmymec0YcoXoAyFHUrZs3fa0M8mRZKr76MEYx0m9FiNGbPddBA=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1008-1005.delta" sparkle:deltaFrom="1005" length="979446" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="gUtbwOr2php9DFnAdjpYuZlbO2BZZmi1ehohj3+ZkUS2gM+8HRKuLDC8UD7EzguKJucBy4Lov8PNmG7UdhSUBA=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1008-1004.delta" sparkle:deltaFrom="1004" length="1095970" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="lKvYsvCvzgwtCrt+/EWYb/6zICHkAnoLxy989FkF+xxvEF0WI5Ir2aNRl7La37I8tKBJSxvNN5nnXJggM6qTAA=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1008-1003.delta" sparkle:deltaFrom="1003" length="5672970" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="tWzMhmmBEv4vIG+xX2VhB2ilyjsZKlMgQ7z88Tdxbu8UDpyS+mDjbj7wStpooSepb6PVtgLGKHoxyBUMVFLaDw=="/>
-            </sparkle:deltas>
-        </item>
-        <item>
-            <title>0.1.7</title>
-            <pubDate>Fri, 12 Jun 2026 05:16:59 +1000</pubDate>
-            <sparkle:version>1007</sparkle:version>
-            <sparkle:shortVersionString>0.1.7</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<ul>
-<li><strong>Changed</strong><ul>
-<li>Add inline eject button for external drives in the sidebar.</li>
-</ul></li>
-</ul>
-]]></description>
-            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.1.7.zip" length="11560621" type="application/octet-stream" sparkle:edSignature="mODlAbcUa5YDhWWJUbFGweZPBMbbX0mX3pJdEBONzMMbwRuVd+TFffz0zMtx0tXx3TYOMiXLjAF//S35gOerCQ=="/>
-            <sparkle:deltas>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1007-1006.delta" sparkle:deltaFrom="1006" length="585166" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="exT9E+JPZ+9RQ4n+QVFpj7SMHWfaH01i0qVuscO7456EWzcs1w8jndVaSCa791/NI9BMKrCnB5I5A83QPbZiAg=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1007-1005.delta" sparkle:deltaFrom="1005" length="764686" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="RSUCd/VJjLWkrMO4fM3Rc93dq1LZa4byUaKn6igdURBwtioT2WNFpqP8GJA3tzlkcwkAVu/sy5AcTrj/A0PIDA=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1007-1004.delta" sparkle:deltaFrom="1004" length="945994" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="2nyAosuLjP1NYBPLMoxuq159+R2G6vahgoPPkuhmWK2CcefAaJEfeUhGr5ShrtJEMQr7E/GgV19cSM9xlA50Dg=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1007-1003.delta" sparkle:deltaFrom="1003" length="5597054" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="je6H7xvxlpjw8vfvwi/655+wpD0dmMieEjn0BBc9LjpqjBWOaWTa7S4qqQx0JfmHdETBXrj7fQnFun5B8DLrAQ=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1007-1002.delta" sparkle:deltaFrom="1002" length="5894638" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="2quR8iSs3CkrHbQu+JED9II33vOd4hRfANNg7qKMBKhxfLQogR60wKiNFUmnCHaKeWmRn5O8izCMsZ7/PK7+Cg=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1009-1007.delta" sparkle:deltaFrom="1007" length="822642" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="DqFa1B7fGTgZ7zog951rDHzSGg1Er6a/5I5khwjViORhzPZpHwyAmzssttMIDeaSG/Ce/tFtu6E9EZqr8AD9AQ=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1009-1004.delta" sparkle:deltaFrom="1004" length="1151250" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="hmIZ1HjfnDL6Gaz8MccmYKgD1CGztMTPw9ay2IBjNs//1ETRff8SNF5HVMbFMZk0JK9j8jf//CGUPjfPUeRaAg=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise1009-1005.delta" sparkle:deltaFrom="1005" length="1033382" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="dj9gqUqwm6C9n4jEp2TlBwi4e6A8aPkYd4mfDKrR1DANmekmftdul72zTCdodcwSd8WBghci2KUAqHIot+oVBQ=="/>
             </sparkle:deltas>
         </item>
     </channel>
