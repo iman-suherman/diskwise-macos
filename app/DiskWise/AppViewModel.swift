@@ -159,6 +159,8 @@ final class AppViewModel: ObservableObject {
     private var startupTask: Task<Void, Never>?
     private var scanTask: Task<Void, Never>?
     private var duplicateTask: Task<Void, Never>?
+    private var analysisRefreshTask: Task<Void, Never>?
+    private var cachedResultsRefreshTask: Task<Void, Never>?
     private var scanStartTime: Date?
     private var lastDuplicateGroupsRefreshCount = 0
     private var lastInsightsRefreshCount = 0
@@ -180,6 +182,17 @@ final class AppViewModel: ObservableObject {
     func scheduleLaunchUpdateCheckIfReady() {
         guard !isBlockingLaunchFlow else { return }
         SparkleUpdaterController.shared.checkForUpdatesOnLaunchIfNeeded()
+    }
+
+    /// Deferred work after startup overlays (What's New, FDA) so the main UI stays responsive.
+    func schedulePostLaunchWork() {
+        guard !isBlockingLaunchFlow else { return }
+        refreshAnalysisReportInBackground()
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !isBlockingLaunchFlow else { return }
+            scheduleLaunchUpdateCheckIfReady()
+        }
     }
 
     init() {
@@ -302,14 +315,8 @@ final class AppViewModel: ObservableObject {
         isStartingUp = false
 
         presentFullDiskAccessPromptIfNeeded()
-        refreshAnalysisReportInBackground()
-        scheduleLaunchUpdateCheckIfReady()
-    }
-
-    private func refreshAnalysisReportInBackground() {
-        guard selectedDiskID != nil else { return }
-        Task { @MainActor in
-            refreshAnalysisReport()
+        if !isBlockingLaunchFlow {
+            schedulePostLaunchWork()
         }
     }
 
@@ -639,7 +646,6 @@ final class AppViewModel: ObservableObject {
     func finishWhatsNewTour() {
         appSettings.markCurrentReleaseSeen()
         showWhatsNewTour = false
-        scheduleLaunchUpdateCheckIfReady()
     }
 
     func stopPermissionPollingIfNeeded() {
@@ -877,6 +883,38 @@ final class AppViewModel: ObservableObject {
         duplicateGroups = (try? duplicateEngine.loadGroups(forDiskID: diskID)) ?? []
     }
 
+    private func refreshCachedScanResultsInBackground() {
+        guard let diskID = selectedDiskID else {
+            overview = nil
+            topConsumers = []
+            duplicateGroups = []
+            analysisReport = nil
+            return
+        }
+
+        cachedResultsRefreshTask?.cancel()
+        let threshold = Calendar.current.date(byAdding: .year, value: -2, to: Date())!
+        guard let database, let duplicateEngine else { return }
+
+        cachedResultsRefreshTask = Task { @MainActor in
+            let snapshot = await Task.detached(priority: .utility) {
+                let overview = try? database.storageOverview(forDiskID: diskID, oldFileThreshold: threshold)
+                let topConsumers = (try? database.topConsumers(forDiskID: diskID, limit: 8)) ?? []
+                let duplicateGroups = (try? duplicateEngine.loadGroups(forDiskID: diskID)) ?? []
+                return CachedScanSnapshot(
+                    overview: overview,
+                    topConsumers: topConsumers,
+                    duplicateGroups: duplicateGroups
+                )
+            }.value
+
+            guard !Task.isCancelled else { return }
+            overview = snapshot.overview
+            topConsumers = snapshot.topConsumers
+            duplicateGroups = snapshot.duplicateGroups
+        }
+    }
+
     func refreshAnalysisReport() {
         guard let diskID = selectedDiskID else {
             analysisReport = nil
@@ -889,9 +927,30 @@ final class AppViewModel: ObservableObject {
         )
     }
 
+    private func refreshAnalysisReportInBackground() {
+        guard let diskID = selectedDiskID else {
+            analysisReport = nil
+            return
+        }
+        guard !isBlockingLaunchFlow else { return }
+
+        analysisRefreshTask?.cancel()
+        let fileLimit = appSettings.analysisFileLimit
+        guard let engine = aiEngine else { return }
+
+        analysisRefreshTask = Task { @MainActor in
+            let report = await Task.detached(priority: .utility) { () -> AnalysisReport? in
+                try? engine.analyze(diskID: diskID, fileLimit: fileLimit)
+            }.value
+
+            guard !Task.isCancelled else { return }
+            analysisReport = report
+        }
+    }
+
     func refreshInsights() {
-        refreshCachedScanResults()
-        refreshAnalysisReport()
+        refreshCachedScanResultsInBackground()
+        refreshAnalysisReportInBackground()
     }
 
     func scan(volume: MountedVolume, folder: URL? = nil) {

@@ -163,12 +163,11 @@ struct ContentView: View {
             if !isShowing {
                 viewModel.stopPermissionPollingIfNeeded()
                 viewModel.presentWhatsNewIfNeeded()
-                viewModel.scheduleLaunchUpdateCheckIfReady()
             }
         }
         .onChange(of: viewModel.isBlockingLaunchFlow) { _, isBlocking in
             if !isBlocking {
-                viewModel.scheduleLaunchUpdateCheckIfReady()
+                viewModel.schedulePostLaunchWork()
             }
         }
         .sheet(isPresented: $viewModel.showActivityLog) {
