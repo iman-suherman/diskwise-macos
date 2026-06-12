@@ -120,6 +120,105 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         }
     }
 
+    public func updateHashes(_ updates: [(fileID: Int64, hash: String)]) throws {
+        guard !updates.isEmpty else { return }
+
+        try dbQueue.write { db in
+            for update in updates {
+                try db.execute(
+                    sql: "UPDATE files SET hash = ? WHERE id = ?",
+                    arguments: [update.hash, update.fileID]
+                )
+            }
+        }
+    }
+
+    /// Returns files whose size matches at least one other file within the largest `limit` candidates.
+    public func filesWithDuplicateSizes(forDiskID diskID: Int64, limit: Int) throws -> [FileRecord] {
+        try dbQueue.read { db in
+            try FileRecord.fetchAll(
+                db,
+                sql: """
+                WITH ranked AS (
+                    SELECT * FROM files
+                    WHERE disk_id = ? AND size > 0
+                    ORDER BY size DESC
+                    LIMIT ?
+                ),
+                duplicate_sizes AS (
+                    SELECT size FROM ranked
+                    GROUP BY size
+                    HAVING COUNT(*) > 1
+                )
+                SELECT ranked.* FROM ranked
+                INNER JOIN duplicate_sizes ON ranked.size = duplicate_sizes.size
+                ORDER BY ranked.size DESC
+                """,
+                arguments: [diskID, limit]
+            )
+        }
+    }
+
+    /// Returns video files whose size matches at least one other video within the largest `limit` candidates.
+    public func videosWithDuplicateSizes(forDiskID diskID: Int64, limit: Int) throws -> [FileRecord] {
+        try dbQueue.read { db in
+            try FileRecord.fetchAll(
+                db,
+                sql: """
+                WITH ranked AS (
+                    SELECT * FROM files
+                    WHERE disk_id = ? AND category = ? AND size > 0
+                    ORDER BY size DESC
+                    LIMIT ?
+                ),
+                duplicate_sizes AS (
+                    SELECT size FROM ranked
+                    GROUP BY size
+                    HAVING COUNT(*) > 1
+                )
+                SELECT ranked.* FROM ranked
+                INNER JOIN duplicate_sizes ON ranked.size = duplicate_sizes.size
+                ORDER BY ranked.size DESC
+                """,
+                arguments: [diskID, FileCategory.video.rawValue, limit]
+            )
+        }
+    }
+
+    public func files(withIDs ids: [Int64]) throws -> [FileRecord] {
+        guard !ids.isEmpty else { return [] }
+
+        let placeholders = Array(repeating: "?", count: ids.count).joined(separator: ", ")
+        return try dbQueue.read { db in
+            try FileRecord.fetchAll(
+                db,
+                sql: """
+                SELECT * FROM files
+                WHERE id IN (\(placeholders))
+                ORDER BY path ASC
+                """,
+                arguments: StatementArguments(ids)
+            )
+        }
+    }
+
+    public func deleteDuplicateGroups(forDiskID diskID: Int64) throws {
+        try dbQueue.write { db in
+            try db.execute(
+                sql: """
+                DELETE FROM duplicate_groups
+                WHERE id IN (
+                    SELECT DISTINCT dm.group_id
+                    FROM duplicate_members dm
+                    JOIN files f ON f.id = dm.file_id
+                    WHERE f.disk_id = ?
+                )
+                """,
+                arguments: [diskID]
+            )
+        }
+    }
+
     public func insertMetadata(_ metadata: FileMetadataRecord) throws {
         try dbQueue.write { db in
             try metadata.insert(db, onConflict: .replace)
