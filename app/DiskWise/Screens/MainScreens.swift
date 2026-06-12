@@ -59,7 +59,7 @@ struct DuplicatesView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             } else {
-                Text("Extra copies of the same file show up here after a scan")
+                Text("Run duplicate detection from this tab after identifying disk usage")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -104,21 +104,20 @@ struct DuplicatesView: View {
             ContentUnavailableView {
                 Label("No duplicates found yet", systemImage: "doc.on.doc")
             } description: {
-                Text("This drive has no duplicate file groups from the latest scan. Try rescanning after copying or downloading more files.")
+                Text("Duplicate detection runs separately from the main identify → analyze workflow. Scan here when you want to find extra copies.")
             } actions: {
-                if let volume = viewModel.selectedVolume {
-                    Button(viewModel.scanActionTitle(for: volume)) {
-                        viewModel.scanSelectedVolume()
-                    }
-                    .buttonStyle(.borderedProminent)
+                Button(viewModel.isFindingDuplicates ? "Finding…" : "Find Duplicates") {
+                    viewModel.scanForDuplicates()
                 }
+                .buttonStyle(.borderedProminent)
+                .disabled(viewModel.isFindingDuplicates)
             }
             .frame(maxWidth: .infinity, minHeight: 300)
         } else {
             ContentUnavailableView(
-                "Scan a drive first",
+                "Identify disk usage first",
                 systemImage: "externaldrive",
-                description: Text("Select a drive in the sidebar and run a scan. Duplicate groups will appear in this tab.")
+                description: Text("Select a drive and run Phase 1 (Identify usage) from the sidebar. Then return here to find duplicates.")
             )
             .frame(maxWidth: .infinity, minHeight: 300)
         }

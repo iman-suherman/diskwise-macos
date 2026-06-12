@@ -27,6 +27,7 @@
 		C61435492234EF4EFEB45B5C /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BF737B0AA3066062F3881A4 /* StatusBadge.swift */; };
 		C9D4B856CC4D658C4888B06B /* ActivityLogSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9652CCD6DFF89AC365DBCD /* ActivityLogSheet.swift */; };
 		DD2F2233CFB17ABB37688ACD /* RecommendationReviewSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D515CF1494436D3A33BC32C /* RecommendationReviewSheet.swift */; };
+		E1C624A7270A0BE8EA9B8147 /* IndexRebuildOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82F3A2475D36769351F8CBC /* IndexRebuildOverlay.swift */; };
 		E559D2BF705EE1AB7F9CA4EA /* entitlements.mac.plist in Resources */ = {isa = PBXBuildFile; fileRef = 15BE9BA6642050B89F9552F0 /* entitlements.mac.plist */; };
 		E8EBB3946721C85434EA08EB /* MaintenanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39A19DABD6BC39CB4E077008 /* MaintenanceView.swift */; };
 		EB2F4F28688BDD100DBE6D78 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6930F12578EC666DA893730C /* AppSettings.swift */; };
@@ -54,6 +55,7 @@
 		9604CB761CB34350EFF29978 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9632663F581782670036F59C /* StartupSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupSplashView.swift; sourceTree = "<group>"; };
 		98EFAE1062F153FAFA7B0D8A /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		A82F3A2475D36769351F8CBC /* IndexRebuildOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexRebuildOverlay.swift; sourceTree = "<group>"; };
 		B21446A4062305538747C91B /* DiskWise.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DiskWise.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessPrompt.swift; sourceTree = "<group>"; };
 		D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageBreakdownView.swift; sourceTree = "<group>"; };
@@ -105,6 +107,7 @@
 				3EAC0147A7FB6FEF4116785C /* AppSettingsView.swift */,
 				61EB1B1E7AD0267851557FD9 /* DashboardView.swift */,
 				D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */,
+				A82F3A2475D36769351F8CBC /* IndexRebuildOverlay.swift */,
 				39A19DABD6BC39CB4E077008 /* MaintenanceView.swift */,
 				8D515CF1494436D3A33BC32C /* RecommendationReviewSheet.swift */,
 				9632663F581782670036F59C /* StartupSplashView.swift */,
@@ -241,6 +244,7 @@
 				F4D258718C504E7A6365ADB6 /* DashboardView.swift in Sources */,
 				2791E28A3F889BE0CA5591A3 /* DiskWiseApp.swift in Sources */,
 				F07314D38ACD7FE6E5B9D233 /* FullDiskAccessPrompt.swift in Sources */,
+				E1C624A7270A0BE8EA9B8147 /* IndexRebuildOverlay.swift in Sources */,
 				6364632C8485413073CA9BB3 /* MainScreens.swift in Sources */,
 				E8EBB3946721C85434EA08EB /* MaintenanceView.swift in Sources */,
 				DD2F2233CFB17ABB37688ACD /* RecommendationReviewSheet.swift in Sources */,
@@ -380,14 +384,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2004;
+				CURRENT_PROJECT_VERSION = 1000000;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.2.4;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
 				SDKROOT = macosx;
 				SPARKLE_FEED_URL = "https://diskwise-registry.suherman.net/appcast.xml";
@@ -401,14 +405,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2004;
+				CURRENT_PROJECT_VERSION = 1000000;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.2.4;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
 				SDKROOT = macosx;
 				SPARKLE_FEED_URL = "http://127.0.0.1:3000/appcast.xml";

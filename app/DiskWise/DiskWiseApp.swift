@@ -115,8 +115,8 @@ struct ContentView: View {
                         }
                     }
             }
-            .blur(radius: viewModel.isStartingUp || viewModel.showFullDiskAccessPrompt || viewModel.showWhatsNewTour ? 8 : 0)
-            .allowsHitTesting(!viewModel.isStartingUp && !viewModel.showFullDiskAccessPrompt && !viewModel.showWhatsNewTour)
+            .blur(radius: viewModel.isStartingUp || viewModel.showFullDiskAccessPrompt || viewModel.showWhatsNewTour || viewModel.showIndexRebuildPrompt ? 8 : 0)
+            .allowsHitTesting(!viewModel.isStartingUp && !viewModel.showFullDiskAccessPrompt && !viewModel.showWhatsNewTour && !viewModel.showIndexRebuildPrompt)
 
             if viewModel.isStartingUp {
                 StartupSplashOverlay(
@@ -125,6 +125,14 @@ struct ContentView: View {
                     currentMessage: viewModel.startupMessage,
                     completedSteps: viewModel.startupCompletedSteps,
                     activeStep: viewModel.startupActiveStep
+                )
+            }
+
+            if viewModel.showIndexRebuildPrompt {
+                IndexRebuildOverlay(
+                    version: AppSettings.currentAppVersion,
+                    onRebuild: { viewModel.dismissIndexRebuildPrompt(rebuildNow: true) },
+                    onSkip: { viewModel.dismissIndexRebuildPrompt(rebuildNow: false) }
                 )
             }
 
@@ -155,7 +163,12 @@ struct ContentView: View {
         }
         .animation(.easeInOut(duration: 0.22), value: viewModel.isStartingUp)
         .animation(.easeInOut(duration: 0.22), value: viewModel.showFullDiskAccessPrompt)
-        .animation(.easeInOut(duration: 0.22), value: viewModel.showWhatsNewTour)
+        .animation(.easeInOut(duration: 0.22), value: viewModel.showIndexRebuildPrompt)
+        .onChange(of: viewModel.showIndexRebuildPrompt) { _, isShowing in
+            if !isShowing {
+                viewModel.presentWhatsNewIfNeeded()
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             viewModel.checkPermissionOnAppActivation()
         }
@@ -274,9 +287,9 @@ struct ContentView: View {
                     } label: {
                         Label(
                             viewModel.isScanning
-                                ? "Scanning…"
-                                : (viewModel.isFindingDuplicates
-                                    ? "Checking duplicates…"
+                                ? "Identifying…"
+                                : (viewModel.isAnalyzing
+                                    ? "Analyzing…"
                                     : viewModel.scanActionTitle(for: volume)),
                             systemImage: "arrow.triangle.2.circlepath"
                         )
@@ -310,14 +323,17 @@ struct ContentView: View {
 
                         Button {
                             viewModel.openDuplicatesPane()
+                            if !viewModel.isFindingDuplicates && viewModel.duplicateGroups.isEmpty {
+                                viewModel.scanForDuplicates()
+                            }
                         } label: {
                             Label {
-                                if viewModel.totalDuplicateSavings > 0 {
+                                if viewModel.isFindingDuplicates {
+                                    Text("Finding duplicates…")
+                                } else if viewModel.totalDuplicateSavings > 0 {
                                     Text("Duplicates · \(DiskWiseFormatters.bytes.string(fromByteCount: viewModel.totalDuplicateSavings))")
-                                } else if viewModel.isFindingDuplicates {
-                                    Text("Checking duplicates…")
                                 } else {
-                                    Text("View Duplicates")
+                                    Text("Find Duplicates")
                                 }
                             } icon: {
                                 Image(systemName: "doc.on.doc")

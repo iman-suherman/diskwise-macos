@@ -70,7 +70,7 @@ struct ScanProgressPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             ScanPanelHeader(
-                title: viewModel.selectedVolume.map { "Scanning \($0.name)" } ?? "Scanning",
+                title: viewModel.selectedVolume.map { "Identifying usage on \($0.name)" } ?? "Identifying disk usage",
                 subtitle: viewModel.scanPhase.label,
                 icon: "doc.text.magnifyingglass",
                 progressFraction: viewModel.scanProgressFraction,
@@ -123,17 +123,17 @@ struct BackgroundScanBanner: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             ScanPanelHeader(
-                title: bannerTitle,
-                subtitle: bannerSubtitle,
-                icon: bannerIcon,
+                title: "Analyzing storage",
+                subtitle: viewModel.scanPhase.label,
+                icon: "sparkles",
                 progressFraction: viewModel.scanProgressFraction,
                 progressLabel: viewModel.scanProgressPercentLabel,
-                onCancel: { viewModel.cancelDuplicateDetection() }
+                onCancel: { viewModel.cancelScan() }
             )
 
             ScanStepList(
                 activeStep: viewModel.scanPhase.stepNumber,
-                duplicateDetail: viewModel.duplicateScanProgress?.level.detail
+                duplicateDetail: nil
             )
 
             ScanProgressBar(
@@ -142,39 +142,20 @@ struct BackgroundScanBanner: View {
                 estimatedRemaining: viewModel.scanEstimatedRemaining
             )
 
-            if let progress = viewModel.duplicateScanProgress {
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    ScanStatTile(
-                        title: "Step",
-                        value: "\(progress.levelIndex + 1) of \(progress.levelCount)",
-                        icon: "list.number"
-                    )
-                    ScanStatTile(
-                        title: progress.level == .videoFingerprint ? "Videos" : "Files",
-                        value: "\(progress.processedCount.formatted()) / \(progress.totalCount.formatted())",
-                        icon: progress.level == .videoFingerprint ? "film" : "doc.text"
-                    )
-                    ScanStatTile(
-                        title: "Groups",
-                        value: progress.groupsFoundSoFar.formatted(),
-                        icon: "doc.on.doc"
-                    )
+            HStack(spacing: 10) {
+                ProgressView()
+                    .controlSize(.small)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Sorting findings into action buckets…")
+                    Text("Safe to clean · Review first · Personal — keep")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                    Text("Analyzing largest \(viewModel.appSettings.analysisFileLimit.formatted()) files")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                 }
-
-                currentPathPanel(title: "Checking", path: progress.currentPath)
-            } else if viewModel.isAnalyzing {
-                HStack(spacing: 10) {
-                    ProgressView()
-                        .controlSize(.small)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Building recommendations from your indexed files…")
-                        Text("Analyzing largest \(viewModel.appSettings.analysisFileLimit.formatted()) files")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
 
             if viewModel.hasScanData {
@@ -185,24 +166,6 @@ struct BackgroundScanBanner: View {
         }
         .scanPanelStyle()
     }
-
-    private var bannerTitle: String {
-        if viewModel.isAnalyzing {
-            return "Analyzing storage"
-        }
-        if let volume = viewModel.selectedVolume {
-            return "Checking duplicates on \(volume.name)"
-        }
-        return "Checking duplicates"
-    }
-
-    private var bannerSubtitle: String {
-        viewModel.duplicateProgressDetail ?? viewModel.scanPhase.label
-    }
-
-    private var bannerIcon: String {
-        viewModel.isAnalyzing ? "sparkles" : "doc.on.doc"
-    }
 }
 
 private struct ScanStepList: View {
@@ -210,9 +173,9 @@ private struct ScanStepList: View {
     let duplicateDetail: String?
 
     private let steps: [(number: Int, title: String, detail: String)] = [
-        (1, "Scan files", "Walk the drive and index every file"),
-        (2, "Find duplicates", "Match names, sizes, hashes, and video fingerprints"),
-        (3, "Analyze storage", "Build cleanup recommendations"),
+        (1, "Identify usage", "Map APFS volumes and drill into the biggest directories"),
+        (2, "Analyze storage", "Sort findings into safe, review-first, and personal buckets"),
+        (3, "Take action", "Use Maintenance tools or review recommendations below"),
     ]
 
     var body: some View {
@@ -251,8 +214,8 @@ private struct ScanStepList: View {
     }
 
     private func stepDetail(for step: (number: Int, title: String, detail: String)) -> String {
-        if step.number == 2, let duplicateDetail, activeStep == 2 {
-            return duplicateDetail
+        if step.number == 2, activeStep == 2 {
+            return "Building action plan from indexed files…"
         }
         return step.detail
     }
@@ -417,7 +380,7 @@ struct WelcomeView: View {
                 Text("Welcome to DiskWise")
                     .font(.largeTitle.bold())
 
-                Text("Understand what's using your storage, find duplicates, and reclaim disk space safely.")
+                Text("Identify what's using your storage, get a prioritized action plan, and reclaim space safely.")
                     .font(.title3)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -425,9 +388,9 @@ struct WelcomeView: View {
             }
 
             VStack(alignment: .leading, spacing: 12) {
-                FeatureRow(icon: "chart.pie", text: "Visual storage breakdown by category")
-                FeatureRow(icon: "doc.on.doc", text: "Find duplicate files automatically")
-                FeatureRow(icon: "sparkles", text: "AI-powered cleanup recommendations")
+                FeatureRow(icon: "chart.pie", text: "Three-phase storage consultant workflow")
+                FeatureRow(icon: "checkmark.seal", text: "Action buckets: safe, review-first, personal")
+                FeatureRow(icon: "doc.on.doc", text: "Dedicated Duplicates tab when you need it")
                 FeatureRow(icon: "trash", text: "Safe cleanup — always moves to Trash first")
             }
             .padding(.vertical, 8)
@@ -540,7 +503,7 @@ struct DashboardView: View {
                         }
                     }
 
-                    if viewModel.totalDuplicateSavings > 0 {
+                    if viewModel.totalDuplicateSavings > 0 || viewModel.isFindingDuplicates {
                         duplicatesCallToAction
                     }
 
@@ -878,36 +841,71 @@ struct DashboardView: View {
 
     @ViewBuilder
     private func recommendationsSection(report: AnalysisReport) -> some View {
-        GroupBox("Recommended Actions") {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                ForEach(Array(report.recommendations.enumerated()), id: \.offset) { _, recommendation in
-                    RecommendationActionCard(recommendation: recommendation) {
-                        viewModel.handleRecommendation(recommendation)
+        ForEach(ActionBucket.allCases) { bucket in
+            let items = report.recommendationsByBucket[bucket, default: []]
+            if !items.isEmpty {
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label(bucket.title, systemImage: bucket.icon)
+                            .font(.headline)
+                            .foregroundStyle(bucketColor(bucket))
+
+                        Text(bucket.subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                            ForEach(Array(items.enumerated()), id: \.offset) { _, recommendation in
+                                RecommendationActionCard(recommendation: recommendation, bucket: bucket) {
+                                    viewModel.handleRecommendation(recommendation)
+                                }
+                            }
+                        }
                     }
                 }
             }
+        }
+    }
+
+    private func bucketColor(_ bucket: ActionBucket) -> Color {
+        switch bucket {
+        case .safeRegenerable: return .green
+        case .reviewFirst: return .orange
+        case .personalKeep: return .blue
         }
     }
 }
 
 struct RecommendationActionCard: View {
     let recommendation: RecommendationRecord
+    let bucket: ActionBucket
     let onAction: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(recommendation.title)
-                .font(.headline)
+            HStack {
+                Text(recommendation.title)
+                    .font(.headline)
+                Spacer()
+                Text(bucket.title)
+                    .font(.caption2.weight(.semibold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(bucketBadgeColor.opacity(0.15), in: Capsule())
+                    .foregroundStyle(bucketBadgeColor)
+            }
             Text(recommendation.reason)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .lineLimit(2)
+                .lineLimit(3)
             HStack {
-                Text("Save \(DiskWiseFormatters.bytes.string(fromByteCount: recommendation.estimatedSavings))")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.orange)
+                if recommendation.estimatedSavings > 0 {
+                    Text("Save \(DiskWiseFormatters.bytes.string(fromByteCount: recommendation.estimatedSavings))")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.orange)
+                }
                 Spacer()
-                Button("Review") {
+                Button(bucket == .personalKeep ? "Review" : "Take Action") {
                     onAction()
                 }
                 .buttonStyle(.borderedProminent)
@@ -916,5 +914,13 @@ struct RecommendationActionCard: View {
         }
         .padding(16)
         .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var bucketBadgeColor: Color {
+        switch bucket {
+        case .safeRegenerable: return .green
+        case .reviewFirst: return .orange
+        case .personalKeep: return .blue
+        }
     }
 }

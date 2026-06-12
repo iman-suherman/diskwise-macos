@@ -92,6 +92,36 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         }
     }
 
+    /// Clears indexed files, duplicate groups, and recommendations for a disk.
+    public func clearStorageIndex(forDiskID diskID: Int64) throws {
+        try dbQueue.write { db in
+            try db.execute(
+                sql: """
+                DELETE FROM duplicate_groups
+                WHERE id IN (
+                    SELECT DISTINCT dm.group_id
+                    FROM duplicate_members dm
+                    JOIN files f ON f.id = dm.file_id
+                    WHERE f.disk_id = ?
+                )
+                """,
+                arguments: [diskID]
+            )
+            try db.execute(sql: "DELETE FROM files WHERE disk_id = ?", arguments: [diskID])
+            try db.execute(sql: "DELETE FROM recommendations")
+        }
+    }
+
+    /// Clears all storage indexes across every disk.
+    public func clearAllStorageIndexes() throws {
+        try dbQueue.write { db in
+            try db.execute(sql: "DELETE FROM duplicate_members")
+            try db.execute(sql: "DELETE FROM duplicate_groups")
+            try db.execute(sql: "DELETE FROM files")
+            try db.execute(sql: "DELETE FROM recommendations")
+        }
+    }
+
     public func files(forDiskID diskID: Int64, limit: Int = 500) throws -> [FileRecord] {
         try dbQueue.read { db in
             try FileRecord.fetchAll(

@@ -6,6 +6,7 @@ public final class MaintenanceEngine: @unchecked Sendable {
     private let projectPurgeScanner: ProjectPurgeScanner
     private let installerScanner: InstallerScanner
     private let appUninstallScanner: AppUninstallScanner
+    private let apfsSnapshotScanner: APFSSnapshotScanner
     private let systemMonitor: SystemMonitor
     private let systemOptimizer: SystemOptimizer
     private let cleanupEngine: CleanupEngine
@@ -15,6 +16,7 @@ public final class MaintenanceEngine: @unchecked Sendable {
         projectPurgeScanner: ProjectPurgeScanner = ProjectPurgeScanner(),
         installerScanner: InstallerScanner = InstallerScanner(),
         appUninstallScanner: AppUninstallScanner = AppUninstallScanner(),
+        apfsSnapshotScanner: APFSSnapshotScanner = APFSSnapshotScanner(),
         systemMonitor: SystemMonitor = SystemMonitor(),
         systemOptimizer: SystemOptimizer = SystemOptimizer(),
         cleanupEngine: CleanupEngine = CleanupEngine()
@@ -23,6 +25,7 @@ public final class MaintenanceEngine: @unchecked Sendable {
         self.projectPurgeScanner = projectPurgeScanner
         self.installerScanner = installerScanner
         self.appUninstallScanner = appUninstallScanner
+        self.apfsSnapshotScanner = apfsSnapshotScanner
         self.systemMonitor = systemMonitor
         self.systemOptimizer = systemOptimizer
         self.cleanupEngine = cleanupEngine
@@ -30,15 +33,21 @@ public final class MaintenanceEngine: @unchecked Sendable {
 
     public func scan(_ kind: MaintenanceKind, isCancelled: (@Sendable () -> Bool)? = nil) -> MaintenanceScanResult {
         switch kind {
-        case .deepClean:
-            return deepCleanScanner.scan(isCancelled: isCancelled)
-        case .projectPurge:
-            return projectPurgeScanner.scan(isCancelled: isCancelled)
+        case .appCaches, .browserCaches, .developerCaches, .logs, .tempFiles, .trash:
+            return deepCleanScanner.scan(categories: kind.scanCategories, isCancelled: isCancelled)
+        case .nodeModules, .buildArtifacts, .virtualEnvironments:
+            return projectPurgeScanner.scan(categories: kind.scanCategories, isCancelled: isCancelled)
         case .installers:
             return installerScanner.scan(isCancelled: isCancelled)
+        case .apfsSnapshots:
+            return apfsSnapshotScanner.scan()
         case .appUninstall, .optimize, .systemStatus:
             return MaintenanceScanResult(kind: kind, entries: [])
         }
+    }
+
+    public func thinAPFSSnapshots(mountPath: String = "/") -> Int {
+        apfsSnapshotScanner.thinAllSnapshots(mountPath: mountPath)
     }
 
     public func scanInstalledApps(isCancelled: (@Sendable () -> Bool)? = nil) -> [InstalledApp] {

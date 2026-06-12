@@ -1,20 +1,85 @@
 import Foundation
 
+public enum MaintenanceSection: String, CaseIterable, Sendable {
+    case clean
+    case projects
+    case system
+
+    public var title: String {
+        switch self {
+        case .clean: return "Clean"
+        case .projects: return "Projects"
+        case .system: return "System"
+        }
+    }
+}
+
 public enum MaintenanceKind: String, CaseIterable, Sendable, Identifiable {
-    case deepClean
-    case projectPurge
+    case appCaches
+    case browserCaches
+    case developerCaches
+    case logs
+    case tempFiles
+    case trash
+    case nodeModules
+    case buildArtifacts
+    case virtualEnvironments
     case installers
+    case apfsSnapshots
     case appUninstall
     case optimize
     case systemStatus
 
     public var id: String { rawValue }
 
+    public var section: MaintenanceSection {
+        switch self {
+        case .appCaches, .browserCaches, .developerCaches, .logs, .tempFiles, .trash, .installers:
+            return .clean
+        case .nodeModules, .buildArtifacts, .virtualEnvironments:
+            return .projects
+        case .apfsSnapshots, .appUninstall, .optimize, .systemStatus:
+            return .system
+        }
+    }
+
+    public static var groupedBySection: [(section: MaintenanceSection, kinds: [MaintenanceKind])] {
+        MaintenanceSection.allCases.map { section in
+            (section, allCases.filter { $0.section == section })
+        }
+    }
+
+    /// Maps scan-only kinds to the maintenance categories they surface.
+    public var scanCategories: Set<MaintenanceCategory>? {
+        switch self {
+        case .appCaches: return [.userAppCache]
+        case .browserCaches: return [.browserCache]
+        case .developerCaches: return [.developerTools]
+        case .logs: return [.systemLogs]
+        case .tempFiles: return [.tempFiles]
+        case .trash: return [.trash]
+        case .nodeModules: return [.nodeModules]
+        case .buildArtifacts: return [.buildArtifacts]
+        case .virtualEnvironments: return [.virtualEnv]
+        case .installers: return [.installerImages]
+        case .apfsSnapshots, .appUninstall, .optimize, .systemStatus:
+            return nil
+        }
+    }
+
     public var title: String {
         switch self {
-        case .deepClean: return "Deep Clean"
-        case .projectPurge: return "Project Purge"
+        case .appCaches: return "App Caches"
+        case .browserCaches: return "Browser Caches"
+        case .developerCaches: return "Developer Caches"
+        case .logs: return "Logs"
+        case .tempFiles: return "Temporary Files"
+        case .trash: return "Trash"
+        case .nodeModules: return "node_modules"
+        case .buildArtifacts: return "Build Artifacts"
+        case .virtualEnvironments: return "Virtual Environments"
         case .installers: return "Installers"
+        case .apfsSnapshots: return "APFS Snapshots"
         case .appUninstall: return "Uninstall Apps"
         case .optimize: return "Optimize"
         case .systemStatus: return "System Status"
@@ -23,12 +88,28 @@ public enum MaintenanceKind: String, CaseIterable, Sendable, Identifiable {
 
     public var subtitle: String {
         switch self {
-        case .deepClean:
-            return "Caches, logs, browser leftovers, and temp files"
-        case .projectPurge:
-            return "node_modules, build folders, and virtual environments"
+        case .appCaches:
+            return "User Library caches and HTTP storage"
+        case .browserCaches:
+            return "Safari, Chrome, Firefox, and other browser caches"
+        case .developerCaches:
+            return "Xcode DerivedData, npm, Docker, Homebrew, and more"
+        case .logs:
+            return "User logs, crash reports, and diagnostic data"
+        case .tempFiles:
+            return "Temporary folders and URL session caches"
+        case .trash:
+            return "Items already in Trash — empty to reclaim space"
+        case .nodeModules:
+            return "JavaScript dependencies across your projects"
+        case .buildArtifacts:
+            return "dist, target, .build, and other build output"
+        case .virtualEnvironments:
+            return "Python venv folders that can be recreated"
         case .installers:
             return "DMG, PKG, and leftover installer files"
+        case .apfsSnapshots:
+            return "Local Time Machine snapshots that pin deleted blocks"
         case .appUninstall:
             return "Remove apps and their support files"
         case .optimize:
@@ -40,13 +121,25 @@ public enum MaintenanceKind: String, CaseIterable, Sendable, Identifiable {
 
     public var icon: String {
         switch self {
-        case .deepClean: return "sparkles"
-        case .projectPurge: return "hammer.fill"
-        case .installers: return "shippingbox.fill"
+        case .appCaches: return "memorychip"
+        case .browserCaches: return "globe"
+        case .developerCaches: return "chevron.left.forwardslash.chevron.right"
+        case .logs: return "doc.text.magnifyingglass"
+        case .tempFiles: return "clock.badge.exclamationmark"
+        case .trash: return "trash"
+        case .nodeModules: return "shippingbox.fill"
+        case .buildArtifacts: return "hammer.fill"
+        case .virtualEnvironments: return "leaf.fill"
+        case .installers: return "shippingbox"
+        case .apfsSnapshots: return "clock.arrow.circlepath"
         case .appUninstall: return "app.badge.minus.fill"
         case .optimize: return "gauge.with.dots.needle.67percent"
         case .systemStatus: return "heart.text.square.fill"
         }
+    }
+
+    public var isScanAction: Bool {
+        scanCategories != nil || self == .apfsSnapshots || self == .installers
     }
 }
 
@@ -64,6 +157,7 @@ public enum MaintenanceCategory: String, Sendable, CaseIterable {
     case installerImages
     case applicationBundle
     case appSupportFiles
+    case apfsSnapshot
 
     public var displayName: String {
         switch self {
@@ -80,6 +174,7 @@ public enum MaintenanceCategory: String, Sendable, CaseIterable {
         case .installerImages: return "Installers"
         case .applicationBundle: return "Application"
         case .appSupportFiles: return "Support Files"
+        case .apfsSnapshot: return "APFS Snapshots"
         }
     }
 }

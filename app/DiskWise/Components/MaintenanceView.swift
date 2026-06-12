@@ -23,20 +23,22 @@ struct MaintenanceView: View {
 
     private var maintenanceSidebar: some View {
         List(selection: $viewModel.selectedMaintenanceKind) {
-            Section("Tools") {
-                ForEach(MaintenanceKind.allCases) { kind in
-                    Label {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(kind.title)
-                            Text(kind.subtitle)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
+            ForEach(MaintenanceKind.groupedBySection, id: \.section) { group in
+                Section(group.section.title) {
+                    ForEach(group.kinds) { kind in
+                        Label {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(kind.title)
+                                Text(kind.subtitle)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                            }
+                        } icon: {
+                            Image(systemName: kind.icon)
                         }
-                    } icon: {
-                        Image(systemName: kind.icon)
+                        .tag(kind)
                     }
-                    .tag(kind)
                 }
             }
         }
@@ -51,15 +53,82 @@ struct MaintenanceView: View {
     @ViewBuilder
     private var maintenanceDetail: some View {
         switch viewModel.selectedMaintenanceKind {
-        case .deepClean, .projectPurge, .installers:
-            MaintenanceScanPanel(kind: viewModel.selectedMaintenanceKind)
+        case .apfsSnapshots:
+            APFSSnapshotsPanel()
         case .appUninstall:
             AppUninstallPanel()
         case .optimize:
             OptimizePanel()
         case .systemStatus:
             SystemStatusPanel()
+        default:
+            MaintenanceScanPanel(kind: viewModel.selectedMaintenanceKind)
         }
+    }
+}
+
+private struct APFSSnapshotsPanel: View {
+    @EnvironmentObject private var viewModel: AppViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Label("APFS Snapshots", systemImage: "clock.arrow.circlepath")
+                    .font(.title2.weight(.semibold))
+                Text("Local Time Machine snapshots pin deleted file blocks. Thinning them is often the fastest way to reclaim space after cleanup.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            if viewModel.isMaintenanceScanning {
+                ProgressView("Listing snapshots…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let result = viewModel.maintenanceScanResult {
+                if result.entries.isEmpty {
+                    ContentUnavailableView(
+                        "No local snapshots",
+                        systemImage: "checkmark.circle",
+                        description: Text("macOS is not pinning deleted blocks via local snapshots right now.")
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    Text("\(result.entries.count) snapshot(s) found")
+                        .font(.headline)
+
+                    List(result.entries) { entry in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(entry.label)
+                                .font(.subheadline.weight(.medium))
+                            Text(entry.detail)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    HStack {
+                        Spacer()
+                        Button("Thin All Snapshots") {
+                            viewModel.executeAPFSSnapshotThinning()
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
+            } else {
+                VStack(spacing: 16) {
+                    ContentUnavailableView(
+                        "Check for pinned space",
+                        systemImage: "clock.arrow.circlepath",
+                        description: Text("List local snapshots on your system volume.")
+                    )
+                    Button("List Snapshots") {
+                        viewModel.scanMaintenance(.apfsSnapshots)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .padding(24)
     }
 }
 
@@ -163,11 +232,12 @@ private struct MaintenanceScanPanel: View {
             )
         }
         .listStyle(.inset(alternatesRowBackgrounds: true))
+        .frame(minHeight: 240)
     }
 
     private var cleanupFooter: some View {
         HStack {
-            if kind == .projectPurge {
+            if kind == .nodeModules || kind == .buildArtifacts || kind == .virtualEnvironments {
                 Label("Projects modified in the last 7 days are unselected by default.", systemImage: "info.circle")
                     .font(.caption)
                     .foregroundStyle(.secondary)

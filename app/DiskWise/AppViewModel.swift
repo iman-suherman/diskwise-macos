@@ -29,26 +29,27 @@ enum DiskWiseFormatters {
 
 enum ScanPhase: String, Sendable {
     case idle
-    case scanning
-    case findingDuplicates
+    case identifying
     case analyzing
 
     var label: String {
         switch self {
         case .idle: return "Ready"
-        case .scanning: return "Step 1 of 3 · Scanning files"
-        case .findingDuplicates: return "Step 2 of 3 · Finding duplicates"
-        case .analyzing: return "Step 3 of 3 · Analyzing storage"
+        case .identifying: return "Phase 1 of 3 · Identifying disk usage"
+        case .analyzing: return "Phase 2 of 3 · Analyzing storage"
         }
     }
 
     var stepNumber: Int? {
         switch self {
-        case .scanning: return 1
-        case .findingDuplicates: return 2
-        case .analyzing: return 3
+        case .identifying: return 1
+        case .analyzing: return 2
         case .idle: return nil
         }
+    }
+
+    var completionLabel: String {
+        "Phase 3 of 3 · Action plan ready"
     }
 }
 
@@ -137,7 +138,8 @@ final class AppViewModel: ObservableObject {
     @Published var showActivityLog = false
     @Published var showAbout = false
     @Published var showWhatsNewTour = false
-    @Published var selectedMaintenanceKind: MaintenanceKind = .deepClean
+    @Published var showIndexRebuildPrompt = false
+    @Published var selectedMaintenanceKind: MaintenanceKind = .appCaches
     @Published var maintenanceScanResult: MaintenanceScanResult?
     @Published var maintenanceSelectedEntryIDs: Set<String> = []
     @Published var installedApps: [InstalledApp] = []
@@ -160,6 +162,7 @@ final class AppViewModel: ObservableObject {
     private var scanTask: Task<Void, Never>?
     private var duplicateTask: Task<Void, Never>?
     private var analysisRefreshTask: Task<Void, Never>?
+    private var storageAnalysisTask: Task<Void, Never>?
     private var cachedResultsRefreshTask: Task<Void, Never>?
     private var scanStartTime: Date?
     private var lastDuplicateGroupsRefreshCount = 0
@@ -176,7 +179,7 @@ final class AppViewModel: ObservableObject {
     }
 
     var isBlockingLaunchFlow: Bool {
-        isStartingUp || showFullDiskAccessPrompt || showWhatsNewTour
+        isStartingUp || showFullDiskAccessPrompt || showWhatsNewTour || showIndexRebuildPrompt
     }
 
     func scheduleLaunchUpdateCheckIfReady() {
@@ -314,9 +317,52 @@ final class AppViewModel: ObservableObject {
         startupMessage = "Ready"
         isStartingUp = false
 
+        presentIndexRebuildPromptIfNeeded()
         presentFullDiskAccessPromptIfNeeded()
         if !isBlockingLaunchFlow {
             schedulePostLaunchWork()
+        }
+    }
+
+    func presentIndexRebuildPromptIfNeeded() {
+        guard appSettings.needsIndexRebuild else { return }
+        guard !showFullDiskAccessPrompt else { return }
+        showIndexRebuildPrompt = true
+    }
+
+    func dismissIndexRebuildPrompt(rebuildNow: Bool) {
+        showIndexRebuildPrompt = false
+        if rebuildNow {
+            rebuildStorageIndex(rescan: true)
+        } else {
+            appSettings.markIndexSchemaCurrent()
+            presentWhatsNewIfNeeded()
+        }
+    }
+
+    func rebuildStorageIndex(rescan: Bool) {
+        do {
+            try database.clearAllStorageIndexes()
+        } catch {
+            setStatus("Could not clear storage index: \(error.localizedDescription)", kind: .error)
+            return
+        }
+
+        overview = nil
+        topConsumers = []
+        duplicateGroups = []
+        analysisReport = nil
+        appSettings.markIndexSchemaCurrent()
+        reload()
+
+        logActivity(.scan, "Cleared storage index", detail: "Index schema upgraded to v\(AppSettings.currentIndexSchemaVersion)")
+
+        if rescan, let volume = selectedVolume ?? mountedVolumes.first {
+            setStatus("Storage index cleared — rescanning \(volume.name)…", kind: .working)
+            scan(volume: volume)
+        } else {
+            setStatus("Storage index cleared — scan a drive to rebuild", kind: .success)
+            presentWhatsNewIfNeeded()
         }
     }
 
@@ -348,7 +394,7 @@ final class AppViewModel: ObservableObject {
     }
 
     func isVolumeBusy(_ volume: MountedVolume) -> Bool {
-        (isScanning || isFindingDuplicates) && selectedVolumePath == volume.mountPath
+        (isScanning || isAnalyzing) && selectedVolumePath == volume.mountPath
     }
 
     var hasScanData: Bool {
@@ -360,19 +406,10 @@ final class AppViewModel: ObservableObject {
     }
 
     var isBackgroundWorkActive: Bool {
-        isFindingDuplicates || isAnalyzing
+        isAnalyzing
     }
 
     var scanEstimatedRemaining: TimeInterval? {
-        if isFindingDuplicates, let progress = duplicateScanProgress {
-            guard let start = scanStartTime, progress.processedCount > 20 else { return nil }
-            let elapsed = Date().timeIntervalSince(start)
-            let rate = Double(progress.processedCount) / elapsed
-            guard rate > 0 else { return nil }
-            let remaining = Double(max(0, progress.totalCount - progress.processedCount))
-            return remaining / rate
-        }
-
         guard let progress = scanProgress,
               let start = scanStartTime,
               progress.scannedCount > 100,
@@ -390,14 +427,11 @@ final class AppViewModel: ObservableObject {
     }
 
     var scanProgressFraction: Double {
-        if isFindingDuplicates, let progress = duplicateScanProgress {
-            return 0.66 + (progress.overallFraction * 0.24)
-        }
         if isAnalyzing {
-            return 0.94
+            return 0.85
         }
         if isScanning {
-            return scanProgressFractionFromBytes
+            return min(0.75, scanProgressFractionFromBytes)
         }
         return 0
     }
@@ -431,13 +465,13 @@ final class AppViewModel: ObservableObject {
     /// Compact label for the toolbar badge while scanning.
     var toolbarStatusMessage: String {
         if isScanning, let volume = selectedVolume {
-            return "Scanning \(volume.name) · \(scanProgressPercentLabel)"
-        }
-        if isFindingDuplicates, let detail = duplicateProgressDetail {
-            return "Checking duplicates · \(detail)"
+            return "Identifying \(volume.name) · \(scanProgressPercentLabel)"
         }
         if isAnalyzing {
             return "Analyzing storage…"
+        }
+        if isFindingDuplicates, let detail = duplicateProgressDetail {
+            return "Finding duplicates · \(detail)"
         }
         return statusMessage
     }
@@ -496,7 +530,7 @@ final class AppViewModel: ObservableObject {
     }
 
     private func maybeRefreshInsightsDuringScan(_ progress: ScanProgress) {
-        guard isScanning, scanPhase == .scanning else { return }
+        guard isScanning, scanPhase == .identifying else { return }
         guard progress.scannedCount - lastInsightsRefreshCount >= 5_000 else { return }
 
         lastInsightsRefreshCount = progress.scannedCount
@@ -640,6 +674,7 @@ final class AppViewModel: ObservableObject {
     func presentWhatsNewIfNeeded() {
         guard appSettings.shouldShowWhatsNew else { return }
         guard !showFullDiskAccessPrompt else { return }
+        guard !showIndexRebuildPrompt else { return }
         showWhatsNewTour = true
     }
 
@@ -848,8 +883,10 @@ final class AppViewModel: ObservableObject {
 
     func cancelScan() {
         scanTask?.cancel()
+        storageAnalysisTask?.cancel()
         cancelDuplicateDetection()
         isScanning = false
+        isAnalyzing = false
         scanPhase = .idle
         scanProgress = nil
         scanStartTime = nil
@@ -958,7 +995,7 @@ final class AppViewModel: ObservableObject {
         cancelDuplicateDetection()
         selectedPane = .overview
         isScanning = true
-        scanPhase = .scanning
+        scanPhase = .identifying
         scanStartTime = Date()
         lastInsightsRefreshCount = 0
         lastDuplicateGroupsRefreshCount = 0
@@ -979,7 +1016,7 @@ final class AppViewModel: ObservableObject {
         } else {
             selectedDiskID = nil
         }
-        setStatus("Step 1 of 3 · \(appSettings.scanMode.title) scan · \(scanLabel)…", kind: .working)
+        setStatus("Phase 1 of 3 · \(appSettings.scanMode.title) identify · \(scanLabel)…", kind: .working)
         logActivity(
             .scan,
             isFolderScan ? "Started folder scan" : "Started filesystem scan",
@@ -1001,7 +1038,7 @@ final class AppViewModel: ObservableObject {
                             self.scanProgress = progress
                             self.maybeRefreshInsightsDuringScan(progress)
                             self.setStatus(
-                                "Step 1 of 3 · \(progress.scannedCount.formatted()) files · \(self.scanProgressPercentLabel)",
+                                "Phase 1 of 3 · \(progress.scannedCount.formatted()) files · \(self.scanProgressPercentLabel)",
                                 kind: .working
                             )
                         }
@@ -1050,7 +1087,7 @@ final class AppViewModel: ObservableObject {
         volumeMountPath: String
     ) {
         isScanning = false
-        scanPhase = .idle
+        scanPhase = .analyzing
         scanProgress = nil
         selectedDiskID = summary.diskID
         selectedVolumePath = volumeMountPath
@@ -1058,34 +1095,80 @@ final class AppViewModel: ObservableObject {
         let completionDetail = scanLabel == volumeName
             ? "\(summary.scannedFiles.formatted()) files indexed on \(volumeName)"
             : "\(summary.scannedFiles.formatted()) files indexed in \(scanLabel) on \(volumeName)"
-        setStatus(
-            "Storage indexed on \(volumeName) — review results while duplicates are checked in the background",
-            kind: .working
-        )
+        setStatus("Phase 2 of 3 · Analyzing storage on \(volumeName)…", kind: .working)
         logActivity(
             .scan,
-            "Filesystem scan complete",
+            "Disk usage identified",
             detail: completionDetail
         )
-        startDuplicateDetection(diskID: summary.diskID, volumeName: volumeName)
+        startStorageAnalysis(diskID: summary.diskID, volumeName: volumeName)
+    }
+
+    private func startStorageAnalysis(diskID: Int64, volumeName: String) {
+        isAnalyzing = true
+        scanPhase = .analyzing
+        let analysisFileLimit = appSettings.analysisFileLimit
+        guard let aiEngine = self.aiEngine else { return }
+
+        storageAnalysisTask?.cancel()
+        storageAnalysisTask = Task.detached { [weak self, aiEngine] in
+            guard let self else { return }
+            do {
+                _ = try aiEngine.analyze(diskID: diskID, fileLimit: analysisFileLimit)
+
+                await MainActor.run {
+                    self.isAnalyzing = false
+                    self.scanPhase = .idle
+                    self.scanStartTime = nil
+                    self.refreshInsights()
+                    self.selectedPane = .overview
+                    self.logActivity(.recommendation, "Action plan ready", detail: volumeName)
+                    self.setStatus(
+                        "Phase 3 of 3 · Action plan ready for \(volumeName)",
+                        kind: .success
+                    )
+                }
+            } catch {
+                await MainActor.run {
+                    self.isAnalyzing = false
+                    self.scanPhase = .idle
+                    self.scanStartTime = nil
+                    self.refreshInsights()
+                    self.logActivity(.recommendation, "Analysis failed", detail: error.localizedDescription)
+                    self.setStatus(
+                        "Analysis failed: \(error.localizedDescription) — indexed data is still available",
+                        kind: .error
+                    )
+                }
+            }
+        }
+    }
+
+    func scanForDuplicates() {
+        guard let diskID = selectedDiskID else {
+            setStatus("Identify disk usage first", kind: .error)
+            return
+        }
+        guard !isFindingDuplicates else { return }
+
+        let volumeName = selectedVolume?.name ?? "drive"
+        startDuplicateDetection(diskID: diskID, volumeName: volumeName)
     }
 
     private func startDuplicateDetection(diskID: Int64, volumeName: String) {
         duplicateTask?.cancel()
         isFindingDuplicates = true
-        scanPhase = .findingDuplicates
         scanStartTime = Date()
         lastDuplicateGroupsRefreshCount = 0
         let duplicateFileLimit = appSettings.duplicateScanFileLimit
-        let analysisFileLimit = appSettings.analysisFileLimit
         logActivity(
             .duplicate,
             "Started duplicate detection",
             detail: "\(volumeName) · checking largest \(duplicateFileLimit.formatted()) files"
         )
 
-        guard let duplicateEngine = self.duplicateEngine, let aiEngine = self.aiEngine else { return }
-        duplicateTask = Task.detached { [weak self, duplicateEngine, aiEngine] in
+        guard let duplicateEngine = self.duplicateEngine else { return }
+        duplicateTask = Task.detached { [weak self, duplicateEngine] in
             guard let self else { return }
             do {
                 let duplicateSummary = try duplicateEngine.detectAll(
@@ -1096,9 +1179,9 @@ final class AppViewModel: ObservableObject {
                             self.duplicateScanProgress = progress
                             self.maybeRefreshDuplicateGroupsDuringScan(progress, diskID: diskID)
                             if let detail = self.duplicateProgressDetail {
-                                self.setStatus("Step 2 of 3 · \(detail)", kind: .working)
+                                self.setStatus("Finding duplicates · \(detail)", kind: .working)
                             } else {
-                                self.setStatus("Step 2 of 3 · Finding duplicates on \(volumeName)…", kind: .working)
+                                self.setStatus("Finding duplicates on \(volumeName)…", kind: .working)
                             }
                         }
                     },
@@ -1110,49 +1193,35 @@ final class AppViewModel: ObservableObject {
                 await MainActor.run {
                     self.isFindingDuplicates = false
                     self.duplicateScanProgress = nil
-                    self.scanPhase = .analyzing
-                    self.isAnalyzing = true
-                    self.setStatus("Step 3 of 3 · Analyzing storage on \(volumeName)…", kind: .working)
-                }
-
-                _ = try aiEngine.analyze(diskID: diskID, fileLimit: analysisFileLimit)
-
-                await MainActor.run {
-                    self.isAnalyzing = false
-                    self.scanPhase = .idle
                     self.scanStartTime = nil
                     self.refreshInsights()
                     if duplicateSummary.groupsFound > 0 {
-                        self.selectedPane = .duplicates
                         self.logActivity(
                             .duplicate,
                             "Duplicate detection complete",
                             detail: "\(duplicateSummary.groupsFound) groups · \(DiskWiseFormatters.bytes.string(fromByteCount: duplicateSummary.reclaimableBytes)) reclaimable"
                         )
                         self.setStatus(
-                            "Found \(duplicateSummary.groupsFound) duplicate groups — open Duplicates to move extras to Trash",
+                            "Found \(duplicateSummary.groupsFound) duplicate groups",
                             kind: .success
                         )
                     } else {
-                        self.selectedPane = .overview
                         self.logActivity(.duplicate, "Duplicate detection complete", detail: "No groups found")
-                        self.setStatus("Scan complete — no duplicate groups found on this drive", kind: .success)
+                        self.setStatus("No duplicate groups found", kind: .success)
                     }
                 }
             } catch {
                 await MainActor.run {
                     self.isFindingDuplicates = false
-                    self.isAnalyzing = false
                     self.duplicateScanProgress = nil
-                    self.scanPhase = .idle
                     self.scanStartTime = nil
                     if error is CancellationError || error.localizedDescription.contains("cancelled") {
                         self.logActivity(.duplicate, "Duplicate detection cancelled")
-                        self.setStatus("Duplicate check cancelled — storage overview is still available", kind: .ready)
+                        self.setStatus("Duplicate check cancelled", kind: .ready)
                     } else {
                         self.logActivity(.duplicate, "Duplicate detection failed", detail: error.localizedDescription)
                         self.setStatus(
-                            "Duplicate check failed: \(error.localizedDescription) — storage overview is still available",
+                            "Duplicate check failed: \(error.localizedDescription)",
                             kind: .error
                         )
                     }
@@ -1252,15 +1321,24 @@ final class AppViewModel: ObservableObject {
     func handleRecommendation(_ recommendation: RecommendationRecord) {
         switch recommendation.type {
         case "duplicate_cleanup":
-            reviewRecommendation(recommendation)
+            openDuplicatesPane()
+            scanForDuplicates()
         case "project_purge":
             selectedPane = .maintenance
-            selectedMaintenanceKind = .projectPurge
-            scanMaintenance(.projectPurge)
+            selectedMaintenanceKind = .nodeModules
+            scanMaintenance(.nodeModules)
         case "delete_logs":
             selectedPane = .maintenance
-            selectedMaintenanceKind = .deepClean
-            scanMaintenance(.deepClean)
+            selectedMaintenanceKind = .logs
+            scanMaintenance(.logs)
+        case "delete_cache":
+            selectedPane = .maintenance
+            selectedMaintenanceKind = .appCaches
+            scanMaintenance(.appCaches)
+        case "thin_apfs_snapshots":
+            selectedPane = .maintenance
+            selectedMaintenanceKind = .apfsSnapshots
+            scanMaintenance(.apfsSnapshots)
         default:
             reviewRecommendation(recommendation)
         }
@@ -1398,17 +1476,21 @@ final class AppViewModel: ObservableObject {
     }
 
     private func defaultSelectedFileIDs(for recommendationType: String, files: [FileRecord]) -> Set<Int64> {
-        guard recommendationType == "delete_dmg" else {
-            return Set(files.compactMap(\.id))
+        let bucket = ActionBucket.bucket(forRecommendationType: recommendationType)
+        guard bucket.selectsFilesByDefault else {
+            if recommendationType == "delete_dmg" {
+                return Set(
+                    files.compactMap { file -> Int64? in
+                        guard let id = file.id else { return nil }
+                        let classification = RemovablePathRules.classifyInstallerArtifact(path: file.path, size: file.size)
+                        return classification?.selectedByDefault == true ? id : nil
+                    }
+                )
+            }
+            return []
         }
 
-        return Set(
-            files.compactMap { file -> Int64? in
-                guard let id = file.id else { return nil }
-                let classification = RemovablePathRules.classifyInstallerArtifact(path: file.path, size: file.size)
-                return classification?.selectedByDefault == true ? id : nil
-            }
-        )
+        return Set(files.compactMap(\.id))
     }
 
     private func revealTrashedFiles(_ urls: [URL]) {
@@ -1467,10 +1549,16 @@ final class AppViewModel: ObservableObject {
                     result.entries.filter(\.selectedByDefault).map(\.id)
                 )
                 self.isMaintenanceScanning = false
-                let sizeLabel = DiskWiseFormatters.bytes.string(fromByteCount: result.totalBytes)
-                self.maintenanceStatusMessage = "\(result.entries.count) items · \(sizeLabel) reclaimable"
-                self.setStatus("Found \(result.entries.count) items (\(sizeLabel))", kind: .success)
-                self.logActivity(.scan, "Maintenance scan complete", detail: "\(kind.title) · \(sizeLabel)")
+                if kind == .apfsSnapshots {
+                    self.maintenanceStatusMessage = "\(result.entries.count) local snapshot(s)"
+                    self.setStatus("Found \(result.entries.count) APFS snapshot(s)", kind: .success)
+                    self.logActivity(.scan, "Listed APFS snapshots", detail: "\(result.entries.count) snapshots")
+                } else {
+                    let sizeLabel = DiskWiseFormatters.bytes.string(fromByteCount: result.totalBytes)
+                    self.maintenanceStatusMessage = "\(result.entries.count) items · \(sizeLabel) reclaimable"
+                    self.setStatus("Found \(result.entries.count) items (\(sizeLabel))", kind: .success)
+                    self.logActivity(.scan, "Maintenance scan complete", detail: "\(kind.title) · \(sizeLabel)")
+                }
             }
         }
     }
@@ -1497,6 +1585,11 @@ final class AppViewModel: ObservableObject {
     }
 
     func executeMaintenanceCleanup() {
+        if selectedMaintenanceKind == .apfsSnapshots {
+            executeAPFSSnapshotThinning()
+            return
+        }
+
         let entries = selectedMaintenanceEntries
         guard !entries.isEmpty else {
             setStatus("Select items to clean", kind: .error)
@@ -1511,6 +1604,19 @@ final class AppViewModel: ObservableObject {
             maintenanceSelectedEntryIDs = []
             scanMaintenance(selectedMaintenanceKind)
         }
+    }
+
+    func executeAPFSSnapshotThinning() {
+        let mountPath = selectedVolume?.mountPath ?? "/"
+        setStatus("Thinning APFS snapshots…", kind: .working)
+        let removed = maintenanceEngine.thinAPFSSnapshots(mountPath: mountPath)
+        if removed > 0 {
+            logActivity(.cleanup, "Thinned APFS snapshots", detail: "\(removed) removed on \(mountPath)")
+            setStatus("Removed \(removed) local snapshot(s) — free space should increase shortly", kind: .success)
+        } else {
+            setStatus("No local snapshots to remove", kind: .ready)
+        }
+        scanMaintenance(.apfsSnapshots)
     }
 
     func uninstallSelectedApp(_ app: InstalledApp) {
