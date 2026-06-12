@@ -3,57 +3,67 @@
     <channel>
         <title>DiskWise</title>
         <item>
-            <title>1.0.0</title>
-            <pubDate>Sat, 13 Jun 2026 08:36:10 +1000</pubDate>
-            <sparkle:version>1000000</sparkle:version>
-            <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
+            <title>0.3.3</title>
+            <pubDate>Sat, 13 Jun 2026 09:33:57 +1000</pubDate>
+            <sparkle:version>3003</sparkle:version>
+            <sparkle:shortVersionString>0.3.3</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[<ul>
-<li>DiskWise 1.0.0 release.</li>
+<li><strong>Fixes</strong><ul>
+<li>Rebuild storage index runs in the background with a dedicated progress screen through all three phases</li>
+</ul></li>
 </ul>
 ]]></description>
-            <enclosure url="http://127.0.0.1:3000/downloads/DiskWise-1.0.0.zip" length="12099285" type="application/octet-stream" sparkle:edSignature="eXiILOGUkAvURLAuBIoumidjiX3AuYoONssOeK1lWJuWSZAxmpSouUSP5hbmA1SuvwiSRQw7RL6/UtegMoZmBQ=="/>
+            <enclosure url="http://127.0.0.1:3000/downloads/DiskWise-0.3.3.zip" length="12339264" type="application/octet-stream" sparkle:edSignature="GfZRy6uKQAqxrpkxjdmJ2+BwS78CTEcAjLg7Wpho+gVO0K+8LMvzK60OtsVQeBH7cU7UaZPN+dPNQ6zCk8BxCQ=="/>
             <sparkle:deltas>
-                <enclosure url="http://127.0.0.1:3000/downloads/DiskWise1000000-2005.delta" sparkle:deltaFrom="2005" length="13222" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="fzu6Tpt8MmZX8JOZeUViHXd2X0DSGUOqTBqlVK/SDKYhkfKV+GB5BwOgbzN8VEv32HZZX0Sm3kMe/GnQSkbUDw=="/>
-                <enclosure url="http://127.0.0.1:3000/downloads/DiskWise1000000-3001.delta" sparkle:deltaFrom="3001" length="586546" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="9bubEld2Lz3s5CPCXtimUwgPJrdnrvBurt+rFHWW7Z2cjl8kf+kuWlEGzQt/sTJ2Glf09V40dMC9qStNSoblDw=="/>
-                <enclosure url="http://127.0.0.1:3000/downloads/DiskWise1000000-3000.delta" sparkle:deltaFrom="3000" length="586182" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="1yFosCRAxI6KkvhcJt7iQx4owujxG0tTvJF10fc+/KwA/Zf8vkJTbgv+wkyw7ek6hgMGjuB+0mi8u03cDyLaDg=="/>
-                <enclosure url="http://127.0.0.1:3000/downloads/DiskWise1000000-2004.delta" sparkle:deltaFrom="2004" length="1117074" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="YgJ5z/4Zoe8R1ztgSREBZuFN+am8kNLDuBDW1bCUOIfO3PUgCBAjkDv9ZBOXdvTrLp1+c4rNwtiSQjLPhBQAAA=="/>
-                <enclosure url="http://127.0.0.1:3000/downloads/DiskWise1000000-3002.delta" sparkle:deltaFrom="3002" length="1114310" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="r/frn2HUEPwvLUh1HW4w+MhgfbAbxp67GffEzg5+GVdruRJfUrOwao7BgGqLlPV5XyZAmdGEj4pjjAg742qfAA=="/>
+                <enclosure url="http://127.0.0.1:3000/downloads/DiskWise3003-3002.delta" sparkle:deltaFrom="3002" length="811762" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="izY0u8LSNR1SfCFHRPy6BghRcGeOeOpecBdyoSSC9ehzkSANMr0NgRbJADzDW/pg4tIoHOip43P6+U9QwwHnBQ=="/>
+                <enclosure url="http://127.0.0.1:3000/downloads/DiskWise3003-2005.delta" sparkle:deltaFrom="2005" length="1325242" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="NEkLa97uA+yz/7YvbKWaYbc1LisYHZca+t3+3CLFBvYf/xvsxL6F91x4mlxLMiylHjgAe5wq27XIY3UlUAdJAg=="/>
+                <enclosure url="http://127.0.0.1:3000/downloads/DiskWise3003-3001.delta" sparkle:deltaFrom="3001" length="1314958" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="yev420LpzUevRj35jDyMY0bHdFXUSnhB/a4XaKEKNbVKJpNXLHgLmv1CZfG3zU4Rk6KIqnJ3xlgM7BZcdsfaDQ=="/>
+                <enclosure url="http://127.0.0.1:3000/downloads/DiskWise3003-2004.delta" sparkle:deltaFrom="2004" length="1513874" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="UdMuRnjOUuzpZVrin19sdpUoA5iZoK5s4Gg4Hx3H2DlKrV+B8HP6b9RfOrbNkSD1/ea1Q93MGJEjzFN7aWRIAQ=="/>
+                <enclosure url="http://127.0.0.1:3000/downloads/DiskWise3003-3000.delta" sparkle:deltaFrom="3000" length="1317334" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="gcCPtO/I9KPYzi+c+lXiYjR3hw6aLWJbHGVcdaBUBtmmN/86N1L/3QCQjsFSdL5fPCX1vG8ncsVx+wXVOBzcDw=="/>
             </sparkle:deltas>
         </item>
         <item>
-            <title>0.2.5</title>
-            <pubDate>Sat, 13 Jun 2026 08:33:30 +1000</pubDate>
-            <sparkle:version>2005</sparkle:version>
-            <sparkle:shortVersionString>0.2.5</sparkle:shortVersionString>
+            <title>0.3.2</title>
+            <pubDate>Sat, 13 Jun 2026 09:08:24 +1000</pubDate>
+            <sparkle:version>3002</sparkle:version>
+            <sparkle:shortVersionString>0.3.2</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[<ul>
 <li><strong>What's new</strong><ul>
-<li>Three-phase workflow: identify disk usage, analyze findings, then take action</li>
-<li>Action buckets that label items safe to clean, worth reviewing first, or personal to keep</li>
-<li>Fourteen focused Maintenance tools — from App Caches and node_modules to APFS Snapshot thinning</li>
-<li>Duplicate finder moved to its own tab — run it when you want, not on every scan</li>
-<li>Option to rebuild your storage index after a major scan-model upgrade</li>
+<li>Layered AI provider architecture: Apple Foundation Models, MLX, Ollama developer mode, and rule-based fallback</li>
+<li>Ask DiskWise chat with autocomplete and dynamic suggested questions when Apple Intelligence is available</li>
+<li>AI executive summary in Storage Intelligence after each scan</li>
+<li>AI assistant settings for provider preference and Ollama developer mode</li>
+</ul></li>
+<li><strong>Improvements</strong><ul>
+<li>DMG installer windows always show the Finder status bar when opened</li>
+<li>Saved scan prompt after startup when cached scan data is available</li>
+</ul></li>
+<li><strong>Fixes</strong><ul>
+<li>DMG status bar configuration no longer fails during release packaging</li>
 </ul></li>
 </ul>
 ]]></description>
-            <enclosure url="http://127.0.0.1:3000/downloads/DiskWise-0.2.5.zip" length="12099218" type="application/octet-stream" sparkle:edSignature="ZP31rQ8eeFC4aId6eIYLHDX8ESjd7427Jpvh3Py+XEPUf9mT2fvWAJ+LxO/POoskJvp+ll/C7M1OiohVY4pxCA=="/>
+            <enclosure url="http://127.0.0.1:3000/downloads/DiskWise-0.3.2.zip" length="12291181" type="application/octet-stream" sparkle:edSignature="45g6/xr7GAtyNlB3lULG2rDkf1EGlYyWZe6+UK5fkrJ8a4DwFWTRH/vlKwYPwg/Ut4nSk+K3eGzARJiSRayoBg=="/>
         </item>
         <item>
-            <title>0.2.4</title>
-            <pubDate>Fri, 12 Jun 2026 20:29:06 +1000</pubDate>
-            <sparkle:version>2004</sparkle:version>
-            <sparkle:shortVersionString>0.2.4</sparkle:shortVersionString>
+            <title>0.3.1</title>
+            <pubDate>Sat, 13 Jun 2026 08:50:23 +1000</pubDate>
+            <sparkle:version>3001</sparkle:version>
+            <sparkle:shortVersionString>0.3.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[<ul>
+<li><strong>What's new</strong><ul>
+<li>Curated release notes for all versions from 0.1.0 through 0.3.0</li>
+<li>Batch republish script to refresh notes in the registry</li>
+</ul></li>
 <li><strong>Improvements</strong><ul>
-<li>Heavy storage analysis runs after What's New closes, not during it</li>
-<li>Update check waits until the main window is ready</li>
-<li>Continue after What's New no longer stalls the UI</li>
+<li>Website and Sparkle appcast show friendly What's new, Improvements, and Fixes sections</li>
 </ul></li>
 </ul>
 ]]></description>
-            <enclosure url="http://127.0.0.1:3000/downloads/DiskWise-0.2.4.zip" length="12002209" type="application/octet-stream" sparkle:edSignature="bdWZmLbQAciYT3+AwVtrL/A0/oD0UdKtVjPWLWqS7esGpbRlSEMb9ShqLQKVmvapBOSPR+O1CCrgUv+PEMlTDg=="/>
+            <enclosure url="http://127.0.0.1:3000/downloads/DiskWise-0.3.1.zip" length="12102622" type="application/octet-stream" sparkle:edSignature="t5FYDlWSSTcF7dopM6skQz73tt+ZWMgPTL7FApobscr9rhXHZfSCz07ylZ8ojJuozkfDDeVmKr6uUeF0RHhwDA=="/>
         </item>
     </channel>
 </rss>

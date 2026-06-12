@@ -14,8 +14,6 @@ enum WhatsNewContent {
         switch version {
         case "0.3.0":
             return v030Pages
-        case "1.0.0":
-            return v030Pages
         case "0.2.4":
             return v024Pages
         case "0.2.3":
