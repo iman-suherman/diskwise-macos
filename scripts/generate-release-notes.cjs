@@ -1,13 +1,36 @@
 /**
- * Build structured release notes from git history since the previous release.
+ * Build user-facing release notes from the previous semver tag, curated files,
+ * and (when needed) code-change analysis — never raw release/meta commit messages.
  */
 const { spawnSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const { assertSemver, parseSemver } = require("./semver.cjs");
+const { assertSemver, parseSemver, compareSemver } = require("./semver.cjs");
 
 const root = path.join(__dirname, "..");
+const curatedDir = path.join(root, "release-notes");
 const shell = process.platform === "win32";
+
+const META_COMMIT_PATTERNS = [
+  /^Release v?\d/i,
+  /^Re-release /i,
+  /^Allow RELEASE_VERSION/i,
+  /^Merge /i,
+  /^Merge branch /i,
+  /^Bump version/i,
+  /^chore(\([^)]*\))?!?: (release|bump|version)/i,
+  /^sync version/i,
+  /^publish release/i,
+];
+
+const SECTION_LABELS = {
+  breaking: "Important changes",
+  introduced: "What's new",
+  changed: "Improvements",
+  updated: "Under the hood",
+  fixed: "Fixes",
+  removed: "Removed",
+};
 
 function runGit(args) {
   const r = spawnSync("git", args, {
@@ -19,18 +42,31 @@ function runGit(args) {
   return (r.stdout || "").trim();
 }
 
-function getPreviousTag(currentVersion) {
+function getAllVersionTags() {
   const output = runGit(["tag", "--list", "v*", "--sort=-v:refname"]);
-  const tags = output.split("\n").map((tag) => tag.trim()).filter(Boolean);
-  for (const tag of tags) {
-    const tagVersion = tag.replace(/^v/, "");
-    if (tagVersion !== currentVersion) return tag;
+  return output
+    .split("\n")
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+    .map((tag) => ({ tag, version: tag.replace(/^v/, "") }))
+    .filter(({ version }) => parseSemver(version));
+}
+
+/** Highest semver tag strictly less than `currentVersion`. */
+function getPreviousReleaseTag(currentVersion) {
+  const current = parseSemver(currentVersion);
+  if (!current) return null;
+
+  for (const { tag, version } of getAllVersionTags()) {
+    const parsed = parseSemver(version);
+    if (parsed && compareSemver(parsed, current) < 0) {
+      return tag;
+    }
   }
   return null;
 }
 
-function getCommitRange(previousTag, sinceCommit) {
-  if (sinceCommit) return `${sinceCommit}..HEAD`;
+function getCommitRange(previousTag) {
   if (previousTag) return `${previousTag}..HEAD`;
   const firstCommit = runGit(["rev-list", "--max-parents=0", "HEAD"]);
   return firstCommit ? `${firstCommit}..HEAD` : "HEAD";
@@ -43,6 +79,34 @@ function getCommits(range) {
     const [hash, subject, author] = line.split("|");
     return { hash, subject: subject || "", author: author || "" };
   });
+}
+
+function getChangedFiles(range) {
+  const output = runGit(["diff", range, "--name-only", "--diff-filter=ACDMRT"]);
+  if (!output) return [];
+  return output.split("\n").filter(Boolean);
+}
+
+function isMetaCommit(subject) {
+  const text = subject.trim();
+  if (!text) return true;
+  return META_COMMIT_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+function humanizeCommitSummary(subject) {
+  const text = subject.trim();
+  const conventional = text.match(/^(\w+)(?:\([^)]+\))?!?:\s*(.+)$/);
+  if (!conventional) return null;
+
+  const type = conventional[1].toLowerCase();
+  const summary = conventional[2].trim();
+  if (isMetaCommit(text)) return null;
+
+  const skipTypes = new Set(["chore", "build", "ci", "style", "test", "docs"]);
+  if (skipTypes.has(type)) return null;
+
+  if (!summary) return null;
+  return summary.charAt(0).toUpperCase() + summary.slice(1);
 }
 
 function categorizeCommit(subject) {
@@ -89,47 +153,93 @@ function uniqueItems(items) {
   return [...new Set(items.filter(Boolean))];
 }
 
-function suggestBumpLevel(commits) {
-  let bump = "patch";
-  for (const commit of commits) {
-    const { category, breaking } = categorizeCommit(commit.subject);
-    if (breaking || category === "breaking") return "major";
-    if (category === "introduced" && bump !== "major") bump = "minor";
-  }
-  return bump;
+function emptyReleaseNotes() {
+  return {
+    introduced: [],
+    changed: [],
+    updated: [],
+    fixed: [],
+    removed: [],
+    breaking: [],
+  };
 }
 
-function buildMarkdown(version, releaseNotes, previousLabel) {
-  const lines = [`# DiskWise ${version}`, ""];
-  if (previousLabel) {
-    lines.push(`Changes since \`${previousLabel}\`.`, "");
-  } else {
-    lines.push("Initial tracked release.", "");
+function mergeReleaseNotes(base, extra) {
+  const merged = emptyReleaseNotes();
+  for (const key of Object.keys(merged)) {
+    merged[key] = uniqueItems([...(base[key] || []), ...(extra[key] || [])]);
   }
+  return merged;
+}
 
-  const sections = [
-    ["Breaking changes", releaseNotes.breaking],
-    ["Introduced", releaseNotes.introduced],
-    ["Changed", releaseNotes.changed],
-    ["Updated", releaseNotes.updated],
-    ["Fixed", releaseNotes.fixed],
-    ["Removed", releaseNotes.removed],
+/** Infer user-facing bullets from changed paths when no curated notes exist. */
+function analyzeChanges(files) {
+  const notes = emptyReleaseNotes();
+  const paths = files.join("\n");
+
+  const signals = [
+    {
+      category: "introduced",
+      match: /AppViewModel|ScanPhase|ActionBucket|DashboardView/,
+      text: "A clearer three-step flow: identify what's using space, analyze findings, then act on recommendations",
+    },
+    {
+      category: "introduced",
+      match: /MaintenanceKit|MaintenanceView|MaintenanceKind/,
+      text: "Individual Maintenance tools for caches, node_modules, installers, APFS snapshots, and more",
+    },
+    {
+      category: "introduced",
+      match: /APFSSnapshot|APFS/,
+      text: "APFS Snapshot thinning when deleted files still don't free space",
+    },
+    {
+      category: "introduced",
+      match: /IndexRebuildOverlay|needsIndexRebuild/,
+      text: "Option to rebuild your storage index after a major scan-model upgrade",
+    },
+    {
+      category: "changed",
+      match: /SparkleUpdater|schedulePostUpgradePresentation|WhatsNewTour/,
+      text: "Smoother first launch after updating — checks for updates, then shows What's New",
+    },
+    {
+      category: "changed",
+      match: /DuplicatesView|DuplicateEngine/,
+      text: "Duplicate detection runs from the Duplicates tab when you choose, not during every scan",
+    },
+    {
+      category: "fixed",
+      match: /fix|Fix|bug/,
+      text: null,
+    },
   ];
 
-  for (const [title, items] of sections) {
-    if (!items.length) continue;
-    lines.push(`## ${title}`, "");
-    for (const item of items) {
-      lines.push(`- ${item}`);
+  for (const signal of signals) {
+    if (signal.text && signal.match.test(paths)) {
+      notes[signal.category].push(signal.text);
     }
-    lines.push("");
   }
 
-  if (releaseNotes.summary) {
-    lines.push("## Summary", "", releaseNotes.summary, "");
+  for (const key of Object.keys(notes)) {
+    notes[key] = uniqueItems(notes[key]);
   }
+  return notes;
+}
 
-  return `${lines.join("\n").trim()}\n`;
+function loadCuratedNotes(version) {
+  const jsonPath = path.join(curatedDir, `${version}.json`);
+  if (!fs.existsSync(jsonPath)) return null;
+
+  const raw = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
+  const notes = emptyReleaseNotes();
+  for (const key of Object.keys(notes)) {
+    notes[key] = uniqueItems(raw[key] || []);
+  }
+  return {
+    summary: raw.summary?.trim() || null,
+    notes,
+  };
 }
 
 function resolveReleaseNotesOverride() {
@@ -147,51 +257,107 @@ function resolveReleaseNotesOverride() {
   return null;
 }
 
+function buildSummary(displayName, version, releaseNotes, curatedSummary) {
+  if (curatedSummary) return curatedSummary;
+
+  const lead =
+    releaseNotes.introduced[0] ||
+    releaseNotes.changed[0] ||
+    releaseNotes.fixed[0] ||
+    null;
+
+  if (lead) {
+    return `${displayName} ${version} — ${lead.charAt(0).toLowerCase()}${lead.slice(1)}`;
+  }
+
+  return `${displayName} ${version} — improvements and fixes.`;
+}
+
+function buildMarkdown(version, releaseNotes, previousTag, summary) {
+  const previousVersion = previousTag ? previousTag.replace(/^v/, "") : null;
+  const lines = [`# DiskWise ${version}`, ""];
+
+  if (previousVersion) {
+    lines.push(`What's new since **${previousVersion}**.`, "");
+  } else {
+    lines.push(`What's new in DiskWise **${version}**.`, "");
+  }
+
+  if (summary) {
+    lines.push(summary, "");
+  }
+
+  const sections = [
+    ["breaking", releaseNotes.breaking],
+    ["introduced", releaseNotes.introduced],
+    ["changed", releaseNotes.changed],
+    ["fixed", releaseNotes.fixed],
+    ["updated", releaseNotes.updated],
+    ["removed", releaseNotes.removed],
+  ];
+
+  for (const [key, items] of sections) {
+    if (!items.length) continue;
+    lines.push(`## ${SECTION_LABELS[key]}`, "");
+    for (const item of items) {
+      lines.push(`- ${item}`);
+    }
+    lines.push("");
+  }
+
+  return `${lines.join("\n").trim()}\n`;
+}
+
+function suggestBumpLevel(commits) {
+  let bump = "patch";
+  for (const commit of commits) {
+    if (isMetaCommit(commit.subject)) continue;
+    const { category, breaking } = categorizeCommit(commit.subject);
+    if (breaking || category === "breaking") return "major";
+    if (category === "introduced" && bump !== "major") bump = "minor";
+  }
+  return bump;
+}
+
 function generateReleaseNotes(options = {}) {
   const packageJson = require(path.join(root, "package.json"));
   const version = options.version || packageJson.version;
   const pluginId =
-    options.pluginId ||
-    process.env.DEFAULT_APP_ID?.trim() ||
-    packageJson.name;
+    options.pluginId || process.env.DEFAULT_APP_ID?.trim() || packageJson.name;
   const displayName = options.displayName || packageJson.displayName || "DiskWise";
 
   const parsed = assertSemver(version, "package.json version");
-  const sinceCommit = options.sinceCommit || null;
-  const previousTag = sinceCommit ? null : options.previousTag ?? getPreviousTag(version);
-  const previousLabel =
-    options.previousLabel || (sinceCommit ? sinceCommit.slice(0, 7) : previousTag);
-  const range = getCommitRange(previousTag, sinceCommit);
-  const commits = getCommits(range);
+  const previousTag = options.previousTag ?? getPreviousReleaseTag(version);
+  const previousLabel = options.previousLabel || previousTag || "initial release";
+  const notesRange = getCommitRange(previousTag);
+  const commits = getCommits(notesRange);
+  const changedFiles = getChangedFiles(notesRange);
 
-  const releaseNotes = {
-    introduced: [],
-    changed: [],
-    updated: [],
-    fixed: [],
-    removed: [],
-    breaking: [],
-  };
+  const curated = loadCuratedNotes(parsed.version);
+  let releaseNotes = emptyReleaseNotes();
+  let curatedSummary = null;
 
-  for (const commit of commits) {
-    const { category, summary } = categorizeCommit(commit.subject);
-    releaseNotes[category].push(summary);
+  if (curated) {
+    releaseNotes = curated.notes;
+    curatedSummary = curated.summary;
+  } else {
+    releaseNotes = analyzeChanges(changedFiles);
+
+    for (const commit of commits) {
+      if (isMetaCommit(commit.subject)) continue;
+      const human = humanizeCommitSummary(commit.subject);
+      if (human) {
+        const { category } = categorizeCommit(commit.subject);
+        releaseNotes[category].push(human);
+      }
+    }
+
+    for (const key of Object.keys(releaseNotes)) {
+      releaseNotes[key] = uniqueItems(releaseNotes[key]);
+    }
   }
 
-  for (const key of Object.keys(releaseNotes)) {
-    releaseNotes[key] = uniqueItems(releaseNotes[key]);
-  }
-
-  const headlineParts = [];
-  if (releaseNotes.introduced.length) headlineParts.push(`${releaseNotes.introduced.length} new`);
-  if (releaseNotes.changed.length) headlineParts.push(`${releaseNotes.changed.length} changed`);
-  if (releaseNotes.fixed.length) headlineParts.push(`${releaseNotes.fixed.length} fixed`);
-
-  const summary =
-    headlineParts.length > 0
-      ? `${displayName} ${version}: ${headlineParts.join(", ")}.`
-      : `${displayName} ${version} release.`;
-
+  const summary = buildSummary(displayName, parsed.version, releaseNotes, curatedSummary);
   const overrideMarkdown = resolveReleaseNotesOverride();
   const gitCommit = runGit(["rev-parse", "HEAD"]);
 
@@ -208,15 +374,15 @@ function generateReleaseNotes(options = {}) {
       build: parsed.build,
     },
     previousTag,
-    sinceCommit,
     previousLabel,
     gitCommit,
     gitTag: `v${parsed.version}`,
-    commitCount: commits.length,
+    commitCount: commits.filter((c) => !isMetaCommit(c.subject)).length,
     releaseNotes,
     summary,
     releaseNotesMarkdown:
-      overrideMarkdown || buildMarkdown(parsed.version, releaseNotes, previousLabel),
+      overrideMarkdown ||
+      buildMarkdown(parsed.version, releaseNotes, previousTag, summary),
     generatedAt: new Date().toISOString(),
   };
 }
@@ -244,4 +410,9 @@ module.exports = {
   categorizeCommit,
   suggestBumpLevel,
   getCommits,
+  getPreviousReleaseTag,
+  isMetaCommit,
+  analyzeChanges,
+  buildMarkdown,
+  SECTION_LABELS,
 };

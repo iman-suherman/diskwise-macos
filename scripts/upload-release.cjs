@@ -8,7 +8,7 @@ const path = require("path");
 const { applyGcpEnv } = require("./apply-gcp-env.cjs");
 const { resolveGcpProjectId } = require("./gcp-config.cjs");
 const { assertSemver } = require("./semver.cjs");
-const { generateReleaseNotes, writeReleaseArtifacts } = require("./generate-release-notes.cjs");
+const { generateReleaseNotes, writeReleaseArtifacts, SECTION_LABELS } = require("./generate-release-notes.cjs");
 const { registerPluginVersion } = require("./register-version.cjs");
 const { generateAppcast } = require("./generate-appcast.cjs");
 const {
@@ -134,14 +134,12 @@ async function uploadRelease(options = {}) {
   assertSemver(version, "package.json version");
   const appId = resolveAppId(packageJson);
 
-  const previousLabel = options.previousVersion
-    ? `v${options.previousVersion}`
-    : options.sinceCommit?.slice(0, 7);
+  const previousTag = options.previousVersion ? `v${options.previousVersion}` : null;
 
   const release = generateReleaseNotes({
     version,
-    sinceCommit: options.sinceCommit || null,
-    previousLabel,
+    previousTag,
+    previousLabel: previousTag || options.sinceCommit?.slice(0, 7) || "initial release",
     pluginId: appId,
   });
   const artifacts = writeReleaseArtifacts(release);

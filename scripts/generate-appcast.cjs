@@ -6,6 +6,7 @@ const fs = require("fs");
 const path = require("path");
 const { loadDotenv } = require("./load-dotenv.cjs");
 const { resolveDownloadBase } = require("./public-download-url.cjs");
+const { SECTION_LABELS } = require("./generate-release-notes.cjs");
 
 const root = path.join(__dirname, "..");
 const shell = process.platform === "win32";
@@ -24,16 +25,17 @@ function run(command, args, options = {}) {
 function sparkleReleaseNotesHtml(release) {
   const lines = ["<ul>"];
   const sections = [
-    ["Introduced", release.releaseNotes.introduced],
-    ["Changed", release.releaseNotes.changed],
-    ["Fixed", release.releaseNotes.fixed],
-    ["Updated", release.releaseNotes.updated],
-    ["Removed", release.releaseNotes.removed],
-    ["Breaking", release.releaseNotes.breaking],
+    ["breaking", release.releaseNotes.breaking],
+    ["introduced", release.releaseNotes.introduced],
+    ["changed", release.releaseNotes.changed],
+    ["fixed", release.releaseNotes.fixed],
+    ["updated", release.releaseNotes.updated],
+    ["removed", release.releaseNotes.removed],
   ];
 
-  for (const [title, items] of sections) {
+  for (const [key, items] of sections) {
     if (!items?.length) continue;
+    const title = SECTION_LABELS[key] || key;
     lines.push(`<li><strong>${title}</strong><ul>`);
     for (const item of items) {
       lines.push(`<li>${item}</li>`);
