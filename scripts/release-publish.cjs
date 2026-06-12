@@ -157,7 +157,13 @@ async function main() {
   }
 
   let version;
-  if (!releaseState.lastReleasedVersion) {
+  const releaseVersionOverride = process.env.RELEASE_VERSION?.trim();
+  if (releaseVersionOverride) {
+    version = releaseVersionOverride;
+    assertSemver(version, "RELEASE_VERSION");
+    writePackageVersion(version);
+    console.log(`release: using RELEASE_VERSION override → v${version}`);
+  } else if (!releaseState.lastReleasedVersion) {
     version = pkg.version;
     assertSemver(version, "package.json version");
     console.log(`release: first release at v${version} (${headCommit.slice(0, 7)})`);
