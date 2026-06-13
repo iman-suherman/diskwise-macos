@@ -30,10 +30,94 @@ struct SystemHealthSnapshot: Sendable {
     let machineModel: String
     let topCPUProcesses: [ProcessUsage]
     let topMemoryProcesses: [ProcessUsage]
+
+    func replacingProcesses(
+        topCPU: [ProcessUsage],
+        topMemory: [ProcessUsage]
+    ) -> SystemHealthSnapshot {
+        SystemHealthSnapshot(
+            healthScore: healthScore,
+            hostName: hostName,
+            macOSVersion: macOSVersion,
+            macOSBuild: macOSBuild,
+            cpuUsagePercent: cpuUsagePercent,
+            memoryUsedPercent: memoryUsedPercent,
+            loadAverage1: loadAverage1,
+            loadAverage5: loadAverage5,
+            loadAverage15: loadAverage15,
+            processorCount: processorCount,
+            memoryUsedBytes: memoryUsedBytes,
+            physicalMemoryBytes: physicalMemoryBytes,
+            diskUsedPercent: diskUsedPercent,
+            diskFreeBytes: diskFreeBytes,
+            diskTotalBytes: diskTotalBytes,
+            uptimeSeconds: uptimeSeconds,
+            machineModel: machineModel,
+            topCPUProcesses: topCPU,
+            topMemoryProcesses: topMemory
+        )
+    }
 }
 
 enum SystemHealthMonitorCore {
     private static var previousCPUTicks: (user: Double, system: Double, idle: Double, nice: Double)?
+
+    /// Fast path for startup — score and system metrics only; process lists load later.
+    static func captureLaunchQuick(volume: MountedVolume?) async -> SystemHealthSnapshot {
+        await Task.detached(priority: .userInitiated) {
+            captureLaunchQuickSync(volume: volume)
+        }.value
+    }
+
+    private static func captureLaunchQuickSync(volume: MountedVolume?) -> SystemHealthSnapshot {
+        let cpuUsage = readCPUUsagePercent(sampleIntervalMicroseconds: 40_000)
+        let memory = readMemoryUsage()
+        let load = readLoadAverage()
+        let processorCount = ProcessInfo.processInfo.processorCount
+        let physicalMemory = Int64(ProcessInfo.processInfo.physicalMemory)
+        let diskUsedPercent = volume.map { $0.usageFraction * 100 } ?? 0
+        let diskFreeBytes = volume?.freeSize ?? 0
+        let diskTotalBytes = volume?.totalSize ?? 0
+        let uptime = ProcessInfo.processInfo.systemUptime
+
+        let score = computeHealthScore(
+            cpuUsagePercent: cpuUsage,
+            memoryUsedPercent: memory.usedPercent,
+            diskUsedPercent: diskUsedPercent
+        )
+
+        return SystemHealthSnapshot(
+            healthScore: score,
+            hostName: readHostName(),
+            macOSVersion: formattedMacOSVersion(),
+            macOSBuild: readMacOSBuild(),
+            cpuUsagePercent: cpuUsage,
+            memoryUsedPercent: memory.usedPercent,
+            loadAverage1: load.0,
+            loadAverage5: load.1,
+            loadAverage15: load.2,
+            processorCount: processorCount,
+            memoryUsedBytes: memory.usedBytes,
+            physicalMemoryBytes: physicalMemory,
+            diskUsedPercent: diskUsedPercent,
+            diskFreeBytes: diskFreeBytes,
+            diskTotalBytes: diskTotalBytes,
+            uptimeSeconds: uptime,
+            machineModel: readMachineModel(),
+            topCPUProcesses: [],
+            topMemoryProcesses: []
+        )
+    }
+
+    static func captureTopProcesses(limit: Int) async -> (byCPU: [ProcessUsage], byMemory: [ProcessUsage]) {
+        let raw = await Task.detached(priority: .utility) {
+            readRawProcesses(limit: limit)
+        }.value
+
+        return await MainActor.run {
+            resolveProcessNames(raw, limit: limit, preferRunningApplicationNames: true)
+        }
+    }
 
     @MainActor
     static func capture(volume: MountedVolume?) -> SystemHealthSnapshot {
@@ -46,7 +130,11 @@ enum SystemHealthMonitorCore {
         let diskFreeBytes = volume?.freeSize ?? 0
         let diskTotalBytes = volume?.totalSize ?? 0
         let uptime = ProcessInfo.processInfo.systemUptime
-        let processes = readTopProcesses(limit: 5)
+        let processes = resolveProcessNames(
+            readRawProcesses(limit: 5),
+            limit: 5,
+            preferRunningApplicationNames: true
+        )
 
         let score = computeHealthScore(
             cpuUsagePercent: cpuUsage,
@@ -56,7 +144,7 @@ enum SystemHealthMonitorCore {
 
         return SystemHealthSnapshot(
             healthScore: score,
-            hostName: Host.current().localizedName ?? Host.current().name ?? "Mac",
+            hostName: readHostName(),
             macOSVersion: formattedMacOSVersion(),
             macOSBuild: readMacOSBuild(),
             cpuUsagePercent: cpuUsage,
@@ -74,54 +162,6 @@ enum SystemHealthMonitorCore {
             machineModel: readMachineModel(),
             topCPUProcesses: processes.byCPU,
             topMemoryProcesses: processes.byMemory
-        )
-    }
-
-    static func captureAsync(volume: MountedVolume?) async -> SystemHealthSnapshot {
-        let cpuUsage = readCPUUsagePercent()
-        let memory = readMemoryUsage()
-        let load = readLoadAverage()
-        let processorCount = ProcessInfo.processInfo.processorCount
-        let physicalMemory = Int64(ProcessInfo.processInfo.physicalMemory)
-        let diskUsedPercent = volume.map { $0.usageFraction * 100 } ?? 0
-        let diskFreeBytes = volume?.freeSize ?? 0
-        let diskTotalBytes = volume?.totalSize ?? 0
-        let uptime = ProcessInfo.processInfo.systemUptime
-
-        let rawProcesses = await Task.detached(priority: .utility) {
-            readRawProcesses(limit: 20)
-        }.value
-
-        let resolved = await MainActor.run {
-            resolveProcessNames(rawProcesses, limit: 5)
-        }
-
-        let score = computeHealthScore(
-            cpuUsagePercent: cpuUsage,
-            memoryUsedPercent: memory.usedPercent,
-            diskUsedPercent: diskUsedPercent
-        )
-
-        return SystemHealthSnapshot(
-            healthScore: score,
-            hostName: Host.current().localizedName ?? Host.current().name ?? "Mac",
-            macOSVersion: formattedMacOSVersion(),
-            macOSBuild: readMacOSBuild(),
-            cpuUsagePercent: cpuUsage,
-            memoryUsedPercent: memory.usedPercent,
-            loadAverage1: load.0,
-            loadAverage5: load.1,
-            loadAverage15: load.2,
-            processorCount: processorCount,
-            memoryUsedBytes: memory.usedBytes,
-            physicalMemoryBytes: physicalMemory,
-            diskUsedPercent: diskUsedPercent,
-            diskFreeBytes: diskFreeBytes,
-            diskTotalBytes: diskTotalBytes,
-            uptimeSeconds: uptime,
-            machineModel: readMachineModel(),
-            topCPUProcesses: resolved.byCPU,
-            topMemoryProcesses: resolved.byMemory
         )
     }
 
@@ -161,6 +201,10 @@ enum SystemHealthMonitorCore {
 
     static func healthConditionLabelWithScore(for score: Int) -> String {
         "\(healthConditionLabel(for: score)) (\(score))"
+    }
+
+    private static func readHostName() -> String {
+        ProcessInfo.processInfo.hostName
     }
 
     private static func formattedMacOSVersion() -> String {
@@ -215,7 +259,7 @@ enum SystemHealthMonitorCore {
         return (used, percent)
     }
 
-    private static func readCPUUsagePercent() -> Double {
+    private static func readCPUTicks() -> (user: Double, system: Double, idle: Double, nice: Double)? {
         var cpuInfo = host_cpu_load_info_data_t()
         var count = mach_msg_type_number_t(
             MemoryLayout<host_cpu_load_info_data_t>.size / MemoryLayout<integer_t>.size
@@ -225,40 +269,89 @@ enum SystemHealthMonitorCore {
                 host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, $0, &count)
             }
         }
-        guard result == KERN_SUCCESS else { return 0 }
+        guard result == KERN_SUCCESS else { return nil }
+        return (
+            user: Double(cpuInfo.cpu_ticks.0),
+            system: Double(cpuInfo.cpu_ticks.1),
+            idle: Double(cpuInfo.cpu_ticks.2),
+            nice: Double(cpuInfo.cpu_ticks.3)
+        )
+    }
 
-        let user = Double(cpuInfo.cpu_ticks.0)
-        let system = Double(cpuInfo.cpu_ticks.1)
-        let idle = Double(cpuInfo.cpu_ticks.2)
-        let nice = Double(cpuInfo.cpu_ticks.3)
-        let total = user + system + idle + nice
-
-        defer {
-            previousCPUTicks = (user, system, idle, nice)
-        }
-
-        guard let previous = previousCPUTicks else { return 0 }
-
-        let userDelta = user - previous.user
-        let systemDelta = system - previous.system
-        let idleDelta = idle - previous.idle
-        let niceDelta = nice - previous.nice
+    private static func cpuUsagePercent(from previous: CPUTicks, to current: CPUTicks) -> Double {
+        let userDelta = current.user - previous.user
+        let systemDelta = current.system - previous.system
+        let idleDelta = current.idle - previous.idle
+        let niceDelta = current.nice - previous.nice
         let totalDelta = userDelta + systemDelta + idleDelta + niceDelta
         guard totalDelta > 0 else { return 0 }
-
         let usedDelta = userDelta + systemDelta + niceDelta
         return min(100, max(0, usedDelta / totalDelta * 100))
     }
 
-    @MainActor
-    private static func readTopProcesses(limit: Int) -> (byCPU: [ProcessUsage], byMemory: [ProcessUsage]) {
-        resolveProcessNames(readRawProcesses(limit: max(limit * 4, 20)), limit: limit)
+    private typealias CPUTicks = (user: Double, system: Double, idle: Double, nice: Double)
+
+    private static func readCPUUsagePercent(sampleIntervalMicroseconds: useconds_t = 0) -> Double {
+        guard let first = readCPUTicks() else { return 0 }
+
+        if sampleIntervalMicroseconds > 0 {
+            usleep(sampleIntervalMicroseconds)
+            guard let second = readCPUTicks() else { return 0 }
+            return cpuUsagePercent(from: first, to: second)
+        }
+
+        defer {
+            previousCPUTicks = first
+        }
+
+        guard let previous = previousCPUTicks else { return 0 }
+        return cpuUsagePercent(from: previous, to: first)
     }
 
+    /// Reads pre-sorted top rows via `ps -rc` / `ps -mc` piped to `head` (~20ms each).
     private static func readRawProcesses(limit: Int) -> [(pid: Int32, cpuPercent: Double, memoryBytes: Int64, comm: String)] {
+        let lineBudget = max(limit * 2, 12)
+        var cpuRaw = ""
+        var memRaw = ""
+        let group = DispatchGroup()
+
+        group.enter()
+        DispatchQueue.global(qos: .utility).async {
+            cpuRaw = runSortedPS(sortFlag: "r", lineCount: lineBudget)
+            group.leave()
+        }
+
+        group.enter()
+        DispatchQueue.global(qos: .utility).async {
+            memRaw = runSortedPS(sortFlag: "m", lineCount: lineBudget)
+            group.leave()
+        }
+
+        group.wait()
+
+        var merged: [Int32: (pid: Int32, cpuPercent: Double, memoryBytes: Int64, comm: String)] = [:]
+        for entry in parsePSOutput(cpuRaw) + parsePSOutput(memRaw) {
+            if let existing = merged[entry.pid] {
+                merged[entry.pid] = (
+                    pid: entry.pid,
+                    cpuPercent: max(existing.cpuPercent, entry.cpuPercent),
+                    memoryBytes: max(existing.memoryBytes, entry.memoryBytes),
+                    comm: existing.comm.isEmpty ? entry.comm : existing.comm
+                )
+            } else {
+                merged[entry.pid] = entry
+            }
+        }
+        return Array(merged.values)
+    }
+
+    private static func runSortedPS(sortFlag: String, lineCount: Int) -> String {
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/ps")
-        process.arguments = ["-A", "-o", "pid=,pcpu=,rss=,comm="]
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = [
+            "-c",
+            "/bin/ps -\(sortFlag)c -o pid=,pcpu=,rss=,comm= 2>/dev/null | /usr/bin/head -n \(lineCount)",
+        ]
 
         let pipe = Pipe()
         process.standardOutput = pipe
@@ -267,13 +360,15 @@ enum SystemHealthMonitorCore {
         do {
             try process.run()
         } catch {
-            return []
+            return ""
         }
         process.waitUntilExit()
 
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        guard let output = String(data: data, encoding: .utf8) else { return [] }
+        return String(data: data, encoding: .utf8) ?? ""
+    }
 
+    private static func parsePSOutput(_ output: String) -> [(pid: Int32, cpuPercent: Double, memoryBytes: Int64, comm: String)] {
         var parsed: [(pid: Int32, cpuPercent: Double, memoryBytes: Int64, comm: String)] = []
         for line in output.split(separator: "\n") {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
@@ -294,10 +389,15 @@ enum SystemHealthMonitorCore {
     @MainActor
     private static func resolveProcessNames(
         _ raw: [(pid: Int32, cpuPercent: Double, memoryBytes: Int64, comm: String)],
-        limit: Int
+        limit: Int,
+        preferRunningApplicationNames: Bool
     ) -> (byCPU: [ProcessUsage], byMemory: [ProcessUsage]) {
         let parsed = raw.map { entry -> ProcessUsage in
-            let name = resolveProcessName(pid: entry.pid, comm: entry.comm)
+            let name = resolveProcessName(
+                pid: entry.pid,
+                comm: entry.comm,
+                preferRunningApplicationNames: preferRunningApplicationNames
+            )
             return ProcessUsage(
                 id: entry.pid,
                 name: name,
@@ -312,8 +412,13 @@ enum SystemHealthMonitorCore {
     }
 
     @MainActor
-    private static func resolveProcessName(pid: Int32, comm: String) -> String {
-        if let app = NSRunningApplication(processIdentifier: pid),
+    private static func resolveProcessName(
+        pid: Int32,
+        comm: String,
+        preferRunningApplicationNames: Bool
+    ) -> String {
+        if preferRunningApplicationNames,
+           let app = NSRunningApplication(processIdentifier: pid),
            let localizedName = app.localizedName?.trimmingCharacters(in: .whitespacesAndNewlines),
            !localizedName.isEmpty {
             return localizedName
@@ -393,6 +498,7 @@ final class SystemHealthMonitor: ObservableObject {
     @Published private(set) var systemVolume: MountedVolume?
 
     private var refreshTask: Task<Void, Never>?
+    private var enrichTask: Task<Void, Never>?
 
     init() {
         startObserving()
@@ -400,17 +506,21 @@ final class SystemHealthMonitor: ObservableObject {
 
     deinit {
         refreshTask?.cancel()
+        enrichTask?.cancel()
     }
 
-    func warmUp() async {
-        let volume = await MainActor.run {
-            let volumes = VolumeDiscovery.mountedVolumes()
-            return volumes.first(where: { VolumeDiscovery.isSystemVolume(mountPath: $0.mountPath) })
-                ?? volumes.first(where: \.isInternal)
-        }
-        let captured = await SystemHealthMonitorCore.captureAsync(volume: volume)
+    func warmUpQuick(volume: MountedVolume?) async {
         systemVolume = volume
-        snapshot = captured
+        snapshot = await SystemHealthMonitorCore.captureLaunchQuick(volume: volume)
+    }
+
+    func enrichProcessesInBackground() {
+        enrichTask?.cancel()
+        enrichTask = Task { @MainActor in
+            let processes = await SystemHealthMonitorCore.captureTopProcesses(limit: 5)
+            guard !Task.isCancelled, let current = snapshot else { return }
+            snapshot = current.replacingProcesses(topCPU: processes.byCPU, topMemory: processes.byMemory)
+        }
     }
 
     private func refreshInterval(for snapshot: SystemHealthSnapshot?) -> Duration {

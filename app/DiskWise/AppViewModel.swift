@@ -421,9 +421,12 @@ final class AppViewModel: ObservableObject {
         completeStartupStep(.python)
 
         if startupProfilesSystemHealth {
-            beginStartupStep(.systemHealth, message: "Profiling CPU, memory, and disk for menu bar health score…")
+            beginStartupStep(.systemHealth, message: "Reading CPU, memory, and disk for menu bar health score…")
             await Task.yield()
-            await MenuBarHealthItemController.shared.prepareDuringLaunch()
+            let healthVolume = mountedVolumes.first(where: { VolumeDiscovery.isSystemVolume(mountPath: $0.mountPath) })
+                ?? selectedVolume
+                ?? mountedVolumes.first(where: \.isInternal)
+            await MenuBarHealthItemController.shared.prepareDuringLaunch(systemVolume: healthVolume)
             completeStartupStep(.systemHealth)
         }
 

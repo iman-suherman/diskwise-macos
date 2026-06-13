@@ -7,7 +7,8 @@
   "changed": [
     "Uninterrupted startup loading applies saved scans automatically without showing the prompt",
     "Main window stays hidden until launch overlays finish, including the saved-scan prompt when needed",
-    "Duplicate groups load in the background after the snapshot restores"
+    "Duplicate groups load in the background after the snapshot restores",
+    "System health uses a fast launch snapshot (~50ms) with top processes filled in afterward"
   ],
   "fixed": [
     "Saved-scan prompt no longer beach-balls while the main UI, analysis, and menu bar health profiling initialize",

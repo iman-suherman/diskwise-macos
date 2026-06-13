@@ -176,7 +176,7 @@ enum StartupStep: String, CaseIterable, Identifiable {
         case .drives: return "Discover drives"
         case .permissions: return "Check permissions"
         case .python: return "Check Python scanner"
-        case .systemHealth: return "Profile system health"
+        case .systemHealth: return "Read system health"
         case .savedScan: return "Load saved scan"
         case .aiProvider: return "Check AI provider"
         case .aiInsights: return "Prepare AI suggestions"

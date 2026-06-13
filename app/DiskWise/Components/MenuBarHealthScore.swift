@@ -1,4 +1,5 @@
 import AppKit
+import DiskScannerKit
 import SwiftUI
 
 struct MenuBarHealthScoreLabel: View {
@@ -305,9 +306,10 @@ final class MenuBarHealthItemController: NSObject {
         }
     }
 
-    func prepareDuringLaunch() async {
-        await monitor.warmUp()
+    func prepareDuringLaunch(systemVolume: MountedVolume?) async {
+        await monitor.warmUpQuick(volume: systemVolume)
         syncVisibility(showHealthScore: AppSettings.shared.showMenuBarHealthScore)
+        monitor.enrichProcessesInBackground()
     }
 
     private func makeSlot() -> MenuBarStatusSlot {
