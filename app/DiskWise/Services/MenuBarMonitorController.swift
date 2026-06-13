@@ -14,7 +14,7 @@ enum MenuBarMonitorController {
     }
 
     static var menuBarMonitorStatusDescription: String {
-        "Shows remaining disk space in the menu bar as color-coded percentage and/or free GB while DiskWise is running."
+        "Shows remaining disk space and system health score in the menu bar while DiskWise is running."
     }
 
     static var launchAtLoginStatusDescription: String {
@@ -38,6 +38,9 @@ enum MenuBarMonitorController {
         MenuBarStatusItemController.shared.syncVisibility(
             showPercentage: settings.showMenuBarDiskPercentage,
             showFreeGB: settings.showMenuBarDiskFreeGB
+        )
+        MenuBarHealthItemController.shared.syncVisibility(
+            showHealthScore: settings.showMenuBarHealthScore
         )
         unregisterLegacyLoginItemIfNeeded()
     }

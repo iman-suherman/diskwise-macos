@@ -81,6 +81,14 @@ struct AppSettingsView: View {
                     )
                 )
 
+                Toggle(
+                    "Show health score",
+                    isOn: Binding(
+                        get: { settings.showMenuBarHealthScore },
+                        set: { settings.setMenuBarHealthScoreVisible($0) }
+                    )
+                )
+
                 Text(MenuBarMonitorController.menuBarMonitorStatusDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -92,6 +100,21 @@ struct AppSettingsView: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+            }
+
+            Section("Appearance") {
+                Toggle(
+                    "Hide DiskWise from Dock",
+                    isOn: Binding(
+                        get: { settings.hideFromDock },
+                        set: { settings.setHideFromDock($0) }
+                    )
+                )
+
+                Text("When enabled, DiskWise runs from the menu bar without a Dock icon. Open the app from a menu bar item or Spotlight.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Section("Startup") {
