@@ -2182,7 +2182,19 @@ final class AppViewModel: ObservableObject {
         }
 
         let reclaimable = DiskWiseFormatters.bytes.string(fromByteCount: report.potentialReclaimableSpace)
-        return "You could potentially reclaim **\(reclaimable)**. Top insight: \(report.insights.first?.title ?? "Run a scan for detailed analysis."). Try asking about duplicates, caches, or what's using the most space."
+        let topInsight = report.insights.first
+        var lines = [
+            "## Summary",
+            "",
+            "You could potentially reclaim **\(reclaimable)**.",
+        ]
+        if let topInsight {
+            lines.append("")
+            lines.append("**\(topInsight.title)**: \(topInsight.detail)")
+        }
+        lines.append("")
+        lines.append("Try asking about duplicates, caches, or what's using the most space.")
+        return lines.joined(separator: "\n")
     }
 
     func handleRecommendation(_ recommendation: RecommendationRecord) {

@@ -536,24 +536,29 @@ private struct ChatBubble: View {
 private struct ChatMarkdownText: View {
     let text: String
 
+    private var displayText: String {
+        ChatMessageFormatter.formatForDisplay(text)
+    }
+
     var body: some View {
         Group {
             if let attributed = try? AttributedString(
-                markdown: text,
+                markdown: displayText,
                 options: AttributedString.MarkdownParsingOptions(
-                    interpretedSyntax: .full,
+                    interpretedSyntax: .inlineOnlyPreservingWhitespace,
                     failurePolicy: .returnPartiallyParsedIfPossible
                 )
             ) {
                 Text(attributed)
             } else {
-                Text(text)
+                Text(displayText)
             }
         }
         .font(.body)
         .lineSpacing(4)
         .textSelection(.enabled)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 

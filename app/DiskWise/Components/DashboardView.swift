@@ -151,7 +151,7 @@ struct ScanVerboseLogPanel: View {
                 .font(.subheadline.weight(.semibold))
 
             if let tailCommand = scanLogMonitor.tailCommand {
-                Text("Verbose output is written to a log file. Copy the tail command below and run it in Terminal to follow progress without slowing the app.")
+                Text("Verbose output is written to a log file. Open Terminal to follow it live with tail -f, or copy the command below.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -173,7 +173,8 @@ struct ScanVerboseLogPanel: View {
                 Button("Open in Terminal") {
                     scanLogMonitor.openInTerminal()
                 }
-                .buttonStyle(.link)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
             } else if scanLogMonitor.isActive {
                 Text("Preparing scanner log…")
                     .font(.caption)

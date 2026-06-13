@@ -12,6 +12,8 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
+        case "0.5.7":
+            return v057Pages
         case "0.5.6":
             return v056Pages
         case "0.5.5":
@@ -48,6 +50,31 @@ enum WhatsNewContent {
             return genericPages(version: version)
         }
     }
+
+    private static let v057Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "terminal-tail",
+            icon: "terminal",
+            title: "One-click scan log in Terminal",
+            message: "Open in Terminal now brings Terminal to the front and starts tail -f on the verbose scan log automatically.",
+            bullets: [
+                "No copy-paste — tail -f runs as soon as Terminal opens",
+                "Prominent button on the Scanning tab log panel",
+                "Copy command remains available if you prefer a custom shell",
+            ]
+        ),
+        WhatsNewPage(
+            id: "ai-formatting",
+            icon: "text.bubble",
+            title: "Clearer AI Analysis replies",
+            message: "Chat responses now preserve line breaks and format sections, bullets, and numbered steps so long answers are easier to follow.",
+            bullets: [
+                "Paragraph breaks and headings render correctly in the chat bubble",
+                "Recommendations and cleanup lists appear on separate lines",
+                "Rule-based fallback answers use structured Markdown",
+            ]
+        ),
+    ]
 
     private static let v056Pages: [WhatsNewPage] = [
         WhatsNewPage(

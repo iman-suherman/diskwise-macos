@@ -1,0 +1,11 @@
+{
+  "summary": "Open in Terminal now runs tail -f automatically, and AI Analysis replies are easier to read.",
+  "introduced": [],
+  "changed": [
+    "Open in Terminal launches a foreground Terminal window that starts tail -f on the scan log automatically",
+    "AI chat preserves line breaks and formats section headers, bullets, and numbered steps for readability"
+  ],
+  "fixed": [
+    "AI Analysis replies no longer collapse into a single wall of text without paragraph breaks"
+  ]
+}
