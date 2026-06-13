@@ -10,6 +10,8 @@ const { assertSemver } = require("./semver.cjs");
 const { generateReleaseNotes, writeReleaseArtifacts } = require("./generate-release-notes.cjs");
 const { registerPluginVersion } = require("./register-version.cjs");
 const { resolveDownloadBase } = require("./public-download-url.cjs");
+const { dmgFileName, resolveAppId, uploadSparkleDeltas } = require("./upload-release.cjs");
+const { generateAppcast } = require("./generate-appcast.cjs");
 
 const root = path.join(__dirname, "..");
 
