@@ -77,6 +77,7 @@ final class AppSettings: ObservableObject {
         static let ollamaBaseURL = "diskwise.settings.ollamaBaseURL"
         static let ollamaModel = "diskwise.settings.ollamaModel"
         static let enableOllamaDevMode = "diskwise.settings.enableOllamaDevMode"
+        static let menuBarExtensionPromptDismissed = "diskwise.settings.menuBarExtensionPromptDismissed"
     }
 
     /// Bump when the storage index format or scan pipeline changes materially.
@@ -132,6 +133,21 @@ final class AppSettings: ObservableObject {
         didSet {
             UserDefaults.standard.set(enableOllamaDevMode, forKey: Keys.enableOllamaDevMode)
         }
+    }
+
+    var menuBarExtensionPromptDismissed: Bool {
+        get { UserDefaults.standard.bool(forKey: Keys.menuBarExtensionPromptDismissed) }
+        set { UserDefaults.standard.set(newValue, forKey: Keys.menuBarExtensionPromptDismissed) }
+    }
+
+    var shouldOfferMenuBarExtension: Bool {
+        MenuBarExtensionInstaller.isHelperBundled
+            && !MenuBarExtensionInstaller.isInstalled
+            && !menuBarExtensionPromptDismissed
+    }
+
+    var isMenuBarExtensionInstalled: Bool {
+        MenuBarExtensionInstaller.isInstalled
     }
 
     private init() {
