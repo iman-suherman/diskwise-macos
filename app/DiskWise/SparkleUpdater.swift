@@ -2,19 +2,19 @@ import AppKit
 import Sparkle
 
 /// Sparkle auto-updates — Debug uses local website (`npm run dev:website`), Release uses production appcast.
-final class SparkleUpdaterController: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelegate {
+final class SparkleUpdaterController: NSObject, SPUUpdaterDelegate {
     static let shared = SparkleUpdaterController()
 
+    private static let lastForegroundCheckKey = "diskwise.sparkle.lastForegroundUpdateCheck"
+
     private var controller: SPUStandardUpdaterController!
-    private var didCheckOnLaunch = false
-    private var postUpgradeCompletion: (() -> Void)?
 
     override private init() {
         super.init()
         controller = SPUStandardUpdaterController(
             startingUpdater: false,
             updaterDelegate: self,
-            userDriverDelegate: self
+            userDriverDelegate: nil
         )
         configureUpdater()
         controller.startUpdater()
@@ -29,39 +29,38 @@ final class SparkleUpdaterController: NSObject, SPUUpdaterDelegate, SPUStandardU
         controller.checkForUpdates(nil)
     }
 
-    /// Checks silently on launch — prompts to install only when a newer version exists.
-    func checkForUpdatesOnLaunchIfNeeded() {
-        guard !didCheckOnLaunch else { return }
-        didCheckOnLaunch = true
+    /// Silent daily check while the app is active and the main window is visible.
+    func checkForUpdatesInForegroundIfNeeded() {
+        guard NSApp.isActive else { return }
+        guard Self.isMainWindowVisible else { return }
+        guard shouldRunDailyCheck else { return }
+
+        UserDefaults.standard.set(Date(), forKey: Self.lastForegroundCheckKey)
         updater.checkForUpdatesInBackground()
     }
 
-    /// After a version upgrade: show Sparkle UI (update available or up to date), then run completion.
-    func checkForUpdatesBeforeWhatsNew(completion: @escaping () -> Void) {
-        postUpgradeCompletion = completion
-        controller.checkForUpdates(nil)
+    private static var isMainWindowVisible: Bool {
+        NSApp.windows.contains { $0.canBecomeMain && $0.isVisible }
     }
 
-    private func finishPostUpgradeSessionIfNeeded() {
-        guard let completion = postUpgradeCompletion else { return }
-        postUpgradeCompletion = nil
-        completion()
+    private var shouldRunDailyCheck: Bool {
+        guard let lastCheck = UserDefaults.standard.object(forKey: Self.lastForegroundCheckKey) as? Date else {
+            return true
+        }
+        return Date().timeIntervalSince(lastCheck) >= dailyCheckInterval
     }
 
-    // MARK: - SPUStandardUserDriverDelegate
-
-    func standardUserDriverWillFinishUpdateSession(_ userDriver: SPUStandardUserDriver) {
-        finishPostUpgradeSessionIfNeeded()
+    private var dailyCheckInterval: TimeInterval {
+        #if DEBUG
+        300
+        #else
+        86_400
+        #endif
     }
 
     private func configureUpdater() {
         let updater = controller.updater
-        updater.automaticallyChecksForUpdates = true
-        #if DEBUG
-        updater.updateCheckInterval = 300
-        #else
-        updater.updateCheckInterval = 86_400
-        #endif
+        updater.automaticallyChecksForUpdates = false
         updater.automaticallyDownloadsUpdates = true
     }
 }

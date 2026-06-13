@@ -21,6 +21,7 @@
 		6364632C8485413073CA9BB3 /* MainScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7606C2E2E0391264171C1F55 /* MainScreens.swift */; };
 		68EAF0F0D832F829DC54A2EC /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98EFAE1062F153FAFA7B0D8A /* AboutView.swift */; };
 		75E2033E8389AC2CF2A55666 /* ActivityLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57BB2C32DA1EC6AD699DBDBD /* ActivityLog.swift */; };
+		7F3FA96EA3B2337449CD40D0 /* diskwise_scan.py in Resources */ = {isa = PBXBuildFile; fileRef = C27E95DFD0F9841389B35E2F /* diskwise_scan.py */; };
 		896F6AD480A23BD1277843C2 /* AppSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAC0147A7FB6FEF4116785C /* AppSettingsView.swift */; };
 		8EA88D4A455BB6985DBB72A9 /* SystemHealthMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD1DBFAFBE898F19B3B507D5 /* SystemHealthMonitor.swift */; };
 		9163047ADC6314366674E59B /* StorageBreakdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */; };
@@ -29,6 +30,7 @@
 		A1E6344A43CABB46455859D5 /* DuplicateKit in Frameworks */ = {isa = PBXBuildFile; productRef = E44897D5C0C445D604A9F3CB /* DuplicateKit */; };
 		B7284DB7D37A1021F42F9A6C /* MenuBarMonitorInstructionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5691892A76E1A24CE7AAF729 /* MenuBarMonitorInstructionOverlay.swift */; };
 		BAC56BC5D44D164A6D1651C3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9604CB761CB34350EFF29978 /* Assets.xcassets */; };
+		BC7B15D5B937D14ECD2DC88E /* ScanLogMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17073AD7FF404926E1B8C231 /* ScanLogMonitor.swift */; };
 		BF36D88A5025F7EB71A8CEFA /* DockVisibilityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCF61B84FF67A42557A15C53 /* DockVisibilityController.swift */; };
 		C61435492234EF4EFEB45B5C /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BF737B0AA3066062F3881A4 /* StatusBadge.swift */; };
 		C9D4B856CC4D658C4888B06B /* ActivityLogSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9652CCD6DFF89AC365DBCD /* ActivityLogSheet.swift */; };
@@ -48,6 +50,7 @@
 
 /* Begin PBXFileReference section */
 		15BE9BA6642050B89F9552F0 /* entitlements.mac.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = entitlements.mac.plist; sourceTree = "<group>"; };
+		17073AD7FF404926E1B8C231 /* ScanLogMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanLogMonitor.swift; sourceTree = "<group>"; };
 		2BF737B0AA3066062F3881A4 /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
 		2D1F08103579C30093C9CA6F /* MenuBarDiskMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarDiskMonitor.swift; sourceTree = "<group>"; };
 		39A19DABD6BC39CB4E077008 /* MaintenanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaintenanceView.swift; sourceTree = "<group>"; };
@@ -72,6 +75,7 @@
 		A6C028E81B0947C7D6A69EE9 /* SavedScanPromptOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedScanPromptOverlay.swift; sourceTree = "<group>"; };
 		A82F3A2475D36769351F8CBC /* IndexRebuildOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexRebuildOverlay.swift; sourceTree = "<group>"; };
 		B21446A4062305538747C91B /* DiskWise.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DiskWise.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C27E95DFD0F9841389B35E2F /* diskwise_scan.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = diskwise_scan.py; sourceTree = "<group>"; };
 		CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarExtensionPrompt.swift; sourceTree = "<group>"; };
 		D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessPrompt.swift; sourceTree = "<group>"; };
 		D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageBreakdownView.swift; sourceTree = "<group>"; };
@@ -107,6 +111,7 @@
 				CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */,
 				971832F0D34371AD6D227919 /* MenuBarMonitorController.swift */,
 				894ADEF97DF74C5A2CC2FB56 /* ScanActivityMonitor.swift */,
+				17073AD7FF404926E1B8C231 /* ScanLogMonitor.swift */,
 				DD1DBFAFBE898F19B3B507D5 /* SystemHealthMonitor.swift */,
 			);
 			path = Services;
@@ -120,6 +125,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		B630F195ED8CCA0F2FD7D0B1 /* Scanner */ = {
+			isa = PBXGroup;
+			children = (
+				C27E95DFD0F9841389B35E2F /* diskwise_scan.py */,
+			);
+			path = Scanner;
+			sourceTree = "<group>";
+		};
 		C3A4B002792C3C6BBF96728A = {
 			isa = PBXGroup;
 			children = (
@@ -127,6 +140,14 @@
 				FD3041CF18E97593743F91FD /* Packages */,
 				A69AF2FE980B6111B2115F4B /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		C3F7346C874B2199BE15D7F5 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				B630F195ED8CCA0F2FD7D0B1 /* Scanner */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		C9453DAD43B73221B0F7A838 /* Components */ = {
@@ -164,6 +185,7 @@
 				F1FC1DF0971CB5B4441676DB /* Info.plist */,
 				7F95E82B6008C61D7A885B07 /* SparkleUpdater.swift */,
 				C9453DAD43B73221B0F7A838 /* Components */,
+				C3F7346C874B2199BE15D7F5 /* Resources */,
 				F4DA758B64652374311F9BD9 /* Screens */,
 				38BFC87A9D81486999816479 /* Services */,
 			);
@@ -259,6 +281,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BAC56BC5D44D164A6D1651C3 /* Assets.xcassets in Resources */,
+				7F3FA96EA3B2337449CD40D0 /* diskwise_scan.py in Resources */,
 				E559D2BF705EE1AB7F9CA4EA /* entitlements.mac.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -291,6 +314,7 @@
 				DD2F2233CFB17ABB37688ACD /* RecommendationReviewSheet.swift in Sources */,
 				DAB86108A2724D50A153E610 /* SavedScanPromptOverlay.swift in Sources */,
 				12B3019096123619E84C856A /* ScanActivityMonitor.swift in Sources */,
+				BC7B15D5B937D14ECD2DC88E /* ScanLogMonitor.swift in Sources */,
 				2E51EA5FD30ECF1DA75CE384 /* SparkleUpdater.swift in Sources */,
 				FAB2B6356F46985804A0B25C /* StartupSplashView.swift in Sources */,
 				C61435492234EF4EFEB45B5C /* StatusBadge.swift in Sources */,
@@ -428,14 +452,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 4001;
+				CURRENT_PROJECT_VERSION = 5000;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.4.1;
+				MARKETING_VERSION = 0.5.0;
 				OTHER_LDFLAGS = "$(inherited) -weak_framework FoundationModels";
 				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
 				SDKROOT = macosx;
@@ -450,14 +474,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 4001;
+				CURRENT_PROJECT_VERSION = 5000;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.4.1;
+				MARKETING_VERSION = 0.5.0;
 				OTHER_LDFLAGS = "$(inherited) -weak_framework FoundationModels";
 				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
 				SDKROOT = macosx;

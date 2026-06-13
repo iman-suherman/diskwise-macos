@@ -513,11 +513,21 @@ public final class FileScanner: @unchecked Sendable {
 
 public final class ScanEngine: @unchecked Sendable {
     private let scanner: FileScanner
+    private let pythonRunner: PythonScanRunner?
     private let database: DiskWiseDatabase
 
-    public init(database: DiskWiseDatabase, scanner: FileScanner = FileScanner()) {
+    public init(
+        database: DiskWiseDatabase,
+        scanner: FileScanner = FileScanner(),
+        pythonScannerScript: URL? = nil
+    ) {
         self.database = database
         self.scanner = scanner
+        if let pythonScannerScript {
+            self.pythonRunner = PythonScanRunner(scriptURL: pythonScannerScript)
+        } else {
+            self.pythonRunner = nil
+        }
     }
 
     public func scanVolume(
@@ -526,6 +536,8 @@ public final class ScanEngine: @unchecked Sendable {
         scanRoot: URL? = nil,
         mode: ScanMode = .fast,
         onProgress: (@Sendable (ScanProgress) -> Void)? = nil,
+        onLogLine: (@Sendable (String) -> Void)? = nil,
+        onScanSessionStarted: (@Sendable (PythonScanSession) -> Void)? = nil,
         isCancelled: (@Sendable () -> Bool)? = nil
     ) throws -> ScanSummary {
         let start = Date()
@@ -559,13 +571,28 @@ public final class ScanEngine: @unchecked Sendable {
             throw DiskWiseDatabaseError.diskNotFound
         }
 
-        var scannedFiles = try scanner.scan(
-            mountPath: root,
-            mode: mode,
-            tieredVolumeScan: tieredVolumeScan,
-            onProgress: onProgress,
-            isCancelled: isCancelled
-        )
+        var scannedFiles: [ScannedFile]
+        if let pythonRunner {
+            let session = try pythonRunner.makeSession()
+            onScanSessionStarted?(session)
+            scannedFiles = try pythonRunner.scan(
+                mountPath: root,
+                mode: mode,
+                tieredVolumeScan: tieredVolumeScan,
+                session: session,
+                onProgress: onProgress,
+                onLogLine: onLogLine,
+                isCancelled: isCancelled
+            )
+        } else {
+            scannedFiles = try scanner.scan(
+                mountPath: root,
+                mode: mode,
+                tieredVolumeScan: tieredVolumeScan,
+                onProgress: onProgress,
+                isCancelled: isCancelled
+            )
+        }
 
         if isCancelled?() == true {
             throw FileScannerError.cancelled
@@ -645,5 +672,9 @@ public final class ScanEngine: @unchecked Sendable {
             duration: Date().timeIntervalSince(start),
             mode: mode
         )
+    }
+
+    public func cancelActiveScan() {
+        pythonRunner?.cancelRunningScan()
     }
 }

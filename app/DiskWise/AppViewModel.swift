@@ -189,7 +189,6 @@ final class AppViewModel: ObservableObject {
     private var aiEngine: AIAnalysisEngine!
     private var aiConsultant: AIConsultantService!
     private let fullDiskAccessPromptKey = "diskwise.hasSeenFullDiskAccessPrompt"
-    private var didRunPostUpgradeUpdateCheck = false
 
     var isPostUpgradeStartup: Bool {
         appSettings.shouldShowWhatsNew
@@ -203,13 +202,9 @@ final class AppViewModel: ObservableObject {
         guard !showFullDiskAccessPrompt, !showIndexRebuildPrompt else { return }
 
         if appSettings.shouldShowWhatsNew {
-            SparkleUpdaterController.shared.checkForUpdatesBeforeWhatsNew { [weak self] in
-                guard let self else { return }
-                self.didRunPostUpgradeUpdateCheck = true
-                self.presentWhatsNewIfNeeded()
-                if !self.isBlockingLaunchFlow {
-                    self.schedulePostLaunchWork(skipUpdateCheck: true)
-                }
+            presentWhatsNewIfNeeded()
+            if !isBlockingLaunchFlow {
+                schedulePostLaunchWork()
             }
         } else if !isBlockingLaunchFlow {
             presentSavedScanPromptIfNeeded()
@@ -217,23 +212,16 @@ final class AppViewModel: ObservableObject {
         }
     }
 
-    func scheduleLaunchUpdateCheckIfReady() {
+    /// Runs at most once per day while the main window is open and the app is in the foreground.
+    func checkForUpdatesWhenEligible() {
         guard !isBlockingLaunchFlow else { return }
-        guard !didRunPostUpgradeUpdateCheck else { return }
-        SparkleUpdaterController.shared.checkForUpdatesOnLaunchIfNeeded()
+        SparkleUpdaterController.shared.checkForUpdatesInForegroundIfNeeded()
     }
 
     /// Deferred work after startup overlays (What's New, FDA) so the main UI stays responsive.
-    func schedulePostLaunchWork(skipUpdateCheck: Bool = false) {
+    func schedulePostLaunchWork() {
         guard !isBlockingLaunchFlow else { return }
         refreshAnalysisReportInBackground()
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(400))
-            guard !isBlockingLaunchFlow else { return }
-            if !skipUpdateCheck {
-                scheduleLaunchUpdateCheckIfReady()
-            }
-        }
     }
 
     init() {
@@ -285,7 +273,8 @@ final class AppViewModel: ObservableObject {
         }
 
         database = openedDatabase
-        scanEngine = ScanEngine(database: openedDatabase)
+        let pythonScriptURL = PythonScanRunner.bundledScriptURL()
+        scanEngine = ScanEngine(database: openedDatabase, pythonScannerScript: pythonScriptURL)
         duplicateEngine = DuplicateEngine(database: openedDatabase)
         aiConsultant = AIConsultantService(configuration: appSettings.aiProviderConfiguration)
         aiEngine = AIAnalysisEngine(database: openedDatabase, consultant: aiConsultant)
@@ -1070,6 +1059,7 @@ final class AppViewModel: ObservableObject {
 
     func cancelScan() {
         scanTask?.cancel()
+        scanEngine?.cancelActiveScan()
         storageAnalysisTask?.cancel()
         cancelDuplicateDetection()
         isScanning = false
@@ -1078,6 +1068,7 @@ final class AppViewModel: ObservableObject {
         scanProgress = nil
         scanStartTime = nil
         ScanActivityMonitor.shared.endScan()
+        ScanLogMonitor.shared.endSession()
         setStatus("Scan cancelled", kind: .ready)
     }
 
@@ -1272,6 +1263,7 @@ final class AppViewModel: ObservableObject {
             detail: "\(appSettings.scanMode.title) · \(isFolderScan ? "\(scanLabel) on \(volume.name)" : volume.name)"
         )
         ScanActivityMonitor.shared.beginScan(volumeName: scanLabel)
+        ScanLogMonitor.shared.reset()
 
         let scanMode = appSettings.scanMode
         guard let scanEngine = self.scanEngine else { return }
@@ -1300,6 +1292,16 @@ final class AppViewModel: ObservableObject {
                                 "Phase 1 of 3 · \(progress.operation.label) · \(progress.scannedCount.formatted()) files · \(self.scanProgressPercentLabel)",
                                 kind: .working
                             )
+                        }
+                    },
+                    onLogLine: { line in
+                        Task { @MainActor in
+                            ScanLogMonitor.shared.append(line)
+                        }
+                    },
+                    onScanSessionStarted: { session in
+                        Task { @MainActor in
+                            ScanLogMonitor.shared.beginSession(session)
                         }
                     },
                     isCancelled: {
@@ -1338,6 +1340,7 @@ final class AppViewModel: ObservableObject {
                     self.scanProgress = nil
                     self.scanStartTime = nil
                     ScanActivityMonitor.shared.endScan()
+                    ScanLogMonitor.shared.endSession()
                 }
             }
         }
@@ -1357,6 +1360,7 @@ final class AppViewModel: ObservableObject {
     ) {
         isScanning = false
         ScanActivityMonitor.shared.endScan()
+        ScanLogMonitor.shared.endSession()
         scanPhase = .analyzing
         scanProgress = nil
         selectedDiskID = summary.diskID
