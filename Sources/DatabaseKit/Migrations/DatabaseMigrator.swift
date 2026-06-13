@@ -76,6 +76,22 @@ enum DiskWiseMigrator {
             }
         }
 
+        migrator.registerMigration("v2_folder_scan_cache") { db in
+            try db.create(table: "folder_scan_cache") { table in
+                table.autoIncrementedPrimaryKey("id")
+                table.column("disk_id", .integer)
+                    .notNull()
+                    .indexed()
+                    .references("disks", onDelete: .cascade)
+                table.column("path", .text).notNull()
+                table.column("content_modified_at", .datetime).notNull()
+                table.column("scanned_at", .datetime).notNull()
+                table.column("file_count", .integer).notNull()
+                table.column("indexed_bytes", .integer).notNull()
+                table.uniqueKey(["disk_id", "path"])
+            }
+        }
+
         return migrator
     }
 }

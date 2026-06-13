@@ -28,6 +28,7 @@ public final class FileScanner: @unchecked Sendable {
         mountPath: URL,
         mode: ScanMode = .fast,
         tieredVolumeScan: Bool = false,
+        incrementalContext: IncrementalScanContext? = nil,
         onProgress: (@Sendable (ScanProgress) -> Void)? = nil,
         isCancelled: (@Sendable () -> Bool)? = nil
     ) throws -> [ScannedFile] {
@@ -35,26 +36,55 @@ public final class FileScanner: @unchecked Sendable {
             throw FileScannerError.mountPathUnavailable(mountPath.path)
         }
 
+        if IncrementalScanSupport.shouldReuseCachedFolder(
+            at: mountPath,
+            context: incrementalContext,
+            fileManager: fileManager
+        ), let incrementalContext {
+            let cached = IncrementalScanSupport.cachedFiles(at: mountPath, context: incrementalContext)
+            if !cached.isEmpty {
+                reportProgress(
+                    scannedCount: cached.count,
+                    currentPath: mountPath.path,
+                    indexedBytes: cached.reduce(0) { $0 + $1.size },
+                    operation: .enumeratingFiles,
+                    detail: "Reused cached index for unchanged folder",
+                    force: true,
+                    onProgress: onProgress
+                )
+                return cached
+            }
+        }
+
         if tieredVolumeScan && mode == .fast {
             return try scanTieredVolume(
                 mountPath: mountPath,
                 mode: mode,
+                incrementalContext: incrementalContext,
                 onProgress: onProgress,
                 isCancelled: isCancelled
             )
         }
 
-        return try scanEnumerated(
+        let results = try scanEnumerated(
             mountPath: mountPath,
             mode: mode,
             onProgress: onProgress,
             isCancelled: isCancelled
         )
+        IncrementalScanSupport.recordFolderCompletion(
+            at: mountPath,
+            results: results,
+            context: incrementalContext,
+            fileManager: fileManager
+        )
+        return results
     }
 
     private func scanTieredVolume(
         mountPath: URL,
         mode: ScanMode,
+        incrementalContext: IncrementalScanContext?,
         onProgress: (@Sendable (ScanProgress) -> Void)?,
         isCancelled: (@Sendable () -> Bool)?
     ) throws -> [ScannedFile] {
@@ -117,6 +147,7 @@ public final class FileScanner: @unchecked Sendable {
             let summarizeResults = try summarizeTopLevelDirectories(
                 names: summarizeNames,
                 under: mountPath,
+                incrementalContext: incrementalContext,
                 aggregator: aggregator,
                 isCancelled: isCancelled
             )
@@ -129,6 +160,7 @@ public final class FileScanner: @unchecked Sendable {
             let drillResults = try scanDirectoriesSequentially(
                 directories: drillDirectories,
                 mode: mode,
+                incrementalContext: incrementalContext,
                 aggregator: aggregator,
                 isCancelled: isCancelled
             )
@@ -143,12 +175,20 @@ public final class FileScanner: @unchecked Sendable {
             detail: "Finished mapping \(total.formatted()) folders"
         )
 
+        IncrementalScanSupport.recordFolderCompletion(
+            at: mountPath,
+            results: results,
+            context: incrementalContext,
+            fileManager: fileManager
+        )
+
         return results
     }
 
     private func scanDirectoriesSequentially(
         directories: [URL],
         mode: ScanMode,
+        incrementalContext: IncrementalScanContext?,
         aggregator: ScanProgressAggregator,
         isCancelled: (@Sendable () -> Bool)?
     ) throws -> [ScannedFile] {
@@ -163,6 +203,28 @@ public final class FileScanner: @unchecked Sendable {
                 for: directory.path,
                 relativeTo: aggregator.scanRootPathForDisplay
             )
+
+            if IncrementalScanSupport.shouldReuseCachedFolder(
+                at: directory,
+                context: incrementalContext,
+                fileManager: fileManager
+            ), let incrementalContext {
+                aggregator.willBegin(
+                    directory.path,
+                    operation: .enumeratingFiles,
+                    detail: "Reusing cached index for \(label)"
+                )
+                let batch = IncrementalScanSupport.cachedFiles(at: directory, context: incrementalContext)
+                combined.append(contentsOf: batch)
+                aggregator.didComplete(
+                    directory.path,
+                    results: batch,
+                    operation: .enumeratingFiles,
+                    detail: "Skipped unchanged \(label)"
+                )
+                continue
+            }
+
             aggregator.willBegin(
                 directory.path,
                 operation: .enumeratingFiles,
@@ -176,6 +238,12 @@ public final class FileScanner: @unchecked Sendable {
                 isCancelled: isCancelled
             )
             combined.append(contentsOf: batch)
+            IncrementalScanSupport.recordFolderCompletion(
+                at: directory,
+                results: batch,
+                context: incrementalContext,
+                fileManager: fileManager
+            )
             aggregator.didComplete(
                 directory.path,
                 results: batch,
@@ -196,6 +264,7 @@ public final class FileScanner: @unchecked Sendable {
     private func summarizeTopLevelDirectories(
         names: [String],
         under mountPath: URL,
+        incrementalContext: IncrementalScanContext?,
         aggregator: ScanProgressAggregator,
         isCancelled: (@Sendable () -> Bool)?
     ) throws -> SummarizeBatchResult {
@@ -205,6 +274,30 @@ public final class FileScanner: @unchecked Sendable {
 
         for name in names {
             let childURL = mountPath.appendingPathComponent(name, isDirectory: true)
+
+            if IncrementalScanSupport.shouldReuseCachedFolder(
+                at: childURL,
+                context: incrementalContext,
+                fileManager: fileManager
+            ), let incrementalContext {
+                aggregator.willBegin(
+                    childURL.path,
+                    operation: .sizingDirectory,
+                    detail: "Reusing cached index for \(name)"
+                )
+                let cached = IncrementalScanSupport.cachedFiles(at: childURL, context: incrementalContext)
+                entries.append(contentsOf: cached)
+                count += cached.count
+                bytes += cached.reduce(0) { $0 + $1.size }
+                aggregator.didComplete(
+                    childURL.path,
+                    results: cached,
+                    operation: .sizingDirectory,
+                    detail: "Skipped unchanged \(name)"
+                )
+                continue
+            }
+
             aggregator.willBegin(
                 childURL.path,
                 operation: .sizingDirectory,
@@ -231,6 +324,12 @@ public final class FileScanner: @unchecked Sendable {
             count += 1
             bytes += size
 
+            IncrementalScanSupport.recordFolderCompletion(
+                at: childURL,
+                results: [entry],
+                context: incrementalContext,
+                fileManager: fileManager
+            )
             aggregator.didComplete(
                 childURL.path,
                 results: [entry],
@@ -571,6 +670,8 @@ public final class ScanEngine: @unchecked Sendable {
             throw DiskWiseDatabaseError.diskNotFound
         }
 
+        let incrementalContext = IncrementalScanContext.make(database: database, diskID: diskID)
+
         var scannedFiles: [ScannedFile]
         if let pythonRunner {
             let session = try pythonRunner.makeSession()
@@ -589,6 +690,7 @@ public final class ScanEngine: @unchecked Sendable {
                 mountPath: root,
                 mode: mode,
                 tieredVolumeScan: tieredVolumeScan,
+                incrementalContext: incrementalContext,
                 onProgress: onProgress,
                 isCancelled: isCancelled
             )

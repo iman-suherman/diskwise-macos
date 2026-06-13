@@ -143,97 +143,46 @@ struct ScanProgressPanel: View {
 
 struct ScanVerboseLogPanel: View {
     @ObservedObject private var scanLogMonitor = ScanLogMonitor.shared
-    @State private var copiedField: CopiedField?
-
-    private enum CopiedField {
-        case path
-        case command
-    }
+    @State private var copiedCommand = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Label("Scanner log", systemImage: "terminal")
                 .font(.subheadline.weight(.semibold))
 
-            if let logFileURL = scanLogMonitor.logFileURL {
-                Text("Verbose output is written to a log file so the app stays responsive. Copy the path or tail command below and run it in Terminal.")
+            if let tailCommand = scanLogMonitor.tailCommand {
+                Text("Verbose output is written to a log file. Copy the tail command below and run it in Terminal to follow progress without slowing the app.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                scannerLogRow(
-                    title: "Log file",
-                    value: logFileURL.path,
-                    copied: copiedField == .path,
-                    copyAction: {
-                        scanLogMonitor.copyLogPath()
-                        copiedField = .path
-                    }
-                )
+                HStack(alignment: .top, spacing: 8) {
+                    Text(tailCommand)
+                        .font(.system(.caption, design: .monospaced))
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
-                if let tailCommand = scanLogMonitor.tailCommand {
-                    scannerLogRow(
-                        title: "Tail command",
-                        value: tailCommand,
-                        copied: copiedField == .command,
-                        copyAction: {
-                            scanLogMonitor.copyTailCommand()
-                            copiedField = .command
-                        }
-                    )
+                    Button(copiedCommand ? "Copied" : "Copy") {
+                        scanLogMonitor.copyTailCommand()
+                        copiedCommand = true
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
 
-                HStack(spacing: 16) {
-                    Button("Open in Terminal") {
-                        scanLogMonitor.openInTerminal()
-                    }
-                    .buttonStyle(.link)
-
-                    Button("Reveal in Finder") {
-                        scanLogMonitor.revealLogFile()
-                    }
-                    .buttonStyle(.link)
+                Button("Open in Terminal") {
+                    scanLogMonitor.openInTerminal()
                 }
+                .buttonStyle(.link)
             } else if scanLogMonitor.isActive {
                 Text("Preparing scanner log…")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                Text("When a scan starts, the log file path and tail command appear here.")
+                Text("When a Python scan starts, a tail command appears here for live log monitoring in Terminal.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-        }
-    }
-
-    @ViewBuilder
-    private func scannerLogRow(
-        title: String,
-        value: String,
-        copied: Bool,
-        copyAction: @escaping () -> Void
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            HStack(alignment: .top, spacing: 8) {
-                Text(value)
-                    .font(.system(.caption, design: .monospaced))
-                    .foregroundStyle(.primary)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                Button(copied ? "Copied" : "Copy") {
-                    copyAction()
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .disabled(copied)
-            }
-            .padding(10)
-            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
         }
     }
 }

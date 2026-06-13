@@ -163,6 +163,46 @@ public struct FileRecord: Codable, FetchableRecord, PersistableRecord, Identifia
     }
 }
 
+public struct FolderScanCacheRecord: Codable, FetchableRecord, PersistableRecord, Identifiable, Sendable {
+    public static let databaseTableName = "folder_scan_cache"
+
+    public enum CodingKeys: String, CodingKey, ColumnExpression {
+        case id
+        case diskID = "disk_id"
+        case path
+        case contentModifiedAt = "content_modified_at"
+        case scannedAt = "scanned_at"
+        case fileCount = "file_count"
+        case indexedBytes = "indexed_bytes"
+    }
+
+    public var id: Int64?
+    public var diskID: Int64
+    public var path: String
+    public var contentModifiedAt: Date
+    public var scannedAt: Date
+    public var fileCount: Int
+    public var indexedBytes: Int64
+
+    public init(
+        id: Int64? = nil,
+        diskID: Int64,
+        path: String,
+        contentModifiedAt: Date,
+        scannedAt: Date,
+        fileCount: Int,
+        indexedBytes: Int64
+    ) {
+        self.id = id
+        self.diskID = diskID
+        self.path = path
+        self.contentModifiedAt = contentModifiedAt
+        self.scannedAt = scannedAt
+        self.fileCount = fileCount
+        self.indexedBytes = indexedBytes
+    }
+}
+
 public struct FileMetadataRecord: Codable, FetchableRecord, PersistableRecord, Identifiable, Sendable {
     public static let databaseTableName = "file_metadata"
 

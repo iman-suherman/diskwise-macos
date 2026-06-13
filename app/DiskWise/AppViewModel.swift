@@ -131,6 +131,9 @@ final class AppViewModel: ObservableObject {
     @Published var hasFullDiskAccess = false
     @Published var missingExternalVolumePaths: [String] = []
     @Published var selectedPane: DetailPane = .overview
+    @Published var selectedVolumeTab: VolumeDiskTab = .scanning
+    @Published var scanLogStatusLine: String?
+    @Published var scanJustCompleted = false
     @Published var aiQuestion = ""
     @Published var aiResponses: [AIChatMessage] = []
     @Published var aiProviderStatus: AIProviderStatus = .unavailable
@@ -185,10 +188,7 @@ final class AppViewModel: ObservableObject {
     private var aiChatTask: Task<Void, Never>?
     private var aiChatSessionID = UUID()
     private var scanStartTime: Date?
-    private var pendingScanProgress: ScanProgress?
-    private var scanProgressCoalesceTask: Task<Void, Never>?
     private var lastDuplicateGroupsRefreshCount = 0
-    private var lastInsightsRefreshCount = 0
     private var scanEngine: ScanEngine!
     private var duplicateEngine: DuplicateEngine!
     private let cleanupEngine = CleanupEngine()
@@ -719,6 +719,9 @@ final class AppViewModel: ObservableObject {
     }
 
     var scanProgressDetail: String? {
+        if let scanLogStatusLine, !scanLogStatusLine.isEmpty {
+            return scanLogStatusLine
+        }
         guard let progress = scanProgress else { return nil }
         var parts: [String] = [progress.operation.label]
         if let detail = progress.detail, !detail.isEmpty {
@@ -821,54 +824,14 @@ final class AppViewModel: ObservableObject {
         categoryDetailFiles = []
     }
 
-    private func maybeRefreshInsightsDuringScan(_ progress: ScanProgress) {
-        guard isScanning, scanPhase == .identifying else { return }
-        guard progress.scannedCount - lastInsightsRefreshCount >= 5_000 else { return }
-
-        lastInsightsRefreshCount = progress.scannedCount
-
-        if selectedDiskID == nil {
-            disks = (try? database.allDisks()) ?? []
-            selectedDiskID = disks.first(where: { $0.mountPath == selectedVolumePath })?.id
-        }
-        guard let diskID = selectedDiskID else { return }
-
-        let threshold = Calendar.current.date(byAdding: .year, value: -2, to: Date())!
-        overview = try? database.storageOverview(forDiskID: diskID, oldFileThreshold: threshold)
+    func openResultsTab() {
+        scanJustCompleted = false
+        selectedVolumeTab = .results
+        selectedPane = .overview
     }
 
-    @MainActor
-    private func deliverScanProgress(_ progress: ScanProgress) {
-        pendingScanProgress = progress
-
-        let shouldFlushNow = scanProgress == nil
-            || progress.operation != scanProgress?.operation
-            || progress.directoriesProcessed != scanProgress?.directoriesProcessed
-            || progress.detail != scanProgress?.detail
-
-        if shouldFlushNow {
-            flushScanProgress()
-            return
-        }
-
-        guard scanProgressCoalesceTask == nil else { return }
-        scanProgressCoalesceTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .milliseconds(300))
-            guard let self else { return }
-            self.flushScanProgress()
-            self.scanProgressCoalesceTask = nil
-        }
-    }
-
-    @MainActor
-    private func flushScanProgress() {
-        scanProgressCoalesceTask?.cancel()
-        scanProgressCoalesceTask = nil
-        guard let progress = pendingScanProgress else { return }
-        pendingScanProgress = nil
-
+    func applyPolledScanProgress(_ progress: ScanProgress) {
         scanProgress = progress
-        maybeRefreshInsightsDuringScan(progress)
         ScanActivityMonitor.shared.update(
             progressFraction: scanProgressFraction,
             progressPercentLabel: scanProgressPercentLabel,
@@ -876,7 +839,7 @@ final class AppViewModel: ObservableObject {
             operationLabel: progress.operation.label
         )
         if isRebuildingIndex {
-            indexRebuildMessage = "Identifying disk usage · \(progress.scannedCount.formatted()) files…"
+            indexRebuildMessage = "Identifying disk usage · \(progress.scannedCount.formatted()) files · \(scanProgressPercentLabel)"
         }
         setStatus(
             "Phase 1 of 3 · \(progress.operation.label) · \(progress.scannedCount.formatted()) files · \(scanProgressPercentLabel)",
@@ -884,11 +847,17 @@ final class AppViewModel: ObservableObject {
         )
     }
 
-    @MainActor
-    private func resetScanProgressCoalescing() {
-        scanProgressCoalesceTask?.cancel()
-        scanProgressCoalesceTask = nil
-        pendingScanProgress = nil
+    func applyPolledLogStatus(_ line: String) {
+        scanLogStatusLine = line
+    }
+
+    private func startScanProgressPolling() {
+        ScanProgressPoller.shared.startPolling(viewModel: self)
+    }
+
+    private func stopScanProgressPolling() {
+        ScanProgressPoller.shared.stopPolling()
+        scanLogStatusLine = nil
     }
 
     func reload() {
@@ -1246,12 +1215,14 @@ final class AppViewModel: ObservableObject {
         scanEngine?.cancelActiveScan()
         storageAnalysisTask?.cancel()
         cancelDuplicateDetection()
-        resetScanProgressCoalescing()
+        stopScanProgressPolling()
+        ScanProgressSnapshot.shared.reset()
         isScanning = false
         isAnalyzing = false
         scanPhase = .idle
         scanProgress = nil
         scanStartTime = nil
+        scanJustCompleted = false
         ScanActivityMonitor.shared.endScan()
         ScanLogMonitor.shared.endSession()
         setStatus("Scan cancelled", kind: .ready)
@@ -1425,10 +1396,11 @@ final class AppViewModel: ObservableObject {
         scanTask?.cancel()
         cancelDuplicateDetection()
         selectedPane = .overview
+        selectedVolumeTab = .scanning
+        scanJustCompleted = false
         isScanning = true
         scanPhase = .identifying
         scanStartTime = Date()
-        lastInsightsRefreshCount = 0
         lastDuplicateGroupsRefreshCount = 0
         clearStorageCategorySelection()
 
@@ -1455,6 +1427,11 @@ final class AppViewModel: ObservableObject {
         )
         ScanActivityMonitor.shared.beginScan(volumeName: scanLabel)
         ScanLogMonitor.shared.reset()
+        ScanProgressSnapshot.shared.reset()
+        if !usesPythonScanner, let progressURL = try? Self.makeProgressStatusURL() {
+            ScanProgressSnapshot.shared.bindStatusFile(progressURL)
+        }
+        startScanProgressPolling()
 
         let scanMode = appSettings.scanMode
         guard let scanEngine = self.scanEngine else { return }
@@ -1467,11 +1444,11 @@ final class AppViewModel: ObservableObject {
                     scanRoot: isFolderScan ? scanRoot : nil,
                     mode: scanMode,
                     onProgress: { progress in
-                        Task { @MainActor in
-                            self.deliverScanProgress(progress)
-                        }
+                        ScanProgressSnapshot.shared.update(progress)
                     },
                     onScanSessionStarted: { session in
+                        let statusURL = ScanProgressSnapshot.makeStatusFileURL(near: session.logFileURL)
+                        ScanProgressSnapshot.shared.bindStatusFile(statusURL)
                         Task { @MainActor in
                             ScanLogMonitor.shared.beginSession(session)
                         }
@@ -1515,9 +1492,10 @@ final class AppViewModel: ObservableObject {
                     }
                     self.isScanning = false
                     self.scanPhase = .idle
-                    self.resetScanProgressCoalescing()
+                    self.stopScanProgressPolling()
                     self.scanProgress = nil
                     self.scanStartTime = nil
+                    ScanProgressSnapshot.shared.reset()
                     ScanActivityMonitor.shared.endScan()
                     ScanLogMonitor.shared.endSession()
                 }
@@ -1538,11 +1516,14 @@ final class AppViewModel: ObservableObject {
         volumeMountPath: String
     ) {
         isScanning = false
+        stopScanProgressPolling()
         ScanActivityMonitor.shared.endScan()
         ScanLogMonitor.shared.endSession()
-        resetScanProgressCoalescing()
+        ScanProgressSnapshot.shared.reset()
         scanPhase = .analyzing
         scanProgress = nil
+        scanJustCompleted = true
+        selectedVolumeTab = .scanning
         selectedDiskID = summary.diskID
         selectedVolumePath = volumeMountPath
         reload()
@@ -1580,7 +1561,7 @@ final class AppViewModel: ObservableObject {
                     self.scanPhase = .idle
                     self.scanStartTime = nil
                     self.refreshInsights()
-                    self.selectedPane = .overview
+                    self.openResultsTab()
                     self.logActivity(.recommendation, "Action plan ready", detail: volumeName)
                     let statusMessage = "Phase 3 of 3 · Action plan ready for \(volumeName)"
                     if self.isRebuildingIndex {
@@ -2228,6 +2209,11 @@ final class AppViewModel: ObservableObject {
 
     var optimizationTasks: [OptimizationTask] {
         maintenanceEngine.optimizationTasks()
+    }
+
+    private static func makeProgressStatusURL() throws -> URL {
+        let logURL = try PythonScanRunner.makeLogFileURL()
+        return ScanProgressSnapshot.makeStatusFileURL(near: logURL)
     }
 
     private static func isPythonNotFoundError(_ error: Error) -> Bool {

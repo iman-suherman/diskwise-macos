@@ -138,27 +138,39 @@ struct ContentView: View {
                     .toolbar {
                         ToolbarItem(placement: .principal) {
                             Picker("View", selection: $viewModel.selectedPane) {
-                                ForEach(DetailPane.allCases) { pane in
-                                    Label {
-                                        HStack(spacing: 6) {
-                                            Text(pane.title)
-                                            if pane == .duplicates, viewModel.duplicateGroups.count > 0 {
-                                                Text("\(viewModel.duplicateGroups.count)")
-                                                    .font(.caption2.weight(.bold))
-                                                    .padding(.horizontal, 6)
-                                                    .padding(.vertical, 2)
-                                                    .background(Color.orange.opacity(0.9), in: Capsule())
-                                                    .foregroundStyle(.white)
-                                            }
-                                        }
-                                    } icon: {
-                                        Image(systemName: pane.icon)
-                                    }
-                                    .tag(pane)
+                                Label {
+                                    Text("Disk")
+                                } icon: {
+                                    Image(systemName: "internaldrive")
                                 }
+                                .tag(DetailPane.overview)
+
+                                Label {
+                                    Text(DetailPane.maintenance.title)
+                                } icon: {
+                                    Image(systemName: DetailPane.maintenance.icon)
+                                }
+                                .tag(DetailPane.maintenance)
+
+                                Label {
+                                    HStack(spacing: 6) {
+                                        Text(DetailPane.duplicates.title)
+                                        if viewModel.duplicateGroups.count > 0 {
+                                            Text("\(viewModel.duplicateGroups.count)")
+                                                .font(.caption2.weight(.bold))
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 2)
+                                                .background(Color.orange.opacity(0.9), in: Capsule())
+                                                .foregroundStyle(.white)
+                                        }
+                                    }
+                                } icon: {
+                                    Image(systemName: DetailPane.duplicates.icon)
+                                }
+                                .tag(DetailPane.duplicates)
                             }
                             .pickerStyle(.segmented)
-                            .frame(maxWidth: 520)
+                            .frame(maxWidth: 420)
                         }
 
                         ToolbarItem(placement: .status) {
@@ -296,13 +308,14 @@ struct ContentView: View {
     private var detailContent: some View {
         switch viewModel.selectedPane {
         case .overview:
-            DashboardView()
+            VolumeDiskTabView()
         case .maintenance:
             MaintenanceView()
         case .duplicates:
             DuplicatesView()
         case .ai:
-            AskDiskWiseView()
+            VolumeDiskTabView()
+                .onAppear { viewModel.selectedVolumeTab = .aiAnalysis }
         }
     }
 

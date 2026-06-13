@@ -123,6 +123,51 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         }
     }
 
+    public func folderScanCache(forDiskID diskID: Int64, path: String) throws -> FolderScanCacheRecord? {
+        let normalized = Self.normalizedFolderPath(path)
+        return try dbQueue.read { db in
+            try FolderScanCacheRecord.fetchOne(
+                db,
+                sql: "SELECT * FROM folder_scan_cache WHERE disk_id = ? AND path = ?",
+                arguments: [diskID, normalized]
+            )
+        }
+    }
+
+    public func upsertFolderScanCache(_ record: FolderScanCacheRecord) throws {
+        let normalized = FolderScanCacheRecord(
+            id: record.id,
+            diskID: record.diskID,
+            path: Self.normalizedFolderPath(record.path),
+            contentModifiedAt: record.contentModifiedAt,
+            scannedAt: record.scannedAt,
+            fileCount: record.fileCount,
+            indexedBytes: record.indexedBytes
+        )
+        try dbQueue.write { db in
+            try normalized.insert(db, onConflict: .replace)
+        }
+    }
+
+    public func files(forDiskID diskID: Int64, underPath pathPrefix: String) throws -> [FileRecord] {
+        let normalized = Self.normalizedFolderPath(pathPrefix)
+        return try dbQueue.read { db in
+            try FileRecord.fetchAll(
+                db,
+                sql: """
+                SELECT * FROM files
+                WHERE disk_id = ? AND (path = ? OR path LIKE ?)
+                ORDER BY path ASC
+                """,
+                arguments: [diskID, normalized, normalized + "/%"]
+            )
+        }
+    }
+
+    private static func normalizedFolderPath(_ path: String) -> String {
+        path.hasSuffix("/") ? String(path.dropLast()) : path
+    }
+
     /// Clears indexed files, duplicate groups, and recommendations for a disk.
     public func clearStorageIndex(forDiskID diskID: Int64) throws {
         try dbQueue.write { db in
@@ -139,6 +184,7 @@ public final class DiskWiseDatabase: @unchecked Sendable {
                 arguments: [diskID]
             )
             try db.execute(sql: "DELETE FROM files WHERE disk_id = ?", arguments: [diskID])
+            try db.execute(sql: "DELETE FROM folder_scan_cache WHERE disk_id = ?", arguments: [diskID])
             try db.execute(sql: "DELETE FROM recommendations")
         }
     }
@@ -149,6 +195,7 @@ public final class DiskWiseDatabase: @unchecked Sendable {
             try db.execute(sql: "DELETE FROM duplicate_members")
             try db.execute(sql: "DELETE FROM duplicate_groups")
             try db.execute(sql: "DELETE FROM files")
+            try db.execute(sql: "DELETE FROM folder_scan_cache")
             try db.execute(sql: "DELETE FROM recommendations")
         }
     }

@@ -11,6 +11,7 @@
 		12181882218C57B9CAC4A122 /* DatabaseKit in Frameworks */ = {isa = PBXBuildFile; productRef = 603D826F44FE9A518C0D3BDD /* DatabaseKit */; };
 		12B3019096123619E84C856A /* ScanActivityMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 894ADEF97DF74C5A2CC2FB56 /* ScanActivityMonitor.swift */; };
 		158813C796EA13AB146C66FC /* PythonSetupPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F503999EF5B8D256503AAB /* PythonSetupPrompt.swift */; };
+		1F51D2B07CD65407C66DC665 /* ScanProgressPoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 831704D62E5020E6E4F2219B /* ScanProgressPoller.swift */; };
 		2791E28A3F889BE0CA5591A3 /* DiskWiseApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955E6302377D998824A2996E /* DiskWiseApp.swift */; };
 		2A5FFCD2AAE4999E1A451013 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = CA8CA1FCB359C47B036826D8 /* Sparkle */; };
 		2E51EA5FD30ECF1DA75CE384 /* SparkleUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F95E82B6008C61D7A885B07 /* SparkleUpdater.swift */; };
@@ -38,6 +39,7 @@
 		DAB86108A2724D50A153E610 /* SavedScanPromptOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6C028E81B0947C7D6A69EE9 /* SavedScanPromptOverlay.swift */; };
 		DB063CAC7875E4DDC2FE2A9D /* MenuBarMonitorController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 971832F0D34371AD6D227919 /* MenuBarMonitorController.swift */; };
 		DD2F2233CFB17ABB37688ACD /* RecommendationReviewSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D515CF1494436D3A33BC32C /* RecommendationReviewSheet.swift */; };
+		E1A2ACAD991ED07FA794BD6A /* VolumeDiskTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4BCD4E96BC002C2E47A8E33 /* VolumeDiskTabView.swift */; };
 		E1C624A7270A0BE8EA9B8147 /* IndexRebuildOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82F3A2475D36769351F8CBC /* IndexRebuildOverlay.swift */; };
 		E559D2BF705EE1AB7F9CA4EA /* entitlements.mac.plist in Resources */ = {isa = PBXBuildFile; fileRef = 15BE9BA6642050B89F9552F0 /* entitlements.mac.plist */; };
 		E8EBB3946721C85434EA08EB /* MaintenanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39A19DABD6BC39CB4E077008 /* MaintenanceView.swift */; };
@@ -66,6 +68,7 @@
 		7606C2E2E0391264171C1F55 /* MainScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainScreens.swift; sourceTree = "<group>"; };
 		7F81B798B01741C082A6B559 /* diskwise-macos */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "diskwise-macos"; path = ..; sourceTree = SOURCE_ROOT; };
 		7F95E82B6008C61D7A885B07 /* SparkleUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleUpdater.swift; sourceTree = "<group>"; };
+		831704D62E5020E6E4F2219B /* ScanProgressPoller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanProgressPoller.swift; sourceTree = "<group>"; };
 		894ADEF97DF74C5A2CC2FB56 /* ScanActivityMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanActivityMonitor.swift; sourceTree = "<group>"; };
 		8D515CF1494436D3A33BC32C /* RecommendationReviewSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendationReviewSheet.swift; sourceTree = "<group>"; };
 		8DE0414EB1623E719F460CAE /* MenuBarHealthScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarHealthScore.swift; sourceTree = "<group>"; };
@@ -82,6 +85,7 @@
 		C27E95DFD0F9841389B35E2F /* diskwise_scan.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = diskwise_scan.py; sourceTree = "<group>"; };
 		CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarExtensionPrompt.swift; sourceTree = "<group>"; };
 		D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessPrompt.swift; sourceTree = "<group>"; };
+		D4BCD4E96BC002C2E47A8E33 /* VolumeDiskTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeDiskTabView.swift; sourceTree = "<group>"; };
 		D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageBreakdownView.swift; sourceTree = "<group>"; };
 		DCF61B84FF67A42557A15C53 /* DockVisibilityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockVisibilityController.swift; sourceTree = "<group>"; };
 		DD1DBFAFBE898F19B3B507D5 /* SystemHealthMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemHealthMonitor.swift; sourceTree = "<group>"; };
@@ -116,6 +120,7 @@
 				971832F0D34371AD6D227919 /* MenuBarMonitorController.swift */,
 				894ADEF97DF74C5A2CC2FB56 /* ScanActivityMonitor.swift */,
 				17073AD7FF404926E1B8C231 /* ScanLogMonitor.swift */,
+				831704D62E5020E6E4F2219B /* ScanProgressPoller.swift */,
 				DD1DBFAFBE898F19B3B507D5 /* SystemHealthMonitor.swift */,
 			);
 			path = Services;
@@ -174,6 +179,7 @@
 				9632663F581782670036F59C /* StartupSplashView.swift */,
 				2BF737B0AA3066062F3881A4 /* StatusBadge.swift */,
 				D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */,
+				D4BCD4E96BC002C2E47A8E33 /* VolumeDiskTabView.swift */,
 				F9360EC36C59D568DEE4B034 /* WhatsNewTourView.swift */,
 			);
 			path = Components;
@@ -323,11 +329,13 @@
 				DAB86108A2724D50A153E610 /* SavedScanPromptOverlay.swift in Sources */,
 				12B3019096123619E84C856A /* ScanActivityMonitor.swift in Sources */,
 				BC7B15D5B937D14ECD2DC88E /* ScanLogMonitor.swift in Sources */,
+				1F51D2B07CD65407C66DC665 /* ScanProgressPoller.swift in Sources */,
 				2E51EA5FD30ECF1DA75CE384 /* SparkleUpdater.swift in Sources */,
 				FAB2B6356F46985804A0B25C /* StartupSplashView.swift in Sources */,
 				C61435492234EF4EFEB45B5C /* StatusBadge.swift in Sources */,
 				9163047ADC6314366674E59B /* StorageBreakdownView.swift in Sources */,
 				8EA88D4A455BB6985DBB72A9 /* SystemHealthMonitor.swift in Sources */,
+				E1A2ACAD991ED07FA794BD6A /* VolumeDiskTabView.swift in Sources */,
 				2E9B3F7F506A3D4BE5D8085A /* WhatsNewTourView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
