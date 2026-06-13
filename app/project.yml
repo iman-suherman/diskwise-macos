@@ -26,8 +26,8 @@ targets:
         INFOPLIST_FILE: DiskWiseMenuBar/Info.plist
         LSUIElement: true
         CODE_SIGN_STYLE: Automatic
-        CURRENT_PROJECT_VERSION: 3005
-        MARKETING_VERSION: 0.3.5
+        CURRENT_PROJECT_VERSION: 3006
+        MARKETING_VERSION: 0.3.6
         ENABLE_HARDENED_RUNTIME: YES
     dependencies:
       - package: DiskWisePackages
@@ -50,8 +50,8 @@ targets:
         INFOPLIST_FILE: DiskWise/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
-        CURRENT_PROJECT_VERSION: 3005
-        MARKETING_VERSION: 0.3.5
+        CURRENT_PROJECT_VERSION: 3006
+        MARKETING_VERSION: 0.3.6
         ENABLE_HARDENED_RUNTIME: YES
         SPARKLE_PUBLIC_ED_KEY: B6P7+AkeawAfMFk4f5j3+0diuQWorDuCYNrVX0vJeV0=
         OTHER_LDFLAGS: $(inherited) -weak_framework FoundationModels
