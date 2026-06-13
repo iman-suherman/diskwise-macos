@@ -24,7 +24,7 @@ struct MenuBarMonitorInstructionSheet: View {
                 instructionRow(
                     number: 1,
                     title: "Look for the icon",
-                    detail: "The percentage and bar show free space. Red means less than twice your Mac’s memory is available."
+                    detail: "The percentage is color-coded by how much space is left. Red means less than twice your Mac’s memory is available."
                 )
                 instructionRow(
                     number: 2,

@@ -14,7 +14,7 @@ enum MenuBarMonitorController {
     }
 
     static var menuBarMonitorStatusDescription: String {
-        "Shows remaining disk space with a color-coded bar while DiskWise is running."
+        "Shows remaining disk space as a color-coded percentage while DiskWise is running."
     }
 
     static var launchAtLoginStatusDescription: String {
