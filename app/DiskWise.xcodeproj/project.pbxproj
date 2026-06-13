@@ -13,12 +13,16 @@
 		2E51EA5FD30ECF1DA75CE384 /* SparkleUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F95E82B6008C61D7A885B07 /* SparkleUpdater.swift */; };
 		2E9B3F7F506A3D4BE5D8085A /* WhatsNewTourView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9360EC36C59D568DEE4B034 /* WhatsNewTourView.swift */; };
 		36DBFBCADADF9C0C5B4BA080 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41738F52625CC6311842BB5E /* AppViewModel.swift */; };
+		3E0E15245593CC37002474C6 /* DiskScannerKit in Frameworks */ = {isa = PBXBuildFile; productRef = F334EFE1012F1F1C8BAE8ADB /* DiskScannerKit */; };
+		43A372610B10A29017118C01 /* DiskWiseMenuBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40D6A26D8CEBD42C52E00CC7 /* DiskWiseMenuBarApp.swift */; };
 		4709F41AF9D9E5ED27E3018D /* AIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 268149F6EA534326414CF175 /* AIKit */; };
 		4C976DB4F4092E15A26DB267 /* MaintenanceKit in Frameworks */ = {isa = PBXBuildFile; productRef = 9FEE827C95850FDD3406ADA0 /* MaintenanceKit */; };
 		4EF9EF0F2E65F2CA9C42005F /* CleanupKit in Frameworks */ = {isa = PBXBuildFile; productRef = 873697E510808232A5864DDB /* CleanupKit */; };
 		6364632C8485413073CA9BB3 /* MainScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7606C2E2E0391264171C1F55 /* MainScreens.swift */; };
 		68EAF0F0D832F829DC54A2EC /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98EFAE1062F153FAFA7B0D8A /* AboutView.swift */; };
+		6F3C07A5A37D86C54653863E /* MenuBarExtensionInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DCC09AF3CB4203C66D77464 /* MenuBarExtensionInstaller.swift */; };
 		75E2033E8389AC2CF2A55666 /* ActivityLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57BB2C32DA1EC6AD699DBDBD /* ActivityLog.swift */; };
+		7C2D956353B8692B7E530DAC /* DiskWiseMenuBar.app in Embed Dependencies */ = {isa = PBXBuildFile; fileRef = D4FE44CF4963F124712BB933 /* DiskWiseMenuBar.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		896F6AD480A23BD1277843C2 /* AppSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAC0147A7FB6FEF4116785C /* AppSettingsView.swift */; };
 		9163047ADC6314366674E59B /* StorageBreakdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */; };
 		91E4D218C3A7026E8D8F22CA /* MetadataKit in Frameworks */ = {isa = PBXBuildFile; productRef = E118092959DEFDD022BB88EC /* MetadataKit */; };
@@ -36,17 +40,44 @@
 		F07314D38ACD7FE6E5B9D233 /* FullDiskAccessPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */; };
 		F4D258718C504E7A6365ADB6 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61EB1B1E7AD0267851557FD9 /* DashboardView.swift */; };
 		FAB2B6356F46985804A0B25C /* StartupSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9632663F581782670036F59C /* StartupSplashView.swift */; };
+		FC6623E26E2D1FA21EC83507 /* MenuBarExtensionPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		56EB60FE6146A6AA70BB76BD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9D0B6F27C1D11C4D3019F3DF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9F154DADCDEB9F6EE0190BFB;
+			remoteInfo = DiskWiseMenuBar;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A9B4778E7BB8DD536BD9BE70 /* Embed Dependencies */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Library/LoginItems;
+			dstSubfolderSpec = 1;
+			files = (
+				7C2D956353B8692B7E530DAC /* DiskWiseMenuBar.app in Embed Dependencies */,
+			);
+			name = "Embed Dependencies";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		15BE9BA6642050B89F9552F0 /* entitlements.mac.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = entitlements.mac.plist; sourceTree = "<group>"; };
 		2BF737B0AA3066062F3881A4 /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
 		39A19DABD6BC39CB4E077008 /* MaintenanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaintenanceView.swift; sourceTree = "<group>"; };
 		3EAC0147A7FB6FEF4116785C /* AppSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsView.swift; sourceTree = "<group>"; };
+		40D6A26D8CEBD42C52E00CC7 /* DiskWiseMenuBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskWiseMenuBarApp.swift; sourceTree = "<group>"; };
 		41738F52625CC6311842BB5E /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
 		57BB2C32DA1EC6AD699DBDBD /* ActivityLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityLog.swift; sourceTree = "<group>"; };
 		61EB1B1E7AD0267851557FD9 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		6930F12578EC666DA893730C /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		6DCC09AF3CB4203C66D77464 /* MenuBarExtensionInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarExtensionInstaller.swift; sourceTree = "<group>"; };
 		6F9652CCD6DFF89AC365DBCD /* ActivityLogSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityLogSheet.swift; sourceTree = "<group>"; };
 		7606C2E2E0391264171C1F55 /* MainScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainScreens.swift; sourceTree = "<group>"; };
 		7F81B798B01741C082A6B559 /* diskwise-macos */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "diskwise-macos"; path = ..; sourceTree = SOURCE_ROOT; };
@@ -59,10 +90,13 @@
 		A6C028E81B0947C7D6A69EE9 /* SavedScanPromptOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedScanPromptOverlay.swift; sourceTree = "<group>"; };
 		A82F3A2475D36769351F8CBC /* IndexRebuildOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexRebuildOverlay.swift; sourceTree = "<group>"; };
 		B21446A4062305538747C91B /* DiskWise.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DiskWise.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarExtensionPrompt.swift; sourceTree = "<group>"; };
 		D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessPrompt.swift; sourceTree = "<group>"; };
+		D4FE44CF4963F124712BB933 /* DiskWiseMenuBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DiskWiseMenuBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageBreakdownView.swift; sourceTree = "<group>"; };
 		F1FC1DF0971CB5B4441676DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F9360EC36C59D568DEE4B034 /* WhatsNewTourView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewTourView.swift; sourceTree = "<group>"; };
+		FAFF4A656E54502C54D0798A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,13 +115,31 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8E7378E8FCEF08DF7F2EBD53 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3E0E15245593CC37002474C6 /* DiskScannerKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		38BFC87A9D81486999816479 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				6DCC09AF3CB4203C66D77464 /* MenuBarExtensionInstaller.swift */,
+				CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
 		A69AF2FE980B6111B2115F4B /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				B21446A4062305538747C91B /* DiskWise.app */,
+				D4FE44CF4963F124712BB933 /* DiskWiseMenuBar.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -96,6 +148,7 @@
 			isa = PBXGroup;
 			children = (
 				ECFC4A48D6413A572E804BFB /* DiskWise */,
+				CED20FDC67457A05D727CC91 /* DiskWiseMenuBar */,
 				FD3041CF18E97593743F91FD /* Packages */,
 				A69AF2FE980B6111B2115F4B /* Products */,
 			);
@@ -121,6 +174,15 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
+		CED20FDC67457A05D727CC91 /* DiskWiseMenuBar */ = {
+			isa = PBXGroup;
+			children = (
+				40D6A26D8CEBD42C52E00CC7 /* DiskWiseMenuBarApp.swift */,
+				FAFF4A656E54502C54D0798A /* Info.plist */,
+			);
+			path = DiskWiseMenuBar;
+			sourceTree = "<group>";
+		};
 		ECFC4A48D6413A572E804BFB /* DiskWise */ = {
 			isa = PBXGroup;
 			children = (
@@ -134,6 +196,7 @@
 				7F95E82B6008C61D7A885B07 /* SparkleUpdater.swift */,
 				C9453DAD43B73221B0F7A838 /* Components */,
 				F4DA758B64652374311F9BD9 /* Screens */,
+				38BFC87A9D81486999816479 /* Services */,
 			);
 			path = DiskWise;
 			sourceTree = "<group>";
@@ -157,6 +220,25 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		9F154DADCDEB9F6EE0190BFB /* DiskWiseMenuBar */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9882B1C09A7CE296D4B53A13 /* Build configuration list for PBXNativeTarget "DiskWiseMenuBar" */;
+			buildPhases = (
+				274EF91AA1377FA92FBA95A9 /* Sources */,
+				8E7378E8FCEF08DF7F2EBD53 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DiskWiseMenuBar;
+			packageProductDependencies = (
+				F334EFE1012F1F1C8BAE8ADB /* DiskScannerKit */,
+			);
+			productName = DiskWiseMenuBar;
+			productReference = D4FE44CF4963F124712BB933 /* DiskWiseMenuBar.app */;
+			productType = "com.apple.product-type.application";
+		};
 		A4B3D9367F1A7D327EB7CE34 /* DiskWise */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 173D6AD5DEF7EF6F96D36FA9 /* Build configuration list for PBXNativeTarget "DiskWise" */;
@@ -164,10 +246,12 @@
 				6C5768CBE3E569CC501A7EF1 /* Sources */,
 				82AEB93B51E839E2C6A572C8 /* Resources */,
 				53BE0238EFCC3D54112D48FA /* Frameworks */,
+				A9B4778E7BB8DD536BD9BE70 /* Embed Dependencies */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				5F9EF469D826A97FFDB61741 /* PBXTargetDependency */,
 			);
 			name = DiskWise;
 			packageProductDependencies = (
@@ -193,6 +277,9 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					9F154DADCDEB9F6EE0190BFB = {
+						ProvisioningStyle = Automatic;
+					};
 					A4B3D9367F1A7D327EB7CE34 = {
 						ProvisioningStyle = Automatic;
 					};
@@ -217,6 +304,7 @@
 			projectRoot = "";
 			targets = (
 				A4B3D9367F1A7D327EB7CE34 /* DiskWise */,
+				9F154DADCDEB9F6EE0190BFB /* DiskWiseMenuBar */,
 			);
 		};
 /* End PBXProject section */
@@ -234,6 +322,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		274EF91AA1377FA92FBA95A9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				43A372610B10A29017118C01 /* DiskWiseMenuBarApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6C5768CBE3E569CC501A7EF1 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -250,6 +346,8 @@
 				E1C624A7270A0BE8EA9B8147 /* IndexRebuildOverlay.swift in Sources */,
 				6364632C8485413073CA9BB3 /* MainScreens.swift in Sources */,
 				E8EBB3946721C85434EA08EB /* MaintenanceView.swift in Sources */,
+				6F3C07A5A37D86C54653863E /* MenuBarExtensionInstaller.swift in Sources */,
+				FC6623E26E2D1FA21EC83507 /* MenuBarExtensionPrompt.swift in Sources */,
 				DD2F2233CFB17ABB37688ACD /* RecommendationReviewSheet.swift in Sources */,
 				DAB86108A2724D50A153E610 /* SavedScanPromptOverlay.swift in Sources */,
 				2E51EA5FD30ECF1DA75CE384 /* SparkleUpdater.swift in Sources */,
@@ -261,6 +359,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		5F9EF469D826A97FFDB61741 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9F154DADCDEB9F6EE0190BFB /* DiskWiseMenuBar */;
+			targetProxy = 56EB60FE6146A6AA70BB76BD /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		0FBA174758CA814D9D9134C1 /* Debug */ = {
@@ -404,6 +510,46 @@
 			};
 			name = Release;
 		};
+		5D7271A5812C8281223628D3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 3005;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = DiskWiseMenuBar/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LSUIElement = YES;
+				MARKETING_VERSION = 0.3.5;
+				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise.menubar;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		C5F1140685DA9D43BF7D5728 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 3005;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = DiskWiseMenuBar/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LSUIElement = YES;
+				MARKETING_VERSION = 0.3.5;
+				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise.menubar;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
 		D92E6548CAC40F684F019579 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -443,6 +589,15 @@
 			buildConfigurations = (
 				0FBA174758CA814D9D9134C1 /* Debug */,
 				21A162F00ADDF448B8E190F0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9882B1C09A7CE296D4B53A13 /* Build configuration list for PBXNativeTarget "DiskWiseMenuBar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5D7271A5812C8281223628D3 /* Debug */,
+				C5F1140685DA9D43BF7D5728 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -500,6 +655,10 @@
 		E44897D5C0C445D604A9F3CB /* DuplicateKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = DuplicateKit;
+		};
+		F334EFE1012F1F1C8BAE8ADB /* DiskScannerKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DiskScannerKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

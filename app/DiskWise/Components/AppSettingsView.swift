@@ -4,6 +4,7 @@ import AIKit
 
 struct AppSettingsView: View {
     @ObservedObject var settings: AppSettings
+    @State private var menuBarExtensionInstallError: String?
 
     var body: some View {
         Form {
@@ -64,6 +65,40 @@ struct AppSettingsView: View {
                 )
             }
 
+            if MenuBarExtensionInstaller.isHelperBundled {
+                Section("Menu bar monitor") {
+                    Toggle(
+                        "Show disk space in menu bar",
+                        isOn: Binding(
+                            get: { settings.isMenuBarExtensionInstalled },
+                            set: { setMenuBarExtensionEnabled($0) }
+                        )
+                    )
+
+                    Text("Displays Macintosh HD usage with a percentage and bar chart. Starts automatically when you log in.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text(MenuBarExtensionInstaller.statusDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    if let menuBarExtensionInstallError {
+                        Text(menuBarExtensionInstallError)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    if MenuBarExtensionInstaller.service.status == .requiresApproval {
+                        Button("Open Login Items Settings") {
+                            MenuBarExtensionInstaller.openLoginItemsSettingsForApproval()
+                        }
+                    }
+                }
+            }
+
             Section("AI assistant") {
                 Picker("Provider", selection: $settings.aiProviderPreference) {
                     Text("Automatic").tag(AIProviderKind.automatic)
@@ -95,6 +130,19 @@ struct AppSettingsView: View {
         .formStyle(.grouped)
         .frame(width: 520, height: 500)
         .navigationTitle("Settings")
+    }
+
+    private func setMenuBarExtensionEnabled(_ enabled: Bool) {
+        menuBarExtensionInstallError = nil
+        do {
+            if enabled {
+                try MenuBarExtensionInstaller.install()
+            } else {
+                try MenuBarExtensionInstaller.uninstall()
+            }
+        } catch {
+            menuBarExtensionInstallError = error.localizedDescription
+        }
     }
 
     @ViewBuilder
