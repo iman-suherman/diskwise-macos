@@ -1,0 +1,9 @@
+{
+  "summary": "Python setup wizard for the bundled scanner on machines without a compatible interpreter.",
+  "introduced": [
+    "Startup wizard that opens a bundled install script in Terminal or links to python.org when Python 3.8+ is missing"
+  ],
+  "changed": [
+    "Python scanner discovery checks Homebrew, system, and python.org framework installs and validates version 3.8 or newer"
+  ]
+}
