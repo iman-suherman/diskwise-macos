@@ -1,0 +1,14 @@
+{
+  "summary": "Sequential scanning, richer menu bar controls, health labels, and scan-from-menu-bar.",
+  "introduced": [
+    "Scan Macintosh HD button in the disk space menu bar popover",
+    "Live scan progress in the disk menu bar popover while identifying storage",
+    "Show DiskWise in Dock toggle in both disk and system status menu bar popovers"
+  ],
+  "changed": [
+    "Fast scans run sequentially to reduce system load during identification",
+    "Health menu bar icon shows Good, Fair, or Poor instead of a numeric score; numeric score remains in the app",
+    "System status top processes show application names only, without full paths",
+    "Dashboard scan panel shows folder progress instead of parallel worker counts"
+  ]
+}

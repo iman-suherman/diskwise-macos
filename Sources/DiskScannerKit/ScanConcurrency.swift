@@ -1,9 +1,7 @@
 import Foundation
 
 public enum ScanConcurrency {
-    public static var maxParallelTasks: Int {
-        max(2, min(ProcessInfo.processInfo.activeProcessorCount, 8))
-    }
+    public static var maxParallelTasks: Int { 1 }
 
     public static func displayLabel(for path: String, relativeTo root: String? = nil) -> String {
         let standardized = URL(fileURLWithPath: path).standardizedFileURL.path

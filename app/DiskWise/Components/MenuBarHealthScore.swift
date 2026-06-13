@@ -5,12 +5,11 @@ struct MenuBarHealthScoreLabel: View {
     let score: Int
 
     var body: some View {
-        Text("\(score)")
-            .font(.system(size: 12, weight: .bold, design: .rounded))
-            .monospacedDigit()
+        Text(SystemHealthMonitorCore.healthConditionLabel(for: score))
+            .font(.system(size: 11, weight: .bold, design: .rounded))
             .foregroundStyle(scoreColor)
             .padding(.horizontal, 2)
-            .accessibilityLabel("System health score \(score)")
+            .accessibilityLabel("System health \(SystemHealthMonitorCore.healthConditionLabel(for: score)), score \(score)")
     }
 
     private var scoreColor: Color {
@@ -90,10 +89,14 @@ struct MenuBarHealthPopoverContent: View {
                 .foregroundStyle(.secondary)
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(SystemHealthMonitorCore.healthConditionLabel(for: snapshot.healthScore))
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(scoreColor(snapshot.healthScore))
+
                 Text("\(snapshot.healthScore)")
                     .font(.system(size: 34, weight: .bold, design: .rounded))
                     .monospacedDigit()
-                    .foregroundStyle(scoreColor(snapshot.healthScore))
+                    .foregroundStyle(scoreColor(snapshot.healthScore).opacity(0.85))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(snapshot.hostName)
@@ -228,6 +231,14 @@ struct MenuBarHealthPopoverContent: View {
                     set: { settings.setMenuBarDiskFreeGBVisible($0) }
                 )
             )
+
+            Toggle(
+                "Show DiskWise in Dock",
+                isOn: Binding(
+                    get: { !settings.hideFromDock },
+                    set: { settings.setHideFromDock(!$0) }
+                )
+            )
         }
     }
 
@@ -312,7 +323,7 @@ final class MenuBarHealthItemController: NSObject {
     private func makeSlot() -> MenuBarStatusSlot {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         let hostingView = NSHostingView(rootView: MenuBarHealthScoreLabelView(monitor: monitor))
-        hostingView.frame.size = NSSize(width: 28, height: 18)
+        hostingView.frame.size = NSSize(width: 44, height: 18)
 
         let container = MenuBarClickableStatusView(frame: hostingView.frame)
         container.onClick = { [weak self, weak container] in

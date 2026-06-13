@@ -119,9 +119,9 @@ struct ScanProgressPanel: View {
                         icon: "externaldrive"
                     )
                     ScanStatTile(
-                        title: "Workers",
-                        value: workersLabel(for: progress),
-                        icon: "cpu"
+                        title: "Folders",
+                        value: foldersLabel(for: progress),
+                        icon: "folder"
                     )
                 }
             }
@@ -142,10 +142,13 @@ struct ScanProgressPanel: View {
         .scanPanelStyle()
     }
 
-    private func workersLabel(for progress: ScanProgress) -> String {
-        let active = progress.activeConcurrency ?? 0
-        let max = progress.maxConcurrency ?? 1
-        return "\(active)/\(max)"
+    private func foldersLabel(for progress: ScanProgress) -> String {
+        let completed = progress.directoriesProcessed ?? 0
+        let total = progress.directoriesTotal ?? 0
+        if total > 0 {
+            return "\(completed)/\(total)"
+        }
+        return "—"
     }
 }
 
@@ -314,7 +317,7 @@ private struct ScanConcurrencyPanel: View {
 
             if let active = progress.activeDirectories, !active.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Active scans")
+                    Text("Current folder")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.tertiary)
                     ForEach(active, id: \.self) { directory in

@@ -94,8 +94,6 @@ public final class FileScanner: @unchecked Sendable {
             summarizeNames +
             drillDirectories.map { ScanConcurrency.displayLabel(for: $0.path, relativeTo: mountPath.path) }
         let total = identifiedDirectories.count
-        let maxConcurrency = ScanConcurrency.maxParallelTasks
-
         var results: [ScannedFile] = []
         var scannedCount = 0
         var indexedBytes: Int64 = 0
@@ -105,7 +103,6 @@ public final class FileScanner: @unchecked Sendable {
             indexedBytes: indexedBytes,
             identifiedDirectories: identifiedDirectories,
             directoriesTotal: total,
-            maxConcurrency: maxConcurrency,
             scanRootPath: mountPath.path,
             onProgress: onProgress
         )
@@ -113,7 +110,7 @@ public final class FileScanner: @unchecked Sendable {
         aggregator.emit(
             currentPath: mountPath.path,
             operation: .preparing,
-            detail: "Identified \(total.formatted()) folders · up to \(maxConcurrency) parallel scans"
+            detail: "Identified \(total.formatted()) folders"
         )
 
         if !summarizeNames.isEmpty {
@@ -129,7 +126,7 @@ public final class FileScanner: @unchecked Sendable {
         }
 
         if !drillDirectories.isEmpty {
-            let drillResults = try scanDirectoriesConcurrently(
+            let drillResults = try scanDirectoriesSequentially(
                 directories: drillDirectories,
                 mode: mode,
                 aggregator: aggregator,
@@ -149,77 +146,42 @@ public final class FileScanner: @unchecked Sendable {
         return results
     }
 
-    private func scanDirectoriesConcurrently(
+    private func scanDirectoriesSequentially(
         directories: [URL],
         mode: ScanMode,
         aggregator: ScanProgressAggregator,
         isCancelled: (@Sendable () -> Bool)?
     ) throws -> [ScannedFile] {
-        let maxConcurrency = ScanConcurrency.maxParallelTasks
-        let semaphore = DispatchSemaphore(value: maxConcurrency)
-        let group = DispatchGroup()
-        let lock = NSLock()
         var combined: [ScannedFile] = []
-        var thrownError: Error?
 
         for directory in directories {
             if isCancelled?() == true {
                 throw FileScannerError.cancelled
             }
 
-            group.enter()
-            DispatchQueue.global(qos: .utility).async { [weak self] in
-                defer { group.leave() }
+            let label = ScanConcurrency.displayLabel(
+                for: directory.path,
+                relativeTo: aggregator.scanRootPathForDisplay
+            )
+            aggregator.willBegin(
+                directory.path,
+                operation: .enumeratingFiles,
+                detail: "Indexing \(label)"
+            )
 
-                guard let self else { return }
-                semaphore.wait()
-                defer { semaphore.signal() }
-
-                if isCancelled?() == true { return }
-
-                let label = ScanConcurrency.displayLabel(
-                    for: directory.path,
-                    relativeTo: aggregator.scanRootPathForDisplay
-                )
-                aggregator.willBegin(
-                    directory.path,
-                    operation: .enumeratingFiles,
-                    detail: "Indexing \(label)"
-                )
-
-                do {
-                    let batch = try self.scanEnumerated(
-                        mountPath: directory,
-                        mode: mode,
-                        onProgress: nil,
-                        isCancelled: isCancelled
-                    )
-                    lock.lock()
-                    combined.append(contentsOf: batch)
-                    lock.unlock()
-                    aggregator.didComplete(
-                        directory.path,
-                        results: batch,
-                        operation: .enumeratingFiles,
-                        detail: "Finished \(label)"
-                    )
-                } catch {
-                    lock.lock()
-                    if thrownError == nil {
-                        thrownError = error
-                    }
-                    lock.unlock()
-                }
-            }
-        }
-
-        group.wait()
-
-        if let thrownError {
-            throw thrownError
-        }
-        if isCancelled?() == true {
-            throw FileScannerError.cancelled
+            let batch = try scanEnumerated(
+                mountPath: directory,
+                mode: mode,
+                onProgress: nil,
+                isCancelled: isCancelled
+            )
+            combined.append(contentsOf: batch)
+            aggregator.didComplete(
+                directory.path,
+                results: batch,
+                operation: .enumeratingFiles,
+                detail: "Finished \(label)"
+            )
         }
 
         return combined
@@ -240,11 +202,8 @@ public final class FileScanner: @unchecked Sendable {
         var entries: [ScannedFile] = []
         var count = 0
         var bytes: Int64 = 0
-        let lock = NSLock()
 
-        DispatchQueue.concurrentPerform(iterations: names.count) { index in
-
-            let name = names[index]
+        for name in names {
             let childURL = mountPath.appendingPathComponent(name, isDirectory: true)
             aggregator.willBegin(
                 childURL.path,
@@ -268,11 +227,9 @@ public final class FileScanner: @unchecked Sendable {
                 isDirectory: false
             )
 
-            lock.lock()
             entries.append(entry)
             count += 1
             bytes += size
-            lock.unlock()
 
             aggregator.didComplete(
                 childURL.path,

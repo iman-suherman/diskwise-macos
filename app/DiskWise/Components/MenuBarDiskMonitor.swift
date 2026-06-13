@@ -159,53 +159,36 @@ struct MenuBarStatusLabelView: View {
 struct MenuBarPopoverContent: View {
     @ObservedObject var monitor: SystemVolumeMonitor
     @ObservedObject var settings: AppSettings
+    @ObservedObject var scanActivity = ScanActivityMonitor.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(volumeName)
+                    Text(scanActivity.isScanning ? "Scanning" : volumeName)
                         .font(.headline)
-                    Text("DiskWise menu bar monitor")
+                    Text(scanActivity.isScanning ? scanSubtitle : "DiskWise menu bar monitor")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 Spacer()
 
-                Button {
-                    monitor.refresh()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
+                if !scanActivity.isScanning {
+                    Button {
+                        monitor.refresh()
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Refresh disk space now")
                 }
-                .buttonStyle(.borderless)
-                .help("Refresh disk space now")
             }
 
-            if let volume = monitor.systemVolume {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Used \(Int((volume.usageFraction * 100).rounded()))%")
-                        .font(.body.monospacedDigit().weight(.semibold))
-                        .foregroundStyle(usageColor(for: volume))
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            statHeader("Total")
-                            Spacer()
-                            statHeader("Used")
-                            Spacer()
-                            statHeader("Free")
-                        }
-
-                        HStack {
-                            statValue(MenuBarFormatters.gigabytes(volume.totalSize))
-                            Spacer()
-                            statValue(MenuBarFormatters.gigabytes(volume.usedSize))
-                            Spacer()
-                            statValue(MenuBarFormatters.gigabytes(volume.freeSize))
-                        }
-                    }
-                }
+            if scanActivity.isScanning {
+                scanProgressSection
+            } else if let volume = monitor.systemVolume {
+                diskUsageSection(volume)
             } else {
                 ContentUnavailableView(
                     "Volume unavailable",
@@ -213,6 +196,17 @@ struct MenuBarPopoverContent: View {
                     description: Text("Could not read Macintosh HD capacity.")
                 )
                 .frame(maxWidth: .infinity)
+            }
+
+            if !scanActivity.isScanning {
+                Button {
+                    startMacintoshHDScan()
+                } label: {
+                    Label("Scan Macintosh HD", systemImage: "internaldrive.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .disabled(!canStartMacintoshHDScan)
             }
 
             Divider()
@@ -244,6 +238,14 @@ struct MenuBarPopoverContent: View {
                         set: { settings.setMenuBarHealthScoreVisible($0) }
                     )
                 )
+
+                Toggle(
+                    "Show DiskWise in Dock",
+                    isOn: Binding(
+                        get: { !settings.hideFromDock },
+                        set: { settings.setHideFromDock(!$0) }
+                    )
+                )
             }
 
             Divider()
@@ -261,6 +263,80 @@ struct MenuBarPopoverContent: View {
 
     private var volumeName: String {
         monitor.systemVolume?.name ?? "Macintosh HD"
+    }
+
+    private var canStartMacintoshHDScan: Bool {
+        guard let viewModel = AppViewModel.current else { return false }
+        return !viewModel.isStartingUp && !viewModel.mountedVolumes.isEmpty
+    }
+
+    private func startMacintoshHDScan() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.windows.first { $0.canBecomeMain }?.makeKeyAndOrderFront(nil)
+        AppViewModel.current?.scanInternalDrive()
+    }
+
+    private var scanSubtitle: String {
+        if let volumeName = scanActivity.volumeName {
+            return "Identifying \(volumeName)"
+        }
+        return "Identifying disk usage"
+    }
+
+    private var scanProgressSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(scanActivity.progressPercentLabel)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.accentColor)
+                Spacer()
+                if let operationLabel = scanActivity.operationLabel {
+                    Text(operationLabel)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            ProgressView(value: scanActivity.progressFraction)
+                .progressViewStyle(.linear)
+
+            if let detail = scanActivity.detail {
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+            }
+        }
+        .padding(12)
+        .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    @ViewBuilder
+    private func diskUsageSection(_ volume: MountedVolume) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Used \(Int((volume.usageFraction * 100).rounded()))%")
+                .font(.body.monospacedDigit().weight(.semibold))
+                .foregroundStyle(usageColor(for: volume))
+
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    statHeader("Total")
+                    Spacer()
+                    statHeader("Used")
+                    Spacer()
+                    statHeader("Free")
+                }
+
+                HStack {
+                    statValue(MenuBarFormatters.gigabytes(volume.totalSize))
+                    Spacer()
+                    statValue(MenuBarFormatters.gigabytes(volume.usedSize))
+                    Spacer()
+                    statValue(MenuBarFormatters.gigabytes(volume.freeSize))
+                }
+            }
+        }
     }
 
     private func usageColor(for volume: MountedVolume) -> Color {
@@ -401,7 +477,10 @@ final class MenuBarStatusItemController: NSObject {
         }
 
         let popover = NSPopover()
-        popover.contentSize = NSSize(width: 300, height: 360)
+        popover.contentSize = NSSize(
+            width: 300,
+            height: ScanActivityMonitor.shared.isScanning ? 320 : 360
+        )
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(
             rootView: MenuBarPopoverContent(
