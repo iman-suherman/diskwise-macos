@@ -149,7 +149,6 @@ final class AppViewModel: ObservableObject {
     @Published var indexRebuildCompletedSteps: Set<IndexRebuildStep> = []
     @Published var indexRebuildActiveStep: IndexRebuildStep?
     @Published var showSavedScanPrompt = false
-    @Published var menuBarExtensionInstallError: String?
     @Published var selectedMaintenanceKind: MaintenanceKind = .appCaches
     @Published var maintenanceScanResult: MaintenanceScanResult?
     @Published var maintenanceSelectedEntryIDs: Set<String> = []
@@ -353,63 +352,37 @@ final class AppViewModel: ObservableObject {
 
     func presentMenuBarExtensionPromptIfNeeded() {
         guard !showFullDiskAccessPrompt, !showIndexRebuildPrompt, !showWhatsNewTour, !showSavedScanPrompt else { return }
-        guard MenuBarExtensionInstaller.isHelperBundled else { return }
         guard !appSettings.menuBarExtensionPromptDismissed else { return }
-        guard !MenuBarExtensionInstaller.isInstalled else { return }
+        guard !appSettings.showMenuBarDiskMonitor else { return }
 
-        if MenuBarExtensionInstaller.service.status == .requiresApproval {
+        if MenuBarMonitorController.launchAtLoginService.status == .requiresApproval {
             switch MenuBarExtensionPrompt.presentApprovalPrompt() {
             case .openSettings:
-                MenuBarExtensionInstaller.openLoginItemsSettingsForApproval()
-                setStatus("Approve DiskWise Menu Bar in System Settings", kind: .ready)
+                MenuBarMonitorController.openLoginItemsSettingsForApproval()
+                appSettings.showMenuBarMonitorInstructions = true
+                setStatus("Approve DiskWise in System Settings", kind: .ready)
             case .install, .dismiss:
                 appSettings.menuBarExtensionPromptDismissed = true
             }
             return
         }
 
-        guard appSettings.shouldOfferMenuBarExtension else { return }
+        guard appSettings.shouldOfferMenuBarMonitor else { return }
 
         switch MenuBarExtensionPrompt.presentInstallPrompt() {
         case .install:
-            installMenuBarExtension()
+            enableMenuBarDiskMonitor()
         case .openSettings, .dismiss:
             appSettings.menuBarExtensionPromptDismissed = true
         }
     }
 
-    func installMenuBarExtension() {
-        menuBarExtensionInstallError = nil
-        do {
-            try MenuBarExtensionInstaller.install()
-            if MenuBarExtensionInstaller.isInstalled {
-                setStatus("Menu bar disk monitor installed", kind: .success)
-            } else {
-                setStatus("Approve DiskWise Menu Bar in System Settings", kind: .ready)
-            }
-        } catch {
-            menuBarExtensionInstallError = error.localizedDescription
-            setStatus("Could not install menu bar monitor", kind: .error)
-        }
-    }
-
-    func setMenuBarExtensionEnabled(_ enabled: Bool) {
-        menuBarExtensionInstallError = nil
-        do {
-            if enabled {
-                try MenuBarExtensionInstaller.install()
-                if MenuBarExtensionInstaller.isInstalled {
-                    setStatus("Menu bar disk monitor enabled", kind: .success)
-                } else {
-                    setStatus("Approve DiskWise Menu Bar in System Settings", kind: .ready)
-                }
-            } else {
-                try MenuBarExtensionInstaller.uninstall()
-                setStatus("Menu bar disk monitor removed", kind: .ready)
-            }
-        } catch {
-            menuBarExtensionInstallError = error.localizedDescription
-            setStatus("Could not update menu bar monitor", kind: .error)
+    func enableMenuBarDiskMonitor() {
+        appSettings.setMenuBarDiskMonitorEnabled(true)
+        if appSettings.showMenuBarDiskMonitor {
+            setStatus("Menu bar disk monitor enabled", kind: .success)
+        } else {
+            setStatus("Could not enable menu bar monitor", kind: .error)
         }
     }
 

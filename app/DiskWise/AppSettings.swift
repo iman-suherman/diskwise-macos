@@ -78,6 +78,7 @@ final class AppSettings: ObservableObject {
         static let ollamaModel = "diskwise.settings.ollamaModel"
         static let enableOllamaDevMode = "diskwise.settings.enableOllamaDevMode"
         static let menuBarExtensionPromptDismissed = "diskwise.settings.menuBarExtensionPromptDismissed"
+        static let showMenuBarDiskMonitor = "diskwise.settings.showMenuBarDiskMonitor"
     }
 
     /// Bump when the storage index format or scan pipeline changes materially.
@@ -135,19 +136,25 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    @Published var showMenuBarDiskMonitor: Bool {
+        didSet {
+            UserDefaults.standard.set(showMenuBarDiskMonitor, forKey: Keys.showMenuBarDiskMonitor)
+        }
+    }
+
+    @Published var showMenuBarMonitorInstructions = false
+
     var menuBarExtensionPromptDismissed: Bool {
         get { UserDefaults.standard.bool(forKey: Keys.menuBarExtensionPromptDismissed) }
         set { UserDefaults.standard.set(newValue, forKey: Keys.menuBarExtensionPromptDismissed) }
     }
 
-    var shouldOfferMenuBarExtension: Bool {
-        MenuBarExtensionInstaller.isHelperBundled
-            && !MenuBarExtensionInstaller.isInstalled
-            && !menuBarExtensionPromptDismissed
+    var shouldOfferMenuBarMonitor: Bool {
+        !showMenuBarDiskMonitor && !menuBarExtensionPromptDismissed
     }
 
-    var isMenuBarExtensionInstalled: Bool {
-        MenuBarExtensionInstaller.isInstalled
+    func setMenuBarDiskMonitorEnabled(_ enabled: Bool) {
+        MenuBarMonitorController.apply(enabled: enabled, settings: self)
     }
 
     private init() {
@@ -175,6 +182,7 @@ final class AppSettings: ObservableObject {
         ollamaBaseURL = defaults.string(forKey: Keys.ollamaBaseURL) ?? "http://127.0.0.1:11434"
         ollamaModel = defaults.string(forKey: Keys.ollamaModel) ?? "llama3.1"
         enableOllamaDevMode = defaults.bool(forKey: Keys.enableOllamaDevMode)
+        showMenuBarDiskMonitor = defaults.bool(forKey: Keys.showMenuBarDiskMonitor)
     }
 
     static var currentAppVersion: String {
@@ -228,6 +236,10 @@ final class AppSettings: ObservableObject {
         ollamaBaseURL = "http://127.0.0.1:11434"
         ollamaModel = "llama3.1"
         enableOllamaDevMode = false
+        showMenuBarDiskMonitor = false
+        showMenuBarMonitorInstructions = false
+        MenuBarStatusItemController.shared.setEnabled(false)
+        try? MenuBarMonitorController.launchAtLoginService.unregister()
     }
 
     var aiProviderConfiguration: AIProviderConfiguration {

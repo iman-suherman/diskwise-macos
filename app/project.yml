@@ -15,23 +15,6 @@ settings:
     SWIFT_VERSION: "5.9"
     MACOSX_DEPLOYMENT_TARGET: "14.0"
 targets:
-  DiskWiseMenuBar:
-    type: application
-    platform: macOS
-    sources:
-      - path: DiskWiseMenuBar
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: net.suherman.diskwise.menubar
-        INFOPLIST_FILE: DiskWiseMenuBar/Info.plist
-        LSUIElement: true
-        CODE_SIGN_STYLE: Automatic
-        CURRENT_PROJECT_VERSION: 3006
-        MARKETING_VERSION: 0.3.6
-        ENABLE_HARDENED_RUNTIME: YES
-    dependencies:
-      - package: DiskWisePackages
-        product: DiskScannerKit
   DiskWise:
     type: application
     platform: macOS
@@ -61,11 +44,6 @@ targets:
         Release:
           SPARKLE_FEED_URL: https://diskwise-registry.suherman.net/appcast.xml
     dependencies:
-      - target: DiskWiseMenuBar
-        embed: true
-        copy:
-          destination: wrapper
-          subpath: Contents/Library/LoginItems
       - package: Sparkle
         product: Sparkle
       - package: DiskWisePackages
@@ -90,6 +68,5 @@ schemes:
     build:
       targets:
         DiskWise: all
-        DiskWiseMenuBar: all
     run:
       config: Debug

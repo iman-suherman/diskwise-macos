@@ -2,27 +2,6 @@ import AppKit
 import DiskScannerKit
 import SwiftUI
 
-final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
-    func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
-    }
-}
-
-@main
-struct DiskWiseMenuBarApp: App {
-    @NSApplicationDelegateAdaptor(MenuBarAppDelegate.self) private var appDelegate
-    @StateObject private var monitor = SystemVolumeMonitor()
-
-    var body: some Scene {
-        MenuBarExtra {
-            MenuBarPopoverContent(monitor: monitor)
-        } label: {
-            MenuBarStatusLabel(volume: monitor.systemVolume)
-        }
-        .menuBarExtraStyle(.window)
-    }
-}
-
 @MainActor
 final class SystemVolumeMonitor: ObservableObject {
     @Published private(set) var systemVolume: MountedVolume?
@@ -194,8 +173,9 @@ struct MenuBarPopoverContent: View {
 
             Divider()
 
-            Button("Open DiskWise") {
-                openMainApp()
+            Button("Show DiskWise") {
+                NSApp.activate(ignoringOtherApps: true)
+                NSApp.windows.first { $0.canBecomeMain }?.makeKeyAndOrderFront(nil)
             }
             .buttonStyle(.borderedProminent)
             .frame(maxWidth: .infinity)
@@ -226,12 +206,6 @@ struct MenuBarPopoverContent: View {
         default: return .accentColor
         }
     }
-
-    private func openMainApp() {
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "net.suherman.diskwise") {
-            NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
-        }
-    }
 }
 
 enum MenuBarFormatters {
@@ -240,4 +214,73 @@ enum MenuBarFormatters {
         formatter.countStyle = .file
         return formatter
     }()
+}
+
+struct MenuBarStatusLabelView: View {
+    @ObservedObject var monitor: SystemVolumeMonitor
+
+    var body: some View {
+        MenuBarStatusLabel(volume: monitor.systemVolume)
+    }
+}
+
+@MainActor
+final class MenuBarStatusItemController: NSObject {
+    static let shared = MenuBarStatusItemController()
+
+    private let monitor = SystemVolumeMonitor()
+    private var statusItem: NSStatusItem?
+    private var popover: NSPopover?
+
+    private override init() {
+        super.init()
+    }
+
+    func setEnabled(_ enabled: Bool) {
+        if enabled {
+            installIfNeeded()
+        } else {
+            uninstall()
+        }
+    }
+
+    private func installIfNeeded() {
+        guard statusItem == nil else { return }
+
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        let hostingView = NSHostingView(rootView: MenuBarStatusLabelView(monitor: monitor))
+        hostingView.frame.size = NSSize(width: 72, height: 18)
+        item.view = hostingView
+        item.button?.target = self
+        item.button?.action = #selector(togglePopover(_:))
+        item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
+        statusItem = item
+    }
+
+    private func uninstall() {
+        popover?.close()
+        popover = nil
+        if let statusItem {
+            NSStatusBar.system.removeStatusItem(statusItem)
+        }
+        statusItem = nil
+    }
+
+    @objc private func togglePopover(_ sender: Any?) {
+        guard let button = statusItem?.button else { return }
+
+        if let popover, popover.isShown {
+            popover.performClose(sender)
+            return
+        }
+
+        let popover = NSPopover()
+        popover.contentSize = NSSize(width: 280, height: 320)
+        popover.behavior = .transient
+        popover.contentViewController = NSHostingController(
+            rootView: MenuBarPopoverContent(monitor: monitor)
+        )
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        self.popover = popover
+    }
 }

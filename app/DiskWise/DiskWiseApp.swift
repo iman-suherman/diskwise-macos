@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
         FullDiskAccess.registerForFullDiskAccess()
+        MenuBarMonitorController.unregisterLegacyLoginItemIfNeeded()
 
         DispatchQueue.main.async {
             _ = SparkleUpdaterController.shared
@@ -22,6 +23,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let icon {
             NSApp.applicationIconImage = icon
         }
+
+        MenuBarStatusItemController.shared.setEnabled(AppSettings.shared.showMenuBarDiskMonitor)
     }
 }
 
@@ -31,7 +34,13 @@ struct DiskWiseApp: App {
     @StateObject private var viewModel = AppViewModel()
     @StateObject private var appSettings = AppSettings.shared
 
+    @SceneBuilder
     var body: some Scene {
+        mainWindow
+        settingsScene
+    }
+
+    private var mainWindow: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(viewModel)
@@ -40,6 +49,36 @@ struct DiskWiseApp: App {
         }
         .defaultSize(width: 1320, height: 880)
         .windowStyle(.automatic)
+        .commands {
+            CommandGroup(replacing: .newItem) {}
+            CommandGroup(replacing: .appInfo) {
+                Button("About DiskWise") {
+                    viewModel.showAbout = true
+                }
+            }
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") {
+                    SparkleUpdaterController.shared.checkForUpdates()
+                }
+            }
+            CommandMenu("View") {
+                Toggle(
+                    "Show Disk Space in Menu Bar",
+                    isOn: Binding(
+                        get: { appSettings.showMenuBarDiskMonitor },
+                        set: { appSettings.setMenuBarDiskMonitorEnabled($0) }
+                    )
+                )
+            }
+            CommandGroup(replacing: .help) {
+                Button("Activity Log…") {
+                    viewModel.showActivityLog = true
+                }
+            }
+        }
+    }
+
+    private var settingsScene: some Scene {
         Settings {
             AppSettingsView(settings: appSettings)
                 .onChange(of: appSettings.aiProviderPreference) { _, _ in
@@ -54,24 +93,6 @@ struct DiskWiseApp: App {
                 .onChange(of: appSettings.ollamaModel) { _, _ in
                     viewModel.refreshAIConfiguration()
                 }
-        }
-        .commands {
-            CommandGroup(replacing: .newItem) {}
-            CommandGroup(replacing: .appInfo) {
-                Button("About DiskWise") {
-                    viewModel.showAbout = true
-                }
-            }
-            CommandGroup(after: .appInfo) {
-                Button("Check for Updates…") {
-                    SparkleUpdaterController.shared.checkForUpdates()
-                }
-            }
-            CommandGroup(replacing: .help) {
-                Button("Activity Log…") {
-                    viewModel.showActivityLog = true
-                }
-            }
         }
     }
 }
@@ -217,6 +238,9 @@ struct ContentView: View {
         .sheet(isPresented: $viewModel.showAbout) {
             AboutView(onOpenSettings: { openSettings() })
                 .environmentObject(appSettings)
+        }
+        .sheet(isPresented: $appSettings.showMenuBarMonitorInstructions) {
+            MenuBarMonitorInstructionSheet()
         }
     }
 

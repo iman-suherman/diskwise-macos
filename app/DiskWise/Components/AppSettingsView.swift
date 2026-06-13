@@ -4,7 +4,6 @@ import AIKit
 
 struct AppSettingsView: View {
     @ObservedObject var settings: AppSettings
-    @State private var menuBarExtensionInstallError: String?
 
     var body: some View {
         Form {
@@ -65,36 +64,34 @@ struct AppSettingsView: View {
                 )
             }
 
-            if MenuBarExtensionInstaller.isHelperBundled {
-                Section("Menu bar monitor") {
-                    Toggle(
-                        "Show disk space in menu bar",
-                        isOn: Binding(
-                            get: { settings.isMenuBarExtensionInstalled },
-                            set: { setMenuBarExtensionEnabled($0) }
-                        )
+            Section("Menu bar monitor") {
+                Toggle(
+                    "Show disk space in menu bar",
+                    isOn: Binding(
+                        get: { settings.showMenuBarDiskMonitor },
+                        set: { settings.setMenuBarDiskMonitorEnabled($0) }
                     )
+                )
 
-                    Text("Displays Macintosh HD usage with a percentage and bar chart. Starts automatically when you log in.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                Text("Displays Macintosh HD usage with a percentage and bar chart while DiskWise is running. Starts automatically when you log in after approval in System Settings.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    Text(MenuBarExtensionInstaller.statusDescription)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                Text(MenuBarMonitorController.launchAtLoginStatusDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
-                    if let menuBarExtensionInstallError {
-                        Text(menuBarExtensionInstallError)
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                            .fixedSize(horizontal: false, vertical: true)
+                if settings.showMenuBarDiskMonitor {
+                    Button("Show Setup Instructions") {
+                        settings.showMenuBarMonitorInstructions = true
                     }
+                }
 
-                    if MenuBarExtensionInstaller.service.status == .requiresApproval {
-                        Button("Open Login Items Settings") {
-                            MenuBarExtensionInstaller.openLoginItemsSettingsForApproval()
-                        }
+                if MenuBarMonitorController.launchAtLoginService.status == .requiresApproval {
+                    Button("Open Login Items Settings") {
+                        MenuBarMonitorController.openLoginItemsSettingsForApproval()
+                        settings.showMenuBarMonitorInstructions = true
                     }
                 }
             }
@@ -130,18 +127,8 @@ struct AppSettingsView: View {
         .formStyle(.grouped)
         .frame(width: 520, height: 500)
         .navigationTitle("Settings")
-    }
-
-    private func setMenuBarExtensionEnabled(_ enabled: Bool) {
-        menuBarExtensionInstallError = nil
-        do {
-            if enabled {
-                try MenuBarExtensionInstaller.install()
-            } else {
-                try MenuBarExtensionInstaller.uninstall()
-            }
-        } catch {
-            menuBarExtensionInstallError = error.localizedDescription
+        .sheet(isPresented: $settings.showMenuBarMonitorInstructions) {
+            MenuBarMonitorInstructionSheet()
         }
     }
 
