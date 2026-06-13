@@ -1,0 +1,12 @@
+{
+  "summary": "Menu bar health score with system status popover, top CPU/memory processes, and optional hide from Dock.",
+  "introduced": [
+    "Health score menu bar icon with color-coded 0–100 score based on CPU, memory, and disk pressure",
+    "System Status popover shows macOS version, CPU and memory usage, load average, disk free space, uptime, machine model, and top CPU/memory processes",
+    "Settings toggle to hide DiskWise from the Dock while keeping menu bar access"
+  ],
+  "changed": [
+    "Menu bar popovers include toggles for percentage, free GB, and health score displays",
+    "Health metrics refresh automatically every 10–30 seconds depending on system pressure"
+  ]
+}

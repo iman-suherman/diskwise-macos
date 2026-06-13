@@ -236,6 +236,14 @@ struct MenuBarPopoverContent: View {
                         set: { settings.setMenuBarDiskFreeGBVisible($0) }
                     )
                 )
+
+                Toggle(
+                    "Show health score",
+                    isOn: Binding(
+                        get: { settings.showMenuBarHealthScore },
+                        set: { settings.setMenuBarHealthScoreVisible($0) }
+                    )
+                )
             }
 
             Divider()

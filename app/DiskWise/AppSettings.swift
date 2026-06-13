@@ -81,6 +81,8 @@ final class AppSettings: ObservableObject {
         static let showMenuBarDiskMonitor = "diskwise.settings.showMenuBarDiskMonitor"
         static let showMenuBarDiskPercentage = "diskwise.settings.showMenuBarDiskPercentage"
         static let showMenuBarDiskFreeGB = "diskwise.settings.showMenuBarDiskFreeGB"
+        static let showMenuBarHealthScore = "diskwise.settings.showMenuBarHealthScore"
+        static let hideFromDock = "diskwise.settings.hideFromDock"
         static let launchAtLogin = "diskwise.settings.launchAtLogin"
     }
 
@@ -153,8 +155,21 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    @Published var showMenuBarHealthScore: Bool {
+        didSet {
+            UserDefaults.standard.set(showMenuBarHealthScore, forKey: Keys.showMenuBarHealthScore)
+            syncMenuBarMonitorState()
+        }
+    }
+
+    @Published var hideFromDock: Bool {
+        didSet {
+            UserDefaults.standard.set(hideFromDock, forKey: Keys.hideFromDock)
+        }
+    }
+
     var showMenuBarDiskMonitor: Bool {
-        showMenuBarDiskPercentage || showMenuBarDiskFreeGB
+        showMenuBarDiskPercentage || showMenuBarDiskFreeGB || showMenuBarHealthScore
     }
 
     @Published var launchAtLogin: Bool {
@@ -177,7 +192,18 @@ final class AppSettings: ObservableObject {
     func setMenuBarDiskMonitorEnabled(_ enabled: Bool) {
         showMenuBarDiskPercentage = enabled
         showMenuBarDiskFreeGB = enabled
+        showMenuBarHealthScore = enabled
         MenuBarMonitorController.syncMenuBarItems(settings: self)
+    }
+
+    func setMenuBarHealthScoreVisible(_ visible: Bool) {
+        showMenuBarHealthScore = visible
+        MenuBarMonitorController.syncMenuBarItems(settings: self)
+    }
+
+    func setHideFromDock(_ hidden: Bool) {
+        hideFromDock = hidden
+        DockVisibilityController.apply(hidden: hidden)
     }
 
     func setMenuBarDiskPercentageVisible(_ visible: Bool) {
@@ -227,11 +253,14 @@ final class AppSettings: ObservableObject {
         if defaults.object(forKey: Keys.showMenuBarDiskPercentage) != nil {
             showMenuBarDiskPercentage = defaults.bool(forKey: Keys.showMenuBarDiskPercentage)
             showMenuBarDiskFreeGB = defaults.bool(forKey: Keys.showMenuBarDiskFreeGB)
+            showMenuBarHealthScore = defaults.bool(forKey: Keys.showMenuBarHealthScore)
         } else {
             let legacyMonitor = defaults.bool(forKey: Keys.showMenuBarDiskMonitor)
             showMenuBarDiskPercentage = legacyMonitor
             showMenuBarDiskFreeGB = legacyMonitor
+            showMenuBarHealthScore = false
         }
+        hideFromDock = defaults.bool(forKey: Keys.hideFromDock)
         if defaults.object(forKey: Keys.launchAtLogin) == nil {
             launchAtLogin = MenuBarMonitorController.launchAtLoginEnabled
         } else {
@@ -292,9 +321,13 @@ final class AppSettings: ObservableObject {
         enableOllamaDevMode = false
         showMenuBarDiskPercentage = false
         showMenuBarDiskFreeGB = false
+        showMenuBarHealthScore = false
+        hideFromDock = false
         launchAtLogin = false
         showMenuBarMonitorInstructions = false
         MenuBarStatusItemController.shared.syncVisibility(showPercentage: false, showFreeGB: false)
+        MenuBarHealthItemController.shared.syncVisibility(showHealthScore: false)
+        DockVisibilityController.apply(hidden: false)
         try? MenuBarMonitorController.launchAtLoginService.unregister()
     }
 

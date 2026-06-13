@@ -28,6 +28,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             showPercentage: AppSettings.shared.showMenuBarDiskPercentage,
             showFreeGB: AppSettings.shared.showMenuBarDiskFreeGB
         )
+        MenuBarHealthItemController.shared.syncVisibility(
+            showHealthScore: AppSettings.shared.showMenuBarHealthScore
+        )
+        DockVisibilityController.apply(hidden: AppSettings.shared.hideFromDock)
     }
 }
 
@@ -77,6 +81,13 @@ struct DiskWiseApp: App {
                     isOn: Binding(
                         get: { appSettings.showMenuBarDiskFreeGB },
                         set: { appSettings.setMenuBarDiskFreeGBVisible($0) }
+                    )
+                )
+                Toggle(
+                    "Show Health Score in Menu Bar",
+                    isOn: Binding(
+                        get: { appSettings.showMenuBarHealthScore },
+                        set: { appSettings.setMenuBarHealthScoreVisible($0) }
                     )
                 )
             }
