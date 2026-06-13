@@ -12,7 +12,7 @@ enum MenuBarExtensionPrompt {
         let alert = NSAlert()
         alert.messageText = "Show disk space in the menu bar?"
         alert.informativeText = """
-        DiskWise can show remaining Macintosh HD space in the menu bar as a color-coded percentage. \
+        DiskWise can show remaining Macintosh HD space in the menu bar as color-coded percentage and/or free GB. \
         The monitor runs while DiskWise is open — it does not require login at startup.
         """
         alert.alertStyle = .informational

@@ -79,6 +79,8 @@ final class AppSettings: ObservableObject {
         static let enableOllamaDevMode = "diskwise.settings.enableOllamaDevMode"
         static let menuBarExtensionPromptDismissed = "diskwise.settings.menuBarExtensionPromptDismissed"
         static let showMenuBarDiskMonitor = "diskwise.settings.showMenuBarDiskMonitor"
+        static let showMenuBarDiskPercentage = "diskwise.settings.showMenuBarDiskPercentage"
+        static let showMenuBarDiskFreeGB = "diskwise.settings.showMenuBarDiskFreeGB"
         static let launchAtLogin = "diskwise.settings.launchAtLogin"
     }
 
@@ -137,10 +139,22 @@ final class AppSettings: ObservableObject {
         }
     }
 
-    @Published var showMenuBarDiskMonitor: Bool {
+    @Published var showMenuBarDiskPercentage: Bool {
         didSet {
-            UserDefaults.standard.set(showMenuBarDiskMonitor, forKey: Keys.showMenuBarDiskMonitor)
+            UserDefaults.standard.set(showMenuBarDiskPercentage, forKey: Keys.showMenuBarDiskPercentage)
+            syncMenuBarMonitorState()
         }
+    }
+
+    @Published var showMenuBarDiskFreeGB: Bool {
+        didSet {
+            UserDefaults.standard.set(showMenuBarDiskFreeGB, forKey: Keys.showMenuBarDiskFreeGB)
+            syncMenuBarMonitorState()
+        }
+    }
+
+    var showMenuBarDiskMonitor: Bool {
+        showMenuBarDiskPercentage || showMenuBarDiskFreeGB
     }
 
     @Published var launchAtLogin: Bool {
@@ -161,7 +175,24 @@ final class AppSettings: ObservableObject {
     }
 
     func setMenuBarDiskMonitorEnabled(_ enabled: Bool) {
-        MenuBarMonitorController.applyMenuBarMonitor(enabled: enabled, settings: self)
+        showMenuBarDiskPercentage = enabled
+        showMenuBarDiskFreeGB = enabled
+        MenuBarMonitorController.syncMenuBarItems(settings: self)
+    }
+
+    func setMenuBarDiskPercentageVisible(_ visible: Bool) {
+        showMenuBarDiskPercentage = visible
+        MenuBarMonitorController.syncMenuBarItems(settings: self)
+    }
+
+    func setMenuBarDiskFreeGBVisible(_ visible: Bool) {
+        showMenuBarDiskFreeGB = visible
+        MenuBarMonitorController.syncMenuBarItems(settings: self)
+    }
+
+    private func syncMenuBarMonitorState() {
+        UserDefaults.standard.set(showMenuBarDiskMonitor, forKey: Keys.showMenuBarDiskMonitor)
+        MenuBarMonitorController.syncMenuBarItems(settings: self)
     }
 
     func setLaunchAtLoginEnabled(_ enabled: Bool) {
@@ -193,7 +224,14 @@ final class AppSettings: ObservableObject {
         ollamaBaseURL = defaults.string(forKey: Keys.ollamaBaseURL) ?? "http://127.0.0.1:11434"
         ollamaModel = defaults.string(forKey: Keys.ollamaModel) ?? "llama3.1"
         enableOllamaDevMode = defaults.bool(forKey: Keys.enableOllamaDevMode)
-        showMenuBarDiskMonitor = defaults.bool(forKey: Keys.showMenuBarDiskMonitor)
+        if defaults.object(forKey: Keys.showMenuBarDiskPercentage) != nil {
+            showMenuBarDiskPercentage = defaults.bool(forKey: Keys.showMenuBarDiskPercentage)
+            showMenuBarDiskFreeGB = defaults.bool(forKey: Keys.showMenuBarDiskFreeGB)
+        } else {
+            let legacyMonitor = defaults.bool(forKey: Keys.showMenuBarDiskMonitor)
+            showMenuBarDiskPercentage = legacyMonitor
+            showMenuBarDiskFreeGB = legacyMonitor
+        }
         if defaults.object(forKey: Keys.launchAtLogin) == nil {
             launchAtLogin = MenuBarMonitorController.launchAtLoginEnabled
         } else {
@@ -252,10 +290,11 @@ final class AppSettings: ObservableObject {
         ollamaBaseURL = "http://127.0.0.1:11434"
         ollamaModel = "llama3.1"
         enableOllamaDevMode = false
-        showMenuBarDiskMonitor = false
+        showMenuBarDiskPercentage = false
+        showMenuBarDiskFreeGB = false
         launchAtLogin = false
         showMenuBarMonitorInstructions = false
-        MenuBarStatusItemController.shared.setEnabled(false)
+        MenuBarStatusItemController.shared.syncVisibility(showPercentage: false, showFreeGB: false)
         try? MenuBarMonitorController.launchAtLoginService.unregister()
     }
 

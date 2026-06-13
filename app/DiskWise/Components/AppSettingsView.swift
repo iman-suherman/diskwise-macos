@@ -66,10 +66,18 @@ struct AppSettingsView: View {
 
             Section("Menu bar monitor") {
                 Toggle(
-                    "Show disk space in menu bar",
+                    "Show remaining percentage",
                     isOn: Binding(
-                        get: { settings.showMenuBarDiskMonitor },
-                        set: { settings.setMenuBarDiskMonitorEnabled($0) }
+                        get: { settings.showMenuBarDiskPercentage },
+                        set: { settings.setMenuBarDiskPercentageVisible($0) }
+                    )
+                )
+
+                Toggle(
+                    "Show free space (GB)",
+                    isOn: Binding(
+                        get: { settings.showMenuBarDiskFreeGB },
+                        set: { settings.setMenuBarDiskFreeGBVisible($0) }
                     )
                 )
 
@@ -79,7 +87,7 @@ struct AppSettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 if settings.showMenuBarDiskMonitor {
-                    Text("Click the menu bar icon for drive details, or choose Hide Menu Bar Monitor in the popover to turn this off.")
+                    Text("Click either menu bar icon for drive details and to show or hide each display.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)

@@ -1,15 +1,15 @@
 {
-  "summary": "Menu bar disk monitor shows remaining space with low-disk warnings, a detail popover, and separate launch-at-login control.",
+  "summary": "Dual menu bar icons show remaining disk percentage and free GB, each toggled independently from Settings or the popover.",
   "introduced": [
-    "Menu bar icon shows remaining disk space as a color-coded percentage and bar (green, orange, or red when free space drops below twice your Mac’s memory)",
-    "Click the menu bar icon to open a drive summary with volume name, used percentage, total/used/free capacity, Open DiskWise, and Hide Menu Bar Monitor",
+    "Two menu bar readouts: remaining percentage and free space in GB, each with color-coded text based on how much space is left",
+    "Click either icon for drive details, manual refresh, and toggles to show or hide percentage and GB independently",
     "New Settings → Startup toggle: Open DiskWise at login, independent of the menu bar monitor"
   ],
   "changed": [
-    "Turning on Show disk space in menu bar no longer registers DiskWise for login at startup or opens System Settings",
-    "Menu bar shows remaining space as a color-coded percentage only (no bar); refresh interval adapts to how much space is left",
-    "Hide Menu Bar Monitor in the popover turns off the View menu and Settings toggle",
-    "Launch prompt and setup instructions updated to describe remaining-space display instead of login-item approval"
+    "Turning on menu bar disk display no longer registers DiskWise for login at startup or opens System Settings",
+    "Menu bar refresh interval adapts to remaining space (15s critical, 30s low, 60s healthy)",
+    "Settings and View menu offer separate toggles for percentage and free GB displays",
+    "Launch prompt and setup instructions updated for dual-icon menu bar monitor"
   ],
   "fixed": [
     "Removed v0.3.9 from the Sparkle update feed so clients stay on the supported 0.3.8 release line"

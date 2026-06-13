@@ -24,7 +24,7 @@ struct MenuBarMonitorInstructionSheet: View {
                 instructionRow(
                     number: 1,
                     title: "Look for the icon",
-                    detail: "The percentage is color-coded by how much space is left. Red means less than twice your Mac’s memory is available."
+                    detail: "Look for the percentage and/or free GB readouts in the menu bar. Colors reflect how much space is left."
                 )
                 instructionRow(
                     number: 2,
@@ -33,8 +33,8 @@ struct MenuBarMonitorInstructionSheet: View {
                 )
                 instructionRow(
                     number: 3,
-                    title: "Toggle anytime",
-                    detail: "Use View → Show Disk Space in Menu Bar, Settings, or Hide Menu Bar Monitor in the popover to turn it off."
+                    title: "Choose what to show",
+                    detail: "Use Settings or the popover toggles to show percentage, free GB, or both."
                 )
             }
             .padding(14)

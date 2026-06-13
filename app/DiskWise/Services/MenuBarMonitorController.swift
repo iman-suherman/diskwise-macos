@@ -14,7 +14,7 @@ enum MenuBarMonitorController {
     }
 
     static var menuBarMonitorStatusDescription: String {
-        "Shows remaining disk space as a color-coded percentage while DiskWise is running."
+        "Shows remaining disk space in the menu bar as color-coded percentage and/or free GB while DiskWise is running."
     }
 
     static var launchAtLoginStatusDescription: String {
@@ -33,10 +33,12 @@ enum MenuBarMonitorController {
     }
 
     @MainActor
-    static func applyMenuBarMonitor(enabled: Bool, settings: AppSettings) {
-        settings.showMenuBarDiskMonitor = enabled
+    static func syncMenuBarItems(settings: AppSettings) {
         settings.showMenuBarMonitorInstructions = false
-        MenuBarStatusItemController.shared.setEnabled(enabled)
+        MenuBarStatusItemController.shared.syncVisibility(
+            showPercentage: settings.showMenuBarDiskPercentage,
+            showFreeGB: settings.showMenuBarDiskFreeGB
+        )
         unregisterLegacyLoginItemIfNeeded()
     }
 
