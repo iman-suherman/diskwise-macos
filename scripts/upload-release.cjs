@@ -7,7 +7,7 @@ const fs = require("fs");
 const path = require("path");
 const { applyGcpEnv } = require("./apply-gcp-env.cjs");
 const { resolveGcpProjectId } = require("./gcp-config.cjs");
-const { assertSemver } = require("./semver.cjs");
+const { assertSemver, versionSortKey } = require("./semver.cjs");
 const { generateReleaseNotes, writeReleaseArtifacts, SECTION_LABELS } = require("./generate-release-notes.cjs");
 const { registerPluginVersion } = require("./register-version.cjs");
 const { generateAppcast } = require("./generate-appcast.cjs");
@@ -119,6 +119,49 @@ function ensureBucket(bucket, projectId, location) {
     "--uniform-bucket-level-access",
   ]);
   console.log(`upload: created bucket gs://${bucket}`);
+}
+
+function uploadSparkleDeltas({
+  bucket,
+  prefix,
+  projectId,
+  version,
+  archivesDir,
+}) {
+  const buildNumber = versionSortKey(assertSemver(version, "version"));
+  const deltaPrefix = `DiskWise${buildNumber}-`;
+  const files = fs
+    .readdirSync(archivesDir)
+    .filter((name) => name.startsWith(deltaPrefix) && name.endsWith(".delta"));
+
+  if (files.length === 0) {
+    console.log(`upload: no Sparkle deltas found for build ${buildNumber}`);
+    return;
+  }
+
+  for (const fileName of files.sort()) {
+    const localPath = path.join(archivesDir, fileName);
+    const versionObjectPath = `${prefix}/${version}/${fileName}`;
+    const latestObjectPath = `${prefix}/latest/${fileName}`;
+
+    console.log(`upload: uploading ${fileName} → gs://${bucket}/${latestObjectPath}`);
+    run("gcloud", [
+      "storage",
+      "cp",
+      localPath,
+      `gs://${bucket}/${versionObjectPath}`,
+      "--project",
+      projectId,
+    ]);
+    run("gcloud", [
+      "storage",
+      "cp",
+      localPath,
+      `gs://${bucket}/${latestObjectPath}`,
+      "--project",
+      projectId,
+    ]);
+  }
 }
 
 async function uploadRelease(options = {}) {
@@ -259,6 +302,16 @@ async function uploadRelease(options = {}) {
     ]);
   }
 
+  if (fs.existsSync(sparkleZipPath)) {
+    uploadSparkleDeltas({
+      bucket,
+      prefix,
+      projectId,
+      version,
+      archivesDir: path.join(resolveReleasesDir(), "sparkle"),
+    });
+  }
+
   const sizeBytes = fs.statSync(dmgPath).size;
   const registration = await registerPluginVersion({
     release,
@@ -304,4 +357,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { uploadRelease, dmgFileName, resolveAppId };
+module.exports = { uploadRelease, dmgFileName, resolveAppId, uploadSparkleDeltas };

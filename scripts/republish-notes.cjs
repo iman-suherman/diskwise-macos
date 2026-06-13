@@ -9,8 +9,7 @@ const { resolveGcpProjectId } = require("./gcp-config.cjs");
 const { assertSemver } = require("./semver.cjs");
 const { generateReleaseNotes, writeReleaseArtifacts } = require("./generate-release-notes.cjs");
 const { registerPluginVersion } = require("./register-version.cjs");
-const { generateAppcast } = require("./generate-appcast.cjs");
-const { dmgFileName, resolveAppId } = require("./upload-release.cjs");
+const { resolveDownloadBase } = require("./public-download-url.cjs");
 
 const root = path.join(__dirname, "..");
 
@@ -66,8 +65,13 @@ async function republishNotes(version) {
   ]);
 
   const sparkleZipPath = path.join(root, "releases", "sparkle", `DiskWise-${version}.zip`);
+  const sparkleArchivesDir = path.join(root, "releases", "sparkle");
   if (require("fs").existsSync(sparkleZipPath)) {
-    const appcastArtifacts = generateAppcast({ release });
+    const appcastArtifacts = generateAppcast({
+      release,
+      downloadBase: resolveDownloadBase({ ...process.env, SPARKLE_LOCAL: "0", LOCAL_RELEASE: "0" }),
+      copyToWebsite: false,
+    });
     run("gcloud", [
       "storage",
       "cp",
@@ -76,6 +80,13 @@ async function republishNotes(version) {
       "--project",
       projectId,
     ]);
+    uploadSparkleDeltas({
+      bucket,
+      prefix,
+      projectId,
+      version,
+      archivesDir: sparkleArchivesDir,
+    });
   }
 
   const dmgPath = path.join(root, "releases", dmgFileName(appId, version));
