@@ -56,40 +56,75 @@ final class SystemVolumeMonitor: ObservableObject {
     }
 }
 
+enum MenuBarDiskThresholds {
+    static var physicalMemoryBytes: Int64 {
+        Int64(ProcessInfo.processInfo.physicalMemory)
+    }
+
+    static func isCriticallyLow(freeSize: Int64) -> Bool {
+        freeSize < physicalMemoryBytes * 2
+    }
+
+    static func statusColor(freeSize: Int64, freeFraction: Double) -> Color {
+        if isCriticallyLow(freeSize: freeSize) {
+            return .red
+        }
+        if freeFraction < 0.15 {
+            return .orange
+        }
+        return .green
+    }
+}
+
 struct MenuBarStatusLabel: View {
     let volume: MountedVolume?
 
     var body: some View {
         HStack(spacing: 6) {
-            Text(usagePercentLabel)
+            Text(remainingPercentLabel)
                 .font(.system(size: 12, weight: .semibold, design: .rounded))
                 .monospacedDigit()
+                .foregroundStyle(statusColor)
 
-            MenuBarUsageBar(fraction: usageFraction)
-                .frame(width: 36, height: 5)
+            MenuBarRemainingBar(
+                freeFraction: freeFraction,
+                statusColor: statusColor
+            )
+            .frame(width: 36, height: 5)
         }
         .padding(.horizontal, 2)
         .accessibilityLabel(accessibilityLabel)
     }
 
-    private var usageFraction: Double {
-        volume?.usageFraction ?? 0
+    private var freeFraction: Double {
+        guard let volume else { return 0 }
+        return max(0, min(1, 1 - volume.usageFraction))
     }
 
-    private var usagePercentLabel: String {
+    private var remainingPercentLabel: String {
         guard volume != nil else { return "—" }
-        return String(format: "%.0f%%", usageFraction * 100)
+        return String(format: "%.0f%%", freeFraction * 100)
+    }
+
+    private var statusColor: Color {
+        guard let volume else { return .secondary }
+        return MenuBarDiskThresholds.statusColor(
+            freeSize: volume.freeSize,
+            freeFraction: freeFraction
+        )
     }
 
     private var accessibilityLabel: String {
         guard let volume else { return "Disk space unavailable" }
-        let percent = Int((usageFraction * 100).rounded())
-        return "\(volume.name) \(percent) percent used"
+        let freePercent = Int((freeFraction * 100).rounded())
+        let usedPercent = Int((volume.usageFraction * 100).rounded())
+        return "\(volume.name), \(freePercent) percent free, \(usedPercent) percent used"
     }
 }
 
-struct MenuBarUsageBar: View {
-    let fraction: Double
+struct MenuBarRemainingBar: View {
+    let freeFraction: Double
+    let statusColor: Color
 
     var body: some View {
         GeometryReader { geometry in
@@ -98,17 +133,9 @@ struct MenuBarUsageBar: View {
                     .fill(Color.primary.opacity(0.18))
 
                 Capsule()
-                    .fill(usageColor(for: fraction))
-                    .frame(width: max(0, geometry.size.width * min(max(fraction, 0), 1)))
+                    .fill(statusColor)
+                    .frame(width: max(0, geometry.size.width * min(max(freeFraction, 0), 1)))
             }
-        }
-    }
-
-    private func usageColor(for fraction: Double) -> Color {
-        switch fraction {
-        case 0.9...: return .red
-        case 0.75..<0.9: return .orange
-        default: return .accentColor
         }
     }
 }
@@ -118,48 +145,41 @@ struct MenuBarPopoverContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "internaldrive.fill")
-                    .font(.title2)
-                    .foregroundStyle(Color.accentColor)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(volumeName)
-                        .font(.headline)
-                    Text("DiskWise menu bar monitor")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                Button {
-                    monitor.refresh()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                }
-                .buttonStyle(.borderless)
-                .help("Refresh")
+            VStack(alignment: .leading, spacing: 2) {
+                Text(volumeName)
+                    .font(.headline)
+                Text("DiskWise menu bar monitor")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             if let volume = monitor.systemVolume {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("Used")
-                        Spacer()
-                        Text("\(Int((volume.usageFraction * 100).rounded()))%")
-                            .font(.body.monospacedDigit().weight(.semibold))
-                    }
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Used \(Int((volume.usageFraction * 100).rounded()))%")
+                        .font(.body.monospacedDigit().weight(.semibold))
+                        .foregroundStyle(
+                            MenuBarDiskThresholds.statusColor(
+                                freeSize: volume.freeSize,
+                                freeFraction: max(0, 1 - volume.usageFraction)
+                            )
+                        )
 
-                    ProgressView(value: volume.usageFraction)
-                        .tint(usageColor(for: volume.usageFraction))
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            statHeader("Total")
+                            Spacer()
+                            statHeader("Used")
+                            Spacer()
+                            statHeader("Free")
+                        }
 
-                    HStack {
-                        statColumn(title: "Total", value: MenuBarFormatters.bytes.string(fromByteCount: volume.totalSize))
-                        Spacer()
-                        statColumn(title: "Used", value: MenuBarFormatters.bytes.string(fromByteCount: volume.usedSize))
-                        Spacer()
-                        statColumn(title: "Free", value: MenuBarFormatters.bytes.string(fromByteCount: volume.freeSize))
+                        HStack {
+                            statValue(MenuBarFormatters.gigabytes(volume.totalSize))
+                            Spacer()
+                            statValue(MenuBarFormatters.gigabytes(volume.usedSize))
+                            Spacer()
+                            statValue(MenuBarFormatters.gigabytes(volume.freeSize))
+                        }
                     }
                 }
             } else {
@@ -173,7 +193,7 @@ struct MenuBarPopoverContent: View {
 
             Divider()
 
-            Button("Show DiskWise") {
+            Button("Open DiskWise") {
                 NSApp.activate(ignoringOtherApps: true)
                 NSApp.windows.first { $0.canBecomeMain }?.makeKeyAndOrderFront(nil)
             }
@@ -181,30 +201,24 @@ struct MenuBarPopoverContent: View {
             .frame(maxWidth: .infinity)
         }
         .padding(16)
-        .frame(width: 280)
+        .frame(width: 300)
     }
 
     private var volumeName: String {
         monitor.systemVolume?.name ?? "Macintosh HD"
     }
 
-    @ViewBuilder
-    private func statColumn(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.caption.monospacedDigit())
-        }
+    private func statHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func usageColor(for fraction: Double) -> Color {
-        switch fraction {
-        case 0.9...: return .red
-        case 0.75..<0.9: return .orange
-        default: return .accentColor
-        }
+    private func statValue(_ value: String) -> some View {
+        Text(value)
+            .font(.caption.monospacedDigit())
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -214,6 +228,11 @@ enum MenuBarFormatters {
         formatter.countStyle = .file
         return formatter
     }()
+
+    static func gigabytes(_ bytes: Int64) -> String {
+        let gigabytes = Double(bytes) / 1_000_000_000
+        return String(format: "%.2f GB", gigabytes)
+    }
 }
 
 struct MenuBarStatusLabelView: View {
@@ -224,6 +243,19 @@ struct MenuBarStatusLabelView: View {
     }
 }
 
+final class MenuBarClickableStatusView: NSView {
+    var onClick: (() -> Void)?
+
+    override func mouseUp(with event: NSEvent) {
+        onClick?()
+    }
+
+    override func resetCursorRects() {
+        discardCursorRects()
+        addCursorRect(bounds, cursor: .pointingHand)
+    }
+}
+
 @MainActor
 final class MenuBarStatusItemController: NSObject {
     static let shared = MenuBarStatusItemController()
@@ -231,6 +263,7 @@ final class MenuBarStatusItemController: NSObject {
     private let monitor = SystemVolumeMonitor()
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
+    private var statusView: MenuBarClickableStatusView?
 
     private override init() {
         super.init()
@@ -250,11 +283,17 @@ final class MenuBarStatusItemController: NSObject {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         let hostingView = NSHostingView(rootView: MenuBarStatusLabelView(monitor: monitor))
         hostingView.frame.size = NSSize(width: 72, height: 18)
-        item.view = hostingView
-        item.button?.target = self
-        item.button?.action = #selector(togglePopover(_:))
-        item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
+
+        let container = MenuBarClickableStatusView(frame: hostingView.frame)
+        container.onClick = { [weak self] in
+            self?.togglePopover()
+        }
+        hostingView.frame.origin = .zero
+        container.addSubview(hostingView)
+
+        item.view = container
         statusItem = item
+        statusView = container
     }
 
     private func uninstall() {
@@ -264,23 +303,24 @@ final class MenuBarStatusItemController: NSObject {
             NSStatusBar.system.removeStatusItem(statusItem)
         }
         statusItem = nil
+        statusView = nil
     }
 
-    @objc private func togglePopover(_ sender: Any?) {
-        guard let button = statusItem?.button else { return }
+    private func togglePopover() {
+        guard let anchorView = statusView ?? statusItem?.button else { return }
 
         if let popover, popover.isShown {
-            popover.performClose(sender)
+            popover.performClose(nil)
             return
         }
 
         let popover = NSPopover()
-        popover.contentSize = NSSize(width: 280, height: 320)
+        popover.contentSize = NSSize(width: 300, height: 260)
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(
             rootView: MenuBarPopoverContent(monitor: monitor)
         )
-        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        popover.show(relativeTo: anchorView.bounds, of: anchorView, preferredEdge: .minY)
         self.popover = popover
     }
 }
