@@ -354,19 +354,6 @@ final class AppViewModel: ObservableObject {
         guard !showFullDiskAccessPrompt, !showIndexRebuildPrompt, !showWhatsNewTour, !showSavedScanPrompt else { return }
         guard !appSettings.menuBarExtensionPromptDismissed else { return }
         guard !appSettings.showMenuBarDiskMonitor else { return }
-
-        if MenuBarMonitorController.launchAtLoginService.status == .requiresApproval {
-            switch MenuBarExtensionPrompt.presentApprovalPrompt() {
-            case .openSettings:
-                MenuBarMonitorController.openLoginItemsSettingsForApproval()
-                appSettings.showMenuBarMonitorInstructions = true
-                setStatus("Approve DiskWise in System Settings", kind: .ready)
-            case .install, .dismiss:
-                appSettings.menuBarExtensionPromptDismissed = true
-            }
-            return
-        }
-
         guard appSettings.shouldOfferMenuBarMonitor else { return }
 
         switch MenuBarExtensionPrompt.presentInstallPrompt() {

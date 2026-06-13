@@ -13,14 +13,18 @@ enum MenuBarMonitorController {
         launchAtLoginService.status == .enabled
     }
 
+    static var menuBarMonitorStatusDescription: String {
+        "Shows remaining disk space with a color-coded bar while DiskWise is running."
+    }
+
     static var launchAtLoginStatusDescription: String {
         switch launchAtLoginService.status {
         case .enabled:
-            return "DiskWise opens at login with the menu bar monitor"
+            return "DiskWise opens automatically when you log in"
         case .requiresApproval:
-            return "Needs approval in System Settings"
+            return "Approve DiskWise in System Settings → Login Items"
         case .notRegistered:
-            return "Menu bar monitor active while DiskWise is running"
+            return "DiskWise opens only when you launch it manually"
         case .notFound:
             return "Install DiskWise from the release app to enable login at startup"
         @unknown default:
@@ -29,27 +33,30 @@ enum MenuBarMonitorController {
     }
 
     @MainActor
-    static func apply(enabled: Bool, settings: AppSettings) {
-        if enabled {
-            settings.showMenuBarDiskMonitor = true
-            MenuBarStatusItemController.shared.setEnabled(true)
-            unregisterLegacyLoginItemIfNeeded()
+    static func applyMenuBarMonitor(enabled: Bool, settings: AppSettings) {
+        settings.showMenuBarDiskMonitor = enabled
+        settings.showMenuBarMonitorInstructions = false
+        MenuBarStatusItemController.shared.setEnabled(enabled)
+        unregisterLegacyLoginItemIfNeeded()
+    }
 
+    @MainActor
+    static func applyLaunchAtLogin(enabled: Bool, settings: AppSettings) {
+        if enabled {
             do {
                 try launchAtLoginService.register()
-                openLoginItemsSettingsForApproval()
-                if launchAtLoginService.status == .requiresApproval || !launchAtLoginEnabled {
-                    settings.showMenuBarMonitorInstructions = true
+                if launchAtLoginService.status == .requiresApproval {
+                    openLoginItemsSettingsForApproval()
                 }
             } catch {
-                settings.showMenuBarMonitorInstructions = true
+                settings.launchAtLogin = false
+                return
             }
         } else {
-            settings.showMenuBarDiskMonitor = false
-            settings.showMenuBarMonitorInstructions = false
-            MenuBarStatusItemController.shared.setEnabled(false)
             try? launchAtLoginService.unregister()
         }
+
+        settings.launchAtLogin = enabled
     }
 
     static func unregisterLegacyLoginItemIfNeeded() {

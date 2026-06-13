@@ -12,9 +12,9 @@ struct MenuBarMonitorInstructionSheet: View {
                     .symbolRenderingMode(.hierarchical)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Set up menu bar disk monitor")
+                    Text("Menu bar disk monitor")
                         .font(.title2.bold())
-                    Text("DiskWise shows Macintosh HD usage in the menu bar while the app is running.")
+                    Text("DiskWise shows remaining disk space in the menu bar while the app is running.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -23,28 +23,24 @@ struct MenuBarMonitorInstructionSheet: View {
             VStack(alignment: .leading, spacing: 12) {
                 instructionRow(
                     number: 1,
-                    title: "Menu bar monitor is on",
-                    detail: "Look for the percentage and bar chart in the top menu bar while DiskWise is open."
+                    title: "Look for the icon",
+                    detail: "The percentage and bar show free space. Red means less than twice your Mac’s memory is available."
                 )
                 instructionRow(
                     number: 2,
-                    title: "Approve login at startup",
-                    detail: "In System Settings → General → Login Items → Open at Login, turn on DiskWise so the monitor starts when you log in."
+                    title: "Click for details",
+                    detail: "Click the menu bar icon to see used space, total capacity, and free space for your startup disk."
                 )
                 instructionRow(
                     number: 3,
-                    title: "Use the View menu",
-                    detail: "You can also toggle “Show Disk Space in Menu Bar” from View in the menu bar."
+                    title: "Toggle anytime",
+                    detail: "Use View → Show Disk Space in Menu Bar, Settings, or Hide Menu Bar Monitor in the popover to turn it off."
                 )
             }
             .padding(14)
             .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
             HStack {
-                Button("Open System Settings") {
-                    MenuBarMonitorController.openLoginItemsSettingsForApproval()
-                }
-
                 Spacer()
 
                 Button("Got It") {
