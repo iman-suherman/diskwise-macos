@@ -3,6 +3,23 @@
     <channel>
         <title>DiskWise</title>
         <item>
+            <title>0.5.1</title>
+            <pubDate>Sun, 14 Jun 2026 07:11:11 +1000</pubDate>
+            <sparkle:version>5001</sparkle:version>
+            <sparkle:shortVersionString>0.5.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<ul>
+<li><strong>What's new</strong><ul>
+<li>Startup wizard that opens a bundled install script in Terminal or links to python.org when Python 3.8+ is missing</li>
+</ul></li>
+<li><strong>Improvements</strong><ul>
+<li>Python scanner discovery checks Homebrew, system, and python.org framework installs and validates version 3.8 or newer</li>
+</ul></li>
+</ul>
+]]></description>
+            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.5.1.zip" length="12933167" type="application/octet-stream" sparkle:edSignature="SXaAGak3OMVg0v3ssgdxaU2klVgOgelXUM7zniyjPaTT4UGlV8nqP86qVzJLjjzBNL4ErXc98fYIuv7k4JZaCg=="/>
+        </item>
+        <item>
             <title>0.5.0</title>
             <pubDate>Sun, 14 Jun 2026 06:59:42 +1000</pubDate>
             <sparkle:version>5000</sparkle:version>
@@ -47,35 +64,6 @@
                 <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4001-3007.delta" sparkle:deltaFrom="3007" length="1189810" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="IftQb1fjiDaVGaPepUagEyad+neLJ70V7F6qNiVrDRYmCPpnus4Xpsm2VmLhlepaUzXrD9BomG0ZRDZUUyzmAw=="/>
                 <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4001-3005.delta" sparkle:deltaFrom="3005" length="1239370" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="3Ny2VX0Wsvig3WDzcP5Hphthr2iudWxmJe2qB/+6uJlAVCXa7XKh+DEr2g27fCWMEUK95EHqMSno/7qgN7DEBQ=="/>
                 <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4001-3006.delta" sparkle:deltaFrom="3006" length="1270010" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="RYxXZ8YZt6ZieFNRCQyKqpR93qFYyxCjmo8Z7+85ZJvR2AzOvqtUnnPeE/NhE5XuqX9B7oxIfdmhlV0o1s+iDA=="/>
-            </sparkle:deltas>
-        </item>
-        <item>
-            <title>0.4.0</title>
-            <pubDate>Sat, 13 Jun 2026 23:30:51 +1000</pubDate>
-            <sparkle:version>4000</sparkle:version>
-            <sparkle:shortVersionString>0.4.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<ul>
-<li><strong>What's new</strong><ul>
-<li>Scan Macintosh HD button in the disk space menu bar popover</li>
-<li>Live scan progress in the disk menu bar popover while identifying storage</li>
-<li>Show DiskWise in Dock toggle in both disk and system status menu bar popovers</li>
-</ul></li>
-<li><strong>Improvements</strong><ul>
-<li>Fast scans run sequentially to reduce system load during identification</li>
-<li>Health menu bar icon shows Good, Fair, or Poor instead of a numeric score; numeric score remains in the app</li>
-<li>System status top processes show application names only, without full paths</li>
-<li>Dashboard scan panel shows folder progress instead of parallel worker counts</li>
-</ul></li>
-</ul>
-]]></description>
-            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.4.0.zip" length="12750765" type="application/octet-stream" sparkle:edSignature="GYvu+aTXAPuQkdLVP8tp7sv9HIpfxZcDw5ub2zfxI4E0WpcQH5cXe5h3ovsrAu/gtWnDMou4xJ6d4D1QzXL/Ag=="/>
-            <sparkle:deltas>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4000-3009.delta" sparkle:deltaFrom="3009" length="858518" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="k4G6ZjSspuL+fz9RTwI0T/NN3hldCfhClIbthpOe5mQ8dpPYCWJ2q+5r36q/O2HFxFEoT9zd9m5E6yOgxkhBBA=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4000-3006.delta" sparkle:deltaFrom="3006" length="1225290" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="bzYEto6R9GAW6LelQlQxREHswENcF1XMzmpnTRJiebdU8xUihF3ySh/1PP3VvMntBolEXNit6Hv9D40zQO3oAw=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4000-3007.delta" sparkle:deltaFrom="3007" length="1178078" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="1FvzDu1wRf3tIZkZUbP8RNI18OMSZMwuFPxsLlclqhktM8nGdGWYojkc2zFfJ4kVr3ujeOzEgZvy9m+ANzmtCw=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4000-3005.delta" sparkle:deltaFrom="3005" length="1214294" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="Q/g4qursfDh75JsODMMRKmFvBO6GO2SB2NwrymTuRKMyWBUJ6U6MpZxmmifZDCX6jRN5BNoTI/2gf9XUvKErAw=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4000-3004.delta" sparkle:deltaFrom="3004" length="3353050" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="E0JQCt3ePOSlPtReE7k03GGa9yjYAqUGPykpKMKseeACzJQGL/qcwo1BF3TLlgkBTjiTBmIWY72up1NJU1OICQ=="/>
             </sparkle:deltas>
         </item>
     </channel>
