@@ -24,7 +24,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.applicationIconImage = icon
         }
 
-        MenuBarStatusItemController.shared.setEnabled(AppSettings.shared.showMenuBarDiskMonitor)
+        MenuBarStatusItemController.shared.syncVisibility(
+            showPercentage: AppSettings.shared.showMenuBarDiskPercentage,
+            showFreeGB: AppSettings.shared.showMenuBarDiskFreeGB
+        )
     }
 }
 
@@ -63,10 +66,17 @@ struct DiskWiseApp: App {
             }
             CommandMenu("View") {
                 Toggle(
-                    "Show Disk Space in Menu Bar",
+                    "Show Disk Space Percentage in Menu Bar",
                     isOn: Binding(
-                        get: { appSettings.showMenuBarDiskMonitor },
-                        set: { appSettings.setMenuBarDiskMonitorEnabled($0) }
+                        get: { appSettings.showMenuBarDiskPercentage },
+                        set: { appSettings.setMenuBarDiskPercentageVisible($0) }
+                    )
+                )
+                Toggle(
+                    "Show Free Disk Space (GB) in Menu Bar",
+                    isOn: Binding(
+                        get: { appSettings.showMenuBarDiskFreeGB },
+                        set: { appSettings.setMenuBarDiskFreeGBVisible($0) }
                     )
                 )
             }

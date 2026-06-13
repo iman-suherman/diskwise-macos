@@ -94,11 +94,17 @@ enum MenuBarDiskThresholds {
     }
 }
 
+enum MenuBarDisplayMode {
+    case percentage
+    case freeGB
+}
+
 struct MenuBarStatusLabel: View {
     let volume: MountedVolume?
+    let mode: MenuBarDisplayMode
 
     var body: some View {
-        Text(remainingPercentLabel)
+        Text(labelText)
             .font(.system(size: 12, weight: .semibold, design: .rounded))
             .monospacedDigit()
             .foregroundStyle(statusColor)
@@ -111,9 +117,14 @@ struct MenuBarStatusLabel: View {
         return max(0, min(1, 1 - volume.usageFraction))
     }
 
-    private var remainingPercentLabel: String {
-        guard volume != nil else { return "—" }
-        return String(format: "%.0f%%", freeFraction * 100)
+    private var labelText: String {
+        guard let volume else { return "—" }
+        switch mode {
+        case .percentage:
+            return String(format: "%.0f%%", freeFraction * 100)
+        case .freeGB:
+            return MenuBarFormatters.compactFreeGigabytes(volume.freeSize)
+        }
     }
 
     private var statusColor: Color {
@@ -127,14 +138,27 @@ struct MenuBarStatusLabel: View {
     private var accessibilityLabel: String {
         guard let volume else { return "Disk space unavailable" }
         let freePercent = Int((freeFraction * 100).rounded())
-        let usedPercent = Int((volume.usageFraction * 100).rounded())
-        return "\(volume.name), \(freePercent) percent free, \(usedPercent) percent used"
+        switch mode {
+        case .percentage:
+            return "\(volume.name), \(freePercent) percent free"
+        case .freeGB:
+            return "\(volume.name), \(MenuBarFormatters.compactFreeGigabytes(volume.freeSize)) free"
+        }
+    }
+}
+
+struct MenuBarStatusLabelView: View {
+    @ObservedObject var monitor: SystemVolumeMonitor
+    let mode: MenuBarDisplayMode
+
+    var body: some View {
+        MenuBarStatusLabel(volume: monitor.systemVolume, mode: mode)
     }
 }
 
 struct MenuBarPopoverContent: View {
     @ObservedObject var monitor: SystemVolumeMonitor
-    var onHideMonitor: () -> Void
+    @ObservedObject var settings: AppSettings
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -193,17 +217,34 @@ struct MenuBarPopoverContent: View {
 
             Divider()
 
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Menu bar display")
+                    .font(.subheadline.weight(.semibold))
+
+                Toggle(
+                    "Show percentage",
+                    isOn: Binding(
+                        get: { settings.showMenuBarDiskPercentage },
+                        set: { settings.setMenuBarDiskPercentageVisible($0) }
+                    )
+                )
+
+                Toggle(
+                    "Show free space (GB)",
+                    isOn: Binding(
+                        get: { settings.showMenuBarDiskFreeGB },
+                        set: { settings.setMenuBarDiskFreeGBVisible($0) }
+                    )
+                )
+            }
+
+            Divider()
+
             Button("Open DiskWise") {
                 NSApp.activate(ignoringOtherApps: true)
                 NSApp.windows.first { $0.canBecomeMain }?.makeKeyAndOrderFront(nil)
             }
             .buttonStyle(.borderedProminent)
-            .frame(maxWidth: .infinity)
-
-            Button("Hide Menu Bar Monitor") {
-                onHideMonitor()
-            }
-            .buttonStyle(.bordered)
             .frame(maxWidth: .infinity)
         }
         .padding(16)
@@ -246,13 +287,16 @@ enum MenuBarFormatters {
         let gigabytes = Double(bytes) / 1_000_000_000
         return String(format: "%.2f GB", gigabytes)
     }
-}
 
-struct MenuBarStatusLabelView: View {
-    @ObservedObject var monitor: SystemVolumeMonitor
-
-    var body: some View {
-        MenuBarStatusLabel(volume: monitor.systemVolume)
+    static func compactFreeGigabytes(_ bytes: Int64) -> String {
+        let gigabytes = Double(bytes) / 1_000_000_000
+        if gigabytes >= 100 {
+            return String(format: "%.0f GB", gigabytes)
+        }
+        if gigabytes >= 10 {
+            return String(format: "%.0f GB", gigabytes)
+        }
+        return String(format: "%.1f GB", gigabytes)
     }
 }
 
@@ -274,69 +318,87 @@ final class MenuBarStatusItemController: NSObject {
     static let shared = MenuBarStatusItemController()
 
     private let monitor = SystemVolumeMonitor()
-    private var statusItem: NSStatusItem?
+    private var percentageSlot: MenuBarStatusSlot?
+    private var freeGBSlot: MenuBarStatusSlot?
     private var popover: NSPopover?
-    private var statusView: MenuBarClickableStatusView?
+
+    private struct MenuBarStatusSlot {
+        let statusItem: NSStatusItem
+        let containerView: MenuBarClickableStatusView
+    }
 
     private override init() {
         super.init()
     }
 
-    func setEnabled(_ enabled: Bool) {
-        if enabled {
-            installIfNeeded()
-        } else {
-            uninstall()
+    func syncVisibility(showPercentage: Bool, showFreeGB: Bool) {
+        syncSlot(
+            slot: &percentageSlot,
+            visible: showPercentage,
+            mode: .percentage,
+            width: 44
+        )
+        syncSlot(
+            slot: &freeGBSlot,
+            visible: showFreeGB,
+            mode: .freeGB,
+            width: 58
+        )
+
+        if !showPercentage && !showFreeGB {
+            popover?.close()
+            popover = nil
         }
     }
 
-    private func installIfNeeded() {
-        guard statusItem == nil else { return }
+    private func syncSlot(
+        slot: inout MenuBarStatusSlot?,
+        visible: Bool,
+        mode: MenuBarDisplayMode,
+        width: CGFloat
+    ) {
+        if visible {
+            if slot == nil {
+                slot = makeSlot(mode: mode, width: width)
+            }
+        } else if let existing = slot {
+            NSStatusBar.system.removeStatusItem(existing.statusItem)
+            slot = nil
+        }
+    }
 
+    private func makeSlot(mode: MenuBarDisplayMode, width: CGFloat) -> MenuBarStatusSlot {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        let hostingView = NSHostingView(rootView: MenuBarStatusLabelView(monitor: monitor))
-        hostingView.frame.size = NSSize(width: 44, height: 18)
+        let hostingView = NSHostingView(
+            rootView: MenuBarStatusLabelView(monitor: monitor, mode: mode)
+        )
+        hostingView.frame.size = NSSize(width: width, height: 18)
 
         let container = MenuBarClickableStatusView(frame: hostingView.frame)
-        container.onClick = { [weak self] in
-            self?.togglePopover()
+        container.onClick = { [weak self, weak container] in
+            guard let container else { return }
+            self?.togglePopover(anchoredTo: container)
         }
         hostingView.frame.origin = .zero
         container.addSubview(hostingView)
 
         item.view = container
-        statusItem = item
-        statusView = container
+        return MenuBarStatusSlot(statusItem: item, containerView: container)
     }
 
-    private func uninstall() {
-        popover?.close()
-        popover = nil
-        if let statusItem {
-            NSStatusBar.system.removeStatusItem(statusItem)
-        }
-        statusItem = nil
-        statusView = nil
-    }
-
-    private func togglePopover() {
-        guard let anchorView = statusView ?? statusItem?.button else { return }
-
+    private func togglePopover(anchoredTo anchorView: NSView) {
         if let popover, popover.isShown {
             popover.performClose(nil)
             return
         }
 
         let popover = NSPopover()
-        popover.contentSize = NSSize(width: 300, height: 300)
+        popover.contentSize = NSSize(width: 300, height: 360)
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(
             rootView: MenuBarPopoverContent(
                 monitor: monitor,
-                onHideMonitor: { [weak self] in
-                    AppSettings.shared.setMenuBarDiskMonitorEnabled(false)
-                    self?.popover?.performClose(nil)
-                }
+                settings: AppSettings.shared
             )
         )
         popover.show(relativeTo: anchorView.bounds, of: anchorView, preferredEdge: .minY)
