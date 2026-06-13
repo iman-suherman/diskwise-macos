@@ -1,0 +1,11 @@
+{
+  "summary": "Dedicated System Status tab with live CPU and memory process lists, process inspection, and quit controls.",
+  "introduced": [
+    "System Status tab in the toolbar with health score, metrics, and top CPU / top memory process lists",
+    "Process detail sheet with owner, bundle ID, executable path, and quit or force quit actions"
+  ],
+  "changed": [
+    "System health monitoring uses a shared service for the menu bar badge and System Status tab"
+  ],
+  "fixed": []
+}

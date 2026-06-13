@@ -276,6 +276,23 @@ struct ContentView: View {
                 .tag(DetailPane.overview)
 
                 Label {
+                    HStack(spacing: 6) {
+                        Text(DetailPane.systemStatus.title)
+                        if let score = SystemHealthMonitor.shared.snapshot?.healthScore {
+                            Text("\(score)")
+                                .font(.caption2.weight(.bold))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(healthScoreBadgeColor(score).opacity(0.18), in: Capsule())
+                                .foregroundStyle(healthScoreBadgeColor(score))
+                        }
+                    }
+                } icon: {
+                    Image(systemName: DetailPane.systemStatus.icon)
+                }
+                .tag(DetailPane.systemStatus)
+
+                Label {
                     Text(DetailPane.maintenance.title)
                 } icon: {
                     Image(systemName: DetailPane.maintenance.icon)
@@ -300,7 +317,7 @@ struct ContentView: View {
                 .tag(DetailPane.duplicates)
             }
             .pickerStyle(.segmented)
-            .frame(maxWidth: 420)
+            .frame(maxWidth: 560)
         }
 
         ToolbarItem(placement: .status) {
@@ -320,6 +337,8 @@ struct ContentView: View {
         switch viewModel.selectedPane {
         case .overview:
             VolumeDiskTabView()
+        case .systemStatus:
+            SystemStatusView()
         case .maintenance:
             MaintenanceView()
         case .duplicates:
@@ -328,6 +347,11 @@ struct ContentView: View {
             VolumeDiskTabView()
                 .onAppear { viewModel.selectedVolumeTab = .aiAnalysis }
         }
+    }
+
+    private func healthScoreBadgeColor(_ score: Int) -> Color {
+        let rgb = SystemHealthMonitorCore.healthScoreColor(score)
+        return Color(red: rgb.red, green: rgb.green, blue: rgb.blue)
     }
 
     private var sidebar: some View {

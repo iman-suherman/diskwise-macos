@@ -12,6 +12,8 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
+        case "0.5.8":
+            return v058Pages
         case "0.5.7":
             return v057Pages
         case "0.5.6":
@@ -50,6 +52,31 @@ enum WhatsNewContent {
             return genericPages(version: version)
         }
     }
+
+    private static let v058Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "system-status-tab",
+            icon: "heart.text.square",
+            title: "System Status tab",
+            message: "Inspect live CPU, memory, disk, and uptime from a dedicated toolbar tab with your Mac's health score at a glance.",
+            bullets: [
+                "Side-by-side top CPU and top memory process lists",
+                "Load average, cores, and memory breakdown in one place",
+                "Refresh on demand while the tab is open",
+            ]
+        ),
+        WhatsNewPage(
+            id: "process-inspect",
+            icon: "app.dashed",
+            title: "Inspect and quit processes",
+            message: "Tap any process to open a detail sheet with PID, owner, bundle ID, and executable path.",
+            bullets: [
+                "Quit or force quit with confirmation",
+                "Protected system processes cannot be terminated from DiskWise",
+                "Menu bar health badge shares the same live monitor",
+            ]
+        ),
+    ]
 
     private static let v057Pages: [WhatsNewPage] = [
         WhatsNewPage(

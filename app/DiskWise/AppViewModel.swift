@@ -55,6 +55,7 @@ enum ScanPhase: String, Sendable {
 
 enum DetailPane: String, CaseIterable, Identifiable {
     case overview
+    case systemStatus
     case maintenance
     case duplicates
     case ai
@@ -64,6 +65,7 @@ enum DetailPane: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .overview: return "Overview"
+        case .systemStatus: return "System Status"
         case .maintenance: return "Maintenance"
         case .duplicates: return "Duplicates"
         case .ai: return "Ask DiskWise"
@@ -73,6 +75,7 @@ enum DetailPane: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .overview: return "chart.pie"
+        case .systemStatus: return "heart.text.square"
         case .maintenance: return "wrench.and.screwdriver.fill"
         case .duplicates: return "doc.on.doc"
         case .ai: return "sparkles"
@@ -2539,6 +2542,10 @@ final class AppViewModel: ObservableObject {
     private func setStatus(_ message: String, kind: AppStatusKind) {
         statusMessage = message
         statusKind = kind
+    }
+
+    func reportProcessAction(_ message: String, success: Bool = true) {
+        setStatus(message, kind: success ? .success : .error)
     }
 }
 

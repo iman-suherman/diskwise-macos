@@ -280,7 +280,7 @@ struct MenuBarHealthPopoverContent: View {
 final class MenuBarHealthItemController: NSObject {
     static let shared = MenuBarHealthItemController()
 
-    private let monitor = SystemHealthMonitor()
+    private let monitor = SystemHealthMonitor.shared
     private var healthSlot: MenuBarStatusSlot?
     private var popover: NSPopover?
 

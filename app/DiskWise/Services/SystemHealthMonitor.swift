@@ -10,6 +10,34 @@ struct ProcessUsage: Identifiable, Sendable {
     let memoryBytes: Int64
 }
 
+struct ProcessDetail: Identifiable, Sendable {
+    let pid: Int32
+    let name: String
+    let cpuPercent: Double
+    let memoryBytes: Int64
+    let executablePath: String?
+    let bundleIdentifier: String?
+    let parentPID: Int32?
+    let ownerUsername: String?
+    let isRunning: Bool
+
+    var id: Int32 { pid }
+}
+
+enum ProcessTerminateResult: Sendable, Equatable {
+    case terminated
+    case permissionDenied
+    case processNotFound
+    case protectedSystemProcess
+    case failed(String)
+}
+
+struct ProcessTerminateRequest: Identifiable {
+    let process: ProcessDetail
+    let force: Bool
+    var id: Int32 { process.pid }
+}
+
 struct SystemHealthSnapshot: Sendable {
     let healthScore: Int
     let hostName: String
@@ -120,7 +148,7 @@ enum SystemHealthMonitorCore {
     }
 
     @MainActor
-    static func capture(volume: MountedVolume?) -> SystemHealthSnapshot {
+    static func capture(volume: MountedVolume?, processLimit: Int = 5) -> SystemHealthSnapshot {
         let cpuUsage = readCPUUsagePercent()
         let memory = readMemoryUsage()
         let load = readLoadAverage()
@@ -131,8 +159,8 @@ enum SystemHealthMonitorCore {
         let diskTotalBytes = volume?.totalSize ?? 0
         let uptime = ProcessInfo.processInfo.systemUptime
         let processes = resolveProcessNames(
-            readRawProcesses(limit: 5),
-            limit: 5,
+            readRawProcesses(limit: processLimit),
+            limit: processLimit,
             preferRunningApplicationNames: true
         )
 
@@ -490,17 +518,66 @@ enum SystemHealthMonitorCore {
 
         return trimmed
     }
+
+    @MainActor
+    static func inspectProcess(_ usage: ProcessUsage) -> ProcessDetail {
+        let pid = usage.id
+        let executablePath = processExecutablePath(pid: pid)
+        let bundleIdentifier = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
+        let bsdInfo = readProcessBSDInfo(pid: pid)
+
+        return ProcessDetail(
+            pid: pid,
+            name: usage.name,
+            cpuPercent: usage.cpuPercent,
+            memoryBytes: usage.memoryBytes,
+            executablePath: executablePath,
+            bundleIdentifier: bundleIdentifier,
+            parentPID: bsdInfo?.ppid,
+            ownerUsername: bsdInfo?.owner,
+            isRunning: kill(pid, 0) == 0 || errno != ESRCH
+        )
+    }
+
+    static func terminateProcess(pid: pid_t, force: Bool) -> ProcessTerminateResult {
+        guard pid > 1 else { return .protectedSystemProcess }
+
+        let signal = force ? SIGKILL : SIGTERM
+        if kill(pid, signal) == 0 {
+            return .terminated
+        }
+
+        switch errno {
+        case ESRCH:
+            return .processNotFound
+        case EPERM:
+            return .permissionDenied
+        default:
+            return .failed(String(cString: strerror(errno)))
+        }
+    }
+
+    private static func readProcessBSDInfo(pid: pid_t) -> (ppid: Int32, owner: String?)? {
+        var info = proc_bsdinfo()
+        let size = Int32(MemoryLayout<proc_bsdinfo>.size)
+        guard proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, size) == size else { return nil }
+        let owner = getpwuid(info.pbi_uid).map { String(cString: $0.pointee.pw_name) }
+        return (ppid: Int32(info.pbi_ppid), owner: owner)
+    }
 }
 
 @MainActor
 final class SystemHealthMonitor: ObservableObject {
+    static let shared = SystemHealthMonitor()
+
     @Published private(set) var snapshot: SystemHealthSnapshot?
     @Published private(set) var systemVolume: MountedVolume?
 
     private var refreshTask: Task<Void, Never>?
     private var enrichTask: Task<Void, Never>?
+    private var detailedRefresh = false
 
-    init() {
+    private init() {
         startObserving()
     }
 
@@ -534,11 +611,16 @@ final class SystemHealthMonitor: ObservableObject {
         return .seconds(30)
     }
 
-    func refresh() {
+    func refresh(processLimit: Int = 5) {
+        detailedRefresh = processLimit > 5
         let volumes = VolumeDiscovery.mountedVolumes()
         systemVolume = volumes.first(where: { VolumeDiscovery.isSystemVolume(mountPath: $0.mountPath) })
             ?? volumes.first(where: \.isInternal)
-        snapshot = SystemHealthMonitorCore.capture(volume: systemVolume)
+        snapshot = SystemHealthMonitorCore.capture(volume: systemVolume, processLimit: processLimit)
+    }
+
+    func refreshDetailed() {
+        refresh(processLimit: 15)
     }
 
     private func startObserving() {
@@ -547,7 +629,11 @@ final class SystemHealthMonitor: ObservableObject {
                 let interval = refreshInterval(for: snapshot)
                 try? await Task.sleep(for: interval)
                 guard !Task.isCancelled else { return }
-                refresh()
+                if detailedRefresh {
+                    refresh(processLimit: 15)
+                } else {
+                    refresh(processLimit: 5)
+                }
             }
         }
     }
