@@ -1,0 +1,10 @@
+{
+  "summary": "System Status explains health scores, filters to significant CPU and memory usage, and adds verbose process context.",
+  "introduced": [],
+  "changed": [
+    "Health score card now explains Fair/Good/Poor ratings with CPU, memory, and disk breakdowns plus suggestions",
+    "Top CPU and Top Memory lists only show processes above significant thresholds; otherwise show an idle-state summary",
+    "Process detail sheet adds category, role explanation, parent process, command line, and app icon when available"
+  ],
+  "fixed": []
+}

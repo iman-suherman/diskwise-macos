@@ -12,6 +12,8 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
+        case "0.5.9":
+            return v059Pages
         case "0.5.8":
             return v058Pages
         case "0.5.7":
@@ -52,6 +54,31 @@ enum WhatsNewContent {
             return genericPages(version: version)
         }
     }
+
+    private static let v059Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "health-explanation",
+            icon: "heart.text.square",
+            title: "Understand your health score",
+            message: "The System Status tab now explains what Fair, Good, or Poor means — with CPU, memory, and disk breakdowns and practical suggestions.",
+            bullets: [
+                "See component scores and how each resource affects the overall rating",
+                "Load average and memory context spelled out in plain language",
+                "Actionable tips when disk, memory, or CPU pressure is high",
+            ]
+        ),
+        WhatsNewPage(
+            id: "process-context",
+            icon: "app.dashed",
+            title: "Smarter process lists and details",
+            message: "Top CPU and Top Memory only highlight processes using significant resources. Tap any process for a rich explanation of what it is and who started it.",
+            bullets: [
+                "Idle-state summaries when nothing is consuming significant CPU or memory",
+                "Process category, parent app, command line, and known system descriptions",
+                "App icons and role summaries for shells, agents, and user apps",
+            ]
+        ),
+    ]
 
     private static let v058Pages: [WhatsNewPage] = [
         WhatsNewPage(

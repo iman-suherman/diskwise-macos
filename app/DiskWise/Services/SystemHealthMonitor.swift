@@ -10,6 +10,15 @@ struct ProcessUsage: Identifiable, Sendable {
     let memoryBytes: Int64
 }
 
+enum ProcessCategory: String, Sendable {
+    case userApplication = "User Application"
+    case systemService = "System Service"
+    case shell = "Shell"
+    case backgroundAgent = "Background Agent"
+    case commandLineTool = "Command-Line Tool"
+    case unknown = "Process"
+}
+
 struct ProcessDetail: Identifiable, Sendable {
     let pid: Int32
     let name: String
@@ -18,10 +27,32 @@ struct ProcessDetail: Identifiable, Sendable {
     let executablePath: String?
     let bundleIdentifier: String?
     let parentPID: Int32?
+    let parentName: String?
     let ownerUsername: String?
     let isRunning: Bool
+    let category: ProcessCategory
+    let applicationName: String?
+    let roleSummary: String
+    let commandLine: String?
 
     var id: Int32 { pid }
+}
+
+struct HealthScoreFactor: Sendable {
+    let name: String
+    let usagePercent: Double
+    let componentScore: Int
+    let weightPercent: Int
+    let statusLabel: String
+    let detail: String
+}
+
+struct HealthScoreExplanation: Sendable {
+    let score: Int
+    let label: String
+    let summary: String
+    let factors: [HealthScoreFactor]
+    let recommendations: [String]
 }
 
 enum ProcessTerminateResult: Sendable, Equatable {
@@ -89,6 +120,198 @@ struct SystemHealthSnapshot: Sendable {
 
 enum SystemHealthMonitorCore {
     private static var previousCPUTicks: (user: Double, system: Double, idle: Double, nice: Double)?
+
+    /// Minimum CPU usage to appear in the System Status "Top CPU" list.
+    static let significantCPUPercentThreshold = 1.0
+
+    /// Minimum memory to appear in the System Status "Top Memory" list (~200 MB).
+    static let significantMemoryBytesThreshold: Int64 = 200 * 1024 * 1024
+
+    static func significantCPUProcesses(_ processes: [ProcessUsage]) -> [ProcessUsage] {
+        processes.filter { $0.cpuPercent >= significantCPUPercentThreshold }
+    }
+
+    static func significantMemoryProcesses(_ processes: [ProcessUsage]) -> [ProcessUsage] {
+        processes.filter { $0.memoryBytes >= significantMemoryBytesThreshold }
+    }
+
+    static func explainHealthScore(for snapshot: SystemHealthSnapshot) -> HealthScoreExplanation {
+        let cpuComponent = max(0, 100 - snapshot.cpuUsagePercent)
+        let memoryComponent = max(0, 100 - snapshot.memoryUsedPercent)
+        let diskComponent = max(0, 100 - snapshot.diskUsedPercent)
+
+        let factors: [HealthScoreFactor] = [
+            HealthScoreFactor(
+                name: "CPU",
+                usagePercent: snapshot.cpuUsagePercent,
+                componentScore: Int(cpuComponent.rounded()),
+                weightPercent: 40,
+                statusLabel: pressureLabel(for: snapshot.cpuUsagePercent),
+                detail: cpuPressureDetail(
+                    usagePercent: snapshot.cpuUsagePercent,
+                    loadAverage: snapshot.loadAverage1,
+                    processorCount: snapshot.processorCount
+                )
+            ),
+            HealthScoreFactor(
+                name: "Memory",
+                usagePercent: snapshot.memoryUsedPercent,
+                componentScore: Int(memoryComponent.rounded()),
+                weightPercent: 35,
+                statusLabel: pressureLabel(for: snapshot.memoryUsedPercent),
+                detail: memoryPressureDetail(
+                    usedBytes: snapshot.memoryUsedBytes,
+                    physicalBytes: snapshot.physicalMemoryBytes,
+                    usedPercent: snapshot.memoryUsedPercent
+                )
+            ),
+            HealthScoreFactor(
+                name: "Disk",
+                usagePercent: snapshot.diskUsedPercent,
+                componentScore: Int(diskComponent.rounded()),
+                weightPercent: 25,
+                statusLabel: pressureLabel(for: snapshot.diskUsedPercent),
+                detail: diskPressureDetail(
+                    usedPercent: snapshot.diskUsedPercent,
+                    freeBytes: snapshot.diskFreeBytes,
+                    totalBytes: snapshot.diskTotalBytes
+                )
+            ),
+        ]
+
+        let recommendations = healthRecommendations(
+            cpuUsagePercent: snapshot.cpuUsagePercent,
+            memoryUsedPercent: snapshot.memoryUsedPercent,
+            diskUsedPercent: snapshot.diskUsedPercent,
+            loadAverage: snapshot.loadAverage1,
+            processorCount: snapshot.processorCount
+        )
+
+        return HealthScoreExplanation(
+            score: snapshot.healthScore,
+            label: healthConditionLabel(for: snapshot.healthScore),
+            summary: healthSummary(
+                score: snapshot.healthScore,
+                cpuUsagePercent: snapshot.cpuUsagePercent,
+                memoryUsedPercent: snapshot.memoryUsedPercent,
+                diskUsedPercent: snapshot.diskUsedPercent
+            ),
+            factors: factors,
+            recommendations: recommendations
+        )
+    }
+
+    private static func pressureLabel(for usagePercent: Double) -> String {
+        switch usagePercent {
+        case ..<50:
+            return "Low pressure"
+        case 50..<80:
+            return "Moderate pressure"
+        default:
+            return "High pressure"
+        }
+    }
+
+    private static func healthSummary(
+        score: Int,
+        cpuUsagePercent: Double,
+        memoryUsedPercent: Double,
+        diskUsedPercent: Double
+    ) -> String {
+        switch score {
+        case 70...:
+            return "Your Mac has comfortable headroom. CPU, memory, and disk pressure are all within a healthy range for everyday work."
+        case 40..<70:
+            var drivers: [String] = []
+            if cpuUsagePercent >= 60 { drivers.append("CPU") }
+            if memoryUsedPercent >= 60 { drivers.append("memory") }
+            if diskUsedPercent >= 75 { drivers.append("disk space") }
+            if drivers.isEmpty {
+                return "Overall health is fair. No single resource is critically stressed, but combined usage leaves less room for heavy workloads."
+            }
+            return "Overall health is fair, mainly because \(drivers.joined(separator: " and ")) \(drivers.count == 1 ? "is" : "are") under moderate to high pressure."
+        default:
+            return "Your Mac is under significant strain. One or more resources are heavily used, which can slow apps, increase fan noise, and make the system feel sluggish."
+        }
+    }
+
+    private static func cpuPressureDetail(
+        usagePercent: Double,
+        loadAverage: Double,
+        processorCount: Int
+    ) -> String {
+        let loadRatio = processorCount > 0 ? loadAverage / Double(processorCount) : loadAverage
+        let loadNote: String
+        switch loadRatio {
+        case ..<0.7:
+            loadNote = "Load average suggests the CPU queue is light."
+        case 0.7..<1.0:
+            loadNote = "Load average is approaching full utilization across cores."
+        default:
+            loadNote = "Load average exceeds core count, so work is waiting for CPU time."
+        }
+        return "System-wide CPU usage is \(String(format: "%.1f", usagePercent))%. \(loadNote) Score contribution: 40% weight on CPU headroom."
+    }
+
+    private static func memoryPressureDetail(
+        usedBytes: Int64,
+        physicalBytes: Int64,
+        usedPercent: Double
+    ) -> String {
+        "About \(MenuBarFormatters.gigabytes(usedBytes)) of \(MenuBarFormatters.gigabytes(physicalBytes)) (\(String(format: "%.1f", usedPercent))%) is actively wired, active, or compressed. macOS uses spare RAM for file cache, which is normal. Score contribution: 35% weight on memory headroom."
+    }
+
+    private static func diskPressureDetail(
+        usedPercent: Double,
+        freeBytes: Int64,
+        totalBytes: Int64
+    ) -> String {
+        if totalBytes <= 0 {
+            return "Disk usage for the monitored volume could not be measured."
+        }
+        return "\(String(format: "%.1f", usedPercent))% of the system volume is used with \(MenuBarFormatters.gigabytes(freeBytes)) free. macOS needs free space for updates, swap, and temporary files. Score contribution: 25% weight on free disk space."
+    }
+
+    private static func healthRecommendations(
+        cpuUsagePercent: Double,
+        memoryUsedPercent: Double,
+        diskUsedPercent: Double,
+        loadAverage: Double,
+        processorCount: Int
+    ) -> [String] {
+        var items: [String] = []
+        if cpuUsagePercent >= 70 || (processorCount > 0 && loadAverage > Double(processorCount)) {
+            items.append("Check Top CPU for sustained heavy processes, or quit apps you are not using.")
+        }
+        if memoryUsedPercent >= 75 {
+            items.append("Close memory-heavy apps or browser tabs, or restart apps that have grown over time.")
+        }
+        if diskUsedPercent >= 85 {
+            items.append("Free disk space on the system volume — use DiskWise scan results to find large folders safely.")
+        }
+        if items.isEmpty {
+            items.append("No urgent action needed. Keep an eye on Top CPU and Top Memory if performance changes.")
+        }
+        return items
+    }
+
+    static func idleCPUMessage(for snapshot: SystemHealthSnapshot) -> String {
+        let loadPerCore = snapshot.processorCount > 0
+            ? snapshot.loadAverage1 / Double(snapshot.processorCount)
+            : snapshot.loadAverage1
+        if snapshot.cpuUsagePercent < 5 {
+            return "No process is using significant CPU right now. System CPU is \(String(format: "%.1f", snapshot.cpuUsagePercent))% across \(snapshot.processorCount) cores — mostly idle. Load per core: \(String(format: "%.2f", loadPerCore))."
+        }
+        return "No single process exceeds \(String(format: "%.0f", significantCPUPercentThreshold))% CPU, but overall usage is \(String(format: "%.1f", snapshot.cpuUsagePercent))%. Work may be spread across many small tasks or system services."
+    }
+
+    static func idleMemoryMessage(for snapshot: SystemHealthSnapshot) -> String {
+        let thresholdGB = MenuBarFormatters.gigabytes(significantMemoryBytesThreshold)
+        if snapshot.memoryUsedPercent < 50 {
+            return "No process holds more than \(thresholdGB). \(String(format: "%.1f", snapshot.memoryUsedPercent))% of \(MenuBarFormatters.gigabytes(snapshot.physicalMemoryBytes)) is in use — memory is comfortably distributed."
+        }
+        return "No process exceeds \(thresholdGB), but \(String(format: "%.1f", snapshot.memoryUsedPercent))% of memory is in use overall. macOS may be keeping file cache in RAM, which improves performance and is released when apps need it."
+    }
 
     /// Fast path for startup — score and system metrics only; process lists load later.
     static func captureLaunchQuick(volume: MountedVolume?) async -> SystemHealthSnapshot {
@@ -523,8 +746,28 @@ enum SystemHealthMonitorCore {
     static func inspectProcess(_ usage: ProcessUsage) -> ProcessDetail {
         let pid = usage.id
         let executablePath = processExecutablePath(pid: pid)
-        let bundleIdentifier = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
+        let runningApp = NSRunningApplication(processIdentifier: pid)
+        let bundleIdentifier = runningApp?.bundleIdentifier
         let bsdInfo = readProcessBSDInfo(pid: pid)
+        let commandLine = readProcessCommandLine(pid: pid)
+        let parentPID = bsdInfo?.ppid
+        let parentName = parentPID.map { resolveProcessName(pid: $0, comm: "", preferRunningApplicationNames: true) }
+        let applicationName = runningApp?.localizedName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let category = classifyProcess(
+            executablePath: executablePath,
+            bundleIdentifier: bundleIdentifier,
+            commandLine: commandLine,
+            runningApp: runningApp
+        )
+        let roleSummary = describeProcessRole(
+            name: usage.name,
+            executablePath: executablePath,
+            bundleIdentifier: bundleIdentifier,
+            category: category,
+            parentName: parentName,
+            commandLine: commandLine,
+            applicationName: applicationName
+        )
 
         return ProcessDetail(
             pid: pid,
@@ -533,10 +776,193 @@ enum SystemHealthMonitorCore {
             memoryBytes: usage.memoryBytes,
             executablePath: executablePath,
             bundleIdentifier: bundleIdentifier,
-            parentPID: bsdInfo?.ppid,
+            parentPID: parentPID,
+            parentName: parentName,
             ownerUsername: bsdInfo?.owner,
-            isRunning: kill(pid, 0) == 0 || errno != ESRCH
+            isRunning: kill(pid, 0) == 0 || errno != ESRCH,
+            category: category,
+            applicationName: applicationName,
+            roleSummary: roleSummary,
+            commandLine: commandLine
         )
+    }
+
+    @MainActor
+    private static func classifyProcess(
+        executablePath: String?,
+        bundleIdentifier: String?,
+        commandLine: String?,
+        runningApp: NSRunningApplication?
+    ) -> ProcessCategory {
+        if runningApp?.activationPolicy == .regular {
+            return .userApplication
+        }
+
+        if let bundleIdentifier {
+            if bundleIdentifier.hasPrefix("com.apple.") {
+                if bundleIdentifier.contains(".loginwindow") || bundleIdentifier.contains("WindowServer") {
+                    return .systemService
+                }
+                if runningApp?.activationPolicy == .accessory || runningApp?.activationPolicy == .prohibited {
+                    return .backgroundAgent
+                }
+                return .systemService
+            }
+            if runningApp != nil {
+                return runningApp?.activationPolicy == .accessory ? .backgroundAgent : .userApplication
+            }
+        }
+
+        let basename = executablePath.map { URL(fileURLWithPath: $0).lastPathComponent.lowercased() }
+            ?? commandLine?.split(separator: " ").first.map { String($0).lowercased() }
+
+        if let basename {
+            let shells = ["zsh", "bash", "sh", "fish", "tcsh", "csh", "dash"]
+            if shells.contains(basename) || basename.hasSuffix("sh") {
+                return .shell
+            }
+            if basename == "kernel_task" || basename.hasPrefix("com.apple.") {
+                return .systemService
+            }
+            if ["/usr/sbin/", "/sbin/", "/System/Library/"].contains(where: { executablePath?.contains($0) == true }) {
+                return .systemService
+            }
+            if executablePath?.contains(".app/") == true {
+                return .backgroundAgent
+            }
+            if ["/usr/bin/", "/opt/homebrew/bin/", "/usr/local/bin/"].contains(where: { executablePath?.contains($0) == true }) {
+                return .commandLineTool
+            }
+        }
+
+        return .unknown
+    }
+
+    @MainActor
+    private static func describeProcessRole(
+        name: String,
+        executablePath: String?,
+        bundleIdentifier: String?,
+        category: ProcessCategory,
+        parentName: String?,
+        commandLine: String?,
+        applicationName: String?
+    ) -> String {
+        if let bundleIdentifier,
+           let known = knownBundleDescriptions[bundleIdentifier] {
+            return known
+        }
+
+        let basename = executablePath.map { URL(fileURLWithPath: $0).lastPathComponent }
+            ?? name
+
+        if let known = knownProcessDescriptions[basename.lowercased()] {
+            var text = known
+            if let parentName, !parentName.isEmpty {
+                text += " Started by \(parentName)."
+            }
+            return text
+        }
+
+        switch category {
+        case .userApplication:
+            if let applicationName, applicationName != name {
+                return "\(applicationName) is a user-facing app. This process belongs to that application and handles part of its runtime — windows, networking, or background tasks."
+            }
+            return "\(name) is a user application process. It provides an app you interact with directly."
+        case .systemService:
+            if let bundleIdentifier, bundleIdentifier.hasPrefix("com.apple.") {
+                return "Apple system service (\(bundleIdentifier)). It supports macOS features such as graphics, networking, indexing, or security. These processes are usually safe to leave running."
+            }
+            return "\(basename) is a macOS system component. It helps the operating system manage hardware, security, or shared services."
+        case .shell:
+            if let parentName {
+                return "Interactive shell session, typically launched by \(parentName). Shells run the commands you type in Terminal or scripts started by other apps."
+            }
+            return "Interactive shell (\(basename)). Shells execute commands from Terminal, IDEs, or automation tools."
+        case .backgroundAgent:
+            if let applicationName {
+                return "Background helper for \(applicationName). It may sync data, update content, or perform tasks while the main app window is closed."
+            }
+            if let bundleIdentifier {
+                return "Background agent (\(bundleIdentifier)). It runs support tasks without a visible window."
+            }
+            return "\(name) runs in the background without a main window — often indexing, syncing, or maintenance."
+        case .commandLineTool:
+            if let commandLine, commandLine.count > basename.count + 1 {
+                return "Command-line tool invoked as: \(truncatedCommandLine(commandLine)). These processes usually finish on their own or belong to a script or IDE task."
+            }
+            if let parentName {
+                return "Command-line tool started by \(parentName). It runs a script, build, or utility without a graphical interface."
+            }
+            return "\(basename) is a command-line program — often a developer tool, script runner, or maintenance utility."
+        case .unknown:
+            if let parentName {
+                return "\(name) is a running process started by \(parentName). Check the executable path and command line below to identify the owning app or script."
+            }
+            return "\(name) is a running process. Use the executable path, bundle ID, and command line below to identify what launched it."
+        }
+    }
+
+    private static let knownProcessDescriptions: [String: String] = [
+        "kernel_task": "The macOS kernel. It manages CPU scheduling, memory, and drivers. High CPU here often means disk I/O wait or hardware activity, not a user app.",
+        "windowserver": "Composites and draws every window on screen. High CPU can follow many displays, animations, or misbehaving apps.",
+        "launchd": "The system bootstrap process that starts and supervises other daemons and services at boot and login.",
+        "syslogd": "Collects and routes system log messages from apps and the kernel.",
+        "mds": "Spotlight metadata server. Indexes files for search — can use CPU after large file changes.",
+        "mdworker": "Spotlight indexer worker. Temporary spikes are normal after copying or downloading files.",
+        "bird": "iCloud Drive sync agent. Uploads and downloads files to keep cloud folders in sync.",
+        "cloudd": "Apple cloud infrastructure daemon used by iCloud services.",
+        "trustd": "Validates certificates and code signatures for secure connections.",
+        "logd": "Unified logging daemon for macOS diagnostic messages.",
+        "coreaudiod": "Core Audio daemon — manages sound input/output for all apps.",
+        "powerd": "Power management daemon — sleep, wake, and battery policies.",
+        "locationd": "Location services daemon for apps that use GPS or Wi‑Fi positioning.",
+        "nsurlsessiond": "Background networking daemon for app downloads and uploads.",
+        "backupd": "Time Machine backup helper.",
+        "softwareupdated": "Checks for and downloads macOS and app updates.",
+        "zsh": "Z shell — an interactive command interpreter used by Terminal and many developer tools.",
+        "bash": "Bourne-again shell — runs commands typed in Terminal or embedded in scripts.",
+        "node": "Node.js runtime — often used by JavaScript build tools, servers, or npm scripts.",
+        "npm": "Node package manager — usually running a script such as build, dev, or test.",
+        "python": "Python interpreter — may be running a script, IDE tool, or automation task.",
+        "java": "Java runtime — often used by IDEs, build tools, or server applications.",
+        "git": "Git version control — typically invoked by an IDE, GUI client, or shell script.",
+    ]
+
+    private static let knownBundleDescriptions: [String: String] = [
+        "com.apple.finder": "Finder — the macOS file manager and desktop shell.",
+        "com.apple.Safari": "Safari web browser and its page rendering processes.",
+        "com.apple.mail": "Apple Mail — email client and sync services.",
+        "com.apple.Terminal": "Terminal — provides command-line access; child shells like zsh appear when you open tabs or run commands.",
+        "com.apple.dt.Xcode": "Xcode — Apple's IDE. Spawns many helper processes for builds, simulators, and indexing.",
+        "com.apple.ActivityMonitor": "Activity Monitor — shows process and resource usage.",
+    ]
+
+    private static func truncatedCommandLine(_ commandLine: String, maxLength: Int = 240) -> String {
+        let trimmed = commandLine.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count > maxLength else { return trimmed }
+        return String(trimmed.prefix(maxLength)) + "…"
+    }
+
+    private static func readProcessCommandLine(pid: pid_t) -> String? {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/ps")
+        process.arguments = ["-p", String(pid), "-o", "command="]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = Pipe()
+        do {
+            try process.run()
+        } catch {
+            return nil
+        }
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else { return nil }
+        let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let output, !output.isEmpty else { return nil }
+        return output
     }
 
     static func terminateProcess(pid: pid_t, force: Bool) -> ProcessTerminateResult {

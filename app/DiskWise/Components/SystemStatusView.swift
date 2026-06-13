@@ -20,18 +20,8 @@ struct SystemStatusView: View {
                     systemDetailsCard(snapshot)
 
                     HStack(alignment: .top, spacing: 20) {
-                        processCard(
-                            title: "Top CPU",
-                            icon: "cpu",
-                            processes: snapshot.topCPUProcesses,
-                            value: { String(format: "%.1f%%", $0.cpuPercent) }
-                        )
-                        processCard(
-                            title: "Top Memory",
-                            icon: "memorychip",
-                            processes: snapshot.topMemoryProcesses,
-                            value: { MenuBarFormatters.gigabytes($0.memoryBytes) }
-                        )
+                        cpuProcessCard(snapshot)
+                        memoryProcessCard(snapshot)
                     }
                 } else {
                     ContentUnavailableView(
@@ -114,24 +104,110 @@ struct SystemStatusView: View {
 
     @ViewBuilder
     private func scoreCard(_ snapshot: SystemHealthSnapshot) -> some View {
-        GroupBox {
-            HStack(alignment: .firstTextBaseline, spacing: 16) {
-                Text(SystemHealthMonitorCore.healthConditionLabelWithScore(for: snapshot.healthScore))
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .foregroundStyle(scoreColor(snapshot.healthScore))
+        let explanation = SystemHealthMonitorCore.explainHealthScore(for: snapshot)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(snapshot.hostName)
-                        .font(.title3.weight(.semibold))
-                    Text("\(snapshot.machineModel) · macOS \(snapshot.macOSVersion) (\(snapshot.macOSBuild))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+        GroupBox {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack(alignment: .firstTextBaseline, spacing: 16) {
+                    Text(SystemHealthMonitorCore.healthConditionLabelWithScore(for: snapshot.healthScore))
+                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                        .foregroundStyle(scoreColor(snapshot.healthScore))
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(snapshot.hostName)
+                            .font(.title3.weight(.semibold))
+                        Text("\(snapshot.machineModel) · macOS \(snapshot.macOSVersion) (\(snapshot.macOSBuild))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
                 }
 
-                Spacer()
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("What this score means")
+                        .font(.subheadline.weight(.semibold))
+
+                    Text(explanation.summary)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(Array(explanation.factors.enumerated()), id: \.offset) { _, factor in
+                            healthFactorRow(factor)
+                        }
+                    }
+                    .padding(12)
+                    .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                    if !explanation.recommendations.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Suggestions")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+
+                            ForEach(Array(explanation.recommendations.enumerated()), id: \.offset) { _, recommendation in
+                                Label(recommendation, systemImage: "lightbulb")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .labelStyle(.titleAndIcon)
+                            }
+                        }
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    @ViewBuilder
+    private func healthFactorRow(_ factor: HealthScoreFactor) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(factor.name)
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                Text("\(factor.statusLabel) · \(String(format: "%.1f", factor.usagePercent))% used")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+
+            Text(factor.detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("Component score \(factor.componentScore)/100 · \(factor.weightPercent)% of overall score")
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(.tertiary)
+        }
+    }
+
+    @ViewBuilder
+    private func cpuProcessCard(_ snapshot: SystemHealthSnapshot) -> some View {
+        let significant = SystemHealthMonitorCore.significantCPUProcesses(snapshot.topCPUProcesses)
+        processCard(
+            title: "Top CPU",
+            icon: "cpu",
+            processes: significant,
+            emptyMessage: SystemHealthMonitorCore.idleCPUMessage(for: snapshot),
+            emptyIcon: "cpu",
+            value: { String(format: "%.1f%%", $0.cpuPercent) }
+        )
+    }
+
+    @ViewBuilder
+    private func memoryProcessCard(_ snapshot: SystemHealthSnapshot) -> some View {
+        let significant = SystemHealthMonitorCore.significantMemoryProcesses(snapshot.topMemoryProcesses)
+        processCard(
+            title: "Top Memory",
+            icon: "memorychip",
+            processes: significant,
+            emptyMessage: SystemHealthMonitorCore.idleMemoryMessage(for: snapshot),
+            emptyIcon: "memorychip",
+            value: { MenuBarFormatters.gigabytes($0.memoryBytes) }
+        )
     }
 
     @ViewBuilder
@@ -167,14 +243,23 @@ struct SystemStatusView: View {
         title: String,
         icon: String,
         processes: [ProcessUsage],
+        emptyMessage: String,
+        emptyIcon: String,
         value: @escaping (ProcessUsage) -> String
     ) -> some View {
         GroupBox {
             if processes.isEmpty {
-                Text("No process data")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("No significant usage right now", systemImage: emptyIcon)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    Text(emptyMessage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(processes.enumerated()), id: \.element.id) { index, process in
@@ -294,35 +379,127 @@ private struct ProcessDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack(alignment: .top, spacing: 14) {
-                Image(systemName: "app.dashed")
-                    .font(.title)
-                    .foregroundStyle(Color.accentColor)
-                    .frame(width: 36)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                header
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(process.name)
-                        .font(.title2.bold())
+                explanationSection
+
+                usageSection
+
+                ownershipSection
+
+                technicalSection
+
+                actionBar
+            }
+            .padding(24)
+        }
+        .frame(minWidth: 560, minHeight: 420)
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 14) {
+            processIcon
+                .frame(width: 40, height: 40)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(process.name)
+                    .font(.title2.bold())
+
+                HStack(spacing: 8) {
+                    Text(process.category.rawValue)
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.accentColor.opacity(0.14), in: Capsule())
+
                     Text(process.isRunning ? "Running · PID \(process.pid)" : "Not running · PID \(process.pid)")
                         .font(.subheadline)
                         .foregroundStyle(process.isRunning ? Color.secondary : Color.orange)
                 }
-
-                Spacer()
             }
 
+            Spacer()
+        }
+    }
+
+    @ViewBuilder
+    private var processIcon: some View {
+        if let app = NSRunningApplication(processIdentifier: process.pid),
+           let icon = app.icon {
+            Image(nsImage: icon)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+        } else {
+            Image(systemName: iconName(for: process.category))
+                .font(.title)
+                .foregroundStyle(Color.accentColor)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private var explanationSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("What is this process?")
+                .font(.subheadline.weight(.semibold))
+
+            Text(process.roleSummary)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
+
+            if let applicationName = process.applicationName, applicationName != process.name {
+                detailCallout(title: "Application", value: applicationName)
+            }
+        }
+        .padding(14)
+        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    private var usageSection: some View {
+        Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 10) {
+            detailGridRow("CPU", String(format: "%.1f%%", process.cpuPercent))
+            detailGridRow("Memory", MenuBarFormatters.gigabytes(process.memoryBytes))
+        }
+    }
+
+    private var ownershipSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Ownership")
+                .font(.subheadline.weight(.semibold))
+
             Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 10) {
-                detailGridRow("CPU", String(format: "%.1f%%", process.cpuPercent))
-                detailGridRow("Memory", MenuBarFormatters.gigabytes(process.memoryBytes))
                 if let owner = process.ownerUsername {
                     detailGridRow("Owner", owner)
                 }
-                if let parentPID = process.parentPID {
+                if let parentName = process.parentName, let parentPID = process.parentPID {
+                    detailGridRow("Started by", "\(parentName) (PID \(parentPID))")
+                } else if let parentPID = process.parentPID {
                     detailGridRow("Parent PID", "\(parentPID)")
                 }
                 if let bundleIdentifier = process.bundleIdentifier {
                     detailGridRow("Bundle ID", bundleIdentifier)
+                }
+            }
+        }
+    }
+
+    private var technicalSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Technical details")
+                .font(.subheadline.weight(.semibold))
+
+            if let commandLine = process.commandLine {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Command")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Text(commandLine)
+                        .font(.caption.monospaced())
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
 
@@ -337,33 +514,61 @@ private struct ProcessDetailSheet: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-
-            HStack(spacing: 12) {
-                Button("Close") {
-                    dismiss()
-                }
-                .keyboardShortcut(.cancelAction)
-
-                Spacer()
-
-                Button("Quit Process") {
-                    onQuit()
-                    dismiss()
-                }
-                .disabled(!process.isRunning || process.pid <= 1)
-
-                Button("Force Quit") {
-                    onForceQuit()
-                    dismiss()
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
-                .disabled(!process.isRunning || process.pid <= 1)
-                .keyboardShortcut(.defaultAction)
-            }
         }
-        .padding(24)
-        .frame(minWidth: 520, minHeight: 360)
+    }
+
+    private var actionBar: some View {
+        HStack(spacing: 12) {
+            Button("Close") {
+                dismiss()
+            }
+            .keyboardShortcut(.cancelAction)
+
+            Spacer()
+
+            Button("Quit Process") {
+                onQuit()
+                dismiss()
+            }
+            .disabled(!process.isRunning || process.pid <= 1)
+
+            Button("Force Quit") {
+                onForceQuit()
+                dismiss()
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+            .disabled(!process.isRunning || process.pid <= 1)
+            .keyboardShortcut(.defaultAction)
+        }
+    }
+
+    private func detailCallout(title: String, value: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text(title + ":")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.caption)
+                .textSelection(.enabled)
+        }
+    }
+
+    private func iconName(for category: ProcessCategory) -> String {
+        switch category {
+        case .userApplication:
+            return "app.fill"
+        case .systemService:
+            return "gearshape.2.fill"
+        case .shell:
+            return "terminal.fill"
+        case .backgroundAgent:
+            return "arrow.triangle.2.circlepath"
+        case .commandLineTool:
+            return "hammer.fill"
+        case .unknown:
+            return "app.dashed"
+        }
     }
 
     private func detailGridRow(_ title: String, _ value: String) -> some View {
