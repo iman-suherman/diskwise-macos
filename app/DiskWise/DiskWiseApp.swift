@@ -27,9 +27,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         MenuBarStatusItemController.shared.syncFreeSpaceVolumes(
             enabledPaths: AppSettings.shared.menuBarFreeSpaceVolumePaths
         )
-        MenuBarHealthItemController.shared.syncVisibility(
-            showHealthScore: AppSettings.shared.showMenuBarHealthScore
-        )
         SystemVolumeMonitor.shared.refresh()
         MenuBarMonitorController.syncMenuBarItems(settings: AppSettings.shared)
         DockVisibilityController.apply(hidden: AppSettings.shared.hideFromDock)
@@ -153,9 +150,12 @@ struct ContentView: View {
                 StartupSplashOverlay(
                     version: AppSettings.currentAppVersion,
                     isPostUpgrade: viewModel.isPostUpgradeStartup,
+                    migratesScanFormat: viewModel.startupMigratesScanFormat,
                     prewarmsSavedScan: viewModel.startupPrewarmsSavedScan,
+                    profilesSystemHealth: viewModel.startupProfilesSystemHealth,
                     includesAIInsights: viewModel.startupIncludesAIInsights,
                     currentMessage: viewModel.startupMessage,
+                    highlightMessage: viewModel.startupMessageHighlight,
                     completedSteps: viewModel.startupCompletedSteps,
                     activeStep: viewModel.startupActiveStep,
                     showSkipPrewarm: viewModel.showStartupPrewarmSkip,

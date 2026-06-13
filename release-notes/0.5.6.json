@@ -1,0 +1,16 @@
+{
+  "summary": "Saved scans reload from an optimised snapshot; incompatible data clears automatically on first launch.",
+  "introduced": [
+    "Compact launch snapshots store overview, top consumers, and analysis for instant reload on startup",
+    "System health profiling runs during startup so the menu bar score appears immediately"
+  ],
+  "changed": [
+    "Uninterrupted startup loading applies saved scans automatically without showing the prompt",
+    "Main window stays hidden until launch overlays finish, including the saved-scan prompt when needed",
+    "Duplicate groups load in the background after the snapshot restores"
+  ],
+  "fixed": [
+    "Saved-scan prompt no longer beach-balls while the main UI, analysis, and menu bar health profiling initialize",
+    "First launch on 0.5.6 clears incompatible saved-scan data with a highlighted startup message"
+  ]
+}

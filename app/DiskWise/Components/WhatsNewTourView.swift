@@ -12,6 +12,8 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
+        case "0.5.6":
+            return v056Pages
         case "0.5.5":
             return v055Pages
         case "0.5.4":
@@ -46,6 +48,31 @@ enum WhatsNewContent {
             return genericPages(version: version)
         }
     }
+
+    private static let v056Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "scan-format",
+            icon: "arrow.triangle.2.circlepath",
+            title: "Faster saved scans in 0.5.6",
+            message: "DiskWise now stores an optimised launch snapshot so saved scans reload quickly, and clears incompatible data from earlier versions on first launch.",
+            bullets: [
+                "First launch after updating clears old saved-scan data automatically with a highlighted progress message",
+                "Completed scans build a compact snapshot for instant reload on the next startup",
+                "Uninterrupted startup loading applies your saved scan automatically — no extra prompt",
+            ]
+        ),
+        WhatsNewPage(
+            id: "startup-health",
+            icon: "heart.text.square",
+            title: "Menu bar health during startup",
+            message: "System health profiling now runs on the startup splash, so the menu bar score appears as soon as DiskWise opens.",
+            bullets: [
+                "CPU, memory, and disk scoring run before the main window appears",
+                "Process profiling moved off the saved-scan prompt path",
+                "Skip loading a saved scan during startup if you want to choose later",
+            ]
+        ),
+    ]
 
     private static let v055Pages: [WhatsNewPage] = [
         WhatsNewPage(

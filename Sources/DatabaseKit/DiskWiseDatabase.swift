@@ -185,6 +185,7 @@ public final class DiskWiseDatabase: @unchecked Sendable {
             )
             try db.execute(sql: "DELETE FROM files WHERE disk_id = ?", arguments: [diskID])
             try db.execute(sql: "DELETE FROM folder_scan_cache WHERE disk_id = ?", arguments: [diskID])
+            try db.execute(sql: "DELETE FROM disk_launch_snapshots WHERE disk_id = ?", arguments: [diskID])
             try db.execute(sql: "DELETE FROM recommendations")
         }
     }
@@ -196,6 +197,7 @@ public final class DiskWiseDatabase: @unchecked Sendable {
             try db.execute(sql: "DELETE FROM duplicate_groups")
             try db.execute(sql: "DELETE FROM files")
             try db.execute(sql: "DELETE FROM folder_scan_cache")
+            try db.execute(sql: "DELETE FROM disk_launch_snapshots")
             try db.execute(sql: "DELETE FROM recommendations")
         }
     }
@@ -733,6 +735,48 @@ public final class DiskWiseDatabase: @unchecked Sendable {
                 duplicateSavings: duplicateSavings,
                 oldFileSize: oldFileSize
             )
+        }
+    }
+
+    public func saveLaunchSnapshotPayload(
+        forDiskID diskID: Int64,
+        formatVersion: Int,
+        payloadJSON: String,
+        builtAt: Date = Date()
+    ) throws {
+        try dbQueue.write { db in
+            try db.execute(
+                sql: """
+                INSERT INTO disk_launch_snapshots (disk_id, format_version, payload_json, built_at)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(disk_id) DO UPDATE SET
+                    format_version = excluded.format_version,
+                    payload_json = excluded.payload_json,
+                    built_at = excluded.built_at
+                """,
+                arguments: [diskID, formatVersion, payloadJSON, builtAt]
+            )
+        }
+    }
+
+    public func loadLaunchSnapshotPayload(forDiskID diskID: Int64) throws -> (formatVersion: Int, payloadJSON: String, builtAt: Date)? {
+        try dbQueue.read { db in
+            guard let row = try Row.fetchOne(
+                db,
+                sql: "SELECT format_version, payload_json, built_at FROM disk_launch_snapshots WHERE disk_id = ?",
+                arguments: [diskID]
+            ) else { return nil }
+            return (
+                formatVersion: row["format_version"],
+                payloadJSON: row["payload_json"],
+                builtAt: row["built_at"]
+            )
+        }
+    }
+
+    public func deleteLaunchSnapshot(forDiskID diskID: Int64) throws {
+        try dbQueue.write { db in
+            try db.execute(sql: "DELETE FROM disk_launch_snapshots WHERE disk_id = ?", arguments: [diskID])
         }
     }
 }

@@ -322,7 +322,7 @@ public struct RecommendationRecord: Codable, FetchableRecord, PersistableRecord,
     }
 }
 
-public struct CategorySummary: Sendable {
+public struct CategorySummary: Sendable, Codable {
     public let category: FileCategory
     public let totalSize: Int64
     public let fileCount: Int
@@ -334,7 +334,7 @@ public struct CategorySummary: Sendable {
     }
 }
 
-public struct SpaceConsumer: Sendable, Identifiable {
+public struct SpaceConsumer: Sendable, Identifiable, Codable {
     public var id: String { name }
     public let name: String
     public let totalSize: Int64
@@ -347,7 +347,7 @@ public struct SpaceConsumer: Sendable, Identifiable {
     }
 }
 
-public struct StorageOverview: Sendable {
+public struct StorageOverview: Sendable, Codable {
     public let totalSize: Int64
     public let fileCount: Int
     public let categorySummaries: [CategorySummary]

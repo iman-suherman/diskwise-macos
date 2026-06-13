@@ -166,7 +166,10 @@ final class AppViewModel: ObservableObject {
     @Published var isStartingUp = true
     @Published private(set) var isMainContentReady = false
     @Published private(set) var startupPrewarmsSavedScan = false
+    @Published private(set) var startupMigratesScanFormat = false
+    @Published private(set) var startupProfilesSystemHealth = false
     @Published private(set) var startupIncludesAIInsights = false
+    @Published var startupMessageHighlight = false
     @Published var showStartupPrewarmSkip = false
     @Published var startupMessage = "Preparing DiskWise…"
     @Published var startupCompletedSteps: Set<StartupStep> = []
@@ -196,6 +199,8 @@ final class AppViewModel: ObservableObject {
     private var prewarmTask: Task<Void, Never>?
     private var prewarmSkipTimerTask: Task<Void, Never>?
     private var launchDataPrewarmed = false
+    private var startupPrewarmCompleted = false
+    private var startupPrewarmSkipped = false
     private var scanEngine: ScanEngine!
     private var duplicateEngine: DuplicateEngine!
     private let cleanupEngine = CleanupEngine()
@@ -240,9 +245,42 @@ final class AppViewModel: ObservableObject {
             presentWhatsNewIfNeeded()
             return
         }
+        revealMainUIAfterLaunchOverlays()
+    }
+
+    private func revealMainUIAfterLaunchOverlays() {
+        if startupPrewarmCompleted, overview != nil {
+            applyAutoLoadedSavedScan()
+            return
+        }
+
+        if shouldOfferSavedScanPrompt {
+            showSavedScanPrompt = true
+            return
+        }
+
         isMainContentReady = true
-        presentSavedScanPromptIfNeeded()
+        presentMenuBarExtensionPromptIfNeeded()
         schedulePostLaunchWork()
+    }
+
+    private var shouldOfferSavedScanPrompt: Bool {
+        guard let volume = selectedVolume, isIndexed(volume) else { return false }
+        return startupPrewarmSkipped || !launchDataPrewarmed
+    }
+
+    private func applyAutoLoadedSavedScan() {
+        guard let volume = selectedVolume else {
+            isMainContentReady = true
+            schedulePostLaunchWork()
+            return
+        }
+        selectedVolumeTab = .results
+        setStatus("Loaded saved scan for \(volume.name)", kind: .success)
+        isMainContentReady = true
+        presentMenuBarExtensionPromptIfNeeded()
+        schedulePostLaunchWork()
+        refreshDuplicateGroupsInBackground()
     }
 
     init() {
@@ -252,9 +290,10 @@ final class AppViewModel: ObservableObject {
         }
     }
 
-    private func beginStartupStep(_ step: StartupStep, message: String) {
+    private func beginStartupStep(_ step: StartupStep, message: String, highlight: Bool = false) {
         startupActiveStep = step
         startupMessage = message
+        startupMessageHighlight = highlight
     }
 
     private func completeStartupStep(_ step: StartupStep) {
@@ -271,7 +310,12 @@ final class AppViewModel: ObservableObject {
         isStartingUp = true
         startupCompletedSteps = []
         startupPrewarmsSavedScan = false
+        startupMigratesScanFormat = false
+        startupProfilesSystemHealth = AppSettings.shared.showMenuBarHealthScore
         startupIncludesAIInsights = false
+        startupPrewarmCompleted = false
+        startupPrewarmSkipped = false
+        startupMessageHighlight = false
         startupMessage = isPostUpgradeStartup
             ? "Preparing DiskWise \(AppSettings.currentAppVersion) after update…"
             : "Preparing DiskWise…"
@@ -303,6 +347,39 @@ final class AppViewModel: ObservableObject {
         aiConsultant = AIConsultantService(configuration: appSettings.aiProviderConfiguration)
         aiEngine = AIAnalysisEngine(database: openedDatabase, consultant: aiConsultant)
         completeStartupStep(.database)
+
+        if appSettings.needsIndexRebuild {
+            startupMigratesScanFormat = true
+            beginStartupStep(
+                .migrateScanFormat,
+                message: "DiskWise \(AppSettings.currentAppVersion) uses a new saved-scan format. Clearing incompatible scan data from earlier versions…",
+                highlight: true
+            )
+            await Task.yield()
+
+            do {
+                try await Task.detached(priority: .userInitiated) { [openedDatabase] in
+                    try openedDatabase.clearAllStorageIndexes()
+                }.value
+                appSettings.markIndexSchemaCurrent()
+                overview = nil
+                topConsumers = []
+                duplicateGroups = []
+                analysisReport = nil
+                launchDataPrewarmed = false
+                startupPrewarmCompleted = false
+                logActivity(
+                    .scan,
+                    "Cleared incompatible saved scan",
+                    detail: "Index schema upgraded to v\(AppSettings.currentIndexSchemaVersion)"
+                )
+            } catch {
+                startupMessage = "Could not clear saved scan: \(error.localizedDescription)"
+            }
+
+            completeStartupStep(.migrateScanFormat)
+            startupMessageHighlight = false
+        }
 
         beginStartupStep(.drives, message: "Discovering connected drives…")
         await Task.yield()
@@ -343,12 +420,19 @@ final class AppViewModel: ObservableObject {
         isPythonAvailable = !usesPythonScanner || PythonScanRunner.isPythonAvailable
         completeStartupStep(.python)
 
+        if startupProfilesSystemHealth {
+            beginStartupStep(.systemHealth, message: "Profiling CPU, memory, and disk for menu bar health score…")
+            await Task.yield()
+            await MenuBarHealthItemController.shared.prepareDuringLaunch()
+            completeStartupStep(.systemHealth)
+        }
+
         overview = nil
         topConsumers = []
         duplicateGroups = []
         analysisReport = nil
 
-        let shouldPrewarmSavedScan = selectedDiskID.map { diskID in
+        let shouldPrewarmSavedScan = !startupMigratesScanFormat && selectedDiskID.map { diskID in
             ((try? openedDatabase.indexedFileCount(forDiskID: diskID)) ?? 0) > 0
         } ?? false
 
@@ -362,6 +446,9 @@ final class AppViewModel: ObservableObject {
             await prewarmTask?.value
             prewarmTask = nil
             stopPrewarmSkipTimer()
+            if !startupPrewarmSkipped, overview != nil {
+                startupPrewarmCompleted = true
+            }
             completeStartupStep(.savedScan)
         }
 
@@ -381,9 +468,9 @@ final class AppViewModel: ObservableObject {
 
         startupActiveStep = nil
         startupMessage = "Ready"
+        startupMessageHighlight = false
         isStartingUp = false
 
-        presentIndexRebuildPromptIfNeeded()
         presentPythonSetupPromptIfNeeded()
         if !showIndexRebuildPrompt, !showPythonSetupPrompt {
             presentFullDiskAccessPromptIfNeeded()
@@ -505,7 +592,7 @@ final class AppViewModel: ObservableObject {
     func presentSavedScanPromptIfNeeded() {
         guard !showFullDiskAccessPrompt, !showPythonSetupPrompt, !showIndexRebuildPrompt, !showWhatsNewTour else { return }
         guard !appSettings.shouldShowWhatsNew else { return }
-        guard let volume = selectedVolume, isIndexed(volume) else {
+        guard shouldOfferSavedScanPrompt else {
             presentMenuBarExtensionPromptIfNeeded()
             return
         }
@@ -537,22 +624,31 @@ final class AppViewModel: ObservableObject {
 
     func dismissSavedScanPrompt(loadSaved: Bool, rebuild: Bool) {
         showSavedScanPrompt = false
-        guard let volume = selectedVolume else { return }
+        guard let volume = selectedVolume else {
+            isMainContentReady = true
+            return
+        }
 
         if rebuild {
+            isMainContentReady = true
             scan(volume: volume)
             return
         }
 
         if loadSaved {
-            refreshInsights()
+            if !launchDataPrewarmed {
+                refreshInsights()
+            }
+            selectedVolumeTab = .results
             setStatus("Loaded saved scan for \(volume.name)", kind: .success)
         } else {
             clearLoadedScanPresentation()
             setStatus("Selected \(volume.name)", kind: .ready)
         }
 
+        isMainContentReady = true
         presentMenuBarExtensionPromptIfNeeded()
+        schedulePostLaunchWork()
     }
 
     private func clearLoadedScanPresentation() {
@@ -1040,9 +1136,7 @@ final class AppViewModel: ObservableObject {
     func finishWhatsNewTour() {
         appSettings.markCurrentReleaseSeen()
         showWhatsNewTour = false
-        isMainContentReady = true
-        presentSavedScanPromptIfNeeded()
-        schedulePostLaunchWork()
+        revealMainUIAfterLaunchOverlays()
     }
 
     func stopPermissionPollingIfNeeded() {
@@ -1152,7 +1246,7 @@ final class AppViewModel: ObservableObject {
 
         setStatus("Selected \(volume.name)", kind: .ready)
 
-        if volumeChanged, isIndexed(volume) {
+        if volumeChanged, isIndexed(volume), isMainContentReady {
             showSavedScanPrompt = true
             return
         }
@@ -1288,6 +1382,7 @@ final class AppViewModel: ObservableObject {
     }
 
     func cancelStartupPrewarm() {
+        startupPrewarmSkipped = true
         prewarmTask?.cancel()
         prewarmTask = nil
         stopPrewarmSkipTimer()
@@ -1311,26 +1406,43 @@ final class AppViewModel: ObservableObject {
     }
 
     private func prewarmLaunchData() async {
-        guard let diskID = selectedDiskID, let database, let duplicateEngine, let engine = aiEngine else { return }
+        guard let diskID = selectedDiskID, let database, let engine = aiEngine else { return }
         guard !launchDataPrewarmed else { return }
 
         startPrewarmSkipTimer()
         defer { stopPrewarmSkipTimer() }
 
+        startupMessage = "Loading saved scan snapshot…"
+        await Task.yield()
+
+        let snapshotPayload = await Task.detached(priority: .userInitiated) {
+            LaunchSnapshotStore.load(from: database, diskID: diskID)
+        }.value
+
+        if let payload = snapshotPayload {
+            guard !Task.isCancelled else { return }
+            overview = payload.overview
+            topConsumers = payload.topConsumers
+            analysisReport = payload.analysisReport
+            launchDataPrewarmed = true
+            startupMessage = "Loaded saved scan snapshot"
+            refreshDuplicateGroupsInBackground()
+            return
+        }
+
         let threshold = Calendar.current.date(byAdding: .year, value: -2, to: Date())!
         let fileLimit = appSettings.analysisFileLimit
 
-        startupMessage = "Loading storage overview…"
+        startupMessage = "Building saved scan snapshot…"
         await Task.yield()
 
-        let cachedSnapshot = await Task.detached(priority: .userInitiated) {
+        let cachedSnapshot = await Task.detached(priority: .userInitiated) { [database] in
             let overview = try? database.storageOverview(forDiskID: diskID, oldFileThreshold: threshold)
             let topConsumers = (try? database.topConsumers(forDiskID: diskID, limit: 8)) ?? []
-            let duplicateGroups = (try? duplicateEngine.loadGroups(forDiskID: diskID)) ?? []
             return CachedScanSnapshot(
                 overview: overview,
                 topConsumers: topConsumers,
-                duplicateGroups: duplicateGroups
+                duplicateGroups: []
             )
         }.value
 
@@ -1338,7 +1450,7 @@ final class AppViewModel: ObservableObject {
 
         overview = cachedSnapshot.overview
         topConsumers = cachedSnapshot.topConsumers
-        duplicateGroups = cachedSnapshot.duplicateGroups
+        duplicateGroups = []
         launchDataPrewarmed = cachedSnapshot.overview != nil
 
         startupMessage = "Analyzing recommendations…"
@@ -1373,9 +1485,35 @@ final class AppViewModel: ObservableObject {
             switch first {
             case .completed(let report) where !Task.isCancelled:
                 analysisReport = report
+                persistLaunchSnapshotIfReady(forDiskID: diskID)
             case .cancelled, .completed:
                 analysisTask.cancel()
             }
+        }
+
+        refreshDuplicateGroupsInBackground()
+    }
+
+    private func persistLaunchSnapshotIfReady(forDiskID diskID: Int64) {
+        guard let database, let overview else { return }
+        LaunchSnapshotStore.save(
+            to: database,
+            diskID: diskID,
+            overview: overview,
+            topConsumers: topConsumers,
+            analysisReport: analysisReport
+        )
+    }
+
+    private func refreshDuplicateGroupsInBackground() {
+        guard let diskID = selectedDiskID, let duplicateEngine else { return }
+        cachedResultsRefreshTask?.cancel()
+        cachedResultsRefreshTask = Task { @MainActor in
+            let groups = await Task.detached(priority: .utility) {
+                (try? duplicateEngine.loadGroups(forDiskID: diskID)) ?? []
+            }.value
+            guard !Task.isCancelled else { return }
+            duplicateGroups = groups
         }
     }
 
@@ -1718,6 +1856,9 @@ final class AppViewModel: ObservableObject {
                     self.scanPhase = .idle
                     self.scanStartTime = nil
                     self.refreshInsights()
+                    if let diskID = self.selectedDiskID {
+                        self.persistLaunchSnapshotIfReady(forDiskID: diskID)
+                    }
                     self.openResultsTab()
                     self.logActivity(.recommendation, "Action plan ready", detail: volumeName)
                     let statusMessage = "Phase 3 of 3 · Action plan ready for \(volumeName)"

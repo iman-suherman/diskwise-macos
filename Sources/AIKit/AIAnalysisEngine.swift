@@ -1,20 +1,21 @@
 import Foundation
 import DatabaseKit
 
-public struct StorageInsight: Identifiable, Sendable {
-    public let id = UUID()
+public struct StorageInsight: Identifiable, Sendable, Codable {
+    public let id: UUID
     public let title: String
     public let detail: String
     public let estimatedSavings: Int64
 
     public init(title: String, detail: String, estimatedSavings: Int64) {
+        self.id = UUID()
         self.title = title
         self.detail = detail
         self.estimatedSavings = estimatedSavings
     }
 }
 
-public struct AnalysisReport: Sendable {
+public struct AnalysisReport: Sendable, Codable {
     public let overview: StorageOverview
     public let insights: [StorageInsight]
     public let recommendations: [RecommendationRecord]

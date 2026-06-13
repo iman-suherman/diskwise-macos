@@ -87,7 +87,7 @@ final class AppSettings: ObservableObject {
     }
 
     /// Bump when the storage index format or scan pipeline changes materially.
-    static let currentIndexSchemaVersion = 1
+    static let currentIndexSchemaVersion = 2
 
     @Published var scanMode: ScanMode {
         didSet {

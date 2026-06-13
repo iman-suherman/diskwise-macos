@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		00F1E36FDE8C30DA106DBCB3 /* LaunchSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 950473F382728BB7A8C75C98 /* LaunchSnapshotStore.swift */; };
 		03B0CC0B75C882455F238B4A /* MenuBarDiskMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D1F08103579C30093C9CA6F /* MenuBarDiskMonitor.swift */; };
 		12181882218C57B9CAC4A122 /* DatabaseKit in Frameworks */ = {isa = PBXBuildFile; productRef = 603D826F44FE9A518C0D3BDD /* DatabaseKit */; };
 		12B3019096123619E84C856A /* ScanActivityMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 894ADEF97DF74C5A2CC2FB56 /* ScanActivityMonitor.swift */; };
@@ -72,6 +73,7 @@
 		894ADEF97DF74C5A2CC2FB56 /* ScanActivityMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanActivityMonitor.swift; sourceTree = "<group>"; };
 		8D515CF1494436D3A33BC32C /* RecommendationReviewSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendationReviewSheet.swift; sourceTree = "<group>"; };
 		8DE0414EB1623E719F460CAE /* MenuBarHealthScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarHealthScore.swift; sourceTree = "<group>"; };
+		950473F382728BB7A8C75C98 /* LaunchSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchSnapshotStore.swift; sourceTree = "<group>"; };
 		955E6302377D998824A2996E /* DiskWiseApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskWiseApp.swift; sourceTree = "<group>"; };
 		9604CB761CB34350EFF29978 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9632663F581782670036F59C /* StartupSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupSplashView.swift; sourceTree = "<group>"; };
@@ -116,6 +118,7 @@
 			isa = PBXGroup;
 			children = (
 				DCF61B84FF67A42557A15C53 /* DockVisibilityController.swift */,
+				950473F382728BB7A8C75C98 /* LaunchSnapshotStore.swift */,
 				CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */,
 				971832F0D34371AD6D227919 /* MenuBarMonitorController.swift */,
 				894ADEF97DF74C5A2CC2FB56 /* ScanActivityMonitor.swift */,
@@ -317,6 +320,7 @@
 				BF36D88A5025F7EB71A8CEFA /* DockVisibilityController.swift in Sources */,
 				F07314D38ACD7FE6E5B9D233 /* FullDiskAccessPrompt.swift in Sources */,
 				E1C624A7270A0BE8EA9B8147 /* IndexRebuildOverlay.swift in Sources */,
+				00F1E36FDE8C30DA106DBCB3 /* LaunchSnapshotStore.swift in Sources */,
 				6364632C8485413073CA9BB3 /* MainScreens.swift in Sources */,
 				E8EBB3946721C85434EA08EB /* MaintenanceView.swift in Sources */,
 				03B0CC0B75C882455F238B4A /* MenuBarDiskMonitor.swift in Sources */,
@@ -468,14 +472,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 5005;
+				CURRENT_PROJECT_VERSION = 5006;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.5.5;
+				MARKETING_VERSION = 0.5.6;
 				OTHER_LDFLAGS = "$(inherited) -weak_framework FoundationModels";
 				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
 				SDKROOT = macosx;
@@ -490,14 +494,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 5005;
+				CURRENT_PROJECT_VERSION = 5006;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.5.5;
+				MARKETING_VERSION = 0.5.6;
 				OTHER_LDFLAGS = "$(inherited) -weak_framework FoundationModels";
 				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
 				SDKROOT = macosx;

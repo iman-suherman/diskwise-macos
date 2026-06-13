@@ -4,9 +4,12 @@ import SwiftUI
 struct StartupSplashOverlay: View {
     let version: String
     let isPostUpgrade: Bool
+    let migratesScanFormat: Bool
     let prewarmsSavedScan: Bool
+    let profilesSystemHealth: Bool
     let includesAIInsights: Bool
     let currentMessage: String
+    let highlightMessage: Bool
     let completedSteps: Set<StartupStep>
     let activeStep: StartupStep?
     var showSkipPrewarm = false
@@ -14,8 +17,9 @@ struct StartupSplashOverlay: View {
 
     private var visibleSteps: [StartupStep] {
         StartupStep.visibleSteps(
-            isPostUpgrade: isPostUpgrade,
+            migratesScanFormat: migratesScanFormat,
             prewarmSavedScan: prewarmsSavedScan,
+            profilesSystemHealth: profilesSystemHealth,
             includeAIInsights: includesAIInsights
         )
     }
@@ -49,11 +53,20 @@ struct StartupSplashOverlay: View {
                     .padding(.top, 4)
 
                 Text(currentMessage)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.primary)
+                    .font(.subheadline.weight(highlightMessage ? .semibold : .medium))
+                    .foregroundStyle(highlightMessage ? Color.orange : Color.primary)
                     .multilineTextAlignment(.center)
-                    .frame(maxWidth: 360)
+                    .frame(maxWidth: 380)
+                    .padding(.horizontal, highlightMessage ? 12 : 0)
+                    .padding(.vertical, highlightMessage ? 8 : 0)
+                    .background {
+                        if highlightMessage {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(Color.orange.opacity(0.14))
+                        }
+                    }
                     .animation(.easeInOut(duration: 0.2), value: currentMessage)
+                    .animation(.easeInOut(duration: 0.2), value: highlightMessage)
 
                 VStack(alignment: .leading, spacing: 10) {
                     ForEach(visibleSteps) { step in
@@ -71,7 +84,7 @@ struct StartupSplashOverlay: View {
                     .controlSize(.small)
                     .padding(.top, 4)
 
-                    Text("DiskWise will open now and finish loading in the background.")
+                    Text("DiskWise will open and ask whether to load your saved scan.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -121,17 +134,31 @@ struct StartupSplashOverlay: View {
 
 enum StartupStep: String, CaseIterable, Identifiable {
     case database
+    case migrateScanFormat
     case drives
     case permissions
     case python
+    case systemHealth
     case savedScan
     case aiProvider
     case aiInsights
 
     var id: String { rawValue }
 
-    static func visibleSteps(isPostUpgrade: Bool, prewarmSavedScan: Bool, includeAIInsights: Bool) -> [StartupStep] {
-        var steps: [StartupStep] = [.database, .drives, .permissions, .python]
+    static func visibleSteps(
+        migratesScanFormat: Bool,
+        prewarmSavedScan: Bool,
+        profilesSystemHealth: Bool,
+        includeAIInsights: Bool
+    ) -> [StartupStep] {
+        var steps: [StartupStep] = [.database]
+        if migratesScanFormat {
+            steps.append(.migrateScanFormat)
+        }
+        steps.append(contentsOf: [.drives, .permissions, .python])
+        if profilesSystemHealth {
+            steps.append(.systemHealth)
+        }
         if prewarmSavedScan {
             steps.append(.savedScan)
         }
@@ -145,9 +172,11 @@ enum StartupStep: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .database: return "Open database"
+        case .migrateScanFormat: return "Update saved scan format"
         case .drives: return "Discover drives"
         case .permissions: return "Check permissions"
         case .python: return "Check Python scanner"
+        case .systemHealth: return "Profile system health"
         case .savedScan: return "Load saved scan"
         case .aiProvider: return "Check AI provider"
         case .aiInsights: return "Prepare AI suggestions"
@@ -157,9 +186,11 @@ enum StartupStep: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .database: return "cylinder"
+        case .migrateScanFormat: return "arrow.triangle.2.circlepath"
         case .drives: return "externaldrive"
         case .permissions: return "lock.shield"
         case .python: return "terminal"
+        case .systemHealth: return "heart.text.square"
         case .savedScan: return "chart.pie"
         case .aiProvider: return "sparkles"
         case .aiInsights: return "text.bubble"

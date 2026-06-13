@@ -305,6 +305,11 @@ final class MenuBarHealthItemController: NSObject {
         }
     }
 
+    func prepareDuringLaunch() async {
+        await monitor.warmUp()
+        syncVisibility(showHealthScore: AppSettings.shared.showMenuBarHealthScore)
+    }
+
     private func makeSlot() -> MenuBarStatusSlot {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         let hostingView = NSHostingView(rootView: MenuBarHealthScoreLabelView(monitor: monitor))

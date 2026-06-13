@@ -92,6 +92,17 @@ enum DiskWiseMigrator {
             }
         }
 
+        migrator.registerMigration("v3_disk_launch_snapshots") { db in
+            try db.create(table: "disk_launch_snapshots") { table in
+                table.column("disk_id", .integer)
+                    .primaryKey(onConflict: .replace)
+                    .references("disks", onDelete: .cascade)
+                table.column("format_version", .integer).notNull()
+                table.column("payload_json", .text).notNull()
+                table.column("built_at", .datetime).notNull()
+            }
+        }
+
         return migrator
     }
 }

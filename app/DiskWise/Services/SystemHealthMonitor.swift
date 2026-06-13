@@ -77,6 +77,54 @@ enum SystemHealthMonitorCore {
         )
     }
 
+    static func captureAsync(volume: MountedVolume?) async -> SystemHealthSnapshot {
+        let cpuUsage = readCPUUsagePercent()
+        let memory = readMemoryUsage()
+        let load = readLoadAverage()
+        let processorCount = ProcessInfo.processInfo.processorCount
+        let physicalMemory = Int64(ProcessInfo.processInfo.physicalMemory)
+        let diskUsedPercent = volume.map { $0.usageFraction * 100 } ?? 0
+        let diskFreeBytes = volume?.freeSize ?? 0
+        let diskTotalBytes = volume?.totalSize ?? 0
+        let uptime = ProcessInfo.processInfo.systemUptime
+
+        let rawProcesses = await Task.detached(priority: .utility) {
+            readRawProcesses(limit: 20)
+        }.value
+
+        let resolved = await MainActor.run {
+            resolveProcessNames(rawProcesses, limit: 5)
+        }
+
+        let score = computeHealthScore(
+            cpuUsagePercent: cpuUsage,
+            memoryUsedPercent: memory.usedPercent,
+            diskUsedPercent: diskUsedPercent
+        )
+
+        return SystemHealthSnapshot(
+            healthScore: score,
+            hostName: Host.current().localizedName ?? Host.current().name ?? "Mac",
+            macOSVersion: formattedMacOSVersion(),
+            macOSBuild: readMacOSBuild(),
+            cpuUsagePercent: cpuUsage,
+            memoryUsedPercent: memory.usedPercent,
+            loadAverage1: load.0,
+            loadAverage5: load.1,
+            loadAverage15: load.2,
+            processorCount: processorCount,
+            memoryUsedBytes: memory.usedBytes,
+            physicalMemoryBytes: physicalMemory,
+            diskUsedPercent: diskUsedPercent,
+            diskFreeBytes: diskFreeBytes,
+            diskTotalBytes: diskTotalBytes,
+            uptimeSeconds: uptime,
+            machineModel: readMachineModel(),
+            topCPUProcesses: resolved.byCPU,
+            topMemoryProcesses: resolved.byMemory
+        )
+    }
+
     static func computeHealthScore(
         cpuUsagePercent: Double,
         memoryUsedPercent: Double,
@@ -204,6 +252,10 @@ enum SystemHealthMonitorCore {
 
     @MainActor
     private static func readTopProcesses(limit: Int) -> (byCPU: [ProcessUsage], byMemory: [ProcessUsage]) {
+        resolveProcessNames(readRawProcesses(limit: max(limit * 4, 20)), limit: limit)
+    }
+
+    private static func readRawProcesses(limit: Int) -> [(pid: Int32, cpuPercent: Double, memoryBytes: Int64, comm: String)] {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/ps")
         process.arguments = ["-A", "-o", "pid=,pcpu=,rss=,comm="]
@@ -215,14 +267,14 @@ enum SystemHealthMonitorCore {
         do {
             try process.run()
         } catch {
-            return ([], [])
+            return []
         }
         process.waitUntilExit()
 
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        guard let output = String(data: data, encoding: .utf8) else { return ([], []) }
+        guard let output = String(data: data, encoding: .utf8) else { return [] }
 
-        var parsed: [ProcessUsage] = []
+        var parsed: [(pid: Int32, cpuPercent: Double, memoryBytes: Int64, comm: String)] = []
         for line in output.split(separator: "\n") {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             guard !trimmed.isEmpty else { continue }
@@ -234,14 +286,23 @@ enum SystemHealthMonitorCore {
                   let rssKB = Int64(parts[2]) else { continue }
 
             let comm = parts.dropFirst(3).joined(separator: " ")
-            let name = resolveProcessName(pid: pid, comm: comm)
-            parsed.append(
-                ProcessUsage(
-                    id: pid,
-                    name: name,
-                    cpuPercent: cpu,
-                    memoryBytes: rssKB * 1024
-                )
+            parsed.append((pid: pid, cpuPercent: cpu, memoryBytes: rssKB * 1024, comm: comm))
+        }
+        return parsed
+    }
+
+    @MainActor
+    private static func resolveProcessNames(
+        _ raw: [(pid: Int32, cpuPercent: Double, memoryBytes: Int64, comm: String)],
+        limit: Int
+    ) -> (byCPU: [ProcessUsage], byMemory: [ProcessUsage]) {
+        let parsed = raw.map { entry -> ProcessUsage in
+            let name = resolveProcessName(pid: entry.pid, comm: entry.comm)
+            return ProcessUsage(
+                id: entry.pid,
+                name: name,
+                cpuPercent: entry.cpuPercent,
+                memoryBytes: entry.memoryBytes
             )
         }
 
@@ -334,7 +395,6 @@ final class SystemHealthMonitor: ObservableObject {
     private var refreshTask: Task<Void, Never>?
 
     init() {
-        refresh()
         startObserving()
     }
 
@@ -342,11 +402,15 @@ final class SystemHealthMonitor: ObservableObject {
         refreshTask?.cancel()
     }
 
-    func refresh() {
-        let volumes = VolumeDiscovery.mountedVolumes()
-        systemVolume = volumes.first(where: { VolumeDiscovery.isSystemVolume(mountPath: $0.mountPath) })
-            ?? volumes.first(where: \.isInternal)
-        snapshot = SystemHealthMonitorCore.capture(volume: systemVolume)
+    func warmUp() async {
+        let volume = await MainActor.run {
+            let volumes = VolumeDiscovery.mountedVolumes()
+            return volumes.first(where: { VolumeDiscovery.isSystemVolume(mountPath: $0.mountPath) })
+                ?? volumes.first(where: \.isInternal)
+        }
+        let captured = await SystemHealthMonitorCore.captureAsync(volume: volume)
+        systemVolume = volume
+        snapshot = captured
     }
 
     private func refreshInterval(for snapshot: SystemHealthSnapshot?) -> Duration {
@@ -358,6 +422,13 @@ final class SystemHealthMonitor: ObservableObject {
             return .seconds(20)
         }
         return .seconds(30)
+    }
+
+    func refresh() {
+        let volumes = VolumeDiscovery.mountedVolumes()
+        systemVolume = volumes.first(where: { VolumeDiscovery.isSystemVolume(mountPath: $0.mountPath) })
+            ?? volumes.first(where: \.isInternal)
+        snapshot = SystemHealthMonitorCore.capture(volume: systemVolume)
     }
 
     private func startObserving() {
