@@ -64,16 +64,46 @@ public final class PythonScanRunner: @unchecked Sendable {
         return logsDirectory.appendingPathComponent("scan-\(timestamp).log")
     }
 
+    public static var isPythonAvailable: Bool {
+        resolvePythonExecutable() != nil
+    }
+
+    public static func bundledInstallScriptURL(in bundle: Bundle = .main) -> URL? {
+        bundle.url(forResource: "install_python", withExtension: "sh", subdirectory: "Scanner")
+            ?? bundle.url(forResource: "install_python", withExtension: "sh")
+    }
+
     public static func resolvePythonExecutable() -> String? {
         let candidates = [
-            "/usr/bin/python3",
             "/opt/homebrew/bin/python3",
             "/usr/local/bin/python3",
+            "/usr/bin/python3",
+            "/Library/Frameworks/Python.framework/Versions/Current/bin/python3",
+            "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+            "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3",
+            "/Library/Frameworks/Python.framework/Versions/3.11/bin/python3",
         ]
         for path in candidates where FileManager.default.isExecutableFile(atPath: path) {
-            return path
+            if validatesPythonVersion(at: path) {
+                return path
+            }
         }
         return nil
+    }
+
+    private static func validatesPythonVersion(at path: String) -> Bool {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: path)
+        process.arguments = ["-c", "import sys; raise SystemExit(0 if sys.version_info >= (3, 8) else 1)"]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        do {
+            try process.run()
+            process.waitUntilExit()
+            return process.terminationStatus == 0
+        } catch {
+            return false
+        }
     }
 
     public func makeSession(logFileURL: URL? = nil) throws -> PythonScanSession {

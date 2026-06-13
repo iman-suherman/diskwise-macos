@@ -96,6 +96,7 @@ enum StartupStep: String, CaseIterable, Identifiable {
     case database
     case drives
     case permissions
+    case python
 
     var id: String { rawValue }
 
@@ -104,6 +105,7 @@ enum StartupStep: String, CaseIterable, Identifiable {
         case .database: return "Open database"
         case .drives: return "Discover drives"
         case .permissions: return "Check permissions"
+        case .python: return "Check Python scanner"
         }
     }
 
@@ -112,6 +114,7 @@ enum StartupStep: String, CaseIterable, Identifiable {
         case .database: return "cylinder"
         case .drives: return "externaldrive"
         case .permissions: return "lock.shield"
+        case .python: return "terminal"
         }
     }
 }
