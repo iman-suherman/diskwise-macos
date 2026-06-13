@@ -27,10 +27,23 @@ final class SystemVolumeMonitor: ObservableObject {
             ?? volumes.first(where: \.isInternal)
     }
 
+    private func refreshInterval(for volume: MountedVolume?) -> Duration {
+        guard let volume else { return .seconds(60) }
+        let freeFraction = max(0, 1 - volume.usageFraction)
+        if MenuBarDiskThresholds.isCriticallyLow(freeSize: volume.freeSize) {
+            return .seconds(15)
+        }
+        if freeFraction < 0.15 {
+            return .seconds(30)
+        }
+        return .seconds(60)
+    }
+
     private func startObserving() {
         refreshTask = Task { @MainActor in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(60))
+                let interval = refreshInterval(for: systemVolume)
+                try? await Task.sleep(for: interval)
                 guard !Task.isCancelled else { return }
                 refresh()
             }
@@ -69,10 +82,15 @@ enum MenuBarDiskThresholds {
         if isCriticallyLow(freeSize: freeSize) {
             return .red
         }
-        if freeFraction < 0.15 {
+
+        let fraction = max(0, min(1, freeFraction))
+        if fraction >= 0.5 {
+            return .green
+        }
+        if fraction >= 0.15 {
             return .orange
         }
-        return .green
+        return Color(red: 1, green: 0.35 + (fraction / 0.15) * 0.35, blue: 0.2)
     }
 }
 
@@ -80,20 +98,12 @@ struct MenuBarStatusLabel: View {
     let volume: MountedVolume?
 
     var body: some View {
-        HStack(spacing: 6) {
-            Text(remainingPercentLabel)
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(statusColor)
-
-            MenuBarRemainingBar(
-                freeFraction: freeFraction,
-                statusColor: statusColor
-            )
-            .frame(width: 36, height: 5)
-        }
-        .padding(.horizontal, 2)
-        .accessibilityLabel(accessibilityLabel)
+        Text(remainingPercentLabel)
+            .font(.system(size: 12, weight: .semibold, design: .rounded))
+            .monospacedDigit()
+            .foregroundStyle(statusColor)
+            .padding(.horizontal, 2)
+            .accessibilityLabel(accessibilityLabel)
     }
 
     private var freeFraction: Double {
@@ -122,36 +132,30 @@ struct MenuBarStatusLabel: View {
     }
 }
 
-struct MenuBarRemainingBar: View {
-    let freeFraction: Double
-    let statusColor: Color
-
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.primary.opacity(0.18))
-
-                Capsule()
-                    .fill(statusColor)
-                    .frame(width: max(0, geometry.size.width * min(max(freeFraction, 0), 1)))
-            }
-        }
-    }
-}
-
 struct MenuBarPopoverContent: View {
     @ObservedObject var monitor: SystemVolumeMonitor
     var onHideMonitor: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(volumeName)
-                    .font(.headline)
-                Text("DiskWise menu bar monitor")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(volumeName)
+                        .font(.headline)
+                    Text("DiskWise menu bar monitor")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Button {
+                    monitor.refresh()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .buttonStyle(.borderless)
+                .help("Refresh disk space now")
             }
 
             if let volume = monitor.systemVolume {
@@ -291,7 +295,7 @@ final class MenuBarStatusItemController: NSObject {
 
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         let hostingView = NSHostingView(rootView: MenuBarStatusLabelView(monitor: monitor))
-        hostingView.frame.size = NSSize(width: 72, height: 18)
+        hostingView.frame.size = NSSize(width: 44, height: 18)
 
         let container = MenuBarClickableStatusView(frame: hostingView.frame)
         container.onClick = { [weak self] in
@@ -337,5 +341,6 @@ final class MenuBarStatusItemController: NSObject {
         )
         popover.show(relativeTo: anchorView.bounds, of: anchorView, preferredEdge: .minY)
         self.popover = popover
+        monitor.refresh()
     }
 }

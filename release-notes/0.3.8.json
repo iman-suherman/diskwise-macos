@@ -7,6 +7,7 @@
   ],
   "changed": [
     "Turning on Show disk space in menu bar no longer registers DiskWise for login at startup or opens System Settings",
+    "Menu bar shows remaining space as a color-coded percentage only (no bar); refresh interval adapts to how much space is left",
     "Hide Menu Bar Monitor in the popover turns off the View menu and Settings toggle",
     "Launch prompt and setup instructions updated to describe remaining-space display instead of login-item approval"
   ],
