@@ -47,6 +47,23 @@ public struct FoundationModelsProvider: GenerativeAIProvider, Sendable {
         throw AIConsultantError.providerUnavailable
     }
 
+    public func streamRespond(to question: String, context: AIChatContext) -> AsyncThrowingStream<String, Error> {
+        #if canImport(FoundationModels)
+        if #available(macOS 26.0, *) {
+            let instructions = StorageContextFormatter.chatInstructions()
+            let prompt = """
+            \(StorageContextFormatter.format(context))
+
+            User question: \(question)
+            """
+            return streamGenerate(instructions: instructions, prompt: prompt)
+        }
+        #endif
+        return AsyncThrowingStream { continuation in
+            continuation.finish(throwing: AIConsultantError.providerUnavailable)
+        }
+    }
+
     public func suggestQuestions(context: AIChatContext) async -> [String] {
         let fallback = RuleBasedChatEngine.defaultSuggestions(for: context)
         #if canImport(FoundationModels)
@@ -91,6 +108,33 @@ public struct FoundationModelsProvider: GenerativeAIProvider, Sendable {
     @available(macOS 26.0, *)
     private func generate(instructions: String, prompt: String) async throws -> String {
         try await generateOnMainActor(instructions: instructions, prompt: prompt)
+    }
+
+    @available(macOS 26.0, *)
+    private func streamGenerate(instructions: String, prompt: String) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            Task { @MainActor in
+                do {
+                    let session = LanguageModelSession(instructions: instructions)
+                    let stream = session.streamResponse(to: prompt)
+                    var lastPartial = ""
+
+                    for try await snapshot in stream {
+                        let text = snapshot.content.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !text.isEmpty, text != lastPartial else { continue }
+                        lastPartial = text
+                        continuation.yield(text)
+                    }
+
+                    guard !lastPartial.isEmpty else {
+                        throw AIConsultantError.emptyResponse
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
     }
 
     @available(macOS 26.0, *)

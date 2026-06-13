@@ -81,6 +81,7 @@ public protocol GenerativeAIProvider: Sendable {
     func availabilityDetail() async -> String
     func isAvailable() async -> Bool
     func respond(to question: String, context: AIChatContext) async throws -> String
+    func streamRespond(to question: String, context: AIChatContext) -> AsyncThrowingStream<String, Error>
     func suggestQuestions(context: AIChatContext) async -> [String]
     func enrichAnalysis(context: AIChatContext) async throws -> String?
 }

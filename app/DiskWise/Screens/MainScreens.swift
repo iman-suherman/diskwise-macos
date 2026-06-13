@@ -278,13 +278,28 @@ struct AskDiskWiseView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Ask DiskWise")
-                                .font(.largeTitle.bold())
-                            Text(viewModel.aiProviderStatus.detail)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                            HStack(alignment: .firstTextBaseline) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Ask DiskWise")
+                                        .font(.largeTitle.bold())
+                                    Text(viewModel.aiProviderStatus.detail)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
 
-                            aiProviderBadge
+                                    aiProviderBadge
+                                }
+
+                                Spacer()
+
+                                Button {
+                                    viewModel.startNewAIChatSession()
+                                } label: {
+                                    Label("New Session", systemImage: "plus.message")
+                                }
+                                .buttonStyle(.bordered)
+                                .disabled(isChatBusy)
+                                .help("Clear the chat and start a fresh conversation")
+                            }
                         }
 
                         if viewModel.aiResponses.isEmpty {
@@ -304,6 +319,9 @@ struct AskDiskWiseView: View {
                     .padding(28)
                 }
                 .onChange(of: viewModel.aiResponses.count) { _, _ in
+                    scrollToLatest(with: proxy)
+                }
+                .onChange(of: viewModel.aiResponses.map(\.text)) { _, _ in
                     scrollToLatest(with: proxy)
                 }
                 .onChange(of: viewModel.isAITyping) { _, isTyping in
@@ -339,11 +357,15 @@ struct AskDiskWiseView: View {
                             .font(.title2)
                     }
                     .buttonStyle(.borderless)
-                    .disabled(viewModel.aiQuestion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isAITyping)
+                    .disabled(viewModel.aiQuestion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isChatBusy)
                 }
             }
             .padding(16)
         }
+    }
+
+    private var isChatBusy: Bool {
+        viewModel.isAITyping || viewModel.aiResponses.contains(where: \.isStreaming)
     }
 
     private var aiProviderBadge: some View {
@@ -436,22 +458,115 @@ private struct ChatBubble: View {
     let message: AIChatMessage
 
     var body: some View {
-        HStack {
-            if message.role == .user { Spacer(minLength: 60) }
-
-            Text(message.text)
-                .font(.body)
-                .padding(14)
-                .background(
-                    message.role == .user
-                        ? Color.accentColor.opacity(0.15)
-                        : Color.secondary.opacity(0.12),
-                    in: RoundedRectangle(cornerRadius: 14)
-                )
-                .frame(maxWidth: 520, alignment: message.role == .user ? .trailing : .leading)
-
-            if message.role == .assistant { Spacer(minLength: 60) }
+        HStack(alignment: .top, spacing: 12) {
+            if message.role == .user {
+                Spacer(minLength: 72)
+                bubbleContent
+            } else {
+                assistantAvatar
+                bubbleContent
+                Spacer(minLength: 48)
+            }
         }
+    }
+
+    @ViewBuilder
+    private var bubbleContent: some View {
+        VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 6) {
+            Text(message.role == .user ? "You" : "DiskWise")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            VStack(alignment: .leading, spacing: 10) {
+                if message.role == .assistant {
+                    if message.isStreaming && message.text.isEmpty {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                                .controlSize(.small)
+                            Text("Thinking…")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else {
+                        ChatMarkdownText(text: message.text)
+                        if message.isStreaming {
+                            StreamingCursor()
+                        }
+                    }
+                } else {
+                    Text(message.text)
+                        .font(.body)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(bubbleBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(bubbleBorder, lineWidth: 1)
+            }
+        }
+        .frame(maxWidth: 560, alignment: message.role == .user ? .trailing : .leading)
+    }
+
+    private var assistantAvatar: some View {
+        Image(systemName: "sparkles")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Color.accentColor)
+            .frame(width: 28, height: 28)
+            .background(Color.accentColor.opacity(0.12), in: Circle())
+            .padding(.top, 18)
+    }
+
+    private var bubbleBackground: some ShapeStyle {
+        message.role == .user
+            ? AnyShapeStyle(Color.accentColor.opacity(0.14))
+            : AnyShapeStyle(Color(nsColor: .controlBackgroundColor))
+    }
+
+    private var bubbleBorder: Color {
+        message.role == .user
+            ? Color.accentColor.opacity(0.18)
+            : Color.primary.opacity(0.08)
+    }
+}
+
+private struct ChatMarkdownText: View {
+    let text: String
+
+    var body: some View {
+        Group {
+            if let attributed = try? AttributedString(
+                markdown: text,
+                options: AttributedString.MarkdownParsingOptions(
+                    interpretedSyntax: .full,
+                    failurePolicy: .returnPartiallyParsedIfPossible
+                )
+            ) {
+                Text(attributed)
+            } else {
+                Text(text)
+            }
+        }
+        .font(.body)
+        .lineSpacing(4)
+        .textSelection(.enabled)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct StreamingCursor: View {
+    @State private var isVisible = true
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 1)
+            .fill(Color.accentColor)
+            .frame(width: 7, height: 16)
+            .opacity(isVisible ? 1 : 0.2)
+            .animation(.easeInOut(duration: 0.55).repeatForever(autoreverses: true), value: isVisible)
+            .onAppear { isVisible.toggle() }
     }
 }
 

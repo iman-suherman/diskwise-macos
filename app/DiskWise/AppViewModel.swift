@@ -175,6 +175,8 @@ final class AppViewModel: ObservableObject {
     private var analysisRefreshTask: Task<Void, Never>?
     private var storageAnalysisTask: Task<Void, Never>?
     private var cachedResultsRefreshTask: Task<Void, Never>?
+    private var aiChatTask: Task<Void, Never>?
+    private var aiChatSessionID = UUID()
     private var scanStartTime: Date?
     private var lastDuplicateGroupsRefreshCount = 0
     private var lastInsightsRefreshCount = 0
@@ -523,11 +525,24 @@ final class AppViewModel: ObservableObject {
         }
 
         let elapsed = Date().timeIntervalSince(start)
+        guard elapsed > 0 else { return nil }
+
+        let progressFraction = scanProgressFractionFromBytes
+        if progressFraction >= 0.98 {
+            return max(5, 30 - elapsed)
+        }
+
         let rate = Double(progress.bytesIndexed) / elapsed
         guard rate > 0 else { return nil }
 
         let remainingBytes = Double(max(0, volume.usedSize - progress.bytesIndexed))
-        return remainingBytes / rate
+        let estimate = remainingBytes / rate
+
+        if !hasFullDiskAccess, progressFraction < 0.2 {
+            return min(estimate, 1_800)
+        }
+
+        return estimate
     }
 
     var scanProgressFraction: Double {
@@ -546,7 +561,24 @@ final class AppViewModel: ObservableObject {
               volume.usedSize > 0 else {
             return isScanning ? 0.08 : 0
         }
-        return min(1.0, Double(progress.bytesIndexed) / Double(volume.usedSize))
+
+        let byteFraction = min(1.0, Double(progress.bytesIndexed) / Double(volume.usedSize))
+        if let processed = progress.directoriesProcessed,
+           let total = progress.directoriesTotal,
+           total > 0,
+           progress.operation == .sizingDirectory || progress.operation == .preparing {
+            let directoryFraction = Double(processed) / Double(total)
+            return min(1.0, max(byteFraction, directoryFraction * 0.25 + byteFraction * 0.75))
+        }
+        return byteFraction
+    }
+
+    var scanProgressDetail: String? {
+        guard let progress = scanProgress else { return nil }
+        if let detail = progress.detail, !detail.isEmpty {
+            return "\(progress.operation.label) · \(detail)"
+        }
+        return progress.operation.label
     }
 
     var scanProgressPercent: Int {
@@ -1215,7 +1247,7 @@ final class AppViewModel: ObservableObject {
                                 self.indexRebuildMessage = "Identifying disk usage · \(progress.scannedCount.formatted()) files…"
                             }
                             self.setStatus(
-                                "Phase 1 of 3 · \(progress.scannedCount.formatted()) files · \(self.scanProgressPercentLabel)",
+                                "Phase 1 of 3 · \(progress.operation.label) · \(progress.scannedCount.formatted()) files · \(self.scanProgressPercentLabel)",
                                 kind: .working
                             )
                         }
@@ -1472,6 +1504,16 @@ final class AppViewModel: ObservableObject {
         }
     }
 
+    func startNewAIChatSession() {
+        aiChatSessionID = UUID()
+        aiChatTask?.cancel()
+        aiChatTask = nil
+        aiResponses = []
+        aiQuestion = ""
+        aiAutocompleteSuggestions = []
+        isAITyping = false
+    }
+
     func askAI(question: String) {
         let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -1489,21 +1531,101 @@ final class AppViewModel: ObservableObject {
         }
 
         let context = AIChatContext(report: report, topConsumers: topConsumers)
+        let assistantID = UUID()
+        let sessionID = aiChatSessionID
+        aiResponses.append(AIChatMessage(id: assistantID, role: .assistant, text: "", isStreaming: true))
         isAITyping = true
 
-        Task {
+        aiChatTask?.cancel()
+        aiChatTask = Task {
+            let stream = aiConsultant.streamRespond(to: trimmed, context: context)
+            var receivedContent = false
+
             do {
-                let answer = try await aiConsultant.respond(to: trimmed, context: context)
+                for try await partial in stream {
+                    guard !Task.isCancelled, sessionID == self.aiChatSessionID else { return }
+                    receivedContent = true
+                    await MainActor.run {
+                        guard sessionID == self.aiChatSessionID else { return }
+                        self.isAITyping = false
+                        self.updateAssistantMessage(id: assistantID, text: partial, isStreaming: true)
+                    }
+                }
+
                 await MainActor.run {
+                    guard sessionID == self.aiChatSessionID else { return }
                     self.isAITyping = false
-                    self.aiResponses.append(AIChatMessage(role: .assistant, text: answer))
+                    self.updateAssistantMessage(
+                        id: assistantID,
+                        text: self.assistantMessageText(id: assistantID),
+                        isStreaming: false
+                    )
                 }
             } catch {
+                guard !Task.isCancelled, sessionID == self.aiChatSessionID else { return }
                 let fallback = Self.answerQuestion(trimmed, report: report, consumers: topConsumers)
                 await MainActor.run {
+                    guard sessionID == self.aiChatSessionID else { return }
                     self.isAITyping = false
-                    self.aiResponses.append(AIChatMessage(role: .assistant, text: fallback))
+                    if receivedContent {
+                        self.updateAssistantMessage(
+                            id: assistantID,
+                            text: self.assistantMessageText(id: assistantID),
+                            isStreaming: false
+                        )
+                    } else {
+                        self.streamFallbackAnswer(id: assistantID, text: fallback, sessionID: sessionID)
+                    }
                 }
+            }
+        }
+    }
+
+    private func assistantMessageText(id: UUID) -> String {
+        aiResponses.first(where: { $0.id == id })?.text ?? ""
+    }
+
+    private func updateAssistantMessage(id: UUID, text: String, isStreaming: Bool) {
+        guard let index = aiResponses.firstIndex(where: { $0.id == id }) else { return }
+        aiResponses[index].text = text
+        aiResponses[index].isStreaming = isStreaming
+    }
+
+    private func streamFallbackAnswer(id: UUID, text: String, sessionID: UUID) {
+        aiChatTask = Task {
+            for await partial in Self.simulatedReveal(text) {
+                guard !Task.isCancelled, sessionID == self.aiChatSessionID else { return }
+                await MainActor.run {
+                    guard sessionID == self.aiChatSessionID else { return }
+                    self.updateAssistantMessage(id: id, text: partial, isStreaming: true)
+                }
+            }
+            await MainActor.run {
+                guard sessionID == self.aiChatSessionID else { return }
+                self.updateAssistantMessage(id: id, text: text, isStreaming: false)
+            }
+        }
+    }
+
+    private static func simulatedReveal(_ text: String) -> AsyncStream<String> {
+        AsyncStream { continuation in
+            Task {
+                let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else {
+                    continuation.finish()
+                    return
+                }
+
+                var index = trimmed.startIndex
+                while index < trimmed.endIndex {
+                    let next = trimmed.index(index, offsetBy: 3, limitedBy: trimmed.endIndex) ?? trimmed.endIndex
+                    continuation.yield(String(trimmed[..<next]))
+                    index = next
+                    if index < trimmed.endIndex {
+                        try? await Task.sleep(for: .milliseconds(18))
+                    }
+                }
+                continuation.finish()
             }
         }
     }
@@ -1878,13 +2000,21 @@ final class AppViewModel: ObservableObject {
     }
 }
 
-struct AIChatMessage: Identifiable {
+struct AIChatMessage: Identifiable, Equatable {
     enum Role {
         case user
         case assistant
     }
 
-    let id = UUID()
+    let id: UUID
     let role: Role
-    let text: String
+    var text: String
+    var isStreaming: Bool
+
+    init(id: UUID = UUID(), role: Role, text: String, isStreaming: Bool = false) {
+        self.id = id
+        self.role = role
+        self.text = text
+        self.isStreaming = isStreaming
+    }
 }

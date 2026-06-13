@@ -89,6 +89,23 @@ struct ScanProgressPanel: View {
                 estimatedRemaining: viewModel.scanEstimatedRemaining
             )
 
+            if let detail = viewModel.scanProgressDetail {
+                Label(detail, systemImage: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+
+            if !viewModel.hasFullDiskAccess {
+                Label(
+                    "Without Full Disk Access, protected folders are sized approximately and may show as not mapped until you rescan.",
+                    systemImage: "lock.shield"
+                )
+                .font(.caption)
+                .foregroundStyle(.orange)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 if let progress = viewModel.scanProgress {
                     ScanStatTile(
@@ -110,7 +127,10 @@ struct ScanProgressPanel: View {
             }
 
             if let progress = viewModel.scanProgress {
-                currentPathPanel(title: "Current file", path: progress.currentPath)
+                currentPathPanel(
+                    title: progress.operation == .sizingDirectory ? "Current folder" : "Current path",
+                    path: progress.currentPath
+                )
             }
         }
         .scanPanelStyle()

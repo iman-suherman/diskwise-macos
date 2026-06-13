@@ -70,15 +70,24 @@ struct IndexRebuildProgressOverlay: View {
                     .animation(.easeInOut(duration: 0.2), value: currentMessage)
 
                 if let scanProgress, activeStep == .identifying {
-                    HStack(spacing: 16) {
-                        Label(scanProgress.scannedCount.formatted(), systemImage: "doc.text")
-                        Label(
-                            ByteCountFormatter.string(fromByteCount: scanProgress.bytesIndexed, countStyle: .file),
-                            systemImage: "externaldrive"
-                        )
+                    VStack(spacing: 6) {
+                        if let detail = scanProgress.detail {
+                            Text(detail)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        HStack(spacing: 16) {
+                            Label(scanProgress.operation.label, systemImage: "gearshape")
+                            Label(scanProgress.scannedCount.formatted(), systemImage: "doc.text")
+                            Label(
+                                ByteCountFormatter.string(fromByteCount: scanProgress.bytesIndexed, countStyle: .file),
+                                systemImage: "externaldrive"
+                            )
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
