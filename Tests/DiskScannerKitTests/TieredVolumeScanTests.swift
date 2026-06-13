@@ -82,9 +82,9 @@ final class TieredVolumeScanTests: XCTestCase {
         XCTAssertEqual(progress.completedDirectories, ["Applications"])
     }
 
-    func testConcurrentDrillDirectoriesExpandsUserHomes() throws {
+    func testSequentialDrillDirectoriesExpandsUserHomes() throws {
         let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent("diskwise-concurrent-\(UUID().uuidString)")
+            .appendingPathComponent("diskwise-sequential-\(UUID().uuidString)")
         let aliceDocs = root.appendingPathComponent("Users/alice/Documents")
         let bobDownloads = root.appendingPathComponent("Users/bob/Downloads")
         try FileManager.default.createDirectory(at: aliceDocs, withIntermediateDirectories: true)
@@ -93,16 +93,16 @@ final class TieredVolumeScanTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: root) }
 
         let usersURL = root.appendingPathComponent("Users", isDirectory: true)
-        let tasks = VolumeTieredScan.concurrentDrillDirectories(at: usersURL)
+        let tasks = VolumeTieredScan.sequentialDrillDirectories(at: usersURL)
 
         XCTAssertEqual(tasks.count, 2)
         XCTAssertTrue(tasks.contains(where: { $0.path.hasSuffix("/Users/alice/Documents") }))
         XCTAssertTrue(tasks.contains(where: { $0.path.hasSuffix("/Users/bob/Downloads") }))
     }
 
-    func testConcurrentTieredScanIndexesMultipleUserFolders() throws {
+    func testSequentialTieredScanIndexesMultipleUserFolders() throws {
         let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent("diskwise-concurrent-scan-\(UUID().uuidString)")
+            .appendingPathComponent("diskwise-sequential-scan-\(UUID().uuidString)")
         let aliceDocs = root.appendingPathComponent("Users/alice/Documents")
         let bobDocs = root.appendingPathComponent("Users/bob/Documents")
         try FileManager.default.createDirectory(at: aliceDocs, withIntermediateDirectories: true)

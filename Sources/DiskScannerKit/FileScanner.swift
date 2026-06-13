@@ -86,7 +86,7 @@ public final class FileScanner: @unchecked Sendable {
                 throw FileScannerError.cancelled
             }
             drillDirectories.append(
-                contentsOf: VolumeTieredScan.concurrentDrillDirectories(at: drillRoot, fileManager: fileManager)
+                contentsOf: VolumeTieredScan.sequentialDrillDirectories(at: drillRoot, fileManager: fileManager)
             )
         }
 

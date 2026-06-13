@@ -122,7 +122,6 @@ class ScanContext:
         if self.verbose and self._log_handle is not None:
             self._log_handle.write(line + "\n")
             self._log_handle.flush()
-        self.emit({"type": "log", "message": message})
 
     def progress(
         self,
@@ -429,7 +428,6 @@ def scan_tiered_volume(
         current_path=scan_root,
         detail=f"Identified {total} folders",
         directories_total=total,
-        identified_directories=identified,
         force=True,
     )
     ctx.log(f"Tiered scan starting at {scan_root} ({total} folders)")
@@ -451,9 +449,6 @@ def scan_tiered_volume(
             detail=f"Sized {name}",
             directories_processed=processed,
             directories_total=total,
-            identified_directories=identified,
-            active_directories=[name],
-            completed_directories=list(completed),
             force=True,
         )
 
@@ -468,9 +463,6 @@ def scan_tiered_volume(
             detail=f"Indexing {label}",
             directories_processed=processed,
             directories_total=total,
-            identified_directories=identified,
-            active_directories=[label],
-            completed_directories=list(completed),
             force=True,
         )
         batch = walk_directory(drill_path, mode, ctx, is_cancelled=is_cancelled)
@@ -483,8 +475,6 @@ def scan_tiered_volume(
             detail=f"Finished {label}",
             directories_processed=processed,
             directories_total=total,
-            identified_directories=identified,
-            completed_directories=list(completed),
             force=True,
         )
 
@@ -494,8 +484,6 @@ def scan_tiered_volume(
         detail=f"Finished mapping {total} folders",
         directories_processed=total,
         directories_total=total,
-        identified_directories=identified,
-        completed_directories=list(completed),
         force=True,
     )
     return results

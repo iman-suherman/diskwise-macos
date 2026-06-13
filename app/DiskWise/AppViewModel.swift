@@ -185,6 +185,8 @@ final class AppViewModel: ObservableObject {
     private var aiChatTask: Task<Void, Never>?
     private var aiChatSessionID = UUID()
     private var scanStartTime: Date?
+    private var pendingScanProgress: ScanProgress?
+    private var scanProgressCoalesceTask: Task<Void, Never>?
     private var lastDuplicateGroupsRefreshCount = 0
     private var lastInsightsRefreshCount = 0
     private var scanEngine: ScanEngine!
@@ -835,6 +837,60 @@ final class AppViewModel: ObservableObject {
         overview = try? database.storageOverview(forDiskID: diskID, oldFileThreshold: threshold)
     }
 
+    @MainActor
+    private func deliverScanProgress(_ progress: ScanProgress) {
+        pendingScanProgress = progress
+
+        let shouldFlushNow = scanProgress == nil
+            || progress.operation != scanProgress?.operation
+            || progress.directoriesProcessed != scanProgress?.directoriesProcessed
+            || progress.detail != scanProgress?.detail
+
+        if shouldFlushNow {
+            flushScanProgress()
+            return
+        }
+
+        guard scanProgressCoalesceTask == nil else { return }
+        scanProgressCoalesceTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(300))
+            guard let self else { return }
+            self.flushScanProgress()
+            self.scanProgressCoalesceTask = nil
+        }
+    }
+
+    @MainActor
+    private func flushScanProgress() {
+        scanProgressCoalesceTask?.cancel()
+        scanProgressCoalesceTask = nil
+        guard let progress = pendingScanProgress else { return }
+        pendingScanProgress = nil
+
+        scanProgress = progress
+        maybeRefreshInsightsDuringScan(progress)
+        ScanActivityMonitor.shared.update(
+            progressFraction: scanProgressFraction,
+            progressPercentLabel: scanProgressPercentLabel,
+            detail: scanProgressDetail,
+            operationLabel: progress.operation.label
+        )
+        if isRebuildingIndex {
+            indexRebuildMessage = "Identifying disk usage · \(progress.scannedCount.formatted()) files…"
+        }
+        setStatus(
+            "Phase 1 of 3 · \(progress.operation.label) · \(progress.scannedCount.formatted()) files · \(scanProgressPercentLabel)",
+            kind: .working
+        )
+    }
+
+    @MainActor
+    private func resetScanProgressCoalescing() {
+        scanProgressCoalesceTask?.cancel()
+        scanProgressCoalesceTask = nil
+        pendingScanProgress = nil
+    }
+
     func reload() {
         disks = (try? database.allDisks()) ?? []
         refreshMountedVolumes()
@@ -1190,6 +1246,7 @@ final class AppViewModel: ObservableObject {
         scanEngine?.cancelActiveScan()
         storageAnalysisTask?.cancel()
         cancelDuplicateDetection()
+        resetScanProgressCoalescing()
         isScanning = false
         isAnalyzing = false
         scanPhase = .idle
@@ -1411,26 +1468,7 @@ final class AppViewModel: ObservableObject {
                     mode: scanMode,
                     onProgress: { progress in
                         Task { @MainActor in
-                            self.scanProgress = progress
-                            self.maybeRefreshInsightsDuringScan(progress)
-                            ScanActivityMonitor.shared.update(
-                                progressFraction: self.scanProgressFraction,
-                                progressPercentLabel: self.scanProgressPercentLabel,
-                                detail: self.scanProgressDetail,
-                                operationLabel: progress.operation.label
-                            )
-                            if self.isRebuildingIndex {
-                                self.indexRebuildMessage = "Identifying disk usage · \(progress.scannedCount.formatted()) files…"
-                            }
-                            self.setStatus(
-                                "Phase 1 of 3 · \(progress.operation.label) · \(progress.scannedCount.formatted()) files · \(self.scanProgressPercentLabel)",
-                                kind: .working
-                            )
-                        }
-                    },
-                    onLogLine: { line in
-                        Task { @MainActor in
-                            ScanLogMonitor.shared.append(line)
+                            self.deliverScanProgress(progress)
                         }
                     },
                     onScanSessionStarted: { session in
@@ -1477,6 +1515,7 @@ final class AppViewModel: ObservableObject {
                     }
                     self.isScanning = false
                     self.scanPhase = .idle
+                    self.resetScanProgressCoalescing()
                     self.scanProgress = nil
                     self.scanStartTime = nil
                     ScanActivityMonitor.shared.endScan()
@@ -1501,6 +1540,7 @@ final class AppViewModel: ObservableObject {
         isScanning = false
         ScanActivityMonitor.shared.endScan()
         ScanLogMonitor.shared.endSession()
+        resetScanProgressCoalescing()
         scanPhase = .analyzing
         scanProgress = nil
         selectedDiskID = summary.diskID

@@ -27,8 +27,8 @@ public enum VolumeTieredScan {
         return true
     }
 
-    /// Expands a drill root into independently scannable directories for concurrent indexing.
-    public static func concurrentDrillDirectories(
+    /// Expands a drill root into independently scannable directories for sequential indexing.
+    public static func sequentialDrillDirectories(
         at drillRoot: URL,
         fileManager: FileManager = .default
     ) -> [URL] {
