@@ -14,7 +14,7 @@ enum MenuBarMonitorController {
     }
 
     static var menuBarMonitorStatusDescription: String {
-        "Shows remaining disk space and system health score in the menu bar while DiskWise is running."
+        "Shows free drive space and system health score in the menu bar while DiskWise is running."
     }
 
     static var launchAtLoginStatusDescription: String {
@@ -35,9 +35,8 @@ enum MenuBarMonitorController {
     @MainActor
     static func syncMenuBarItems(settings: AppSettings) {
         settings.showMenuBarMonitorInstructions = false
-        MenuBarStatusItemController.shared.syncVisibility(
-            showPercentage: settings.showMenuBarDiskPercentage,
-            showFreeGB: settings.showMenuBarDiskFreeGB
+        MenuBarStatusItemController.shared.syncFreeSpaceVolumes(
+            enabledPaths: settings.menuBarFreeSpaceVolumePaths
         )
         MenuBarHealthItemController.shared.syncVisibility(
             showHealthScore: settings.showMenuBarHealthScore

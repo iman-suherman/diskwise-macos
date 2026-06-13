@@ -79,8 +79,8 @@ final class AppSettings: ObservableObject {
         static let enableOllamaDevMode = "diskwise.settings.enableOllamaDevMode"
         static let menuBarExtensionPromptDismissed = "diskwise.settings.menuBarExtensionPromptDismissed"
         static let showMenuBarDiskMonitor = "diskwise.settings.showMenuBarDiskMonitor"
-        static let showMenuBarDiskPercentage = "diskwise.settings.showMenuBarDiskPercentage"
         static let showMenuBarDiskFreeGB = "diskwise.settings.showMenuBarDiskFreeGB"
+        static let menuBarFreeSpaceVolumes = "diskwise.settings.menuBarFreeSpaceVolumes"
         static let showMenuBarHealthScore = "diskwise.settings.showMenuBarHealthScore"
         static let hideFromDock = "diskwise.settings.hideFromDock"
         static let launchAtLogin = "diskwise.settings.launchAtLogin"
@@ -141,16 +141,12 @@ final class AppSettings: ObservableObject {
         }
     }
 
-    @Published var showMenuBarDiskPercentage: Bool {
+    @Published var menuBarFreeSpaceVolumePaths: Set<String> {
         didSet {
-            UserDefaults.standard.set(showMenuBarDiskPercentage, forKey: Keys.showMenuBarDiskPercentage)
-            syncMenuBarMonitorState()
-        }
-    }
-
-    @Published var showMenuBarDiskFreeGB: Bool {
-        didSet {
-            UserDefaults.standard.set(showMenuBarDiskFreeGB, forKey: Keys.showMenuBarDiskFreeGB)
+            UserDefaults.standard.set(
+                Array(menuBarFreeSpaceVolumePaths).sorted(),
+                forKey: Keys.menuBarFreeSpaceVolumes
+            )
             syncMenuBarMonitorState()
         }
     }
@@ -169,7 +165,11 @@ final class AppSettings: ObservableObject {
     }
 
     var showMenuBarDiskMonitor: Bool {
-        showMenuBarDiskPercentage || showMenuBarDiskFreeGB || showMenuBarHealthScore
+        !menuBarFreeSpaceVolumePaths.isEmpty || showMenuBarHealthScore
+    }
+
+    func isMenuBarFreeSpaceVisible(for mountPath: String) -> Bool {
+        menuBarFreeSpaceVolumePaths.contains(mountPath)
     }
 
     @Published var launchAtLogin: Bool {
@@ -190,8 +190,7 @@ final class AppSettings: ObservableObject {
     }
 
     func setMenuBarDiskMonitorEnabled(_ enabled: Bool) {
-        showMenuBarDiskPercentage = enabled
-        showMenuBarDiskFreeGB = enabled
+        menuBarFreeSpaceVolumePaths = enabled ? ["/"] : []
         showMenuBarHealthScore = enabled
         MenuBarMonitorController.syncMenuBarItems(settings: self)
     }
@@ -206,13 +205,12 @@ final class AppSettings: ObservableObject {
         DockVisibilityController.apply(hidden: hidden)
     }
 
-    func setMenuBarDiskPercentageVisible(_ visible: Bool) {
-        showMenuBarDiskPercentage = visible
-        MenuBarMonitorController.syncMenuBarItems(settings: self)
-    }
-
-    func setMenuBarDiskFreeGBVisible(_ visible: Bool) {
-        showMenuBarDiskFreeGB = visible
+    func setMenuBarFreeSpaceVisible(for mountPath: String, visible: Bool) {
+        if visible {
+            menuBarFreeSpaceVolumePaths.insert(mountPath)
+        } else {
+            menuBarFreeSpaceVolumePaths.remove(mountPath)
+        }
         MenuBarMonitorController.syncMenuBarItems(settings: self)
     }
 
@@ -250,14 +248,15 @@ final class AppSettings: ObservableObject {
         ollamaBaseURL = defaults.string(forKey: Keys.ollamaBaseURL) ?? "http://127.0.0.1:11434"
         ollamaModel = defaults.string(forKey: Keys.ollamaModel) ?? "llama3.1"
         enableOllamaDevMode = defaults.bool(forKey: Keys.enableOllamaDevMode)
-        if defaults.object(forKey: Keys.showMenuBarDiskPercentage) != nil {
-            showMenuBarDiskPercentage = defaults.bool(forKey: Keys.showMenuBarDiskPercentage)
-            showMenuBarDiskFreeGB = defaults.bool(forKey: Keys.showMenuBarDiskFreeGB)
+        if let storedPaths = defaults.stringArray(forKey: Keys.menuBarFreeSpaceVolumes) {
+            menuBarFreeSpaceVolumePaths = Set(storedPaths)
+            showMenuBarHealthScore = defaults.bool(forKey: Keys.showMenuBarHealthScore)
+        } else if defaults.object(forKey: Keys.showMenuBarDiskFreeGB) != nil {
+            menuBarFreeSpaceVolumePaths = defaults.bool(forKey: Keys.showMenuBarDiskFreeGB) ? ["/"] : []
             showMenuBarHealthScore = defaults.bool(forKey: Keys.showMenuBarHealthScore)
         } else {
             let legacyMonitor = defaults.bool(forKey: Keys.showMenuBarDiskMonitor)
-            showMenuBarDiskPercentage = legacyMonitor
-            showMenuBarDiskFreeGB = legacyMonitor
+            menuBarFreeSpaceVolumePaths = legacyMonitor ? ["/"] : []
             showMenuBarHealthScore = false
         }
         hideFromDock = defaults.bool(forKey: Keys.hideFromDock)
@@ -319,13 +318,11 @@ final class AppSettings: ObservableObject {
         ollamaBaseURL = "http://127.0.0.1:11434"
         ollamaModel = "llama3.1"
         enableOllamaDevMode = false
-        showMenuBarDiskPercentage = false
-        showMenuBarDiskFreeGB = false
+        menuBarFreeSpaceVolumePaths = []
         showMenuBarHealthScore = false
         hideFromDock = false
         launchAtLogin = false
         showMenuBarMonitorInstructions = false
-        MenuBarStatusItemController.shared.syncVisibility(showPercentage: false, showFreeGB: false)
         MenuBarHealthItemController.shared.syncVisibility(showHealthScore: false)
         DockVisibilityController.apply(hidden: false)
         try? MenuBarMonitorController.launchAtLoginService.unregister()

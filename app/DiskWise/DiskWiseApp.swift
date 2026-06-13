@@ -24,13 +24,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.applicationIconImage = icon
         }
 
-        MenuBarStatusItemController.shared.syncVisibility(
-            showPercentage: AppSettings.shared.showMenuBarDiskPercentage,
-            showFreeGB: AppSettings.shared.showMenuBarDiskFreeGB
+        MenuBarStatusItemController.shared.syncFreeSpaceVolumes(
+            enabledPaths: AppSettings.shared.menuBarFreeSpaceVolumePaths
         )
         MenuBarHealthItemController.shared.syncVisibility(
             showHealthScore: AppSettings.shared.showMenuBarHealthScore
         )
+        SystemVolumeMonitor.shared.refresh()
+        MenuBarMonitorController.syncMenuBarItems(settings: AppSettings.shared)
         DockVisibilityController.apply(hidden: AppSettings.shared.hideFromDock)
     }
 }
@@ -69,20 +70,15 @@ struct DiskWiseApp: App {
                 }
             }
             CommandMenu("View") {
-                Toggle(
-                    "Show Disk Space Percentage in Menu Bar",
-                    isOn: Binding(
-                        get: { appSettings.showMenuBarDiskPercentage },
-                        set: { appSettings.setMenuBarDiskPercentageVisible($0) }
+                ForEach(SystemVolumeMonitor.shared.volumes) { volume in
+                    Toggle(
+                        "Show \(volume.name) Free Space in Menu Bar",
+                        isOn: Binding(
+                            get: { appSettings.isMenuBarFreeSpaceVisible(for: volume.mountPath) },
+                            set: { appSettings.setMenuBarFreeSpaceVisible(for: volume.mountPath, visible: $0) }
+                        )
                     )
-                )
-                Toggle(
-                    "Show Free Disk Space (GB) in Menu Bar",
-                    isOn: Binding(
-                        get: { appSettings.showMenuBarDiskFreeGB },
-                        set: { appSettings.setMenuBarDiskFreeGBVisible($0) }
-                    )
-                )
+                }
                 Toggle(
                     "Show Health Score in Menu Bar",
                     isOn: Binding(

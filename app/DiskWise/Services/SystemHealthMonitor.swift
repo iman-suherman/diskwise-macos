@@ -1,3 +1,4 @@
+import AppKit
 import Darwin
 import DiskScannerKit
 import Foundation
@@ -34,6 +35,7 @@ struct SystemHealthSnapshot: Sendable {
 enum SystemHealthMonitorCore {
     private static var previousCPUTicks: (user: Double, system: Double, idle: Double, nice: Double)?
 
+    @MainActor
     static func capture(volume: MountedVolume?) -> SystemHealthSnapshot {
         let cpuUsage = readCPUUsagePercent()
         let memory = readMemoryUsage()
@@ -107,6 +109,10 @@ enum SystemHealthMonitorCore {
         default:
             return "Poor"
         }
+    }
+
+    static func healthConditionLabelWithScore(for score: Int) -> String {
+        "\(healthConditionLabel(for: score)) (\(score))"
     }
 
     private static func formattedMacOSVersion() -> String {
@@ -196,10 +202,11 @@ enum SystemHealthMonitorCore {
         return min(100, max(0, usedDelta / totalDelta * 100))
     }
 
+    @MainActor
     private static func readTopProcesses(limit: Int) -> (byCPU: [ProcessUsage], byMemory: [ProcessUsage]) {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/ps")
-        process.arguments = ["-A", "-o", "pid=,comm=,pcpu=,rss="]
+        process.arguments = ["-A", "-o", "pid=,pcpu=,rss="]
 
         let pipe = Pipe()
         process.standardOutput = pipe
@@ -221,13 +228,12 @@ enum SystemHealthMonitorCore {
             guard !trimmed.isEmpty else { continue }
 
             let parts = trimmed.split(whereSeparator: { $0 == " " || $0 == "\t" }).map(String.init)
-            guard parts.count >= 4,
+            guard parts.count >= 3,
                   let pid = Int32(parts[0]),
                   let cpu = Double(parts[parts.count - 2]),
                   let rssKB = Int64(parts[parts.count - 1]) else { continue }
 
-            let rawName = parts.dropFirst().dropLast(2).joined(separator: " ")
-            let name = processDisplayName(rawName.isEmpty ? "Process \(pid)" : rawName)
+            let name = resolveProcessName(pid: pid)
             parsed.append(
                 ProcessUsage(
                     id: pid,
@@ -241,6 +247,25 @@ enum SystemHealthMonitorCore {
         let byCPU = parsed.sorted { $0.cpuPercent > $1.cpuPercent }.prefix(limit).map { $0 }
         let byMemory = parsed.sorted { $0.memoryBytes > $1.memoryBytes }.prefix(limit).map { $0 }
         return (Array(byCPU), Array(byMemory))
+    }
+
+    @MainActor
+    private static func resolveProcessName(pid: Int32) -> String {
+        if let app = NSRunningApplication(processIdentifier: pid),
+           let localizedName = app.localizedName,
+           !localizedName.isEmpty {
+            return localizedName
+        }
+
+        var buffer = [CChar](repeating: 0, count: Int(MAXCOMLEN))
+        if proc_name(pid, &buffer, UInt32(buffer.count)) == 0 {
+            let procName = String(cString: buffer).trimmingCharacters(in: .whitespacesAndNewlines)
+            if !procName.isEmpty {
+                return processDisplayName(procName)
+            }
+        }
+
+        return "Process \(pid)"
     }
 
     static func processDisplayName(_ rawName: String) -> String {

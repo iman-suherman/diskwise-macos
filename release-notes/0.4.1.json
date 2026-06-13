@@ -1,0 +1,14 @@
+{
+  "summary": "Per-drive menu bar free space, health score with numeric label, and full process names in system status.",
+  "introduced": [
+    "Choose internal and external drives individually for menu bar free-space readouts (for example, HD 12GB or 6 2.8TB)"
+  ],
+  "changed": [
+    "Removed remaining-percentage menu bar option",
+    "Health menu bar icon shows condition with score, for example Fair (50)",
+    "System status top CPU and memory lists use full application names from Activity Monitor"
+  ],
+  "fixed": [
+    "Top CPU and memory process names no longer truncate to short comm labels like Cu or Library"
+  ]
+}

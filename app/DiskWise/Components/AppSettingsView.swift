@@ -65,20 +65,9 @@ struct AppSettingsView: View {
             }
 
             Section("Menu bar monitor") {
-                Toggle(
-                    "Show remaining percentage",
-                    isOn: Binding(
-                        get: { settings.showMenuBarDiskPercentage },
-                        set: { settings.setMenuBarDiskPercentageVisible($0) }
-                    )
-                )
-
-                Toggle(
-                    "Show free space (GB)",
-                    isOn: Binding(
-                        get: { settings.showMenuBarDiskFreeGB },
-                        set: { settings.setMenuBarDiskFreeGBVisible($0) }
-                    )
+                MenuBarVolumeToggleSection(
+                    settings: settings,
+                    volumes: SystemVolumeMonitor.shared.volumes
                 )
 
                 Toggle(
@@ -95,7 +84,7 @@ struct AppSettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 if settings.showMenuBarDiskMonitor {
-                    Text("Click either menu bar icon for drive details and to show or hide each display.")
+                    Text("Click a menu bar icon for drive details and to show or hide each display.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -169,6 +158,9 @@ struct AppSettingsView: View {
         .formStyle(.grouped)
         .frame(width: 520, height: 500)
         .navigationTitle("Settings")
+        .onAppear {
+            SystemVolumeMonitor.shared.refresh()
+        }
         .sheet(isPresented: $settings.showMenuBarMonitorInstructions) {
             MenuBarMonitorInstructionSheet()
         }
