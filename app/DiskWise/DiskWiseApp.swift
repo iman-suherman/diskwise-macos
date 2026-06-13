@@ -33,6 +33,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         SystemVolumeMonitor.shared.refresh()
         MenuBarMonitorController.syncMenuBarItems(settings: AppSettings.shared)
         DockVisibilityController.apply(hidden: AppSettings.shared.hideFromDock)
+
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.didBecomeKeyNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            AppViewModel.current?.checkForUpdatesWhenEligible()
+        }
     }
 }
 
@@ -243,6 +251,7 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             viewModel.checkPermissionOnAppActivation()
+            viewModel.checkForUpdatesWhenEligible()
         }
         .onChange(of: viewModel.isBlockingLaunchFlow) { _, isBlocking in
             if !isBlocking {

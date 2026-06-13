@@ -138,6 +138,8 @@ struct ScanProgressPanel: View {
                     path: progress.currentPath
                 )
             }
+
+            ScanVerboseLogPanel()
         }
         .scanPanelStyle()
     }
@@ -149,6 +151,57 @@ struct ScanProgressPanel: View {
             return "\(completed)/\(total)"
         }
         return "—"
+    }
+}
+
+struct ScanVerboseLogPanel: View {
+    @ObservedObject private var scanLogMonitor = ScanLogMonitor.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("Scanner log", systemImage: "terminal")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                if scanLogMonitor.logFileURL != nil {
+                    Button("Open in Terminal") {
+                        scanLogMonitor.openInTerminal()
+                    }
+                    .buttonStyle(.link)
+                    .help("Open Terminal and tail the verbose Python scanner log")
+                }
+            }
+
+            if scanLogMonitor.logLines.isEmpty {
+                Text("Verbose scanner output will appear here while the Python scan runs.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 4) {
+                        ForEach(Array(scanLogMonitor.logLines.enumerated()), id: \.offset) { _, line in
+                            Text(line)
+                                .font(.system(.caption, design: .monospaced))
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .textSelection(.enabled)
+                        }
+                    }
+                }
+                .frame(maxHeight: 140)
+                .padding(10)
+                .background(Color(nsColor: .textBackgroundColor).opacity(0.45))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+
+            if let logFileURL = scanLogMonitor.logFileURL {
+                Text(logFileURL.path)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+        }
     }
 }
 
