@@ -73,25 +73,36 @@ struct AppSettingsView: View {
                     )
                 )
 
-                Text("Displays Macintosh HD usage with a percentage and bar chart while DiskWise is running. Starts automatically when you log in after approval in System Settings.")
+                Text(MenuBarMonitorController.menuBarMonitorStatusDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
+                if settings.showMenuBarDiskMonitor {
+                    Text("Click the menu bar icon for drive details, or choose Hide Menu Bar Monitor in the popover to turn this off.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            Section("Startup") {
+                Toggle(
+                    "Open DiskWise at login",
+                    isOn: Binding(
+                        get: { settings.launchAtLogin },
+                        set: { settings.setLaunchAtLoginEnabled($0) }
+                    )
+                )
+
                 Text(MenuBarMonitorController.launchAtLoginStatusDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-
-                if settings.showMenuBarDiskMonitor {
-                    Button("Show Setup Instructions") {
-                        settings.showMenuBarMonitorInstructions = true
-                    }
-                }
+                    .fixedSize(horizontal: false, vertical: true)
 
                 if MenuBarMonitorController.launchAtLoginService.status == .requiresApproval {
                     Button("Open Login Items Settings") {
                         MenuBarMonitorController.openLoginItemsSettingsForApproval()
-                        settings.showMenuBarMonitorInstructions = true
                     }
                 }
             }

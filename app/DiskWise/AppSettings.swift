@@ -79,6 +79,7 @@ final class AppSettings: ObservableObject {
         static let enableOllamaDevMode = "diskwise.settings.enableOllamaDevMode"
         static let menuBarExtensionPromptDismissed = "diskwise.settings.menuBarExtensionPromptDismissed"
         static let showMenuBarDiskMonitor = "diskwise.settings.showMenuBarDiskMonitor"
+        static let launchAtLogin = "diskwise.settings.launchAtLogin"
     }
 
     /// Bump when the storage index format or scan pipeline changes materially.
@@ -142,6 +143,12 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    @Published var launchAtLogin: Bool {
+        didSet {
+            UserDefaults.standard.set(launchAtLogin, forKey: Keys.launchAtLogin)
+        }
+    }
+
     @Published var showMenuBarMonitorInstructions = false
 
     var menuBarExtensionPromptDismissed: Bool {
@@ -154,7 +161,11 @@ final class AppSettings: ObservableObject {
     }
 
     func setMenuBarDiskMonitorEnabled(_ enabled: Bool) {
-        MenuBarMonitorController.apply(enabled: enabled, settings: self)
+        MenuBarMonitorController.applyMenuBarMonitor(enabled: enabled, settings: self)
+    }
+
+    func setLaunchAtLoginEnabled(_ enabled: Bool) {
+        MenuBarMonitorController.applyLaunchAtLogin(enabled: enabled, settings: self)
     }
 
     private init() {
@@ -183,6 +194,11 @@ final class AppSettings: ObservableObject {
         ollamaModel = defaults.string(forKey: Keys.ollamaModel) ?? "llama3.1"
         enableOllamaDevMode = defaults.bool(forKey: Keys.enableOllamaDevMode)
         showMenuBarDiskMonitor = defaults.bool(forKey: Keys.showMenuBarDiskMonitor)
+        if defaults.object(forKey: Keys.launchAtLogin) == nil {
+            launchAtLogin = MenuBarMonitorController.launchAtLoginEnabled
+        } else {
+            launchAtLogin = defaults.bool(forKey: Keys.launchAtLogin)
+        }
     }
 
     static var currentAppVersion: String {
@@ -237,6 +253,7 @@ final class AppSettings: ObservableObject {
         ollamaModel = "llama3.1"
         enableOllamaDevMode = false
         showMenuBarDiskMonitor = false
+        launchAtLogin = false
         showMenuBarMonitorInstructions = false
         MenuBarStatusItemController.shared.setEnabled(false)
         try? MenuBarMonitorController.launchAtLoginService.unregister()

@@ -142,6 +142,7 @@ struct MenuBarRemainingBar: View {
 
 struct MenuBarPopoverContent: View {
     @ObservedObject var monitor: SystemVolumeMonitor
+    var onHideMonitor: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -157,12 +158,7 @@ struct MenuBarPopoverContent: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Used \(Int((volume.usageFraction * 100).rounded()))%")
                         .font(.body.monospacedDigit().weight(.semibold))
-                        .foregroundStyle(
-                            MenuBarDiskThresholds.statusColor(
-                                freeSize: volume.freeSize,
-                                freeFraction: max(0, 1 - volume.usageFraction)
-                            )
-                        )
+                        .foregroundStyle(usageColor(for: volume))
 
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
@@ -199,6 +195,12 @@ struct MenuBarPopoverContent: View {
             }
             .buttonStyle(.borderedProminent)
             .frame(maxWidth: .infinity)
+
+            Button("Hide Menu Bar Monitor") {
+                onHideMonitor()
+            }
+            .buttonStyle(.bordered)
+            .frame(maxWidth: .infinity)
         }
         .padding(16)
         .frame(width: 300)
@@ -206,6 +208,13 @@ struct MenuBarPopoverContent: View {
 
     private var volumeName: String {
         monitor.systemVolume?.name ?? "Macintosh HD"
+    }
+
+    private func usageColor(for volume: MountedVolume) -> Color {
+        MenuBarDiskThresholds.statusColor(
+            freeSize: volume.freeSize,
+            freeFraction: max(0, 1 - volume.usageFraction)
+        )
     }
 
     private func statHeader(_ title: String) -> some View {
@@ -315,10 +324,16 @@ final class MenuBarStatusItemController: NSObject {
         }
 
         let popover = NSPopover()
-        popover.contentSize = NSSize(width: 300, height: 260)
+        popover.contentSize = NSSize(width: 300, height: 300)
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(
-            rootView: MenuBarPopoverContent(monitor: monitor)
+            rootView: MenuBarPopoverContent(
+                monitor: monitor,
+                onHideMonitor: { [weak self] in
+                    AppSettings.shared.setMenuBarDiskMonitorEnabled(false)
+                    self?.popover?.performClose(nil)
+                }
+            )
         )
         popover.show(relativeTo: anchorView.bounds, of: anchorView, preferredEdge: .minY)
         self.popover = popover
