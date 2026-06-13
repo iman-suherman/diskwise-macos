@@ -1,0 +1,18 @@
+{
+  "summary": "Per-drive scan tabs, responsive polled progress, incremental folder caching, and real app names in menu bar system status.",
+  "introduced": [
+    "Per-drive tabs: Scanning, Results, Recommendations, and AI Analysis replace the single overview during scans",
+    "Copyable tail -f command on the Scanning tab for verbose scanner logs in Terminal (log path display removed)",
+    "folder_scan_cache SQLite table stores folder timestamps so rescans skip unchanged directories",
+    "Menu bar System Status shows application names for top CPU and memory processes with … truncation for long names"
+  ],
+  "changed": [
+    "Scan progress updates via periodic polling of status files and log tails instead of realtime MainActor callbacks",
+    "Results tab opens automatically when scanning and analysis complete, with a View Results button on the Scanning tab",
+    "Tiered and folder scans reuse cached index rows when directory modification timestamps match the previous scan",
+    "Toolbar simplified to Disk, Maintenance, and Duplicates — Ask DiskWise moved into the per-drive AI Analysis tab"
+  ],
+  "fixed": [
+    "Long scans no longer beach-ball the main UI from mid-scan storage overview refreshes every few thousand files"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "summary": "What's New and Continue after updating no longer stall — saved scan data preloads during startup.",
+  "introduced": [],
+  "changed": [
+    "Post-upgrade startup preloads saved scan results and recommendations before the What's New overlay appears",
+    "Background analysis and cache refresh are deferred while What's New or the saved-scan prompt is visible",
+    "Detailed What's New content for version 0.5.4 documents scan tabs, incremental caching, and menu bar process names"
+  ],
+  "fixed": [
+    "What's New and Continue after updating no longer beach-ball while storage analysis runs on the main flow"
+  ]
+}

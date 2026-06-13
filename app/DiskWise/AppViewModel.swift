@@ -189,6 +189,7 @@ final class AppViewModel: ObservableObject {
     private var aiChatSessionID = UUID()
     private var scanStartTime: Date?
     private var lastDuplicateGroupsRefreshCount = 0
+    private var launchDataPrewarmed = false
     private var scanEngine: ScanEngine!
     private var duplicateEngine: DuplicateEngine!
     private let cleanupEngine = CleanupEngine()
@@ -203,7 +204,7 @@ final class AppViewModel: ObservableObject {
     }
 
     var isBlockingLaunchFlow: Bool {
-        isStartingUp || showPythonSetupPrompt || showFullDiskAccessPrompt || showWhatsNewTour || showIndexRebuildPrompt
+        isStartingUp || showPythonSetupPrompt || showFullDiskAccessPrompt || showWhatsNewTour || showIndexRebuildPrompt || showSavedScanPrompt
     }
 
     var shouldShowPythonSetupBanner: Bool {
@@ -215,9 +216,6 @@ final class AppViewModel: ObservableObject {
 
         if appSettings.shouldShowWhatsNew {
             presentWhatsNewIfNeeded()
-            if !isBlockingLaunchFlow {
-                schedulePostLaunchWork()
-            }
         } else if !isBlockingLaunchFlow {
             presentSavedScanPromptIfNeeded()
             schedulePostLaunchWork()
@@ -336,6 +334,12 @@ final class AppViewModel: ObservableObject {
         topConsumers = []
         duplicateGroups = []
         analysisReport = nil
+
+        if isPostUpgradeStartup, selectedDiskID != nil {
+            startupMessage = "Loading saved scan results…"
+            await Task.yield()
+            await prewarmLaunchData()
+        }
 
         startupActiveStep = nil
         startupMessage = "Ready"
@@ -995,6 +999,11 @@ final class AppViewModel: ObservableObject {
     func finishWhatsNewTour() {
         appSettings.markCurrentReleaseSeen()
         showWhatsNewTour = false
+        if !launchDataPrewarmed {
+            schedulePostLaunchWork()
+        } else {
+            Task { await refreshAIAvailability() }
+        }
         presentSavedScanPromptIfNeeded()
     }
 
@@ -1240,6 +1249,35 @@ final class AppViewModel: ObservableObject {
         }
     }
 
+    private func prewarmLaunchData() async {
+        guard let diskID = selectedDiskID, let database, let duplicateEngine, let engine = aiEngine else { return }
+        guard !launchDataPrewarmed else { return }
+
+        let threshold = Calendar.current.date(byAdding: .year, value: -2, to: Date())!
+        let fileLimit = appSettings.analysisFileLimit
+
+        let (cachedSnapshot, report) = await Task.detached(priority: .userInitiated) {
+            let overview = try? database.storageOverview(forDiskID: diskID, oldFileThreshold: threshold)
+            let topConsumers = (try? database.topConsumers(forDiskID: diskID, limit: 8)) ?? []
+            let duplicateGroups = (try? duplicateEngine.loadGroups(forDiskID: diskID)) ?? []
+            let report = try? engine.analyze(diskID: diskID, fileLimit: fileLimit)
+            return (CachedScanSnapshot(
+                overview: overview,
+                topConsumers: topConsumers,
+                duplicateGroups: duplicateGroups
+            ), report)
+        }.value
+
+        guard !Task.isCancelled else { return }
+
+        overview = cachedSnapshot.overview
+        topConsumers = cachedSnapshot.topConsumers
+        duplicateGroups = cachedSnapshot.duplicateGroups
+        analysisReport = report
+        launchDataPrewarmed = true
+        refreshAIInsights(for: report)
+    }
+
     func refreshCachedScanResults() {
         guard let diskID = selectedDiskID else {
             overview = nil
@@ -1263,6 +1301,7 @@ final class AppViewModel: ObservableObject {
             analysisReport = nil
             return
         }
+        if launchDataPrewarmed, overview != nil { return }
 
         cachedResultsRefreshTask?.cancel()
         let threshold = Calendar.current.date(byAdding: .year, value: -2, to: Date())!
@@ -1306,6 +1345,7 @@ final class AppViewModel: ObservableObject {
             return
         }
         guard !isBlockingLaunchFlow else { return }
+        if launchDataPrewarmed, analysisReport != nil { return }
 
         analysisRefreshTask?.cancel()
         let fileLimit = appSettings.analysisFileLimit

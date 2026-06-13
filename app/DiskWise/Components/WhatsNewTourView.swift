@@ -12,6 +12,10 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
+        case "0.5.5":
+            return v055Pages
+        case "0.5.4":
+            return v054Pages
         case "0.3.0":
             return v030Pages
         case "0.2.4":
@@ -42,6 +46,56 @@ enum WhatsNewContent {
             return genericPages(version: version)
         }
     }
+
+    private static let v055Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "startup",
+            icon: "hare.fill",
+            title: "Snappier first launch after updating",
+            message: "DiskWise now finishes loading your saved scan data before showing What's New, so Continue should feel instant.",
+            bullets: [
+                "Saved results and recommendations preload during the startup splash",
+                "Heavy analysis no longer runs while the What's New overlay is open",
+                "Continue goes straight to your drives without waiting on the database",
+            ]
+        ),
+    ]
+
+    private static let v054Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "scan-tabs",
+            icon: "rectangle.split.3x1",
+            title: "Per-drive tabs for scan workflow",
+            message: "Each drive now has its own Scanning, Results, Recommendations, and AI Analysis tabs so long scans no longer block the rest of the app.",
+            bullets: [
+                "Scanning tab shows progress and a copyable tail -f command for live logs in Terminal",
+                "Results tab opens automatically when a scan finishes",
+                "Recommendations and AI Analysis live in dedicated tabs instead of one crowded overview",
+            ]
+        ),
+        WhatsNewPage(
+            id: "scan-performance",
+            icon: "arrow.triangle.2.circlepath",
+            title: "Faster, more responsive scans",
+            message: "Scan progress is polled periodically instead of streaming into the UI, which keeps DiskWise responsive during large volume scans.",
+            bullets: [
+                "Unchanged folders are skipped on rescans using cached folder timestamps in SQLite",
+                "Incremental cache reuses prior index data when a directory has not changed",
+                "Mid-scan database refreshes removed to eliminate beach-ball stalls",
+            ]
+        ),
+        WhatsNewPage(
+            id: "menu-bar",
+            icon: "heart.text.square",
+            title: "Clearer menu bar system status",
+            message: "The health score popover now lists real application names for top CPU and memory processes.",
+            bullets: [
+                "Names resolve from the app bundle, executable path, and process metadata",
+                "Long names truncate with a leading … so the recognizable tail stays visible",
+                "Hover a row to see the full process name",
+            ]
+        ),
+    ]
 
     private static let v030Pages: [WhatsNewPage] = [
         WhatsNewPage(
