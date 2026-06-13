@@ -26,4 +26,64 @@ public enum VolumeTieredScan {
         }
         return true
     }
+
+    /// Expands a drill root into independently scannable directories for concurrent indexing.
+    public static func concurrentDrillDirectories(
+        at drillRoot: URL,
+        fileManager: FileManager = .default
+    ) -> [URL] {
+        let standardized = drillRoot.standardizedFileURL
+        if standardized.lastPathComponent == drillTopLevelFolderName {
+            return expandUserHomes(at: standardized, fileManager: fileManager)
+        }
+        return expandImmediateChildDirectories(at: standardized, fileManager: fileManager, fallback: standardized)
+    }
+
+    private static func expandUserHomes(at usersURL: URL, fileManager: FileManager) -> [URL] {
+        guard let userNames = try? fileManager.contentsOfDirectory(atPath: usersURL.path) else {
+            return [usersURL]
+        }
+
+        var tasks: [URL] = []
+        for userName in userNames.sorted() where !userName.hasPrefix(".") {
+            let home = usersURL.appendingPathComponent(userName, isDirectory: true)
+            var isDirectory: ObjCBool = false
+            guard fileManager.fileExists(atPath: home.path, isDirectory: &isDirectory),
+                  isDirectory.boolValue else {
+                continue
+            }
+
+            let childTasks = expandImmediateChildDirectories(
+                at: home,
+                fileManager: fileManager,
+                fallback: home
+            )
+            tasks.append(contentsOf: childTasks)
+        }
+
+        return tasks.isEmpty ? [usersURL] : tasks
+    }
+
+    private static func expandImmediateChildDirectories(
+        at directory: URL,
+        fileManager: FileManager,
+        fallback: URL
+    ) -> [URL] {
+        guard let childNames = try? fileManager.contentsOfDirectory(atPath: directory.path) else {
+            return [fallback]
+        }
+
+        let childDirectories = childNames.sorted().compactMap { childName -> URL? in
+            guard !childName.hasPrefix(".") else { return nil }
+            let childURL = directory.appendingPathComponent(childName, isDirectory: true)
+            var isDirectory: ObjCBool = false
+            guard fileManager.fileExists(atPath: childURL.path, isDirectory: &isDirectory),
+                  isDirectory.boolValue else {
+                return nil
+            }
+            return childURL
+        }
+
+        return childDirectories.isEmpty ? [fallback] : childDirectories
+    }
 }

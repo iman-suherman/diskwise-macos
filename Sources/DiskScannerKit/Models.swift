@@ -56,6 +56,11 @@ public struct ScanProgress: Sendable {
     public let detail: String?
     public let directoriesProcessed: Int?
     public let directoriesTotal: Int?
+    public let maxConcurrency: Int?
+    public let activeConcurrency: Int?
+    public let identifiedDirectories: [String]?
+    public let activeDirectories: [String]?
+    public let completedDirectories: [String]?
 
     public init(
         scannedCount: Int,
@@ -64,7 +69,12 @@ public struct ScanProgress: Sendable {
         operation: ScanOperation = .enumeratingFiles,
         detail: String? = nil,
         directoriesProcessed: Int? = nil,
-        directoriesTotal: Int? = nil
+        directoriesTotal: Int? = nil,
+        maxConcurrency: Int? = nil,
+        activeConcurrency: Int? = nil,
+        identifiedDirectories: [String]? = nil,
+        activeDirectories: [String]? = nil,
+        completedDirectories: [String]? = nil
     ) {
         self.scannedCount = scannedCount
         self.currentPath = currentPath
@@ -73,6 +83,11 @@ public struct ScanProgress: Sendable {
         self.detail = detail
         self.directoriesProcessed = directoriesProcessed
         self.directoriesTotal = directoriesTotal
+        self.maxConcurrency = maxConcurrency
+        self.activeConcurrency = activeConcurrency
+        self.identifiedDirectories = identifiedDirectories
+        self.activeDirectories = activeDirectories
+        self.completedDirectories = completedDirectories
     }
 }
 

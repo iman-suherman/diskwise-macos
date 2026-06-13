@@ -119,11 +119,17 @@ struct ScanProgressPanel: View {
                         icon: "externaldrive"
                     )
                     ScanStatTile(
-                        title: "Progress",
-                        value: viewModel.scanProgressPercentLabel,
-                        icon: "gauge.with.dots.needle.67percent"
+                        title: "Workers",
+                        value: workersLabel(for: progress),
+                        icon: "cpu"
                     )
                 }
+            }
+
+            if let progress = viewModel.scanProgress,
+               let identified = progress.identifiedDirectories,
+               !identified.isEmpty {
+                ScanConcurrencyPanel(progress: progress, identifiedDirectories: identified)
             }
 
             if let progress = viewModel.scanProgress {
@@ -134,6 +140,12 @@ struct ScanProgressPanel: View {
             }
         }
         .scanPanelStyle()
+    }
+
+    private func workersLabel(for progress: ScanProgress) -> String {
+        let active = progress.activeConcurrency ?? 0
+        let max = progress.maxConcurrency ?? 1
+        return "\(active)/\(max)"
     }
 }
 
@@ -281,6 +293,84 @@ private struct ScanPanelHeader: View {
     }
 }
 
+private struct ScanConcurrencyPanel: View {
+    let progress: ScanProgress
+    let identifiedDirectories: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Directory queue")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if let completed = progress.directoriesProcessed,
+                   let total = progress.directoriesTotal {
+                    Text("\(completed)/\(total) done")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.tertiary)
+                }
+            }
+
+            if let active = progress.activeDirectories, !active.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Active scans")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                    ForEach(active, id: \.self) { directory in
+                        Label(directory, systemImage: "arrow.triangle.2.circlepath")
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                }
+            }
+
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 4) {
+                    ForEach(identifiedDirectories, id: \.self) { directory in
+                        HStack(spacing: 6) {
+                            Image(systemName: iconName(for: directory))
+                                .font(.caption2)
+                                .foregroundStyle(iconColor(for: directory))
+                                .frame(width: 12)
+                            Text(directory)
+                                .font(.caption.monospaced())
+                                .foregroundStyle(.tertiary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                    }
+                }
+            }
+            .frame(maxHeight: 120)
+        }
+        .padding(10)
+        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func iconName(for directory: String) -> String {
+        if progress.activeDirectories?.contains(directory) == true {
+            return "arrow.triangle.2.circlepath"
+        }
+        if progress.completedDirectories?.contains(directory) == true {
+            return "checkmark.circle.fill"
+        }
+        return "circle"
+    }
+
+    private func iconColor(for directory: String) -> Color {
+        if progress.activeDirectories?.contains(directory) == true {
+            return .accentColor
+        }
+        if progress.completedDirectories?.contains(directory) == true {
+            return .green
+        }
+        return .secondary.opacity(0.5)
+    }
+}
+
 private struct ScanProgressBar: View {
     let progressFraction: Double
     let progressLabel: String
@@ -323,10 +413,11 @@ private func currentPathPanel(title: String, path: String) -> some View {
         Text(path)
             .font(.caption.monospaced())
             .foregroundStyle(.tertiary)
-            .lineLimit(2)
+            .lineLimit(3)
             .truncationMode(.middle)
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
             .padding(10)
-            .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
     }
 }

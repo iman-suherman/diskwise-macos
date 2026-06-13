@@ -75,35 +75,52 @@ public final class FileScanner: @unchecked Sendable {
             )
         }
 
+        let summarizeNames = directoryChildren.filter(VolumeTieredScan.shouldSummarizeTopLevelDirectory(named:))
+        let drillRoots = directoryChildren
+            .filter { !VolumeTieredScan.shouldSummarizeTopLevelDirectory(named: $0) }
+            .map { mountPath.appendingPathComponent($0, isDirectory: true) }
+
+        var drillDirectories: [URL] = []
+        for drillRoot in drillRoots {
+            if isCancelled?() == true {
+                throw FileScannerError.cancelled
+            }
+            drillDirectories.append(
+                contentsOf: VolumeTieredScan.concurrentDrillDirectories(at: drillRoot, fileManager: fileManager)
+            )
+        }
+
+        let identifiedDirectories =
+            summarizeNames +
+            drillDirectories.map { ScanConcurrency.displayLabel(for: $0.path, relativeTo: mountPath.path) }
+        let total = identifiedDirectories.count
+        let maxConcurrency = ScanConcurrency.maxParallelTasks
+
         var results: [ScannedFile] = []
         var scannedCount = 0
         var indexedBytes: Int64 = 0
-        let total = directoryChildren.count
 
-        reportProgress(
+        let aggregator = ScanProgressAggregator(
             scannedCount: scannedCount,
-            currentPath: mountPath.path,
             indexedBytes: indexedBytes,
-            operation: .preparing,
-            detail: "Mapping \(total.formatted()) top-level folders on \(mountPath.lastPathComponent)",
-            directoriesProcessed: 0,
+            identifiedDirectories: identifiedDirectories,
             directoriesTotal: total,
-            force: true,
+            maxConcurrency: maxConcurrency,
+            scanRootPath: mountPath.path,
             onProgress: onProgress
         )
 
-        let summarizeNames = directoryChildren.filter(VolumeTieredScan.shouldSummarizeTopLevelDirectory(named:))
-        let drillNames = directoryChildren.filter { !VolumeTieredScan.shouldSummarizeTopLevelDirectory(named: $0) }
+        aggregator.emit(
+            currentPath: mountPath.path,
+            operation: .preparing,
+            detail: "Identified \(total.formatted()) folders · up to \(maxConcurrency) parallel scans"
+        )
 
         if !summarizeNames.isEmpty {
-            let summarizeResults = summarizeTopLevelDirectories(
+            let summarizeResults = try summarizeTopLevelDirectories(
                 names: summarizeNames,
                 under: mountPath,
-                total: total,
-                processedOffset: 0,
-                scannedCount: scannedCount,
-                indexedBytes: indexedBytes,
-                onProgress: onProgress,
+                aggregator: aggregator,
                 isCancelled: isCancelled
             )
             results.append(contentsOf: summarizeResults.entries)
@@ -111,65 +128,101 @@ public final class FileScanner: @unchecked Sendable {
             indexedBytes = summarizeResults.indexedBytes
         }
 
-        for (offset, name) in drillNames.enumerated() {
+        if !drillDirectories.isEmpty {
+            let drillResults = try scanDirectoriesConcurrently(
+                directories: drillDirectories,
+                mode: mode,
+                aggregator: aggregator,
+                isCancelled: isCancelled
+            )
+            results.append(contentsOf: drillResults)
+            scannedCount += drillResults.filter { !$0.isDirectory }.count
+            indexedBytes += drillResults.reduce(Int64(0)) { $0 + ($1.isDirectory ? 0 : $1.size) }
+        }
+
+        aggregator.emit(
+            currentPath: mountPath.path,
+            operation: .enumeratingFiles,
+            detail: "Finished mapping \(total.formatted()) folders"
+        )
+
+        return results
+    }
+
+    private func scanDirectoriesConcurrently(
+        directories: [URL],
+        mode: ScanMode,
+        aggregator: ScanProgressAggregator,
+        isCancelled: (@Sendable () -> Bool)?
+    ) throws -> [ScannedFile] {
+        let maxConcurrency = ScanConcurrency.maxParallelTasks
+        let semaphore = DispatchSemaphore(value: maxConcurrency)
+        let group = DispatchGroup()
+        let lock = NSLock()
+        var combined: [ScannedFile] = []
+        var thrownError: Error?
+
+        for directory in directories {
             if isCancelled?() == true {
                 throw FileScannerError.cancelled
             }
 
-            let childURL = mountPath.appendingPathComponent(name, isDirectory: true)
-            let processed = summarizeNames.count + offset + 1
-            let baseScannedCount = scannedCount
-            let baseIndexedBytes = indexedBytes
+            group.enter()
+            DispatchQueue.global(qos: .utility).async { [weak self] in
+                defer { group.leave() }
 
-            reportProgress(
-                scannedCount: scannedCount,
-                currentPath: childURL.path,
-                indexedBytes: indexedBytes,
-                operation: .enumeratingFiles,
-                detail: "Indexing files in \(name)",
-                directoriesProcessed: processed,
-                directoriesTotal: total,
-                force: true,
-                onProgress: onProgress
-            )
+                guard let self else { return }
+                semaphore.wait()
+                defer { semaphore.signal() }
 
-            let childResults = try scanEnumerated(
-                mountPath: childURL,
-                mode: mode,
-                onProgress: { progress in
-                    onProgress?(
-                        ScanProgress(
-                            scannedCount: baseScannedCount + progress.scannedCount,
-                            currentPath: progress.currentPath,
-                            bytesIndexed: baseIndexedBytes + progress.bytesIndexed,
-                            operation: .enumeratingFiles,
-                            detail: "Indexing files in \(name) · \(progress.scannedCount.formatted()) entries",
-                            directoriesProcessed: processed,
-                            directoriesTotal: total
-                        )
+                if isCancelled?() == true { return }
+
+                let label = ScanConcurrency.displayLabel(
+                    for: directory.path,
+                    relativeTo: aggregator.scanRootPathForDisplay
+                )
+                aggregator.willBegin(
+                    directory.path,
+                    operation: .enumeratingFiles,
+                    detail: "Indexing \(label)"
+                )
+
+                do {
+                    let batch = try self.scanEnumerated(
+                        mountPath: directory,
+                        mode: mode,
+                        onProgress: nil,
+                        isCancelled: isCancelled
                     )
-                },
-                isCancelled: isCancelled
-            )
-
-            results.append(contentsOf: childResults)
-            scannedCount += childResults.filter { !$0.isDirectory }.count
-            indexedBytes += childResults.reduce(Int64(0)) { $0 + ($1.isDirectory ? 0 : $1.size) }
+                    lock.lock()
+                    combined.append(contentsOf: batch)
+                    lock.unlock()
+                    aggregator.didComplete(
+                        directory.path,
+                        results: batch,
+                        operation: .enumeratingFiles,
+                        detail: "Finished \(label)"
+                    )
+                } catch {
+                    lock.lock()
+                    if thrownError == nil {
+                        thrownError = error
+                    }
+                    lock.unlock()
+                }
+            }
         }
 
-        reportProgress(
-            scannedCount: scannedCount,
-            currentPath: mountPath.path,
-            indexedBytes: indexedBytes,
-            operation: .enumeratingFiles,
-            detail: "Finished mapping top-level folders",
-            directoriesProcessed: total,
-            directoriesTotal: total,
-            force: true,
-            onProgress: onProgress
-        )
+        group.wait()
 
-        return results
+        if let thrownError {
+            throw thrownError
+        }
+        if isCancelled?() == true {
+            throw FileScannerError.cancelled
+        }
+
+        return combined
     }
 
     private struct SummarizeBatchResult {
@@ -181,23 +234,24 @@ public final class FileScanner: @unchecked Sendable {
     private func summarizeTopLevelDirectories(
         names: [String],
         under mountPath: URL,
-        total: Int,
-        processedOffset: Int,
-        scannedCount: Int,
-        indexedBytes: Int64,
-        onProgress: (@Sendable (ScanProgress) -> Void)?,
+        aggregator: ScanProgressAggregator,
         isCancelled: (@Sendable () -> Bool)?
-    ) -> SummarizeBatchResult {
+    ) throws -> SummarizeBatchResult {
         var entries: [ScannedFile] = []
-        var count = scannedCount
-        var bytes = indexedBytes
+        var count = 0
+        var bytes: Int64 = 0
         let lock = NSLock()
 
         DispatchQueue.concurrentPerform(iterations: names.count) { index in
-            if isCancelled?() == true { return }
 
             let name = names[index]
             let childURL = mountPath.appendingPathComponent(name, isDirectory: true)
+            aggregator.willBegin(
+                childURL.path,
+                operation: .sizingDirectory,
+                detail: "Sizing \(name) with disk usage"
+            )
+
             let values = try? childURL.resourceValues(forKeys: [
                 .creationDateKey,
                 .contentModificationDateKey,
@@ -218,19 +272,18 @@ public final class FileScanner: @unchecked Sendable {
             entries.append(entry)
             count += 1
             bytes += size
-            let processed = processedOffset + index + 1
-            reportProgress(
-                scannedCount: count,
-                currentPath: childURL.path,
-                indexedBytes: bytes,
-                operation: .sizingDirectory,
-                detail: "Sizing \(name) with disk usage",
-                directoriesProcessed: processed,
-                directoriesTotal: total,
-                force: true,
-                onProgress: onProgress
-            )
             lock.unlock()
+
+            aggregator.didComplete(
+                childURL.path,
+                results: [entry],
+                operation: .sizingDirectory,
+                detail: "Sized \(name)"
+            )
+        }
+
+        if isCancelled?() == true {
+            throw FileScannerError.cancelled
         }
 
         return SummarizeBatchResult(entries: entries, scannedCount: count, indexedBytes: bytes)

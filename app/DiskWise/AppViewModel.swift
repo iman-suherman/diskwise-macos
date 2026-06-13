@@ -565,20 +565,38 @@ final class AppViewModel: ObservableObject {
         let byteFraction = min(1.0, Double(progress.bytesIndexed) / Double(volume.usedSize))
         if let processed = progress.directoriesProcessed,
            let total = progress.directoriesTotal,
-           total > 0,
-           progress.operation == .sizingDirectory || progress.operation == .preparing {
+           total > 0 {
             let directoryFraction = Double(processed) / Double(total)
-            return min(1.0, max(byteFraction, directoryFraction * 0.25 + byteFraction * 0.75))
+            let directoryWeight = (progress.operation == .sizingDirectory || progress.operation == .preparing) ? 0.25 : 0.15
+            return min(1.0, max(byteFraction, directoryFraction * directoryWeight + byteFraction * (1 - directoryWeight)))
         }
         return byteFraction
     }
 
     var scanProgressDetail: String? {
         guard let progress = scanProgress else { return nil }
+        var parts: [String] = [progress.operation.label]
         if let detail = progress.detail, !detail.isEmpty {
-            return "\(progress.operation.label) · \(detail)"
+            parts.append(detail)
         }
-        return progress.operation.label
+        if let active = progress.activeConcurrency,
+           let max = progress.maxConcurrency,
+           max > 1 {
+            parts.append("\(active)/\(max) parallel scans")
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    var scanConcurrencySummary: String? {
+        guard let progress = scanProgress,
+              let total = progress.directoriesTotal,
+              total > 0 else {
+            return nil
+        }
+        let completed = progress.directoriesProcessed ?? 0
+        let active = progress.activeConcurrency ?? 0
+        let max = progress.maxConcurrency ?? 1
+        return "\(completed)/\(total) folders · \(active)/\(max) active workers"
     }
 
     var scanProgressPercent: Int {

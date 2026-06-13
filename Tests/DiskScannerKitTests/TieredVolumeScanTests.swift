@@ -68,13 +68,55 @@ final class TieredVolumeScanTests: XCTestCase {
             operation: .sizingDirectory,
             detail: "Sizing Library with disk usage",
             directoriesProcessed: 2,
-            directoriesTotal: 8
+            directoriesTotal: 8,
+            maxConcurrency: 4,
+            activeConcurrency: 2,
+            identifiedDirectories: ["Applications", "Library", "Users/alice/Documents"],
+            activeDirectories: ["Library", "Users/alice/Documents"],
+            completedDirectories: ["Applications"]
         )
 
         XCTAssertEqual(progress.operation, .sizingDirectory)
-        XCTAssertEqual(progress.detail, "Sizing Library with disk usage")
-        XCTAssertEqual(progress.directoriesProcessed, 2)
-        XCTAssertEqual(progress.directoriesTotal, 8)
+        XCTAssertEqual(progress.maxConcurrency, 4)
+        XCTAssertEqual(progress.activeConcurrency, 2)
+        XCTAssertEqual(progress.completedDirectories, ["Applications"])
+    }
+
+    func testConcurrentDrillDirectoriesExpandsUserHomes() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("diskwise-concurrent-\(UUID().uuidString)")
+        let aliceDocs = root.appendingPathComponent("Users/alice/Documents")
+        let bobDownloads = root.appendingPathComponent("Users/bob/Downloads")
+        try FileManager.default.createDirectory(at: aliceDocs, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: bobDownloads, withIntermediateDirectories: true)
+
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let usersURL = root.appendingPathComponent("Users", isDirectory: true)
+        let tasks = VolumeTieredScan.concurrentDrillDirectories(at: usersURL)
+
+        XCTAssertEqual(tasks.count, 2)
+        XCTAssertTrue(tasks.contains(where: { $0.path.hasSuffix("/Users/alice/Documents") }))
+        XCTAssertTrue(tasks.contains(where: { $0.path.hasSuffix("/Users/bob/Downloads") }))
+    }
+
+    func testConcurrentTieredScanIndexesMultipleUserFolders() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("diskwise-concurrent-scan-\(UUID().uuidString)")
+        let aliceDocs = root.appendingPathComponent("Users/alice/Documents")
+        let bobDocs = root.appendingPathComponent("Users/bob/Documents")
+        try FileManager.default.createDirectory(at: aliceDocs, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: bobDocs, withIntermediateDirectories: true)
+        try Data(repeating: 0x11, count: 1024).write(to: aliceDocs.appendingPathComponent("a.txt"))
+        try Data(repeating: 0x22, count: 2048).write(to: bobDocs.appendingPathComponent("b.txt"))
+
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let scanner = FileScanner()
+        let results = try scanner.scan(mountPath: root, mode: .fast, tieredVolumeScan: true)
+
+        XCTAssertTrue(results.contains { $0.path.hasSuffix("/a.txt") })
+        XCTAssertTrue(results.contains { $0.path.hasSuffix("/b.txt") })
     }
 }
 #endif
