@@ -145,7 +145,7 @@ enum MenuBarFormatters {
 
     static func menuBarFreeSpaceLabel(for volume: MountedVolume) -> String {
         let shortName = menuBarShortVolumeName(volume.name)
-        return "\(shortName) \(compactFreeSpace(volume.freeSize))"
+        return "\(shortName) (\(compactFreeSpace(volume.freeSize)))"
     }
 }
 
@@ -173,7 +173,7 @@ struct MenuBarVolumeFreeSpaceLabel: View {
     }
 
     private var accessibilityLabel: String {
-        "\(volume.name), \(MenuBarFormatters.compactFreeSpace(volume.freeSize)) free"
+        "\(volume.name), \(MenuBarFormatters.compactFreeSpace(volume.freeSize)) remaining"
     }
 }
 

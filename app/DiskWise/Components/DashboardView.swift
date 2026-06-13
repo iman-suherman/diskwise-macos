@@ -126,19 +126,6 @@ struct ScanProgressPanel: View {
                 }
             }
 
-            if let progress = viewModel.scanProgress,
-               let identified = progress.identifiedDirectories,
-               !identified.isEmpty {
-                ScanConcurrencyPanel(progress: progress, identifiedDirectories: identified)
-            }
-
-            if let progress = viewModel.scanProgress {
-                currentPathPanel(
-                    title: progress.operation == .sizingDirectory ? "Current folder" : "Current path",
-                    path: progress.currentPath
-                )
-            }
-
             ScanVerboseLogPanel()
         }
         .scanPanelStyle()
@@ -156,51 +143,97 @@ struct ScanProgressPanel: View {
 
 struct ScanVerboseLogPanel: View {
     @ObservedObject private var scanLogMonitor = ScanLogMonitor.shared
+    @State private var copiedField: CopiedField?
+
+    private enum CopiedField {
+        case path
+        case command
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Label("Scanner log", systemImage: "terminal")
-                    .font(.subheadline.weight(.semibold))
-                Spacer()
-                if scanLogMonitor.logFileURL != nil {
+            Label("Scanner log", systemImage: "terminal")
+                .font(.subheadline.weight(.semibold))
+
+            if let logFileURL = scanLogMonitor.logFileURL {
+                Text("Verbose output is written to a log file so the app stays responsive. Copy the path or tail command below and run it in Terminal.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                scannerLogRow(
+                    title: "Log file",
+                    value: logFileURL.path,
+                    copied: copiedField == .path,
+                    copyAction: {
+                        scanLogMonitor.copyLogPath()
+                        copiedField = .path
+                    }
+                )
+
+                if let tailCommand = scanLogMonitor.tailCommand {
+                    scannerLogRow(
+                        title: "Tail command",
+                        value: tailCommand,
+                        copied: copiedField == .command,
+                        copyAction: {
+                            scanLogMonitor.copyTailCommand()
+                            copiedField = .command
+                        }
+                    )
+                }
+
+                HStack(spacing: 16) {
                     Button("Open in Terminal") {
                         scanLogMonitor.openInTerminal()
                     }
                     .buttonStyle(.link)
-                    .help("Open Terminal and tail the verbose Python scanner log")
-                }
-            }
 
-            if scanLogMonitor.logLines.isEmpty {
-                Text("Verbose scanner output will appear here while the Python scan runs.")
+                    Button("Reveal in Finder") {
+                        scanLogMonitor.revealLogFile()
+                    }
+                    .buttonStyle(.link)
+                }
+            } else if scanLogMonitor.isActive {
+                Text("Preparing scanner log…")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 4) {
-                        ForEach(Array(scanLogMonitor.logLines.enumerated()), id: \.offset) { _, line in
-                            Text(line)
-                                .font(.system(.caption, design: .monospaced))
-                                .foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .textSelection(.enabled)
-                        }
-                    }
-                }
-                .frame(maxHeight: 140)
-                .padding(10)
-                .background(Color(nsColor: .textBackgroundColor).opacity(0.45))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                Text("When a scan starts, the log file path and tail command appear here.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
+        }
+    }
 
-            if let logFileURL = scanLogMonitor.logFileURL {
-                Text(logFileURL.path)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
+    @ViewBuilder
+    private func scannerLogRow(
+        title: String,
+        value: String,
+        copied: Bool,
+        copyAction: @escaping () -> Void
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            HStack(alignment: .top, spacing: 8) {
+                Text(value)
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundStyle(.primary)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Button(copied ? "Copied" : "Copy") {
+                    copyAction()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(copied)
             }
+            .padding(10)
+            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
         }
     }
 }
@@ -349,84 +382,6 @@ private struct ScanPanelHeader: View {
     }
 }
 
-private struct ScanConcurrencyPanel: View {
-    let progress: ScanProgress
-    let identifiedDirectories: [String]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Directory queue")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                if let completed = progress.directoriesProcessed,
-                   let total = progress.directoriesTotal {
-                    Text("\(completed)/\(total) done")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.tertiary)
-                }
-            }
-
-            if let active = progress.activeDirectories, !active.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Current folder")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                    ForEach(active, id: \.self) { directory in
-                        Label(directory, systemImage: "arrow.triangle.2.circlepath")
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                    }
-                }
-            }
-
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 4) {
-                    ForEach(identifiedDirectories, id: \.self) { directory in
-                        HStack(spacing: 6) {
-                            Image(systemName: iconName(for: directory))
-                                .font(.caption2)
-                                .foregroundStyle(iconColor(for: directory))
-                                .frame(width: 12)
-                            Text(directory)
-                                .font(.caption.monospaced())
-                                .foregroundStyle(.tertiary)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                        }
-                    }
-                }
-            }
-            .frame(maxHeight: 120)
-        }
-        .padding(10)
-        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
-    }
-
-    private func iconName(for directory: String) -> String {
-        if progress.activeDirectories?.contains(directory) == true {
-            return "arrow.triangle.2.circlepath"
-        }
-        if progress.completedDirectories?.contains(directory) == true {
-            return "checkmark.circle.fill"
-        }
-        return "circle"
-    }
-
-    private func iconColor(for directory: String) -> Color {
-        if progress.activeDirectories?.contains(directory) == true {
-            return .accentColor
-        }
-        if progress.completedDirectories?.contains(directory) == true {
-            return .green
-        }
-        return .secondary.opacity(0.5)
-    }
-}
-
 private struct ScanProgressBar: View {
     let progressFraction: Double
     let progressLabel: String
@@ -458,23 +413,6 @@ private struct ScanProgressBar: View {
             }
             .frame(height: 12)
         }
-    }
-}
-
-private func currentPathPanel(title: String, path: String) -> some View {
-    VStack(alignment: .leading, spacing: 6) {
-        Text(title)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
-        Text(path)
-            .font(.caption.monospaced())
-            .foregroundStyle(.tertiary)
-            .lineLimit(3)
-            .truncationMode(.middle)
-            .multilineTextAlignment(.leading)
-            .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
-            .padding(10)
-            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
     }
 }
 
