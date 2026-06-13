@@ -1,0 +1,15 @@
+{
+  "summary": "Step 1 scans directories in parallel with a live queue showing active workers.",
+  "introduced": [
+    "Directory queue panel listing identified folders with active, done, and pending status",
+    "Workers stat showing how many parallel scans are running"
+  ],
+  "changed": [
+    "Fast volume scans split Users into per-folder tasks and index them concurrently",
+    "System folders continue to size in parallel with up to 8 workers",
+    "Scan progress reports active concurrency and completed directory count"
+  ],
+  "fixed": [
+    "Current path panel keeps a stable height so deep paths no longer jitter the layout"
+  ]
+}
