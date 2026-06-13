@@ -164,12 +164,17 @@ final class AppViewModel: ObservableObject {
     @Published var startupMessage = "Preparing DiskWise…"
     @Published var startupCompletedSteps: Set<StartupStep> = []
     @Published var startupActiveStep: StartupStep?
+    @Published var showPythonSetupPrompt = false
+    @Published var pythonSetupWizardStep: PythonSetupWizardStep = .needsSetup
+    @Published var isPythonAvailable = true
+    @Published var usesPythonScanner = false
 
     let activityLog = ActivityLog.shared
     let appSettings = AppSettings.shared
 
     private var database: DiskWiseDatabase!
     private var permissionPollTask: Task<Void, Never>?
+    private var pythonPollTask: Task<Void, Never>?
     private var startupTask: Task<Void, Never>?
     private var indexRebuildTask: Task<Void, Never>?
     private var scanTask: Task<Void, Never>?
@@ -189,17 +194,22 @@ final class AppViewModel: ObservableObject {
     private var aiEngine: AIAnalysisEngine!
     private var aiConsultant: AIConsultantService!
     private let fullDiskAccessPromptKey = "diskwise.hasSeenFullDiskAccessPrompt"
+    private let pythonSetupPromptKey = "diskwise.hasSeenPythonSetupPrompt"
 
     var isPostUpgradeStartup: Bool {
         appSettings.shouldShowWhatsNew
     }
 
     var isBlockingLaunchFlow: Bool {
-        isStartingUp || showFullDiskAccessPrompt || showWhatsNewTour || showIndexRebuildPrompt
+        isStartingUp || showPythonSetupPrompt || showFullDiskAccessPrompt || showWhatsNewTour || showIndexRebuildPrompt
+    }
+
+    var shouldShowPythonSetupBanner: Bool {
+        usesPythonScanner && !isPythonAvailable && !showPythonSetupPrompt
     }
 
     func schedulePostUpgradePresentation() {
-        guard !showFullDiskAccessPrompt, !showIndexRebuildPrompt else { return }
+        guard !showFullDiskAccessPrompt, !showPythonSetupPrompt, !showIndexRebuildPrompt else { return }
 
         if appSettings.shouldShowWhatsNew {
             presentWhatsNewIfNeeded()
@@ -274,6 +284,7 @@ final class AppViewModel: ObservableObject {
 
         database = openedDatabase
         let pythonScriptURL = PythonScanRunner.bundledScriptURL()
+        usesPythonScanner = pythonScriptURL != nil
         scanEngine = ScanEngine(database: openedDatabase, pythonScannerScript: pythonScriptURL)
         duplicateEngine = DuplicateEngine(database: openedDatabase)
         aiConsultant = AIConsultantService(configuration: appSettings.aiProviderConfiguration)
@@ -313,6 +324,12 @@ final class AppViewModel: ObservableObject {
         hasFullDiskAccess = FullDiskAccess.hasFullDiskAccess()
         completeStartupStep(.permissions)
 
+        beginStartupStep(.python, message: "Checking Python scanner…")
+        await Task.yield()
+
+        isPythonAvailable = !usesPythonScanner || PythonScanRunner.isPythonAvailable
+        completeStartupStep(.python)
+
         overview = nil
         topConsumers = []
         duplicateGroups = []
@@ -326,14 +343,120 @@ final class AppViewModel: ObservableObject {
         Task { await refreshAIAvailability() }
 
         presentIndexRebuildPromptIfNeeded()
-        presentFullDiskAccessPromptIfNeeded()
+        presentPythonSetupPromptIfNeeded()
+        if !showIndexRebuildPrompt, !showPythonSetupPrompt {
+            presentFullDiskAccessPromptIfNeeded()
+        }
         if !isBlockingLaunchFlow {
             schedulePostUpgradePresentation()
         }
     }
 
+    func presentPythonSetupPromptIfNeeded() {
+        guard usesPythonScanner, !isPythonAvailable else { return }
+        guard !showIndexRebuildPrompt else { return }
+        guard !UserDefaults.standard.bool(forKey: pythonSetupPromptKey) else { return }
+
+        pythonSetupWizardStep = .needsSetup
+        showPythonSetupPrompt = true
+        setStatus("Python 3 is required for scanning", kind: .error)
+    }
+
+    func presentPythonSetupOverlay() {
+        guard usesPythonScanner, !isPythonAvailable else { return }
+        pythonSetupWizardStep = .needsSetup
+        showPythonSetupPrompt = true
+    }
+
+    func runPythonInstallScript() {
+        PythonSetupSupport.openInstallScriptInTerminal()
+        pythonSetupWizardStep = .waiting
+        setStatus("Waiting for Python installation…", kind: .working)
+        startPythonPolling()
+    }
+
+    func dismissPythonSetupPrompt() {
+        stopPythonPolling()
+        UserDefaults.standard.set(true, forKey: pythonSetupPromptKey)
+        showPythonSetupPrompt = false
+        pythonSetupWizardStep = .needsSetup
+
+        if !isPythonAvailable {
+            setStatus("Python 3 is required for scanning", kind: .error)
+        } else {
+            setStatus("Ready to scan", kind: .ready)
+        }
+
+        if !showFullDiskAccessPrompt {
+            presentFullDiskAccessPromptIfNeeded()
+        }
+        if !isBlockingLaunchFlow {
+            schedulePostUpgradePresentation()
+        }
+    }
+
+    func cancelPythonSetupWaiting() {
+        stopPythonPolling()
+        pythonSetupWizardStep = .needsSetup
+        dismissPythonSetupPrompt()
+    }
+
+    func refreshPythonAvailability() {
+        guard usesPythonScanner else {
+            isPythonAvailable = true
+            return
+        }
+
+        isPythonAvailable = PythonScanRunner.isPythonAvailable
+        if isPythonAvailable, showPythonSetupPrompt {
+            handlePythonInstalled()
+        }
+    }
+
+    func checkPythonOnAppActivation() {
+        guard usesPythonScanner, !isPythonAvailable else { return }
+        refreshPythonAvailability()
+    }
+
+    private func startPythonPolling() {
+        stopPythonPolling()
+        pythonPollTask = Task { @MainActor in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { return }
+                refreshPythonAvailability()
+            }
+        }
+    }
+
+    private func stopPythonPolling() {
+        pythonPollTask?.cancel()
+        pythonPollTask = nil
+    }
+
+    private func handlePythonInstalled() {
+        guard pythonSetupWizardStep != .ready else { return }
+
+        stopPythonPolling()
+        isPythonAvailable = true
+        pythonSetupWizardStep = .ready
+        setStatus("Python 3 detected — ready to scan", kind: .success)
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.2))
+            showPythonSetupPrompt = false
+            pythonSetupWizardStep = .needsSetup
+            if !showFullDiskAccessPrompt {
+                presentFullDiskAccessPromptIfNeeded()
+            }
+            if !isBlockingLaunchFlow {
+                schedulePostUpgradePresentation()
+            }
+        }
+    }
+
     func presentSavedScanPromptIfNeeded() {
-        guard !showFullDiskAccessPrompt, !showIndexRebuildPrompt, !showWhatsNewTour else { return }
+        guard !showFullDiskAccessPrompt, !showPythonSetupPrompt, !showIndexRebuildPrompt, !showWhatsNewTour else { return }
         guard !appSettings.shouldShowWhatsNew else { return }
         guard let volume = selectedVolume, isIndexed(volume) else {
             presentMenuBarExtensionPromptIfNeeded()
@@ -343,7 +466,7 @@ final class AppViewModel: ObservableObject {
     }
 
     func presentMenuBarExtensionPromptIfNeeded() {
-        guard !showFullDiskAccessPrompt, !showIndexRebuildPrompt, !showWhatsNewTour, !showSavedScanPrompt else { return }
+        guard !showFullDiskAccessPrompt, !showPythonSetupPrompt, !showIndexRebuildPrompt, !showWhatsNewTour, !showSavedScanPrompt else { return }
         guard !appSettings.menuBarExtensionPromptDismissed else { return }
         guard !appSettings.showMenuBarDiskMonitor else { return }
         guard appSettings.shouldOfferMenuBarMonitor else { return }
@@ -839,6 +962,7 @@ final class AppViewModel: ObservableObject {
     func presentWhatsNewIfNeeded() {
         guard appSettings.shouldShowWhatsNew else { return }
         guard !showFullDiskAccessPrompt else { return }
+        guard !showPythonSetupPrompt else { return }
         guard !showIndexRebuildPrompt else { return }
         showWhatsNewTour = true
     }
@@ -851,6 +975,10 @@ final class AppViewModel: ObservableObject {
 
     func stopPermissionPollingIfNeeded() {
         stopPermissionPolling()
+    }
+
+    func stopPythonPollingIfNeeded() {
+        stopPythonPolling()
     }
 
     func checkPermissionOnAppActivation() {
@@ -1231,6 +1359,12 @@ final class AppViewModel: ObservableObject {
     }
 
     func scan(volume: MountedVolume, folder: URL? = nil) {
+        if usesPythonScanner, !isPythonAvailable {
+            presentPythonSetupOverlay()
+            setStatus("Python 3 is required for scanning", kind: .error)
+            return
+        }
+
         scanTask?.cancel()
         cancelDuplicateDetection()
         selectedPane = .overview
@@ -1331,6 +1465,12 @@ final class AppViewModel: ObservableObject {
                     } else if error is CancellationError || error.localizedDescription.contains("cancelled") {
                         self.logActivity(.scan, "Scan cancelled", detail: scanLabel)
                         self.setStatus("Scan cancelled", kind: .ready)
+                    } else if Self.isPythonNotFoundError(error) {
+                        self.isPythonAvailable = false
+                        self.pythonSetupWizardStep = .needsSetup
+                        self.showPythonSetupPrompt = true
+                        self.logActivity(.scan, "Scan failed", detail: "Python 3 not found")
+                        self.setStatus("Python 3 is required for scanning", kind: .error)
                     } else {
                         self.logActivity(.scan, "Scan failed", detail: error.localizedDescription)
                         self.setStatus("Scan failed: \(error.localizedDescription)", kind: .error)
@@ -2048,6 +2188,13 @@ final class AppViewModel: ObservableObject {
 
     var optimizationTasks: [OptimizationTask] {
         maintenanceEngine.optimizationTasks()
+    }
+
+    private static func isPythonNotFoundError(_ error: Error) -> Bool {
+        if let pythonError = error as? PythonScanRunnerError, case .pythonNotFound = pythonError {
+            return true
+        }
+        return error.localizedDescription.contains("Python 3 is required")
     }
 
     private func setStatus(_ message: String, kind: AppStatusKind) {

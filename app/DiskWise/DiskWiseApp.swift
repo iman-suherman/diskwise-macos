@@ -173,8 +173,8 @@ struct ContentView: View {
                         }
                     }
             }
-            .blur(radius: viewModel.isStartingUp || viewModel.isRebuildingIndex || viewModel.showFullDiskAccessPrompt || viewModel.showWhatsNewTour || viewModel.showIndexRebuildPrompt || viewModel.showSavedScanPrompt ? 8 : 0)
-            .allowsHitTesting(!viewModel.isStartingUp && !viewModel.isRebuildingIndex && !viewModel.showFullDiskAccessPrompt && !viewModel.showWhatsNewTour && !viewModel.showIndexRebuildPrompt && !viewModel.showSavedScanPrompt)
+            .blur(radius: viewModel.isStartingUp || viewModel.isRebuildingIndex || viewModel.showPythonSetupPrompt || viewModel.showFullDiskAccessPrompt || viewModel.showWhatsNewTour || viewModel.showIndexRebuildPrompt || viewModel.showSavedScanPrompt ? 8 : 0)
+            .allowsHitTesting(!viewModel.isStartingUp && !viewModel.isRebuildingIndex && !viewModel.showPythonSetupPrompt && !viewModel.showFullDiskAccessPrompt && !viewModel.showWhatsNewTour && !viewModel.showIndexRebuildPrompt && !viewModel.showSavedScanPrompt)
 
             if viewModel.isStartingUp {
                 StartupSplashOverlay(
@@ -222,6 +222,21 @@ struct ContentView: View {
                 )
             }
 
+            if viewModel.showPythonSetupPrompt {
+                PythonSetupGateOverlay(
+                    step: viewModel.pythonSetupWizardStep,
+                    onInstall: {
+                        viewModel.runPythonInstallScript()
+                    },
+                    onDismiss: {
+                        viewModel.dismissPythonSetupPrompt()
+                    },
+                    onCancelWaiting: {
+                        viewModel.cancelPythonSetupWaiting()
+                    }
+                )
+            }
+
             if viewModel.showFullDiskAccessPrompt {
                 FullDiskAccessGateOverlay(
                     step: viewModel.fullDiskAccessWizardStep,
@@ -241,9 +256,15 @@ struct ContentView: View {
         }
         .animation(.easeInOut(duration: 0.22), value: viewModel.isStartingUp)
         .animation(.easeInOut(duration: 0.22), value: viewModel.isRebuildingIndex)
+        .animation(.easeInOut(duration: 0.22), value: viewModel.showPythonSetupPrompt)
         .animation(.easeInOut(duration: 0.22), value: viewModel.showFullDiskAccessPrompt)
         .animation(.easeInOut(duration: 0.22), value: viewModel.showIndexRebuildPrompt)
         .animation(.easeInOut(duration: 0.22), value: viewModel.showSavedScanPrompt)
+        .onChange(of: viewModel.showPythonSetupPrompt) { _, isShowing in
+            if !isShowing {
+                viewModel.stopPythonPollingIfNeeded()
+            }
+        }
         .onChange(of: viewModel.showFullDiskAccessPrompt) { _, isShowing in
             if !isShowing {
                 viewModel.stopPermissionPollingIfNeeded()
@@ -251,6 +272,7 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             viewModel.checkPermissionOnAppActivation()
+            viewModel.checkPythonOnAppActivation()
             viewModel.checkForUpdatesWhenEligible()
         }
         .onChange(of: viewModel.isBlockingLaunchFlow) { _, isBlocking in
@@ -294,6 +316,14 @@ struct ContentView: View {
                             viewModel.presentFullDiskAccessOverlay()
                         }
                     )
+                }
+            }
+
+            if viewModel.shouldShowPythonSetupBanner {
+                Section {
+                    PythonSetupBanner {
+                        viewModel.presentPythonSetupOverlay()
+                    }
                 }
             }
 

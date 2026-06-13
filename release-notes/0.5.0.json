@@ -1,0 +1,13 @@
+{
+  "summary": "Python-backed disk scanning with live verbose logs, plus deferred daily update checks.",
+  "introduced": [
+    "Bundled Python scanner for Phase 1 volume indexing with JSON progress streaming into the existing UI",
+    "Scanner log panel on the dashboard with an Open in Terminal action to tail verbose scan output"
+  ],
+  "changed": [
+    "Version update checks run at most once per day while the main window is open and the app is in the foreground — not at startup or when only the menu bar is active"
+  ],
+  "fixed": [
+    "Startup prompts for Python 3.8+ when the bundled scanner is enabled but no compatible interpreter is installed"
+  ]
+}

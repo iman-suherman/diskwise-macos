@@ -3,6 +3,53 @@
     <channel>
         <title>DiskWise</title>
         <item>
+            <title>0.5.0</title>
+            <pubDate>Sun, 14 Jun 2026 06:59:42 +1000</pubDate>
+            <sparkle:version>5000</sparkle:version>
+            <sparkle:shortVersionString>0.5.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<ul>
+<li><strong>What's new</strong><ul>
+<li>Bundled Python scanner for Phase 1 volume indexing with JSON progress streaming into the existing UI</li>
+<li>Scanner log panel on the dashboard with an Open in Terminal action to tail verbose scan output</li>
+</ul></li>
+<li><strong>Improvements</strong><ul>
+<li>Version update checks run at most once per day while the main window is open and the app is in the foreground — not at startup or when only the menu bar is active</li>
+</ul></li>
+</ul>
+]]></description>
+            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.5.0.zip" length="12847775" type="application/octet-stream" sparkle:edSignature="mosrR+G96ZLxClmNgOmbjTSQCWkEHneRY5dcNicFHaVQ+eCTKHrridteTt7t16KvD9+INdPG9Two8/MeDm8+BA=="/>
+        </item>
+        <item>
+            <title>0.4.1</title>
+            <pubDate>Sun, 14 Jun 2026 06:54:09 +1000</pubDate>
+            <sparkle:version>4001</sparkle:version>
+            <sparkle:shortVersionString>0.4.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<ul>
+<li><strong>What's new</strong><ul>
+<li>Choose internal and external drives individually for menu bar free-space readouts (for example, HD 12GB or 6 2.8TB)</li>
+</ul></li>
+<li><strong>Improvements</strong><ul>
+<li>Removed remaining-percentage menu bar option</li>
+<li>Health menu bar icon shows condition with score, for example Fair (50)</li>
+<li>System status top CPU and memory lists use full application names from Activity Monitor</li>
+</ul></li>
+<li><strong>Fixes</strong><ul>
+<li>Top CPU and memory process names no longer truncate to short comm labels like Cu or Library</li>
+</ul></li>
+</ul>
+]]></description>
+            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.4.1.zip" length="12775117" type="application/octet-stream" sparkle:edSignature="MHfGVdJqrTSWafJW6K0wRIdNceRe7yp52JYQU8HMkxRDTmfxfOy2pfbOvi79NMfTXf+1u/eK3Tb8AIHuP2YwBA=="/>
+            <sparkle:deltas>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4001-4000.delta" sparkle:deltaFrom="4000" length="902490" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="pFNq5FmzOGqsgHCGgmVBbyNgex31WBalqoGvAE/ykz4Eo92fWABJZfULLLP4ZeNjfq3avHEYo8p9/vlSoGl5Ag=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4001-3009.delta" sparkle:deltaFrom="3009" length="1013186" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="OZ78fbcv8Cr3RvMu4zt/J7oUCGSfNUMKHQRF/y2P/fvXXWu6oYZq6000Cst2yJXbTZaEuFENPfTrM+KO1+1hBg=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4001-3007.delta" sparkle:deltaFrom="3007" length="1189810" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="IftQb1fjiDaVGaPepUagEyad+neLJ70V7F6qNiVrDRYmCPpnus4Xpsm2VmLhlepaUzXrD9BomG0ZRDZUUyzmAw=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4001-3005.delta" sparkle:deltaFrom="3005" length="1239370" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="3Ny2VX0Wsvig3WDzcP5Hphthr2iudWxmJe2qB/+6uJlAVCXa7XKh+DEr2g27fCWMEUK95EHqMSno/7qgN7DEBQ=="/>
+                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4001-3006.delta" sparkle:deltaFrom="3006" length="1270010" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="RYxXZ8YZt6ZieFNRCQyKqpR93qFYyxCjmo8Z7+85ZJvR2AzOvqtUnnPeE/NhE5XuqX9B7oxIfdmhlV0o1s+iDA=="/>
+            </sparkle:deltas>
+        </item>
+        <item>
             <title>0.4.0</title>
             <pubDate>Sat, 13 Jun 2026 23:30:51 +1000</pubDate>
             <sparkle:version>4000</sparkle:version>
@@ -30,47 +77,6 @@
                 <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4000-3005.delta" sparkle:deltaFrom="3005" length="1214294" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="Q/g4qursfDh75JsODMMRKmFvBO6GO2SB2NwrymTuRKMyWBUJ6U6MpZxmmifZDCX6jRN5BNoTI/2gf9XUvKErAw=="/>
                 <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4000-3004.delta" sparkle:deltaFrom="3004" length="3353050" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="E0JQCt3ePOSlPtReE7k03GGa9yjYAqUGPykpKMKseeACzJQGL/qcwo1BF3TLlgkBTjiTBmIWY72up1NJU1OICQ=="/>
             </sparkle:deltas>
-        </item>
-        <item>
-            <title>0.3.9</title>
-            <pubDate>Sat, 13 Jun 2026 22:54:41 +1000</pubDate>
-            <sparkle:version>3009</sparkle:version>
-            <sparkle:shortVersionString>0.3.9</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<ul>
-<li><strong>What's new</strong><ul>
-<li>Health score menu bar icon with color-coded 0–100 score based on CPU, memory, and disk pressure</li>
-<li>System Status popover shows macOS version, CPU and memory usage, load average, disk free space, uptime, machine model, and top CPU/memory processes</li>
-<li>Settings toggle to hide DiskWise from the Dock while keeping menu bar access</li>
-</ul></li>
-<li><strong>Improvements</strong><ul>
-<li>Menu bar popovers include toggles for percentage, free GB, and health score displays</li>
-<li>Health metrics refresh automatically every 10–30 seconds depending on system pressure</li>
-</ul></li>
-</ul>
-]]></description>
-            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.3.9.zip" length="12724539" type="application/octet-stream" sparkle:edSignature="lGG2LmKPpH6iMevfB1VFflw3Yaao3l7HGdZZV0e7+FI8IJ3t9YcZiatK3racN/JrhDTPbM/qS5qSZym97o/RDQ=="/>
-            <sparkle:deltas>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise3009-3007.delta" sparkle:deltaFrom="3007" length="1098542" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="HoAHfqRMrD2SjsGWSF/gWkz9CWrHWwoAVG1J2/7Rsr0Y+VPuuYaNMctGQ/rSf7m3Ixnm8VUFxQrEPSeFnm8ZDg=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise3009-3006.delta" sparkle:deltaFrom="3006" length="1196966" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="Of3QWyVApFtf16bxP+xX4iJu8ihaI9s7st/dqdVpyzcPkBtBhoG1vKnb6be5LMg7+HBmljHA7vIKgkG0x+viCA=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise3009-3005.delta" sparkle:deltaFrom="3005" length="1174374" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="ZJqNLT82o7sak5ikchhEc5L3Z/hnFPHBHc1LbJ7NaSP8pVMHrShRW4MRVM9Go/KczmbpP4Ncde4STYysyCOJBQ=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise3009-3004.delta" sparkle:deltaFrom="3004" length="3310062" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="auxGKT/X5GvI0Pkn3tynJ3EGG89vJHXT64mr4UhjDCMniXo/2kT18Cm3jN4KboNFRLsML72eI9VGQzvMpv+oCw=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise3009-3003.delta" sparkle:deltaFrom="3003" length="1562274" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="m4iVUGUsW1ZV2tYNKoYH+pdjIqLCFvKXacvYxjpv1eyW+6uEicPk/0B9YaXrHqsOaoGWDDNIWF6hKMQ5fK8NDg=="/>
-            </sparkle:deltas>
-        </item>
-        <item>
-            <title>0.3.7</title>
-            <pubDate>Sat, 13 Jun 2026 12:14:41 +1000</pubDate>
-            <sparkle:version>3007</sparkle:version>
-            <sparkle:shortVersionString>0.3.7</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<ul>
-<li><strong>What's new</strong><ul>
-<li>A clearer three-step flow: identify what's using space, analyze findings, then act on recommendations</li>
-</ul></li>
-</ul>
-]]></description>
-            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.3.7.zip" length="12611246" type="application/octet-stream" sparkle:edSignature="NpZcuChkGRBK5C0eCd5fyvK8Zu8wl0kFF4RVPIZU0BjcGOwUrggarArn2HyZoE3ZCpIwbP04nHFafeQIBq3hCA=="/>
         </item>
     </channel>
 </rss>
