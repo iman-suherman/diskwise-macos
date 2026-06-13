@@ -10,13 +10,13 @@ enum MenuBarExtensionPrompt {
     @MainActor
     static func presentInstallPrompt() -> Response {
         let alert = NSAlert()
-        alert.messageText = "Install menu bar disk monitor?"
+        alert.messageText = "Show disk space in the menu bar?"
         alert.informativeText = """
         DiskWise can show Macintosh HD usage in the menu bar with a percentage and bar chart. \
-        It starts automatically when you log in. macOS will open System Settings so you can approve the login item.
+        The monitor runs inside DiskWise and can start automatically when you log in. macOS will open System Settings so you can approve DiskWise under Login Items.
         """
         alert.alertStyle = .informational
-        alert.addButton(withTitle: "Install")
+        alert.addButton(withTitle: "Turn On")
         alert.addButton(withTitle: "Not Now")
 
         return alert.runModal() == .alertFirstButtonReturn ? .install : .dismiss
@@ -25,9 +25,9 @@ enum MenuBarExtensionPrompt {
     @MainActor
     static func presentApprovalPrompt() -> Response {
         let alert = NSAlert()
-        alert.messageText = "Approve menu bar monitor"
+        alert.messageText = "Approve DiskWise at login"
         alert.informativeText = """
-        Turn on “DiskWise Menu Bar” under Login Items in System Settings to show Macintosh HD usage in the menu bar at login.
+        Turn on DiskWise under Open at Login in System Settings so the menu bar disk monitor starts when you log in.
         """
         alert.alertStyle = .informational
         alert.addButton(withTitle: "Open System Settings")
