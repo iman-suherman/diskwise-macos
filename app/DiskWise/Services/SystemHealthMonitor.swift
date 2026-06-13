@@ -98,6 +98,17 @@ enum SystemHealthMonitorCore {
         }
     }
 
+    static func healthConditionLabel(for score: Int) -> String {
+        switch score {
+        case 70...:
+            return "Good"
+        case 40..<70:
+            return "Fair"
+        default:
+            return "Poor"
+        }
+    }
+
     private static func formattedMacOSVersion() -> String {
         let version = ProcessInfo.processInfo.operatingSystemVersion
         return "\(version.majorVersion).\(version.minorVersion).\(version.patchVersion)"
@@ -215,11 +226,12 @@ enum SystemHealthMonitorCore {
                   let cpu = Double(parts[parts.count - 2]),
                   let rssKB = Int64(parts[parts.count - 1]) else { continue }
 
-            let name = parts.dropFirst().dropLast(2).joined(separator: " ")
+            let rawName = parts.dropFirst().dropLast(2).joined(separator: " ")
+            let name = processDisplayName(rawName.isEmpty ? "Process \(pid)" : rawName)
             parsed.append(
                 ProcessUsage(
                     id: pid,
-                    name: name.isEmpty ? "Process \(pid)" : name,
+                    name: name,
                     cpuPercent: cpu,
                     memoryBytes: rssKB * 1024
                 )
@@ -229,6 +241,25 @@ enum SystemHealthMonitorCore {
         let byCPU = parsed.sorted { $0.cpuPercent > $1.cpuPercent }.prefix(limit).map { $0 }
         let byMemory = parsed.sorted { $0.memoryBytes > $1.memoryBytes }.prefix(limit).map { $0 }
         return (Array(byCPU), Array(byMemory))
+    }
+
+    static func processDisplayName(_ rawName: String) -> String {
+        let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return trimmed }
+
+        if trimmed.contains("/") {
+            let components = trimmed.split(separator: "/").map(String.init)
+            if let appComponent = components.first(where: { $0.hasSuffix(".app") }) {
+                return String(appComponent.dropLast(4))
+            }
+            return components.last ?? trimmed
+        }
+
+        if trimmed.hasSuffix(".app") {
+            return String(trimmed.dropLast(4))
+        }
+
+        return trimmed
     }
 }
 

@@ -107,6 +107,8 @@ enum AppStatusKind {
 
 @MainActor
 final class AppViewModel: ObservableObject {
+    private(set) static weak var current: AppViewModel?
+
     @Published var disks: [DiskRecord] = []
     @Published var mountedVolumes: [MountedVolume] = []
     @Published var selectedVolumePath: String?
@@ -235,6 +237,7 @@ final class AppViewModel: ObservableObject {
     }
 
     init() {
+        AppViewModel.current = self
         startupTask = Task { @MainActor in
             await performStartup()
         }
@@ -607,11 +610,6 @@ final class AppViewModel: ObservableObject {
         if let detail = progress.detail, !detail.isEmpty {
             parts.append(detail)
         }
-        if let active = progress.activeConcurrency,
-           let max = progress.maxConcurrency,
-           max > 1 {
-            parts.append("\(active)/\(max) parallel scans")
-        }
         return parts.joined(separator: " · ")
     }
 
@@ -622,9 +620,7 @@ final class AppViewModel: ObservableObject {
             return nil
         }
         let completed = progress.directoriesProcessed ?? 0
-        let active = progress.activeConcurrency ?? 0
-        let max = progress.maxConcurrency ?? 1
-        return "\(completed)/\(total) folders · \(active)/\(max) active workers"
+        return "\(completed)/\(total) folders"
     }
 
     var scanProgressPercent: Int {
@@ -1081,6 +1077,7 @@ final class AppViewModel: ObservableObject {
         scanPhase = .idle
         scanProgress = nil
         scanStartTime = nil
+        ScanActivityMonitor.shared.endScan()
         setStatus("Scan cancelled", kind: .ready)
     }
 
@@ -1274,6 +1271,7 @@ final class AppViewModel: ObservableObject {
             isFolderScan ? "Started folder scan" : "Started filesystem scan",
             detail: "\(appSettings.scanMode.title) · \(isFolderScan ? "\(scanLabel) on \(volume.name)" : volume.name)"
         )
+        ScanActivityMonitor.shared.beginScan(volumeName: scanLabel)
 
         let scanMode = appSettings.scanMode
         guard let scanEngine = self.scanEngine else { return }
@@ -1289,6 +1287,12 @@ final class AppViewModel: ObservableObject {
                         Task { @MainActor in
                             self.scanProgress = progress
                             self.maybeRefreshInsightsDuringScan(progress)
+                            ScanActivityMonitor.shared.update(
+                                progressFraction: self.scanProgressFraction,
+                                progressPercentLabel: self.scanProgressPercentLabel,
+                                detail: self.scanProgressDetail,
+                                operationLabel: progress.operation.label
+                            )
                             if self.isRebuildingIndex {
                                 self.indexRebuildMessage = "Identifying disk usage · \(progress.scannedCount.formatted()) files…"
                             }
@@ -1333,6 +1337,7 @@ final class AppViewModel: ObservableObject {
                     self.scanPhase = .idle
                     self.scanProgress = nil
                     self.scanStartTime = nil
+                    ScanActivityMonitor.shared.endScan()
                 }
             }
         }
@@ -1351,6 +1356,7 @@ final class AppViewModel: ObservableObject {
         volumeMountPath: String
     ) {
         isScanning = false
+        ScanActivityMonitor.shared.endScan()
         scanPhase = .analyzing
         scanProgress = nil
         selectedDiskID = summary.diskID

@@ -514,8 +514,11 @@ private struct SystemStatusPanel: View {
             .frame(width: 88, height: 88)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Health Score")
+                Text(SystemHealthMonitorCore.healthConditionLabel(for: snapshot.healthScore))
                     .font(.headline)
+                Text("Score \(snapshot.healthScore)/100")
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(healthColor(snapshot.healthScore))
                 Text(snapshot.hostName)
                     .font(.subheadline)
                 Text(snapshot.osVersion)
