@@ -206,7 +206,7 @@ enum SystemHealthMonitorCore {
     private static func readTopProcesses(limit: Int) -> (byCPU: [ProcessUsage], byMemory: [ProcessUsage]) {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/ps")
-        process.arguments = ["-A", "-o", "pid=,pcpu=,rss="]
+        process.arguments = ["-A", "-o", "pid=,pcpu=,rss=,comm="]
 
         let pipe = Pipe()
         process.standardOutput = pipe
@@ -228,12 +228,13 @@ enum SystemHealthMonitorCore {
             guard !trimmed.isEmpty else { continue }
 
             let parts = trimmed.split(whereSeparator: { $0 == " " || $0 == "\t" }).map(String.init)
-            guard parts.count >= 3,
+            guard parts.count >= 4,
                   let pid = Int32(parts[0]),
-                  let cpu = Double(parts[parts.count - 2]),
-                  let rssKB = Int64(parts[parts.count - 1]) else { continue }
+                  let cpu = Double(parts[1]),
+                  let rssKB = Int64(parts[2]) else { continue }
 
-            let name = resolveProcessName(pid: pid)
+            let comm = parts.dropFirst(3).joined(separator: " ")
+            let name = resolveProcessName(pid: pid, comm: comm)
             parsed.append(
                 ProcessUsage(
                     id: pid,
@@ -250,11 +251,23 @@ enum SystemHealthMonitorCore {
     }
 
     @MainActor
-    private static func resolveProcessName(pid: Int32) -> String {
+    private static func resolveProcessName(pid: Int32, comm: String) -> String {
         if let app = NSRunningApplication(processIdentifier: pid),
-           let localizedName = app.localizedName,
+           let localizedName = app.localizedName?.trimmingCharacters(in: .whitespacesAndNewlines),
            !localizedName.isEmpty {
             return localizedName
+        }
+
+        if let path = processExecutablePath(pid: pid) {
+            let name = displayNameFromExecutablePath(path)
+            if !name.isEmpty {
+                return name
+            }
+        }
+
+        let trimmedComm = comm.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedComm.isEmpty {
+            return processDisplayName(trimmedComm)
         }
 
         var buffer = [CChar](repeating: 0, count: Int(MAXCOMLEN))
@@ -266,6 +279,31 @@ enum SystemHealthMonitorCore {
         }
 
         return "Process \(pid)"
+    }
+
+    private static let processPathBufferSize = 4096
+
+    private static func processExecutablePath(pid: pid_t) -> String? {
+        var buffer = [CChar](repeating: 0, count: processPathBufferSize)
+        let length = proc_pidpath(pid, &buffer, UInt32(buffer.count))
+        guard length > 0 else { return nil }
+        return String(cString: buffer)
+    }
+
+    private static func displayNameFromExecutablePath(_ path: String) -> String {
+        let components = URL(fileURLWithPath: path).pathComponents
+        if let appComponent = components.last(where: { $0.hasSuffix(".app") }) {
+            return String(appComponent.dropLast(4))
+        }
+        return URL(fileURLWithPath: path).lastPathComponent
+    }
+
+    /// Shows the end of long process names so the recognizable app name stays visible.
+    static func truncatedProcessName(_ name: String, maxLength: Int = 26) -> String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count > maxLength, maxLength > 3 else { return trimmed }
+        let visibleTailCount = maxLength - 3
+        return "..." + trimmed.suffix(visibleTailCount)
     }
 
     static func processDisplayName(_ rawName: String) -> String {

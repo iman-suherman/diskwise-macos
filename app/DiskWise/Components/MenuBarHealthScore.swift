@@ -181,9 +181,10 @@ struct MenuBarHealthPopoverContent: View {
             } else {
                 ForEach(processes) { process in
                     HStack {
-                        Text(process.name)
+                        Text(SystemHealthMonitorCore.truncatedProcessName(process.name))
                             .font(.caption)
                             .lineLimit(1)
+                            .help(process.name)
                         Spacer()
                         Text(
                             showCPU
