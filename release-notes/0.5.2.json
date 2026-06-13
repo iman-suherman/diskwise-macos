@@ -1,0 +1,14 @@
+{
+  "summary": "Responsive scan UI with copyable scanner logs, sequential tiered scanning, and bracketed menu bar free-space labels.",
+  "introduced": [
+    "Scan panel shows the scanner log file path and tail command to copy into Terminal instead of streaming verbose output in the app"
+  ],
+  "changed": [
+    "Menu bar free-space readouts show remaining space in brackets, for example HD (122GB)",
+    "Scan progress updates are coalesced so the app stays responsive during long scans",
+    "Tiered volume scans run folders sequentially with lighter progress payloads"
+  ],
+  "removed": [
+    "In-app current path and directory queue panels during scans — follow the scanner log in Terminal instead"
+  ]
+}
