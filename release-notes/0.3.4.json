@@ -1,0 +1,17 @@
+{
+  "summary": "Faster disk scans with tiered fast mode, live AI chat streaming, and clearer scan progress.",
+  "introduced": [
+    "New Session button to clear chat history and start a fresh conversation",
+    "Verbose scan progress showing sizing vs indexing steps and current folder"
+  ],
+  "changed": [
+    "Fast scan sizes system folders (Applications, Library, private) in one step instead of walking every file",
+    "AI replies render Markdown (bold text and bullet lists) instead of raw syntax",
+    "Responses stream token-by-token from Apple Intelligence and Ollama",
+    "Heavy user Library folders (Containers, Caches, Developer) are sized in one step during fast scans"
+  ],
+  "fixed": [
+    "Macintosh HD scans no longer estimate 9+ hours at 1% when Full Disk Access is missing",
+    "Removed accidental 1.0.0 test release from Sparkle update feeds"
+  ]
+}

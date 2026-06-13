@@ -9,23 +9,40 @@ public enum StorageGapFill {
         scanRoot: URL,
         to results: inout [ScannedFile],
         fileManager: FileManager = .default,
-        isCancelled: (@Sendable () -> Bool)? = nil
+        isCancelled: (@Sendable () -> Bool)? = nil,
+        onProgress: (@Sendable (_ path: String, _ processed: Int, _ total: Int) -> Void)? = nil
     ) {
-        appendGapsForImmediateChildren(
-            of: scanRoot,
-            to: &results,
-            fileManager: fileManager,
-            isCancelled: isCancelled
-        )
+        let topLevelNames = (try? fileManager.contentsOfDirectory(atPath: scanRoot.path)) ?? []
+        let topLevelChildren = topLevelNames.filter { !$0.hasPrefix(".") }
+
+        for (index, name) in topLevelChildren.enumerated() {
+            if isCancelled?() == true { return }
+            let child = scanRoot.appendingPathComponent(name, isDirectory: true)
+            appendGap(
+                at: child,
+                to: &results,
+                fileManager: fileManager
+            )
+            onProgress?(child.path, index + 1, topLevelChildren.count)
+        }
 
         let usersDirectory = scanRoot.appendingPathComponent("Users", isDirectory: true)
         guard fileManager.fileExists(atPath: usersDirectory.path) else { return }
-        appendGapsForImmediateChildren(
-            of: usersDirectory,
-            to: &results,
-            fileManager: fileManager,
-            isCancelled: isCancelled
-        )
+
+        let userNames = (try? fileManager.contentsOfDirectory(atPath: usersDirectory.path)) ?? []
+        let userChildren = userNames.filter { !$0.hasPrefix(".") }
+        let usersTotal = userChildren.count
+
+        for (index, name) in userChildren.enumerated() {
+            if isCancelled?() == true { return }
+            let userDirectory = usersDirectory.appendingPathComponent(name, isDirectory: true)
+            appendGap(
+                at: userDirectory,
+                to: &results,
+                fileManager: fileManager
+            )
+            onProgress?(userDirectory.path, index + 1, usersTotal)
+        }
     }
 
     private static func appendGapsForImmediateChildren(

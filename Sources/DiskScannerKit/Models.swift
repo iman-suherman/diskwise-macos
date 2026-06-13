@@ -30,15 +30,49 @@ public struct ScannedFile: Sendable {
     }
 }
 
+public enum ScanOperation: String, Sendable {
+    case preparing
+    case sizingDirectory
+    case enumeratingFiles
+    case probingHidden
+    case fillingGaps
+
+    public var label: String {
+        switch self {
+        case .preparing: return "Preparing"
+        case .sizingDirectory: return "Sizing folder"
+        case .enumeratingFiles: return "Indexing files"
+        case .probingHidden: return "Probing hidden folders"
+        case .fillingGaps: return "Filling coverage gaps"
+        }
+    }
+}
+
 public struct ScanProgress: Sendable {
     public let scannedCount: Int
     public let currentPath: String
     public let bytesIndexed: Int64
+    public let operation: ScanOperation
+    public let detail: String?
+    public let directoriesProcessed: Int?
+    public let directoriesTotal: Int?
 
-    public init(scannedCount: Int, currentPath: String, bytesIndexed: Int64) {
+    public init(
+        scannedCount: Int,
+        currentPath: String,
+        bytesIndexed: Int64,
+        operation: ScanOperation = .enumeratingFiles,
+        detail: String? = nil,
+        directoriesProcessed: Int? = nil,
+        directoriesTotal: Int? = nil
+    ) {
         self.scannedCount = scannedCount
         self.currentPath = currentPath
         self.bytesIndexed = bytesIndexed
+        self.operation = operation
+        self.detail = detail
+        self.directoriesProcessed = directoriesProcessed
+        self.directoriesTotal = directoriesTotal
     }
 }
 

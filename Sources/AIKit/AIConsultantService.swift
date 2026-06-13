@@ -30,6 +30,25 @@ public final class AIConsultantService: @unchecked Sendable {
         try await resolver.respond(to: question, context: context)
     }
 
+    public func streamRespond(
+        to question: String,
+        context: AIChatContext
+    ) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                let stream = await resolver.streamRespond(to: question, context: context)
+                do {
+                    for try await partial in stream {
+                        continuation.yield(partial)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
+
     public func suggestQuestions(context: AIChatContext) async -> [String] {
         await resolver.suggestQuestions(context: context)
     }

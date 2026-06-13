@@ -27,6 +27,7 @@ public final class FileScanner: @unchecked Sendable {
     public func scan(
         mountPath: URL,
         mode: ScanMode = .fast,
+        tieredVolumeScan: Bool = false,
         onProgress: (@Sendable (ScanProgress) -> Void)? = nil,
         isCancelled: (@Sendable () -> Bool)? = nil
     ) throws -> [ScannedFile] {
@@ -34,11 +35,227 @@ public final class FileScanner: @unchecked Sendable {
             throw FileScannerError.mountPathUnavailable(mountPath.path)
         }
 
+        if tieredVolumeScan && mode == .fast {
+            return try scanTieredVolume(
+                mountPath: mountPath,
+                mode: mode,
+                onProgress: onProgress,
+                isCancelled: isCancelled
+            )
+        }
+
+        return try scanEnumerated(
+            mountPath: mountPath,
+            mode: mode,
+            onProgress: onProgress,
+            isCancelled: isCancelled
+        )
+    }
+
+    private func scanTieredVolume(
+        mountPath: URL,
+        mode: ScanMode,
+        onProgress: (@Sendable (ScanProgress) -> Void)?,
+        isCancelled: (@Sendable () -> Bool)?
+    ) throws -> [ScannedFile] {
+        let childNames = (try? fileManager.contentsOfDirectory(atPath: mountPath.path)) ?? []
+        let sortedChildren = childNames.sorted()
+        let directoryChildren = sortedChildren.filter { name in
+            var isDirectory: ObjCBool = false
+            let path = mountPath.appendingPathComponent(name).path
+            return fileManager.fileExists(atPath: path, isDirectory: &isDirectory) && isDirectory.boolValue
+        }
+
+        guard !directoryChildren.isEmpty else {
+            return try scanEnumerated(
+                mountPath: mountPath,
+                mode: mode,
+                onProgress: onProgress,
+                isCancelled: isCancelled
+            )
+        }
+
+        var results: [ScannedFile] = []
+        var scannedCount = 0
+        var indexedBytes: Int64 = 0
+        let total = directoryChildren.count
+
+        reportProgress(
+            scannedCount: scannedCount,
+            currentPath: mountPath.path,
+            indexedBytes: indexedBytes,
+            operation: .preparing,
+            detail: "Mapping \(total.formatted()) top-level folders on \(mountPath.lastPathComponent)",
+            directoriesProcessed: 0,
+            directoriesTotal: total,
+            force: true,
+            onProgress: onProgress
+        )
+
+        let summarizeNames = directoryChildren.filter(VolumeTieredScan.shouldSummarizeTopLevelDirectory(named:))
+        let drillNames = directoryChildren.filter { !VolumeTieredScan.shouldSummarizeTopLevelDirectory(named: $0) }
+
+        if !summarizeNames.isEmpty {
+            let summarizeResults = summarizeTopLevelDirectories(
+                names: summarizeNames,
+                under: mountPath,
+                total: total,
+                processedOffset: 0,
+                scannedCount: scannedCount,
+                indexedBytes: indexedBytes,
+                onProgress: onProgress,
+                isCancelled: isCancelled
+            )
+            results.append(contentsOf: summarizeResults.entries)
+            scannedCount = summarizeResults.scannedCount
+            indexedBytes = summarizeResults.indexedBytes
+        }
+
+        for (offset, name) in drillNames.enumerated() {
+            if isCancelled?() == true {
+                throw FileScannerError.cancelled
+            }
+
+            let childURL = mountPath.appendingPathComponent(name, isDirectory: true)
+            let processed = summarizeNames.count + offset + 1
+            let baseScannedCount = scannedCount
+            let baseIndexedBytes = indexedBytes
+
+            reportProgress(
+                scannedCount: scannedCount,
+                currentPath: childURL.path,
+                indexedBytes: indexedBytes,
+                operation: .enumeratingFiles,
+                detail: "Indexing files in \(name)",
+                directoriesProcessed: processed,
+                directoriesTotal: total,
+                force: true,
+                onProgress: onProgress
+            )
+
+            let childResults = try scanEnumerated(
+                mountPath: childURL,
+                mode: mode,
+                onProgress: { progress in
+                    onProgress?(
+                        ScanProgress(
+                            scannedCount: baseScannedCount + progress.scannedCount,
+                            currentPath: progress.currentPath,
+                            bytesIndexed: baseIndexedBytes + progress.bytesIndexed,
+                            operation: .enumeratingFiles,
+                            detail: "Indexing files in \(name) · \(progress.scannedCount.formatted()) entries",
+                            directoriesProcessed: processed,
+                            directoriesTotal: total
+                        )
+                    )
+                },
+                isCancelled: isCancelled
+            )
+
+            results.append(contentsOf: childResults)
+            scannedCount += childResults.filter { !$0.isDirectory }.count
+            indexedBytes += childResults.reduce(Int64(0)) { $0 + ($1.isDirectory ? 0 : $1.size) }
+        }
+
+        reportProgress(
+            scannedCount: scannedCount,
+            currentPath: mountPath.path,
+            indexedBytes: indexedBytes,
+            operation: .enumeratingFiles,
+            detail: "Finished mapping top-level folders",
+            directoriesProcessed: total,
+            directoriesTotal: total,
+            force: true,
+            onProgress: onProgress
+        )
+
+        return results
+    }
+
+    private struct SummarizeBatchResult {
+        let entries: [ScannedFile]
+        let scannedCount: Int
+        let indexedBytes: Int64
+    }
+
+    private func summarizeTopLevelDirectories(
+        names: [String],
+        under mountPath: URL,
+        total: Int,
+        processedOffset: Int,
+        scannedCount: Int,
+        indexedBytes: Int64,
+        onProgress: (@Sendable (ScanProgress) -> Void)?,
+        isCancelled: (@Sendable () -> Bool)?
+    ) -> SummarizeBatchResult {
+        var entries: [ScannedFile] = []
+        var count = scannedCount
+        var bytes = indexedBytes
+        let lock = NSLock()
+
+        DispatchQueue.concurrentPerform(iterations: names.count) { index in
+            if isCancelled?() == true { return }
+
+            let name = names[index]
+            let childURL = mountPath.appendingPathComponent(name, isDirectory: true)
+            let values = try? childURL.resourceValues(forKeys: [
+                .creationDateKey,
+                .contentModificationDateKey,
+                .contentAccessDateKey,
+            ])
+            let size = FastDirectorySize.sizeOfDirectory(at: childURL.path, fileManager: fileManager)
+            let entry = ScannedFile(
+                path: childURL.path,
+                size: size,
+                createdAt: values?.creationDate,
+                modifiedAt: values?.contentModificationDate,
+                lastAccessed: values?.contentAccessDate,
+                extensionName: nil,
+                isDirectory: false
+            )
+
+            lock.lock()
+            entries.append(entry)
+            count += 1
+            bytes += size
+            let processed = processedOffset + index + 1
+            reportProgress(
+                scannedCount: count,
+                currentPath: childURL.path,
+                indexedBytes: bytes,
+                operation: .sizingDirectory,
+                detail: "Sizing \(name) with disk usage",
+                directoriesProcessed: processed,
+                directoriesTotal: total,
+                force: true,
+                onProgress: onProgress
+            )
+            lock.unlock()
+        }
+
+        return SummarizeBatchResult(entries: entries, scannedCount: count, indexedBytes: bytes)
+    }
+
+    private func scanEnumerated(
+        mountPath: URL,
+        mode: ScanMode,
+        onProgress: (@Sendable (ScanProgress) -> Void)?,
+        isCancelled: (@Sendable () -> Bool)?
+    ) throws -> [ScannedFile] {
         var results: [ScannedFile] = []
         var scannedCount = 0
         var indexedBytes: Int64 = 0
 
         if DirectorySizeOnlyPatterns.shouldProbeForHiddenDirectories(at: mountPath, mode: mode) {
+            reportProgress(
+                scannedCount: scannedCount,
+                currentPath: mountPath.path,
+                indexedBytes: indexedBytes,
+                operation: .probingHidden,
+                detail: "Checking for hidden dependency folders",
+                force: true,
+                onProgress: onProgress
+            )
             appendHiddenSummarizedDirectories(
                 under: mountPath,
                 to: &results,
@@ -98,13 +315,15 @@ public final class FileScanner: @unchecked Sendable {
                         scannedCount: scannedCount,
                         currentPath: item.path,
                         indexedBytes: indexedBytes,
+                        operation: .sizingDirectory,
+                        detail: "Sized app bundle \(item.lastPathComponent)",
                         onProgress: onProgress
                     )
                     continue
                 }
 
                 let name = item.lastPathComponent
-                if DirectorySizeOnlyPatterns.shouldSummarizeDirectory(named: name, mode: mode) {
+                if DirectorySizeOnlyPatterns.shouldSummarizeDirectory(at: item, named: name, mode: mode) {
                     appendAggregateDirectory(
                         at: item,
                         createdAt: values.creationDate,
@@ -119,6 +338,8 @@ public final class FileScanner: @unchecked Sendable {
                         scannedCount: scannedCount,
                         currentPath: item.path,
                         indexedBytes: indexedBytes,
+                        operation: .sizingDirectory,
+                        detail: "Sized \(name) in one step",
                         onProgress: onProgress
                     )
                     continue
@@ -156,11 +377,21 @@ public final class FileScanner: @unchecked Sendable {
                 scannedCount: scannedCount,
                 currentPath: item.path,
                 indexedBytes: indexedBytes,
+                operation: .enumeratingFiles,
+                detail: nil,
                 onProgress: onProgress
             )
         }
 
-        onProgress?(ScanProgress(scannedCount: scannedCount, currentPath: mountPath.path, bytesIndexed: indexedBytes))
+        reportProgress(
+            scannedCount: scannedCount,
+            currentPath: mountPath.path,
+            indexedBytes: indexedBytes,
+            operation: .enumeratingFiles,
+            detail: "Finished indexing \(mountPath.lastPathComponent)",
+            force: true,
+            onProgress: onProgress
+        )
         return results
     }
 
@@ -228,11 +459,45 @@ public final class FileScanner: @unchecked Sendable {
         scannedCount: Int,
         currentPath: String,
         indexedBytes: Int64,
+        operation: ScanOperation,
+        detail: String?,
         onProgress: (@Sendable (ScanProgress) -> Void)?
     ) {
         if scannedCount.isMultiple(of: batchSize) {
-            onProgress?(ScanProgress(scannedCount: scannedCount, currentPath: currentPath, bytesIndexed: indexedBytes))
+            reportProgress(
+                scannedCount: scannedCount,
+                currentPath: currentPath,
+                indexedBytes: indexedBytes,
+                operation: operation,
+                detail: detail,
+                onProgress: onProgress
+            )
         }
+    }
+
+    private func reportProgress(
+        scannedCount: Int,
+        currentPath: String,
+        indexedBytes: Int64,
+        operation: ScanOperation,
+        detail: String? = nil,
+        directoriesProcessed: Int? = nil,
+        directoriesTotal: Int? = nil,
+        force: Bool = false,
+        onProgress: (@Sendable (ScanProgress) -> Void)?
+    ) {
+        guard force || scannedCount.isMultiple(of: batchSize) else { return }
+        onProgress?(
+            ScanProgress(
+                scannedCount: scannedCount,
+                currentPath: currentPath,
+                bytesIndexed: indexedBytes,
+                operation: operation,
+                detail: detail,
+                directoriesProcessed: directoriesProcessed,
+                directoriesTotal: directoriesTotal
+            )
+        )
     }
 }
 
@@ -258,6 +523,11 @@ public final class ScanEngine: @unchecked Sendable {
         let defaultRoot = VolumeScanRoot.effectiveScanRoot(for: volumeRoot)
         let root = (scanRoot ?? defaultRoot).standardizedFileURL
         let isFolderScan = root.path != volumeRoot.path
+        let tieredVolumeScan = VolumeTieredScan.shouldUseTieredScan(
+            at: root,
+            mode: mode,
+            isFolderScan: isFolderScan
+        )
 
         let resourceValues = try volumeRoot.resourceValues(forKeys: [
             .volumeTotalCapacityKey,
@@ -282,14 +552,44 @@ public final class ScanEngine: @unchecked Sendable {
         var scannedFiles = try scanner.scan(
             mountPath: root,
             mode: mode,
+            tieredVolumeScan: tieredVolumeScan,
             onProgress: onProgress,
             isCancelled: isCancelled
+        )
+
+        if isCancelled?() == true {
+            throw FileScannerError.cancelled
+        }
+
+        let gapScannedCount = scannedFiles.filter { !$0.isDirectory }.count
+        let gapIndexedBytes = scannedFiles.reduce(0) { $0 + ($1.isDirectory ? 0 : $1.size) }
+        onProgress?(
+            ScanProgress(
+                scannedCount: gapScannedCount,
+                currentPath: root.path,
+                bytesIndexed: gapIndexedBytes,
+                operation: .fillingGaps,
+                detail: "Measuring folders that could not be fully indexed"
+            )
         )
 
         StorageGapFill.appendGaps(
             scanRoot: root,
             to: &scannedFiles,
-            isCancelled: isCancelled
+            isCancelled: isCancelled,
+            onProgress: { path, processed, total in
+                onProgress?(
+                    ScanProgress(
+                        scannedCount: gapScannedCount,
+                        currentPath: path,
+                        bytesIndexed: gapIndexedBytes,
+                        operation: .fillingGaps,
+                        detail: "Filling coverage gaps (\(processed)/\(total))",
+                        directoriesProcessed: processed,
+                        directoriesTotal: total
+                    )
+                )
+            }
         )
 
         if isCancelled?() == true {

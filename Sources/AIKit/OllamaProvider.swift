@@ -40,7 +40,18 @@ public struct OllamaProvider: GenerativeAIProvider, Sendable {
 
         User question: \(question)
         """
-        return try await generate(prompt: prompt)
+        return try await generate(prompt: prompt, stream: false)
+    }
+
+    public func streamRespond(to question: String, context: AIChatContext) -> AsyncThrowingStream<String, Error> {
+        let prompt = """
+        \(StorageContextFormatter.chatInstructions())
+
+        \(StorageContextFormatter.format(context))
+
+        User question: \(question)
+        """
+        return streamGenerate(prompt: prompt)
     }
 
     public func suggestQuestions(context: AIChatContext) async -> [String] {
@@ -52,7 +63,7 @@ public struct OllamaProvider: GenerativeAIProvider, Sendable {
         Return one question per line with no numbering.
         """
         do {
-            let response = try await generate(prompt: prompt)
+            let response = try await generate(prompt: prompt, stream: false)
             let parsed = response
                 .split(whereSeparator: \.isNewline)
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -69,30 +80,80 @@ public struct OllamaProvider: GenerativeAIProvider, Sendable {
 
         \(StorageContextFormatter.format(context))
         """
-        let response = try await generate(prompt: prompt)
+        let response = try await generate(prompt: prompt, stream: false)
         return response.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : response
     }
 
-    private func generate(prompt: String) async throws -> String {
-        var request = URLRequest(url: baseURL.appendingPathComponent("api/generate"))
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: [
-            "model": model,
-            "prompt": prompt,
-            "stream": false,
-        ])
-
-        let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw URLError(.badServerResponse)
+    private func generate(prompt: String, stream: Bool) async throws -> String {
+        var accumulated = ""
+        for try await partial in streamGenerate(prompt: prompt, liveStream: stream) {
+            accumulated = partial
         }
-
-        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        let text = json?["response"] as? String ?? ""
-        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        guard !accumulated.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw AIConsultantError.emptyResponse
         }
-        return text
+        return accumulated
+    }
+
+    private func streamGenerate(prompt: String, liveStream: Bool = true) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                do {
+                    var request = URLRequest(url: baseURL.appendingPathComponent("api/generate"))
+                    request.httpMethod = "POST"
+                    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                    request.httpBody = try JSONSerialization.data(withJSONObject: [
+                        "model": model,
+                        "prompt": prompt,
+                        "stream": liveStream,
+                    ])
+
+                    if liveStream {
+                        let (bytes, response) = try await session.bytes(for: request)
+                        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                            throw URLError(.badServerResponse)
+                        }
+
+                        var accumulated = ""
+                        for try await line in bytes.lines {
+                            if let token = Self.parseOllamaStreamLine(line) {
+                                accumulated += token
+                                continuation.yield(accumulated)
+                            }
+                        }
+                        guard !accumulated.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                            throw AIConsultantError.emptyResponse
+                        }
+                    } else {
+                        let (data, response) = try await session.data(for: request)
+                        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                            throw URLError(.badServerResponse)
+                        }
+                        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                        let text = json?["response"] as? String ?? ""
+                        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                            throw AIConsultantError.emptyResponse
+                        }
+                        for try await partial in StreamingText.simulatedReveal(text) {
+                            continuation.yield(partial)
+                        }
+                    }
+
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
+
+    private static func parseOllamaStreamLine(_ line: String) -> String? {
+        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              let data = trimmed.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        return json["response"] as? String
     }
 }

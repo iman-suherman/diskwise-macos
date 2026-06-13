@@ -78,6 +78,39 @@ public actor AIProviderResolver {
         }
     }
 
+    public func streamRespond(
+        to question: String,
+        context: AIChatContext
+    ) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                let provider = await resolveActiveProvider()
+                let stream = provider.streamRespond(to: question, context: context)
+                var lastPartial = ""
+
+                do {
+                    for try await partial in stream {
+                        lastPartial = partial
+                        continuation.yield(partial)
+                    }
+                    continuation.finish()
+                } catch {
+                    if provider.kind != .ruleBased {
+                        let fallback = RuleBasedChatEngine.answer(question: question, context: context)
+                        if lastPartial.isEmpty {
+                            for try await partial in StreamingText.simulatedReveal(fallback) {
+                                continuation.yield(partial)
+                            }
+                            continuation.finish()
+                            return
+                        }
+                    }
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
+
     public func suggestQuestions(context: AIChatContext) async -> [String] {
         let provider = await resolveActiveProvider()
         return await provider.suggestQuestions(context: context)

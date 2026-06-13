@@ -17,7 +17,7 @@ public enum ScanMode: String, Sendable, CaseIterable, Identifiable {
     public var detail: String {
         switch self {
         case .fast:
-            return "Sizes dependency folders in one step — usually under 5 minutes."
+            return "Sizes system folders in one step, then indexes your user files — usually under 5 minutes."
         case .deep:
             return "Indexes every file individually — typically 10–25 minutes on large drives."
         }
