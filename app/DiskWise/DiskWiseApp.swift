@@ -129,61 +129,22 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            NavigationSplitView {
-                sidebar
-                    .navigationTitle("DiskWise")
-                    .navigationSplitViewColumnWidth(min: 260, ideal: 280, max: 340)
-            } detail: {
-                detailContent
-                    .toolbar {
-                        ToolbarItem(placement: .principal) {
-                            Picker("View", selection: $viewModel.selectedPane) {
-                                Label {
-                                    Text("Disk")
-                                } icon: {
-                                    Image(systemName: "internaldrive")
-                                }
-                                .tag(DetailPane.overview)
-
-                                Label {
-                                    Text(DetailPane.maintenance.title)
-                                } icon: {
-                                    Image(systemName: DetailPane.maintenance.icon)
-                                }
-                                .tag(DetailPane.maintenance)
-
-                                Label {
-                                    HStack(spacing: 6) {
-                                        Text(DetailPane.duplicates.title)
-                                        if viewModel.duplicateGroups.count > 0 {
-                                            Text("\(viewModel.duplicateGroups.count)")
-                                                .font(.caption2.weight(.bold))
-                                                .padding(.horizontal, 6)
-                                                .padding(.vertical, 2)
-                                                .background(Color.orange.opacity(0.9), in: Capsule())
-                                                .foregroundStyle(.white)
-                                        }
-                                    }
-                                } icon: {
-                                    Image(systemName: DetailPane.duplicates.icon)
-                                }
-                                .tag(DetailPane.duplicates)
+            Group {
+                if viewModel.isMainContentReady {
+                    NavigationSplitView {
+                        sidebar
+                            .navigationTitle("DiskWise")
+                            .navigationSplitViewColumnWidth(min: 260, ideal: 280, max: 340)
+                    } detail: {
+                        detailContent
+                            .toolbar {
+                                launchToolbarContent
                             }
-                            .pickerStyle(.segmented)
-                            .frame(maxWidth: 420)
-                        }
-
-                        ToolbarItem(placement: .status) {
-                            StatusBadge(
-                                message: viewModel.toolbarStatusMessage,
-                                kind: viewModel.statusKind,
-                                isAnimating: viewModel.isScanning || viewModel.isFindingDuplicates || viewModel.isAnalyzing,
-                                onRefresh: viewModel.statusKind == .error && viewModel.statusMessage.hasPrefix("Scan failed")
-                                    ? { viewModel.refreshFromError() }
-                                    : nil
-                            )
-                        }
                     }
+                } else {
+                    Color(nsColor: .windowBackgroundColor)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
             .blur(radius: viewModel.isStartingUp || viewModel.isRebuildingIndex || viewModel.showPythonSetupPrompt || viewModel.showFullDiskAccessPrompt || viewModel.showWhatsNewTour || viewModel.showIndexRebuildPrompt || viewModel.showSavedScanPrompt ? 8 : 0)
             .allowsHitTesting(!viewModel.isStartingUp && !viewModel.isRebuildingIndex && !viewModel.showPythonSetupPrompt && !viewModel.showFullDiskAccessPrompt && !viewModel.showWhatsNewTour && !viewModel.showIndexRebuildPrompt && !viewModel.showSavedScanPrompt)
@@ -192,9 +153,13 @@ struct ContentView: View {
                 StartupSplashOverlay(
                     version: AppSettings.currentAppVersion,
                     isPostUpgrade: viewModel.isPostUpgradeStartup,
+                    prewarmsSavedScan: viewModel.startupPrewarmsSavedScan,
+                    includesAIInsights: viewModel.startupIncludesAIInsights,
                     currentMessage: viewModel.startupMessage,
                     completedSteps: viewModel.startupCompletedSteps,
-                    activeStep: viewModel.startupActiveStep
+                    activeStep: viewModel.startupActiveStep,
+                    showSkipPrewarm: viewModel.showStartupPrewarmSkip,
+                    onSkipPrewarm: { viewModel.cancelStartupPrewarm() }
                 )
             }
 
@@ -287,11 +252,6 @@ struct ContentView: View {
             viewModel.checkPythonOnAppActivation()
             viewModel.checkForUpdatesWhenEligible()
         }
-        .onChange(of: viewModel.isBlockingLaunchFlow) { _, isBlocking in
-            if !isBlocking {
-                viewModel.schedulePostLaunchWork()
-            }
-        }
         .sheet(isPresented: $viewModel.showActivityLog) {
             ActivityLogSheet(activityLog: viewModel.activityLog)
         }
@@ -301,6 +261,57 @@ struct ContentView: View {
         }
         .sheet(isPresented: $appSettings.showMenuBarMonitorInstructions) {
             MenuBarMonitorInstructionSheet()
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var launchToolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            Picker("View", selection: $viewModel.selectedPane) {
+                Label {
+                    Text("Disk")
+                } icon: {
+                    Image(systemName: "internaldrive")
+                }
+                .tag(DetailPane.overview)
+
+                Label {
+                    Text(DetailPane.maintenance.title)
+                } icon: {
+                    Image(systemName: DetailPane.maintenance.icon)
+                }
+                .tag(DetailPane.maintenance)
+
+                Label {
+                    HStack(spacing: 6) {
+                        Text(DetailPane.duplicates.title)
+                        if viewModel.duplicateGroups.count > 0 {
+                            Text("\(viewModel.duplicateGroups.count)")
+                                .font(.caption2.weight(.bold))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.orange.opacity(0.9), in: Capsule())
+                                .foregroundStyle(.white)
+                        }
+                    }
+                } icon: {
+                    Image(systemName: DetailPane.duplicates.icon)
+                }
+                .tag(DetailPane.duplicates)
+            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 420)
+        }
+
+        ToolbarItem(placement: .status) {
+            StatusBadge(
+                message: viewModel.toolbarStatusMessage,
+                kind: viewModel.statusKind,
+                isAnimating: viewModel.isScanning || viewModel.isFindingDuplicates || viewModel.isAnalyzing,
+                onRefresh: viewModel.statusKind == .error && viewModel.statusMessage.hasPrefix("Scan failed")
+                    ? { viewModel.refreshFromError() }
+                    : nil
+            )
         }
     }
 

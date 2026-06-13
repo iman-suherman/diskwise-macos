@@ -52,11 +52,11 @@ enum WhatsNewContent {
             id: "startup",
             icon: "hare.fill",
             title: "Snappier first launch after updating",
-            message: "DiskWise now finishes loading your saved scan data before showing What's New, so Continue should feel instant.",
+            message: "DiskWise now finishes all heavy startup work on the splash screen before What's New appears, so Continue should feel instant.",
             bullets: [
-                "Saved results and recommendations preload during the startup splash",
-                "Heavy analysis no longer runs while the What's New overlay is open",
-                "Continue goes straight to your drives without waiting on the database",
+                "Saved scans, AI provider checks, and suggestions preload with visible progress steps",
+                "The main window stays empty until you dismiss What's New — no tabs building behind the overlay",
+                "Skip loading a saved scan after 3 seconds and finish opening in the background",
             ]
         ),
     ]

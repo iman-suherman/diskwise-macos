@@ -164,6 +164,10 @@ final class AppViewModel: ObservableObject {
     @Published var maintenanceStatusMessage = ""
     @Published var optimizationResults: [OptimizationResult] = []
     @Published var isStartingUp = true
+    @Published private(set) var isMainContentReady = false
+    @Published private(set) var startupPrewarmsSavedScan = false
+    @Published private(set) var startupIncludesAIInsights = false
+    @Published var showStartupPrewarmSkip = false
     @Published var startupMessage = "Preparing DiskWise…"
     @Published var startupCompletedSteps: Set<StartupStep> = []
     @Published var startupActiveStep: StartupStep?
@@ -189,6 +193,8 @@ final class AppViewModel: ObservableObject {
     private var aiChatSessionID = UUID()
     private var scanStartTime: Date?
     private var lastDuplicateGroupsRefreshCount = 0
+    private var prewarmTask: Task<Void, Never>?
+    private var prewarmSkipTimerTask: Task<Void, Never>?
     private var launchDataPrewarmed = false
     private var scanEngine: ScanEngine!
     private var duplicateEngine: DuplicateEngine!
@@ -213,25 +219,30 @@ final class AppViewModel: ObservableObject {
 
     func schedulePostUpgradePresentation() {
         guard !showFullDiskAccessPrompt, !showPythonSetupPrompt, !showIndexRebuildPrompt else { return }
-
-        if appSettings.shouldShowWhatsNew {
-            presentWhatsNewIfNeeded()
-        } else if !isBlockingLaunchFlow {
-            presentSavedScanPromptIfNeeded()
-            schedulePostLaunchWork()
-        }
+        completeLaunchFlowIfReady()
     }
 
     /// Runs at most once per day while the main window is open and the app is in the foreground.
     func checkForUpdatesWhenEligible() {
-        guard !isBlockingLaunchFlow else { return }
+        guard isMainContentReady, !isBlockingLaunchFlow else { return }
         SparkleUpdaterController.shared.checkForUpdatesInForegroundIfNeeded()
     }
 
-    /// Deferred work after startup overlays (What's New, FDA) so the main UI stays responsive.
+    /// Deferred work after the main UI is visible — never while launch overlays are up.
     func schedulePostLaunchWork() {
-        guard !isBlockingLaunchFlow else { return }
+        guard isMainContentReady, !isBlockingLaunchFlow else { return }
         refreshAnalysisReportInBackground()
+    }
+
+    private func completeLaunchFlowIfReady() {
+        guard !isBlockingLaunchFlow else { return }
+        guard !appSettings.shouldShowWhatsNew else {
+            presentWhatsNewIfNeeded()
+            return
+        }
+        isMainContentReady = true
+        presentSavedScanPromptIfNeeded()
+        schedulePostLaunchWork()
     }
 
     init() {
@@ -259,6 +270,8 @@ final class AppViewModel: ObservableObject {
     private func performStartup() async {
         isStartingUp = true
         startupCompletedSteps = []
+        startupPrewarmsSavedScan = false
+        startupIncludesAIInsights = false
         startupMessage = isPostUpgradeStartup
             ? "Preparing DiskWise \(AppSettings.currentAppVersion) after update…"
             : "Preparing DiskWise…"
@@ -335,26 +348,54 @@ final class AppViewModel: ObservableObject {
         duplicateGroups = []
         analysisReport = nil
 
-        if isPostUpgradeStartup, selectedDiskID != nil {
-            startupMessage = "Loading saved scan results…"
+        let shouldPrewarmSavedScan = selectedDiskID.map { diskID in
+            ((try? openedDatabase.indexedFileCount(forDiskID: diskID)) ?? 0) > 0
+        } ?? false
+
+        if shouldPrewarmSavedScan {
+            startupPrewarmsSavedScan = true
+            beginStartupStep(.savedScan, message: "Loading saved scan results…")
             await Task.yield()
-            await prewarmLaunchData()
+            prewarmTask = Task { @MainActor in
+                await prewarmLaunchData()
+            }
+            await prewarmTask?.value
+            prewarmTask = nil
+            stopPrewarmSkipTimer()
+            completeStartupStep(.savedScan)
+        }
+
+        beginStartupStep(.aiProvider, message: "Checking AI provider…")
+        await Task.yield()
+        refreshAIConfigurationSync()
+        await refreshAIAvailability()
+        completeStartupStep(.aiProvider)
+
+        if analysisReport != nil {
+            startupIncludesAIInsights = true
+            beginStartupStep(.aiInsights, message: "Preparing AI suggestions…")
+            await Task.yield()
+            await refreshAIInsightsAwait()
+            completeStartupStep(.aiInsights)
         }
 
         startupActiveStep = nil
         startupMessage = "Ready"
         isStartingUp = false
 
-        refreshAIConfiguration()
-        Task { await refreshAIAvailability() }
-
         presentIndexRebuildPromptIfNeeded()
         presentPythonSetupPromptIfNeeded()
         if !showIndexRebuildPrompt, !showPythonSetupPrompt {
             presentFullDiskAccessPromptIfNeeded()
         }
-        if !isBlockingLaunchFlow {
-            schedulePostUpgradePresentation()
+
+        if appSettings.shouldShowWhatsNew,
+           !showFullDiskAccessPrompt,
+           !showPythonSetupPrompt,
+           !showIndexRebuildPrompt {
+            presentWhatsNewIfNeeded()
+        } else if !isBlockingLaunchFlow {
+            completeLaunchFlowIfReady()
         }
     }
 
@@ -999,12 +1040,9 @@ final class AppViewModel: ObservableObject {
     func finishWhatsNewTour() {
         appSettings.markCurrentReleaseSeen()
         showWhatsNewTour = false
-        if !launchDataPrewarmed {
-            schedulePostLaunchWork()
-        } else {
-            Task { await refreshAIAvailability() }
-        }
+        isMainContentReady = true
         presentSavedScanPromptIfNeeded()
+        schedulePostLaunchWork()
     }
 
     func stopPermissionPollingIfNeeded() {
@@ -1249,23 +1287,51 @@ final class AppViewModel: ObservableObject {
         }
     }
 
+    func cancelStartupPrewarm() {
+        prewarmTask?.cancel()
+        prewarmTask = nil
+        stopPrewarmSkipTimer()
+        startupMessage = "Opening DiskWise…"
+    }
+
+    private func startPrewarmSkipTimer() {
+        stopPrewarmSkipTimer()
+        showStartupPrewarmSkip = false
+        prewarmSkipTimerTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled else { return }
+            showStartupPrewarmSkip = true
+        }
+    }
+
+    private func stopPrewarmSkipTimer() {
+        prewarmSkipTimerTask?.cancel()
+        prewarmSkipTimerTask = nil
+        showStartupPrewarmSkip = false
+    }
+
     private func prewarmLaunchData() async {
         guard let diskID = selectedDiskID, let database, let duplicateEngine, let engine = aiEngine else { return }
         guard !launchDataPrewarmed else { return }
 
+        startPrewarmSkipTimer()
+        defer { stopPrewarmSkipTimer() }
+
         let threshold = Calendar.current.date(byAdding: .year, value: -2, to: Date())!
         let fileLimit = appSettings.analysisFileLimit
 
-        let (cachedSnapshot, report) = await Task.detached(priority: .userInitiated) {
+        startupMessage = "Loading storage overview…"
+        await Task.yield()
+
+        let cachedSnapshot = await Task.detached(priority: .userInitiated) {
             let overview = try? database.storageOverview(forDiskID: diskID, oldFileThreshold: threshold)
             let topConsumers = (try? database.topConsumers(forDiskID: diskID, limit: 8)) ?? []
             let duplicateGroups = (try? duplicateEngine.loadGroups(forDiskID: diskID)) ?? []
-            let report = try? engine.analyze(diskID: diskID, fileLimit: fileLimit)
-            return (CachedScanSnapshot(
+            return CachedScanSnapshot(
                 overview: overview,
                 topConsumers: topConsumers,
                 duplicateGroups: duplicateGroups
-            ), report)
+            )
         }.value
 
         guard !Task.isCancelled else { return }
@@ -1273,9 +1339,44 @@ final class AppViewModel: ObservableObject {
         overview = cachedSnapshot.overview
         topConsumers = cachedSnapshot.topConsumers
         duplicateGroups = cachedSnapshot.duplicateGroups
-        analysisReport = report
-        launchDataPrewarmed = true
-        refreshAIInsights(for: report)
+        launchDataPrewarmed = cachedSnapshot.overview != nil
+
+        startupMessage = "Analyzing recommendations…"
+        await Task.yield()
+
+        guard !Task.isCancelled else { return }
+
+        let analysisTask = Task.detached(priority: .utility) {
+            try? engine.analyze(diskID: diskID, fileLimit: fileLimit)
+        }
+
+        enum PrewarmAnalysisOutcome: Sendable {
+            case completed(AnalysisReport?)
+            case cancelled
+        }
+
+        await withTaskGroup(of: PrewarmAnalysisOutcome.self) { group in
+            group.addTask {
+                let report = await analysisTask.value
+                return .completed(report)
+            }
+            group.addTask {
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .milliseconds(200))
+                }
+                return .cancelled
+            }
+
+            guard let first = await group.next() else { return }
+            group.cancelAll()
+
+            switch first {
+            case .completed(let report) where !Task.isCancelled:
+                analysisReport = report
+            case .cancelled, .completed:
+                analysisTask.cancel()
+            }
+        }
     }
 
     func refreshCachedScanResults() {
@@ -1344,7 +1445,7 @@ final class AppViewModel: ObservableObject {
             analysisReport = nil
             return
         }
-        guard !isBlockingLaunchFlow else { return }
+        guard isMainContentReady, !isBlockingLaunchFlow else { return }
         if launchDataPrewarmed, analysisReport != nil { return }
 
         analysisRefreshTask?.cancel()
@@ -1363,10 +1464,26 @@ final class AppViewModel: ObservableObject {
     }
 
     func refreshAIConfiguration() {
+        refreshAIConfigurationSync()
+        Task { await refreshAIAvailability() }
+    }
+
+    private func refreshAIConfigurationSync() {
         let configuration = appSettings.aiProviderConfiguration
         aiEngine?.updateConsultantConfiguration(configuration)
         aiConsultant?.updateConfiguration(configuration)
-        Task { await refreshAIAvailability() }
+    }
+
+    private func refreshAIInsightsAwait() async {
+        guard let report = analysisReport, let consultant = aiConsultant else {
+            aiAnalysisSummary = ""
+            aiSuggestedQuestions = []
+            return
+        }
+
+        let context = AIChatContext(report: report, topConsumers: topConsumers)
+        aiSuggestedQuestions = await consultant.suggestQuestions(context: context)
+        aiAnalysisSummary = await consultant.enrichAnalysis(context: context) ?? ""
     }
 
     func refreshAIAvailability() async {

@@ -1,12 +1,12 @@
 {
-  "summary": "What's New and Continue after updating no longer stall — saved scan data preloads during startup.",
+  "summary": "What's New opens instantly — heavy startup work runs on the splash screen with visible progress.",
   "introduced": [],
   "changed": [
-    "Post-upgrade startup preloads saved scan results and recommendations before the What's New overlay appears",
-    "Background analysis and cache refresh are deferred while What's New or the saved-scan prompt is visible",
-    "Detailed What's New content for version 0.5.4 documents scan tabs, incremental caching, and menu bar process names"
+    "Startup splash shows step-by-step progress for loading saved scans, checking the AI provider, and preparing suggestions",
+    "Main window stays empty until What's New is dismissed so tabs and charts do not build behind the overlay",
+    "Skip loading saved scan after 3 seconds without blocking the rest of startup"
   ],
   "fixed": [
-    "What's New and Continue after updating no longer beach-ball while storage analysis runs on the main flow"
+    "What's New and Continue no longer beach-ball — analysis, AI refresh, and UI initialization moved off the overlay path"
   ]
 }

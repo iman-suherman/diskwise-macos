@@ -4,9 +4,21 @@ import SwiftUI
 struct StartupSplashOverlay: View {
     let version: String
     let isPostUpgrade: Bool
+    let prewarmsSavedScan: Bool
+    let includesAIInsights: Bool
     let currentMessage: String
     let completedSteps: Set<StartupStep>
     let activeStep: StartupStep?
+    var showSkipPrewarm = false
+    var onSkipPrewarm: (() -> Void)?
+
+    private var visibleSteps: [StartupStep] {
+        StartupStep.visibleSteps(
+            isPostUpgrade: isPostUpgrade,
+            prewarmSavedScan: prewarmsSavedScan,
+            includeAIInsights: includesAIInsights
+        )
+    }
 
     var body: some View {
         ZStack {
@@ -44,12 +56,27 @@ struct StartupSplashOverlay: View {
                     .animation(.easeInOut(duration: 0.2), value: currentMessage)
 
                 VStack(alignment: .leading, spacing: 10) {
-                    ForEach(StartupStep.allCases) { step in
+                    ForEach(visibleSteps) { step in
                         startupStepRow(step)
                     }
                 }
                 .frame(maxWidth: 360, alignment: .leading)
                 .padding(.top, 8)
+
+                if showSkipPrewarm, let onSkipPrewarm {
+                    Button("Skip loading saved scan") {
+                        onSkipPrewarm()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .padding(.top, 4)
+
+                    Text("DiskWise will open now and finish loading in the background.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 360)
+                }
             }
             .padding(32)
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
@@ -97,8 +124,23 @@ enum StartupStep: String, CaseIterable, Identifiable {
     case drives
     case permissions
     case python
+    case savedScan
+    case aiProvider
+    case aiInsights
 
     var id: String { rawValue }
+
+    static func visibleSteps(isPostUpgrade: Bool, prewarmSavedScan: Bool, includeAIInsights: Bool) -> [StartupStep] {
+        var steps: [StartupStep] = [.database, .drives, .permissions, .python]
+        if prewarmSavedScan {
+            steps.append(.savedScan)
+        }
+        steps.append(.aiProvider)
+        if includeAIInsights {
+            steps.append(.aiInsights)
+        }
+        return steps
+    }
 
     var title: String {
         switch self {
@@ -106,6 +148,9 @@ enum StartupStep: String, CaseIterable, Identifiable {
         case .drives: return "Discover drives"
         case .permissions: return "Check permissions"
         case .python: return "Check Python scanner"
+        case .savedScan: return "Load saved scan"
+        case .aiProvider: return "Check AI provider"
+        case .aiInsights: return "Prepare AI suggestions"
         }
     }
 
@@ -115,6 +160,9 @@ enum StartupStep: String, CaseIterable, Identifiable {
         case .drives: return "externaldrive"
         case .permissions: return "lock.shield"
         case .python: return "terminal"
+        case .savedScan: return "chart.pie"
+        case .aiProvider: return "sparkles"
+        case .aiInsights: return "text.bubble"
         }
     }
 }
