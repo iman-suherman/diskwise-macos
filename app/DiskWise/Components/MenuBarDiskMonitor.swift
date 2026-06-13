@@ -4,7 +4,18 @@ import SwiftUI
 
 @MainActor
 final class SystemVolumeMonitor: ObservableObject {
-    @Published private(set) var systemVolume: MountedVolume?
+    static let shared = SystemVolumeMonitor()
+
+    @Published private(set) var volumes: [MountedVolume] = []
+
+    var systemVolume: MountedVolume? {
+        volumes.first(where: { VolumeDiscovery.isSystemVolume(mountPath: $0.mountPath) })
+            ?? volumes.first(where: \.isInternal)
+    }
+
+    func volume(for mountPath: String) -> MountedVolume? {
+        volumes.first { $0.mountPath == mountPath }
+    }
 
     private var refreshTask: Task<Void, Never>?
     private var observers: [NSObjectProtocol] = []
@@ -22,9 +33,16 @@ final class SystemVolumeMonitor: ObservableObject {
     }
 
     func refresh() {
-        let volumes = VolumeDiscovery.mountedVolumes()
-        systemVolume = volumes.first(where: { VolumeDiscovery.isSystemVolume(mountPath: $0.mountPath) })
-            ?? volumes.first(where: \.isInternal)
+        volumes = VolumeDiscovery.mountedVolumes()
+        pruneUnavailableMenuBarVolumes()
+    }
+
+    private func pruneUnavailableMenuBarVolumes() {
+        let settings = AppSettings.shared
+        let availablePaths = Set(volumes.map(\.mountPath))
+        let stalePaths = settings.menuBarFreeSpaceVolumePaths.subtracting(availablePaths)
+        guard !stalePaths.isEmpty else { return }
+        settings.menuBarFreeSpaceVolumePaths.subtract(stalePaths)
     }
 
     private func refreshInterval(for volume: MountedVolume?) -> Duration {
@@ -94,17 +112,48 @@ enum MenuBarDiskThresholds {
     }
 }
 
-enum MenuBarDisplayMode {
-    case percentage
-    case freeGB
+enum MenuBarFormatters {
+    static let bytes: ByteCountFormatter = {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter
+    }()
+
+    static func gigabytes(_ bytes: Int64) -> String {
+        let gigabytes = Double(bytes) / 1_000_000_000
+        return String(format: "%.2f GB", gigabytes)
+    }
+
+    static func compactFreeSpace(_ bytes: Int64) -> String {
+        let gigabytes = Double(bytes) / 1_000_000_000
+        if gigabytes >= 1000 {
+            let terabytes = gigabytes / 1000
+            if terabytes >= 10 {
+                return String(format: "%.0fTB", terabytes)
+            }
+            return String(format: "%.1fTB", terabytes)
+        }
+        if gigabytes >= 10 {
+            return String(format: "%.0fGB", gigabytes)
+        }
+        return String(format: "%.1fGB", gigabytes)
+    }
+
+    static func menuBarShortVolumeName(_ volumeName: String) -> String {
+        volumeName.split(separator: " ").last.map(String.init) ?? volumeName
+    }
+
+    static func menuBarFreeSpaceLabel(for volume: MountedVolume) -> String {
+        let shortName = menuBarShortVolumeName(volume.name)
+        return "\(shortName) \(compactFreeSpace(volume.freeSize))"
+    }
 }
 
-struct MenuBarStatusLabel: View {
-    let volume: MountedVolume?
-    let mode: MenuBarDisplayMode
+struct MenuBarVolumeFreeSpaceLabel: View {
+    let volume: MountedVolume
 
     var body: some View {
-        Text(labelText)
+        Text(MenuBarFormatters.menuBarFreeSpaceLabel(for: volume))
             .font(.system(size: 12, weight: .semibold, design: .rounded))
             .monospacedDigit()
             .foregroundStyle(statusColor)
@@ -113,46 +162,66 @@ struct MenuBarStatusLabel: View {
     }
 
     private var freeFraction: Double {
-        guard let volume else { return 0 }
-        return max(0, min(1, 1 - volume.usageFraction))
-    }
-
-    private var labelText: String {
-        guard let volume else { return "—" }
-        switch mode {
-        case .percentage:
-            return String(format: "%.0f%%", freeFraction * 100)
-        case .freeGB:
-            return MenuBarFormatters.compactFreeGigabytes(volume.freeSize)
-        }
+        max(0, min(1, 1 - volume.usageFraction))
     }
 
     private var statusColor: Color {
-        guard let volume else { return .secondary }
-        return MenuBarDiskThresholds.statusColor(
+        MenuBarDiskThresholds.statusColor(
             freeSize: volume.freeSize,
             freeFraction: freeFraction
         )
     }
 
     private var accessibilityLabel: String {
-        guard let volume else { return "Disk space unavailable" }
-        let freePercent = Int((freeFraction * 100).rounded())
-        switch mode {
-        case .percentage:
-            return "\(volume.name), \(freePercent) percent free"
-        case .freeGB:
-            return "\(volume.name), \(MenuBarFormatters.compactFreeGigabytes(volume.freeSize)) free"
+        "\(volume.name), \(MenuBarFormatters.compactFreeSpace(volume.freeSize)) free"
+    }
+}
+
+struct MenuBarVolumeFreeSpaceLabelView: View {
+    @ObservedObject var monitor: SystemVolumeMonitor
+    let mountPath: String
+
+    var body: some View {
+        if let volume = monitor.volume(for: mountPath) {
+            MenuBarVolumeFreeSpaceLabel(volume: volume)
+        } else {
+            Text("—")
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundStyle(.secondary)
         }
     }
 }
 
-struct MenuBarStatusLabelView: View {
-    @ObservedObject var monitor: SystemVolumeMonitor
-    let mode: MenuBarDisplayMode
+struct MenuBarVolumeToggleSection: View {
+    @ObservedObject var settings: AppSettings
+    let volumes: [MountedVolume]
 
     var body: some View {
-        MenuBarStatusLabel(volume: monitor.systemVolume, mode: mode)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Show free space in menu bar")
+                .font(.subheadline.weight(.semibold))
+
+            if volumes.isEmpty {
+                Text("No drives detected")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(volumes) { volume in
+                    Toggle(
+                        volumeToggleLabel(volume),
+                        isOn: Binding(
+                            get: { settings.isMenuBarFreeSpaceVisible(for: volume.mountPath) },
+                            set: { settings.setMenuBarFreeSpaceVisible(for: volume.mountPath, visible: $0) }
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    private func volumeToggleLabel(_ volume: MountedVolume) -> String {
+        let kind = volume.isInternal ? "Internal" : "External"
+        return "\(volume.name) (\(kind))"
     }
 }
 
@@ -215,20 +284,9 @@ struct MenuBarPopoverContent: View {
                 Text("Menu bar display")
                     .font(.subheadline.weight(.semibold))
 
-                Toggle(
-                    "Show percentage",
-                    isOn: Binding(
-                        get: { settings.showMenuBarDiskPercentage },
-                        set: { settings.setMenuBarDiskPercentageVisible($0) }
-                    )
-                )
-
-                Toggle(
-                    "Show free space (GB)",
-                    isOn: Binding(
-                        get: { settings.showMenuBarDiskFreeGB },
-                        set: { settings.setMenuBarDiskFreeGBVisible($0) }
-                    )
+                MenuBarVolumeToggleSection(
+                    settings: settings,
+                    volumes: monitor.volumes
                 )
 
                 Toggle(
@@ -360,30 +418,6 @@ struct MenuBarPopoverContent: View {
     }
 }
 
-enum MenuBarFormatters {
-    static let bytes: ByteCountFormatter = {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return formatter
-    }()
-
-    static func gigabytes(_ bytes: Int64) -> String {
-        let gigabytes = Double(bytes) / 1_000_000_000
-        return String(format: "%.2f GB", gigabytes)
-    }
-
-    static func compactFreeGigabytes(_ bytes: Int64) -> String {
-        let gigabytes = Double(bytes) / 1_000_000_000
-        if gigabytes >= 100 {
-            return String(format: "%.0f GB", gigabytes)
-        }
-        if gigabytes >= 10 {
-            return String(format: "%.0f GB", gigabytes)
-        }
-        return String(format: "%.1f GB", gigabytes)
-    }
-}
-
 final class MenuBarClickableStatusView: NSView {
     var onClick: (() -> Void)?
 
@@ -401,9 +435,8 @@ final class MenuBarClickableStatusView: NSView {
 final class MenuBarStatusItemController: NSObject {
     static let shared = MenuBarStatusItemController()
 
-    private let monitor = SystemVolumeMonitor()
-    private var percentageSlot: MenuBarStatusSlot?
-    private var freeGBSlot: MenuBarStatusSlot?
+    private let monitor = SystemVolumeMonitor.shared
+    private var volumeSlots: [String: MenuBarStatusSlot] = [:]
     private var popover: NSPopover?
 
     private struct MenuBarStatusSlot {
@@ -415,48 +448,36 @@ final class MenuBarStatusItemController: NSObject {
         super.init()
     }
 
-    func syncVisibility(showPercentage: Bool, showFreeGB: Bool) {
-        syncSlot(
-            slot: &percentageSlot,
-            visible: showPercentage,
-            mode: .percentage,
-            width: 44
-        )
-        syncSlot(
-            slot: &freeGBSlot,
-            visible: showFreeGB,
-            mode: .freeGB,
-            width: 58
-        )
+    func syncFreeSpaceVolumes(enabledPaths: Set<String>) {
+        let sortedPaths = enabledPaths.sorted()
+        for (mountPath, slot) in volumeSlots where !enabledPaths.contains(mountPath) {
+            NSStatusBar.system.removeStatusItem(slot.statusItem)
+            volumeSlots.removeValue(forKey: mountPath)
+        }
 
-        if !showPercentage && !showFreeGB {
+        for mountPath in sortedPaths {
+            guard monitor.volume(for: mountPath) != nil else { continue }
+            if volumeSlots[mountPath] == nil {
+                volumeSlots[mountPath] = makeVolumeSlot(mountPath: mountPath)
+            }
+        }
+
+        if enabledPaths.isEmpty {
             popover?.close()
             popover = nil
         }
     }
 
-    private func syncSlot(
-        slot: inout MenuBarStatusSlot?,
-        visible: Bool,
-        mode: MenuBarDisplayMode,
-        width: CGFloat
-    ) {
-        if visible {
-            if slot == nil {
-                slot = makeSlot(mode: mode, width: width)
-            }
-        } else if let existing = slot {
-            NSStatusBar.system.removeStatusItem(existing.statusItem)
-            slot = nil
-        }
-    }
-
-    private func makeSlot(mode: MenuBarDisplayMode, width: CGFloat) -> MenuBarStatusSlot {
+    private func makeVolumeSlot(mountPath: String) -> MenuBarStatusSlot {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        let hostingView = NSHostingView(
-            rootView: MenuBarStatusLabelView(monitor: monitor, mode: mode)
+        let label = MenuBarFormatters.menuBarFreeSpaceLabel(
+            for: monitor.volume(for: mountPath)!
         )
-        hostingView.frame.size = NSSize(width: width, height: 18)
+        let estimatedWidth = max(58, CGFloat(label.count * 7 + 8))
+        let hostingView = NSHostingView(
+            rootView: MenuBarVolumeFreeSpaceLabelView(monitor: monitor, mountPath: mountPath)
+        )
+        hostingView.frame.size = NSSize(width: estimatedWidth, height: 18)
 
         let container = MenuBarClickableStatusView(frame: hostingView.frame)
         container.onClick = { [weak self, weak container] in
@@ -479,7 +500,7 @@ final class MenuBarStatusItemController: NSObject {
         let popover = NSPopover()
         popover.contentSize = NSSize(
             width: 300,
-            height: ScanActivityMonitor.shared.isScanning ? 320 : 360
+            height: ScanActivityMonitor.shared.isScanning ? 320 : 420
         )
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(

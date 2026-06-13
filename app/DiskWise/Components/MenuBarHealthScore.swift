@@ -5,7 +5,7 @@ struct MenuBarHealthScoreLabel: View {
     let score: Int
 
     var body: some View {
-        Text(SystemHealthMonitorCore.healthConditionLabel(for: score))
+        Text(SystemHealthMonitorCore.healthConditionLabelWithScore(for: score))
             .font(.system(size: 11, weight: .bold, design: .rounded))
             .foregroundStyle(scoreColor)
             .padding(.horizontal, 2)
@@ -89,14 +89,9 @@ struct MenuBarHealthPopoverContent: View {
                 .foregroundStyle(.secondary)
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(SystemHealthMonitorCore.healthConditionLabel(for: snapshot.healthScore))
+                Text(SystemHealthMonitorCore.healthConditionLabelWithScore(for: snapshot.healthScore))
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundStyle(scoreColor(snapshot.healthScore))
-
-                Text("\(snapshot.healthScore)")
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(scoreColor(snapshot.healthScore).opacity(0.85))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(snapshot.hostName)
@@ -216,20 +211,9 @@ struct MenuBarHealthPopoverContent: View {
                 )
             )
 
-            Toggle(
-                "Show remaining percentage",
-                isOn: Binding(
-                    get: { settings.showMenuBarDiskPercentage },
-                    set: { settings.setMenuBarDiskPercentageVisible($0) }
-                )
-            )
-
-            Toggle(
-                "Show free space (GB)",
-                isOn: Binding(
-                    get: { settings.showMenuBarDiskFreeGB },
-                    set: { settings.setMenuBarDiskFreeGBVisible($0) }
-                )
+            MenuBarVolumeToggleSection(
+                settings: settings,
+                volumes: SystemVolumeMonitor.shared.volumes
             )
 
             Toggle(
@@ -323,7 +307,7 @@ final class MenuBarHealthItemController: NSObject {
     private func makeSlot() -> MenuBarStatusSlot {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         let hostingView = NSHostingView(rootView: MenuBarHealthScoreLabelView(monitor: monitor))
-        hostingView.frame.size = NSSize(width: 44, height: 18)
+        hostingView.frame.size = NSSize(width: 64, height: 18)
 
         let container = MenuBarClickableStatusView(frame: hostingView.frame)
         container.onClick = { [weak self, weak container] in
