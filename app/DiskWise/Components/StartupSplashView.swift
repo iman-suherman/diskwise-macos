@@ -30,12 +30,8 @@ struct StartupSplashOverlay: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 20) {
-                Image(nsImage: NSApp.applicationIconImage)
-                    .resizable()
-                    .interpolation(.high)
-                    .frame(width: 88, height: 88)
-                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .shadow(color: .black.opacity(0.22), radius: 10, y: 4)
+                StartupScanningHeroIcon()
+                    .accessibilityLabel(isPostUpgrade ? "Setting up DiskWise" : "Starting DiskWise")
 
                 VStack(spacing: 6) {
                     Text(isPostUpgrade ? "Setting up DiskWise \(version)" : "Starting DiskWise")
@@ -47,9 +43,6 @@ struct StartupSplashOverlay: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-
-                startupActivityIndicator
-                    .padding(.top, 4)
 
                 Text(currentMessage)
                     .font(.subheadline.weight(highlightMessage ? .semibold : .medium))
@@ -114,7 +107,9 @@ struct StartupSplashOverlay: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.green)
                 } else if isActive {
-                    StartupStepActivityIcon()
+                    Image(systemName: "circle.fill")
+                        .font(.caption2)
+                        .foregroundStyle(Color.accentColor)
                 } else {
                     Image(systemName: "circle")
                         .foregroundStyle(.tertiary)
@@ -128,38 +123,44 @@ struct StartupSplashOverlay: View {
                 .labelStyle(.titleAndIcon)
         }
     }
-
-    private var startupActivityIndicator: some View {
-        StartupScanningIndicator(size: 40, weight: .regular)
-            .accessibilityLabel(isPostUpgrade ? "Setting up DiskWise" : "Starting DiskWise")
-    }
 }
 
-private struct StartupScanningIndicator: View {
-    let size: CGFloat
-    var weight: Font.Weight = .regular
-    var useFilledSymbol = true
-
-    @State private var rotation: Double = 0
+private struct StartupScanningHeroIcon: View {
+    @State private var pulse = false
 
     var body: some View {
-        Image(systemName: useFilledSymbol ? "arrow.triangle.2.circlepath.circle.fill" : "arrow.triangle.2.circlepath")
-            .font(.system(size: size, weight: weight))
-            .foregroundStyle(Color.accentColor)
-            .symbolRenderingMode(.hierarchical)
-            .rotationEffect(.degrees(rotation))
-            .onAppear {
-                withAnimation(.linear(duration: 1.4).repeatForever(autoreverses: false)) {
-                    rotation = 360
-                }
+        Group {
+            if let image = scanningImage {
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: 88, height: 88)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .shadow(color: .black.opacity(0.22), radius: 10, y: 4)
+                    .scaleEffect(pulse ? 1.04 : 0.96)
+                    .animation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true), value: pulse)
+            } else {
+                Image(nsImage: NSApp.applicationIconImage)
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: 88, height: 88)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             }
+        }
+        .onAppear {
+            pulse = true
+        }
     }
-}
 
-private struct StartupStepActivityIcon: View {
-    var body: some View {
-        StartupScanningIndicator(size: 12, weight: .semibold, useFilledSymbol: false)
-            .frame(width: 18, height: 18)
+    private var scanningImage: NSImage? {
+        if let image = NSImage(named: "DockScanning") {
+            return image
+        }
+        if let url = Bundle.main.url(forResource: "scanning", withExtension: "png"),
+           let image = NSImage(contentsOf: url) {
+            return image
+        }
+        return nil
     }
 }
 

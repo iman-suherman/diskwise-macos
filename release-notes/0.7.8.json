@@ -1,0 +1,16 @@
+{
+  "summary": "Disk Analysis gets a dedicated Schedule tab with customizable multi-scan timers, schedule recommendations on first scan, and a scanning splash icon.",
+  "introduced": [
+    "Schedule tab — move scan automation out of History into Disk Analysis → Schedule with per-entry time, weekday, and frequency controls",
+    "Multiple schedules — add extra fast or deep scan entries per drive and run all enabled schedules in sequence",
+    "First-scan schedule prompt — when no schedule is enabled, Overview and the scan chooser show recommended timing beside Fast Scan and Deep Scan"
+  ],
+  "changed": [
+    "History tab — shows scan snapshots only; scheduling moved to Schedule",
+    "Startup splash — uses the scanning dock icon with a subtle pulse instead of a separate loading spinner"
+  ],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

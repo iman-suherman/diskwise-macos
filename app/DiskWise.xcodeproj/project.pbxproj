@@ -140,6 +140,8 @@
 		FC6623E26E2D1FA21EC83507 /* MenuBarExtensionPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */; };
 		FCE4BBDDC79F3B9E5D5C20E0 /* install_python.sh in Resources */ = {isa = PBXBuildFile; fileRef = B9CA49BFF86E2DE13A0B87F6 /* install_python.sh */; };
 		FCF606D37E9D8BF36ECAAC88 /* 0.3.8.json in Resources */ = {isa = PBXBuildFile; fileRef = D920979DEAE9BF18B35E7E3F /* 0.3.8.json */; };
+		FEA8DD2C15EB143E7407A90C /* 0.7.7.json in Resources */ = {isa = PBXBuildFile; fileRef = AF2F3FBB3FF2505786ACA7F7 /* 0.7.7.json */; };
+		FFF53442731852676DFDD026 /* ScanScheduleTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCA608DC2B32B3460DC11304 /* ScanScheduleTabView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -228,6 +230,7 @@
 		A82F3A2475D36769351F8CBC /* IndexRebuildOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexRebuildOverlay.swift; sourceTree = "<group>"; };
 		A837FD3874FB7FAF41F641AD /* 0.4.1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.4.1.json; sourceTree = "<group>"; };
 		A9F503999EF5B8D256503AAB /* PythonSetupPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PythonSetupPrompt.swift; sourceTree = "<group>"; };
+		AF2F3FBB3FF2505786ACA7F7 /* 0.7.7.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.7.json; sourceTree = "<group>"; };
 		AFD9C0D25CF62C96CB4B8902 /* 0.5.6.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.6.json; sourceTree = "<group>"; };
 		B1C8159FF48669E7295F9738 /* 0.1.9.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.9.json; sourceTree = "<group>"; };
 		B21446A4062305538747C91B /* DiskWise.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DiskWise.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -237,6 +240,7 @@
 		B9CA49BFF86E2DE13A0B87F6 /* install_python.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = install_python.sh; sourceTree = "<group>"; };
 		BAEC7145766F553BED663558 /* SystemHealthNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemHealthNotificationService.swift; sourceTree = "<group>"; };
 		BBB2B6BB069E423D075EDFE3 /* SystemOptimizationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemOptimizationView.swift; sourceTree = "<group>"; };
+		BCA608DC2B32B3460DC11304 /* ScanScheduleTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanScheduleTabView.swift; sourceTree = "<group>"; };
 		BE77E6EAC751129191A39F6D /* DockScanAnimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockScanAnimator.swift; sourceTree = "<group>"; };
 		C27E95DFD0F9841389B35E2F /* diskwise_scan.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = diskwise_scan.py; sourceTree = "<group>"; };
 		C91D0D7194E3DC4018956A4D /* 0.1.8.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.8.json; sourceTree = "<group>"; };
@@ -387,6 +391,7 @@
 				379B778859113D86535C101F /* 0.7.4.json */,
 				16E23BB557336EA8EE0B3D6F /* 0.7.5.json */,
 				ECB3AB7371053E74D93E160B /* 0.7.6.json */,
+				AF2F3FBB3FF2505786ACA7F7 /* 0.7.7.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -450,6 +455,7 @@
 				A6C028E81B0947C7D6A69EE9 /* SavedScanPromptOverlay.swift */,
 				DB541EF7FCA4D4A09F925A52 /* ScanHistoryTabView.swift */,
 				C9B62028DBE2C0E221B5303A /* ScanModePromptOverlay.swift */,
+				BCA608DC2B32B3460DC11304 /* ScanScheduleTabView.swift */,
 				9632663F581782670036F59C /* StartupSplashView.swift */,
 				2BF737B0AA3066062F3881A4 /* StatusBadge.swift */,
 				D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */,
@@ -635,6 +641,7 @@
 				BD59F8106D44F5E87359A802 /* 0.7.4.json in Resources */,
 				5DFD07E54D9D275EAA4738AB /* 0.7.5.json in Resources */,
 				91890FA22A9952873A08995C /* 0.7.6.json in Resources */,
+				FEA8DD2C15EB143E7407A90C /* 0.7.7.json in Resources */,
 				BAC56BC5D44D164A6D1651C3 /* Assets.xcassets in Resources */,
 				7F3FA96EA3B2337449CD40D0 /* diskwise_scan.py in Resources */,
 				E559D2BF705EE1AB7F9CA4EA /* entitlements.mac.plist in Resources */,
@@ -733,6 +740,7 @@
 				DF328D0F13457A5F4FBEE1E8 /* ScanModePromptOverlay.swift in Sources */,
 				1F51D2B07CD65407C66DC665 /* ScanProgressPoller.swift in Sources */,
 				3C9391E32950657414DC1824 /* ScanScheduleService.swift in Sources */,
+				FFF53442731852676DFDD026 /* ScanScheduleTabView.swift in Sources */,
 				FACE59C51DED810AEC1F3B65 /* ScanningDockTileView.swift in Sources */,
 				2E51EA5FD30ECF1DA75CE384 /* SparkleUpdater.swift in Sources */,
 				FAB2B6356F46985804A0B25C /* StartupSplashView.swift in Sources */,

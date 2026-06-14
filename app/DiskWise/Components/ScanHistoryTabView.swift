@@ -8,148 +8,24 @@ struct ScanHistoryTabView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                schedulerSection
                 historySection
             }
             .padding(.bottom, 28)
         }
         .onAppear {
             viewModel.refreshScanHistory()
-            viewModel.reloadVolumeScanSchedule()
         }
-    }
-
-    @ViewBuilder
-    private var schedulerSection: some View {
-        if viewModel.selectedVolume != nil {
-            GroupBox {
-                VStack(alignment: .leading, spacing: 16) {
-                    Label("Scheduled scans", systemImage: "calendar.badge.clock")
-                        .font(.headline)
-
-                    Text("DiskWise can run fast and deep scans automatically when your Mac is usually idle.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    recommendationCallout
-
-                    scheduleRow(
-                        title: "Fast scan",
-                        icon: "bolt.fill",
-                        summary: ScanScheduleAdvisor.fastScanSummary(for: viewModel.volumeScanSchedule),
-                        rationale: ScanScheduleAdvisor.fastScanRationale(),
-                        isOn: Binding(
-                            get: { viewModel.volumeScanSchedule.fastScanEnabled },
-                            set: { viewModel.setFastScanScheduleEnabled($0) }
-                        )
-                    )
-
-                    scheduleRow(
-                        title: "Deep scan",
-                        icon: "scope",
-                        summary: ScanScheduleAdvisor.deepScanSummary(for: viewModel.volumeScanSchedule),
-                        rationale: ScanScheduleAdvisor.deepScanRationale(),
-                        isOn: Binding(
-                            get: { viewModel.volumeScanSchedule.deepScanEnabled },
-                            set: { viewModel.setDeepScanScheduleEnabled($0) }
-                        )
-                    )
-
-                    HStack(spacing: 10) {
-                        Button {
-                            viewModel.applyRecommendedScanSchedule()
-                        } label: {
-                            Label("Enable recommended schedule", systemImage: "checkmark.circle.fill")
-                        }
-                        .buttonStyle(.borderedProminent)
-
-                        if viewModel.volumeScanSchedule.fastScanEnabled || viewModel.volumeScanSchedule.deepScanEnabled {
-                            Button("Run now") {
-                                viewModel.runDueScheduledScansNow()
-                            }
-                            .buttonStyle(.bordered)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private var recommendationCallout: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Recommended timing")
-                .font(.subheadline.weight(.semibold))
-            HStack(alignment: .top, spacing: 8) {
-                Image(systemName: "bolt.fill")
-                    .foregroundStyle(.yellow)
-                    .frame(width: 18)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Fast: \(ScanScheduleAdvisor.fastScanSummary(for: ScanScheduleAdvisor.recommendedSchedule()))")
-                        .font(.caption.weight(.semibold))
-                    Text(ScanScheduleAdvisor.fastScanRationale())
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            HStack(alignment: .top, spacing: 8) {
-                Image(systemName: "scope")
-                    .foregroundStyle(.orange)
-                    .frame(width: 18)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Deep: \(ScanScheduleAdvisor.deepScanSummary(for: ScanScheduleAdvisor.recommendedSchedule()))")
-                        .font(.caption.weight(.semibold))
-                    Text(ScanScheduleAdvisor.deepScanRationale())
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-    }
-
-    private func scheduleRow(
-        title: String,
-        icon: String,
-        summary: String,
-        rationale: String,
-        isOn: Binding<Bool>
-    ) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(icon == "scope" ? .orange : .yellow)
-                .frame(width: 28)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                Text(summary)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(isOn.wrappedValue ? Color.accentColor : .secondary)
-                Text(rationale)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 8)
-
-            Toggle("", isOn: isOn)
-                .toggleStyle(.switch)
-                .labelsHidden()
-        }
-        .padding(12)
-        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     @ViewBuilder
     private var historySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Scan history")
-                .font(.headline)
+                .font(.title2.bold())
+
+            Text("Past fast and deep scans with major category usage for the selected drive.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
             if viewModel.selectedVolume == nil {
                 ContentUnavailableView {

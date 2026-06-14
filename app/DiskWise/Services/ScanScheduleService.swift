@@ -35,55 +35,58 @@ final class ScanScheduleService {
         let now = Date()
         let calendar = Calendar.current
         let hour = calendar.component(.hour, from: now)
+        let minute = calendar.component(.minute, from: now)
         let weekday = calendar.component(.weekday, from: now)
+
+        var dueJobs: [(mountPath: String, entry: ScanScheduleEntry, volume: MountedVolume)] = []
 
         for (mountPath, config) in VolumeScanScheduleStore.shared.allScheduledVolumes() {
             guard let volume = viewModel.mountedVolumes.first(where: { $0.mountPath == mountPath }) else { continue }
             guard !viewModel.isVolumeBusy(volume) else { continue }
 
-            if config.fastScanEnabled,
-               config.fastScanWeekdays.contains(weekday),
-               hour == config.fastScanHour,
-               !hasRecentRun(mountPath: mountPath, mode: .fast, now: now) {
-                markRun(mountPath: mountPath, mode: .fast, now: now)
-                viewModel.scan(volume: volume, mode: .fast)
-                return
+            for entry in config.entries where entry.isEnabled {
+                guard entry.weekdays.contains(weekday) else { continue }
+                guard hour == entry.hour, minute >= entry.minute else { continue }
+                guard !hasRecentRun(mountPath: mountPath, entry: entry, now: now) else { continue }
+                dueJobs.append((mountPath, entry, volume))
             }
+        }
 
-            if config.deepScanEnabled,
-               config.deepScanWeekdays.contains(weekday),
-               hour == config.deepScanHour,
-               !hasRecentRun(mountPath: mountPath, mode: .deep, now: now) {
-                markRun(mountPath: mountPath, mode: .deep, now: now)
-                viewModel.scan(volume: volume, mode: .deep)
-                return
+        dueJobs.sort { lhs, rhs in
+            if lhs.entry.mode != rhs.entry.mode {
+                return lhs.entry.mode == .fast
             }
+            return lhs.entry.hour < rhs.entry.hour
+                || (lhs.entry.hour == rhs.entry.hour && lhs.entry.minute < rhs.entry.minute)
+        }
+
+        for job in dueJobs {
+            markRun(mountPath: job.mountPath, entry: job.entry, now: now)
+            viewModel.enqueueScheduledScan(volume: job.volume, mode: job.entry.mode)
         }
     }
 
-    private func hasRecentRun(mountPath: String, mode: ScanMode, now: Date) -> Bool {
+    private func hasRecentRun(mountPath: String, entry: ScanScheduleEntry, now: Date) -> Bool {
         let calendar = Calendar.current
-        guard let lastRun = lastRunDate(mountPath: mountPath, mode: mode) else { return false }
+        guard let lastRun = lastRunDate(mountPath: mountPath, entryID: entry.id) else { return false }
 
-        switch mode {
-        case .fast:
-            return calendar.isDate(lastRun, inSameDayAs: now)
-        case .deep:
+        if entry.mode == .deep, entry.weekdays.count <= 2 {
             let week = calendar.dateComponents([.weekOfYear, .yearForWeekOfYear], from: now)
             let lastWeek = calendar.dateComponents([.weekOfYear, .yearForWeekOfYear], from: lastRun)
             return week.weekOfYear == lastWeek.weekOfYear && week.yearForWeekOfYear == lastWeek.yearForWeekOfYear
         }
+        return calendar.isDate(lastRun, inSameDayAs: now)
     }
 
-    private func lastRunDate(mountPath: String, mode: ScanMode) -> Date? {
-        let key = "\(lastRunKeyPrefix).\(mountPath).\(mode.rawValue)"
+    private func lastRunDate(mountPath: String, entryID: UUID) -> Date? {
+        let key = "\(lastRunKeyPrefix).\(mountPath).\(entryID.uuidString)"
         let interval = UserDefaults.standard.double(forKey: key)
         guard interval > 0 else { return nil }
         return Date(timeIntervalSince1970: interval)
     }
 
-    private func markRun(mountPath: String, mode: ScanMode, now: Date) {
-        let key = "\(lastRunKeyPrefix).\(mountPath).\(mode.rawValue)"
+    private func markRun(mountPath: String, entry: ScanScheduleEntry, now: Date) {
+        let key = "\(lastRunKeyPrefix).\(mountPath).\(entry.id.uuidString)"
         UserDefaults.standard.set(now.timeIntervalSince1970, forKey: key)
     }
 }

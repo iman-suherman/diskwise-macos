@@ -1,57 +1,138 @@
 import Foundation
 
-public struct VolumeScanScheduleConfig: Sendable, Codable, Equatable {
-    public var fastScanEnabled: Bool
-    public var deepScanEnabled: Bool
-    public var fastScanHour: Int
-    public var fastScanWeekdays: [Int]
-    public var deepScanHour: Int
-    public var deepScanWeekdays: [Int]
+public struct ScanScheduleEntry: Codable, Equatable, Sendable, Identifiable {
+    public var id: UUID
+    public var scanMode: String
+    public var isEnabled: Bool
+    public var hour: Int
+    public var minute: Int
+    public var weekdays: [Int]
+
+    public var idForSchedule: UUID { id }
 
     public init(
-        fastScanEnabled: Bool = false,
-        deepScanEnabled: Bool = false,
-        fastScanHour: Int = 6,
-        fastScanWeekdays: [Int] = [2, 3, 4, 5, 6, 7],
-        deepScanHour: Int = 2,
-        deepScanWeekdays: [Int] = [1]
+        id: UUID = UUID(),
+        scanMode: String,
+        isEnabled: Bool = false,
+        hour: Int,
+        minute: Int = 0,
+        weekdays: [Int]
     ) {
-        self.fastScanEnabled = fastScanEnabled
-        self.deepScanEnabled = deepScanEnabled
-        self.fastScanHour = fastScanHour
-        self.fastScanWeekdays = fastScanWeekdays
-        self.deepScanHour = deepScanHour
-        self.deepScanWeekdays = deepScanWeekdays
+        self.id = id
+        self.scanMode = scanMode
+        self.isEnabled = isEnabled
+        self.hour = hour
+        self.minute = minute
+        self.weekdays = weekdays.sorted()
+    }
+
+    public var mode: ScanMode {
+        ScanMode(rawValue: scanMode) ?? .fast
+    }
+
+    public var title: String {
+        mode.title + " scan"
+    }
+}
+
+public struct VolumeScanScheduleConfig: Sendable, Codable, Equatable {
+    public var entries: [ScanScheduleEntry]
+
+    public init(entries: [ScanScheduleEntry] = ScanScheduleAdvisor.recommendedEntries()) {
+        self.entries = entries
+    }
+
+    public var hasEnabledEntries: Bool {
+        entries.contains { $0.isEnabled }
+    }
+
+    public func entry(for mode: ScanMode) -> ScanScheduleEntry? {
+        entries.first { $0.mode == mode }
+    }
+
+    public mutating func setEnabled(_ enabled: Bool, for mode: ScanMode) {
+        if let index = entries.firstIndex(where: { $0.mode == mode }) {
+            entries[index].isEnabled = enabled
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case entries
+        case fastScanEnabled
+        case deepScanEnabled
+        case fastScanHour
+        case fastScanWeekdays
+        case deepScanHour
+        case deepScanWeekdays
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let entries = try container.decodeIfPresent([ScanScheduleEntry].self, forKey: .entries) {
+            self.entries = entries
+            return
+        }
+
+        let fastEnabled = try container.decodeIfPresent(Bool.self, forKey: .fastScanEnabled) ?? false
+        let deepEnabled = try container.decodeIfPresent(Bool.self, forKey: .deepScanEnabled) ?? false
+        let fastHour = try container.decodeIfPresent(Int.self, forKey: .fastScanHour) ?? 6
+        let fastDays = try container.decodeIfPresent([Int].self, forKey: .fastScanWeekdays) ?? [2, 3, 4, 5, 6, 7]
+        let deepHour = try container.decodeIfPresent(Int.self, forKey: .deepScanHour) ?? 2
+        let deepDays = try container.decodeIfPresent([Int].self, forKey: .deepScanWeekdays) ?? [1]
+
+        self.entries = [
+            ScanScheduleEntry(scanMode: ScanMode.fast.rawValue, isEnabled: fastEnabled, hour: fastHour, weekdays: fastDays),
+            ScanScheduleEntry(scanMode: ScanMode.deep.rawValue, isEnabled: deepEnabled, hour: deepHour, weekdays: deepDays),
+        ]
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(entries, forKey: .entries)
     }
 }
 
 public enum ScanScheduleAdvisor {
+    public static let weekdaySymbols = Calendar.current.shortWeekdaySymbols
+
+    public static func recommendedEntries(enabled: Bool = false) -> [ScanScheduleEntry] {
+        [
+            ScanScheduleEntry(
+                scanMode: ScanMode.fast.rawValue,
+                isEnabled: enabled,
+                hour: 6,
+                weekdays: [2, 3, 4, 5, 6, 7]
+            ),
+            ScanScheduleEntry(
+                scanMode: ScanMode.deep.rawValue,
+                isEnabled: enabled,
+                hour: 2,
+                weekdays: [1]
+            ),
+        ]
+    }
+
     public static func recommendedSchedule() -> VolumeScanScheduleConfig {
-        VolumeScanScheduleConfig(
-            fastScanEnabled: false,
-            deepScanEnabled: false,
-            fastScanHour: 6,
-            fastScanWeekdays: [2, 3, 4, 5, 6, 7],
-            deepScanHour: 2,
-            deepScanWeekdays: [1]
-        )
+        VolumeScanScheduleConfig(entries: recommendedEntries())
     }
 
     public static func recommendedScheduleWithBothEnabled() -> VolumeScanScheduleConfig {
-        var config = recommendedSchedule()
-        config.fastScanEnabled = true
-        config.deepScanEnabled = true
-        return config
+        VolumeScanScheduleConfig(entries: recommendedEntries(enabled: true))
+    }
+
+    public static func entrySummary(_ entry: ScanScheduleEntry) -> String {
+        guard entry.isEnabled else { return "Off" }
+        return "\(weekdaySummary(entry.weekdays)) at \(timeLabel(hour: entry.hour, minute: entry.minute))"
     }
 
     public static func fastScanSummary(for config: VolumeScanScheduleConfig) -> String {
-        guard config.fastScanEnabled else { return "Off" }
-        return "\(weekdaySummary(config.fastScanWeekdays)) at \(hourLabel(config.fastScanHour))"
+        guard let entry = config.entry(for: .fast) else { return "Off" }
+        return entrySummary(entry)
     }
 
     public static func deepScanSummary(for config: VolumeScanScheduleConfig) -> String {
-        guard config.deepScanEnabled else { return "Off" }
-        return "\(weekdaySummary(config.deepScanWeekdays)) at \(hourLabel(config.deepScanHour))"
+        guard let entry = config.entry(for: .deep) else { return "Off" }
+        return entrySummary(entry)
     }
 
     public static func fastScanRationale() -> String {
@@ -62,19 +143,24 @@ public enum ScanScheduleAdvisor {
         "Run a deep scan once a week in the early hours when the Mac is idle — best for complete coverage on large drives."
     }
 
-    public static func hourLabel(_ hour: Int) -> String {
-        let normalized = ((hour % 24) + 24) % 24
+    public static func timeLabel(hour: Int, minute: Int = 0) -> String {
+        let normalizedHour = ((hour % 24) + 24) % 24
+        let normalizedMinute = max(0, min(59, minute))
         let formatter = DateFormatter()
-        formatter.dateFormat = "h a"
+        formatter.dateFormat = normalizedMinute == 0 ? "h a" : "h:mm a"
         var components = DateComponents()
-        components.hour = normalized
-        components.minute = 0
+        components.hour = normalizedHour
+        components.minute = normalizedMinute
         let calendar = Calendar.current
         let date = calendar.date(from: components) ?? Date()
         return formatter.string(from: date)
     }
 
-    private static func weekdaySummary(_ weekdays: [Int]) -> String {
+    public static func hourLabel(_ hour: Int) -> String {
+        timeLabel(hour: hour)
+    }
+
+    public static func weekdaySummary(_ weekdays: [Int]) -> String {
         let sorted = Set(weekdays).sorted()
         if sorted == [2, 3, 4, 5, 6, 7] {
             return "Weekdays"
@@ -85,11 +171,24 @@ public enum ScanScheduleAdvisor {
         if sorted.count == 7 {
             return "Daily"
         }
-        let symbols = Calendar.current.shortWeekdaySymbols
         let labels = sorted.compactMap { weekday -> String? in
             guard weekday >= 1, weekday <= 7 else { return nil }
-            return symbols[weekday - 1]
+            return weekdaySymbols[weekday - 1]
         }
         return labels.isEmpty ? "Custom" : labels.joined(separator: ", ")
+    }
+
+    public static func weekdayOptions() -> [(value: Int, label: String)] {
+        (1...7).map { ($0, weekdaySymbols[$0 - 1]) }
+    }
+
+    public static func frequencyPresets() -> [(title: String, weekdays: [Int])] {
+        [
+            ("Daily", [1, 2, 3, 4, 5, 6, 7]),
+            ("Weekdays", [2, 3, 4, 5, 6, 7]),
+            ("Weekends", [1, 7]),
+            ("Sunday", [1]),
+            ("Monday", [2]),
+        ]
     }
 }

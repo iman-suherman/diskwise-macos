@@ -23,7 +23,7 @@ final class VolumeScanScheduleStore: ObservableObject {
 
     func allScheduledVolumes() -> [(mountPath: String, config: VolumeScanScheduleConfig)] {
         schedules
-            .filter { $0.value.fastScanEnabled || $0.value.deepScanEnabled }
+            .filter { $0.value.hasEnabledEntries }
             .map { ($0.key, $0.value) }
             .sorted { $0.mountPath < $1.mountPath }
     }

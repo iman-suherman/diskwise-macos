@@ -49,6 +49,9 @@ struct ScanModePromptOverlay: View {
                 }
                 .frame(maxWidth: 460)
 
+                VolumeScanScheduleRecommendationSection(embeddedInScanPanel: true)
+                    .frame(maxWidth: 460)
+
                 Button("Not Now") {
                     onCancel()
                 }
@@ -148,6 +151,8 @@ struct UnindexedVolumeScanPanel: View {
                     .buttonStyle(.bordered)
                     .disabled(viewModel.isVolumeBusy(volume))
                 }
+
+                VolumeScanScheduleRecommendationSection(embeddedInScanPanel: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }

@@ -8,6 +8,7 @@ enum VolumeDiskTab: String, CaseIterable, Identifiable {
     case overview
     case breakdown
     case history
+    case schedule
     case insights
 
     var id: String { rawValue }
@@ -17,6 +18,7 @@ enum VolumeDiskTab: String, CaseIterable, Identifiable {
         case .overview: return "Overview"
         case .breakdown: return "Breakdown"
         case .history: return "History"
+        case .schedule: return "Schedule"
         case .insights: return "Insights"
         }
     }
@@ -26,6 +28,7 @@ enum VolumeDiskTab: String, CaseIterable, Identifiable {
         case .overview: return "internaldrive"
         case .breakdown: return "chart.pie"
         case .history: return "clock.arrow.circlepath"
+        case .schedule: return "calendar.badge.clock"
         case .insights: return "lightbulb"
         }
     }
@@ -55,6 +58,8 @@ struct VolumeDiskTabView: View {
                     BreakdownTabView()
                 case .history:
                     ScanHistoryTabView()
+                case .schedule:
+                    ScanScheduleTabView()
                 case .insights:
                     InsightsTabView()
                 }

@@ -265,6 +265,7 @@ final class AppViewModel: ObservableObject {
     private var aiChatSessionID = UUID()
     private var scanStartTime: Date?
     private var pendingVolumeScanHistory: PendingVolumeScanHistoryContext?
+    private var scheduledScanQueue: [(volume: MountedVolume, mode: ScanMode)] = []
     private var prewarmTask: Task<Void, Never>?
     private var prewarmSkipTimerTask: Task<Void, Never>?
     private var launchDataPrewarmed = false
@@ -1943,6 +1944,14 @@ final class AppViewModel: ObservableObject {
         scanHistoryRecords = (try? database.scanHistory(forDiskID: diskID)) ?? []
     }
 
+    var hasVolumeScanScheduleEnabled: Bool {
+        volumeScanSchedule.hasEnabledEntries
+    }
+
+    func openScheduleTab() {
+        selectedVolumeTab = .schedule
+    }
+
     func reloadVolumeScanSchedule() {
         guard let mountPath = selectedVolumePath else {
             volumeScanSchedule = ScanScheduleAdvisor.recommendedSchedule()
@@ -1956,23 +1965,51 @@ final class AppViewModel: ObservableObject {
         persistVolumeScanSchedule()
     }
 
-    func setFastScanScheduleEnabled(_ enabled: Bool) {
-        volumeScanSchedule.fastScanEnabled = enabled
+    func addScheduleEntry(mode: ScanMode) {
+        let defaultHour = mode == .deep ? 2 : 6
+        let defaultDays = mode == .deep ? [1] : [2, 3, 4, 5, 6, 7]
+        let offset = volumeScanSchedule.entries.filter { $0.mode == mode }.count
+        volumeScanSchedule.entries.append(
+            ScanScheduleEntry(
+                scanMode: mode.rawValue,
+                hour: min(23, defaultHour + offset),
+                weekdays: defaultDays
+            )
+        )
         persistVolumeScanSchedule()
     }
 
-    func setDeepScanScheduleEnabled(_ enabled: Bool) {
-        volumeScanSchedule.deepScanEnabled = enabled
+    func removeScheduleEntry(id: UUID) {
+        volumeScanSchedule.entries.removeAll { $0.id == id }
         persistVolumeScanSchedule()
     }
 
-    func runDueScheduledScansNow() {
-        guard let volume = selectedVolume, !isVolumeBusy(volume) else { return }
-        if volumeScanSchedule.fastScanEnabled {
-            scan(volume: volume, mode: .fast)
-        } else if volumeScanSchedule.deepScanEnabled {
-            scan(volume: volume, mode: .deep)
-        }
+    func persistVolumeScanScheduleFromBindings() {
+        persistVolumeScanSchedule()
+    }
+
+    func runAllEnabledSchedulesNow() {
+        guard let volume = selectedVolume else { return }
+        enqueueEnabledSchedules(for: volume)
+    }
+
+    func enqueueScheduledScan(volume: MountedVolume, mode: ScanMode) {
+        scheduledScanQueue.append((volume, mode))
+        startNextQueuedScheduledScanIfNeeded()
+    }
+
+    private func enqueueEnabledSchedules(for volume: MountedVolume) {
+        scheduledScanQueue = volumeScanSchedule.entries
+            .filter(\.isEnabled)
+            .map { (volume, $0.mode) }
+        startNextQueuedScheduledScanIfNeeded()
+    }
+
+    private func startNextQueuedScheduledScanIfNeeded() {
+        guard !isScanning, !isAnalyzing, !isStartingUp else { return }
+        guard !scheduledScanQueue.isEmpty else { return }
+        let next = scheduledScanQueue.removeFirst()
+        scan(volume: next.volume, mode: next.mode)
     }
 
     private func persistVolumeScanSchedule() {
@@ -2211,12 +2248,14 @@ final class AppViewModel: ObservableObject {
                         self.setStatus(statusMessage, kind: .success)
                     }
                     self.releaseCachedMemory()
+                    self.startNextQueuedScheduledScanIfNeeded()
                 }
             } catch {
                 await MainActor.run {
                     self.isAnalyzing = false
                     self.scanPhase = .idle
                     self.scanStartTime = nil
+                    self.scheduledScanQueue = []
                     self.refreshInsights()
                     self.logActivity(.recommendation, "Analysis failed", detail: error.localizedDescription)
                     let statusMessage = "Analysis failed: \(error.localizedDescription) — indexed data is still available"
