@@ -1,0 +1,14 @@
+{
+  "summary": "DiskWise now alerts you when any drive runs low on space or when system health drops to Poor, with one-tap memory cleanup actions.",
+  "introduced": [
+    "Disk space alerts — notifications when any mounted drive falls below 15% free or below twice your RAM, with an Open Disk Analysis action",
+    "Poor health alerts — notifications when the health score drops below 40, with memory cleanup suggestions and Free Memory / Open System Optimization actions",
+    "Settings toggles for disk space alerts and poor-health alerts under Menu bar monitor (both on by default)"
+  ],
+  "changed": [
+    "SystemVolumeMonitor checks all mounted drives on each refresh and respects a 30-minute per-drive cooldown",
+    "SystemHealthMonitor triggers poor-health notifications on refresh, with a 20-minute cooldown and faster re-alert when the score drops further",
+    "Memory Analyzer notification handler routes disk space and system health notification taps alongside existing memory insight actions"
+  ],
+  "fixed": []
+}

@@ -90,6 +90,13 @@ final class MemoryInsightNotificationService: NSObject, UNUserNotificationCenter
     }
 
     func handleNotificationResponse(_ response: UNNotificationResponse) async -> Bool {
+        if DiskSpaceNotificationService.shared.handleNotificationResponse(response) {
+            return true
+        }
+        if await SystemHealthNotificationService.shared.handleNotificationResponse(response) {
+            return true
+        }
+
         let userInfo = response.notification.request.content.userInfo
         switch response.actionIdentifier {
         case Self.performActionIdentifier:

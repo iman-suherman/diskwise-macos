@@ -33,7 +33,9 @@
 		33F7D9A75E5AB5098551D85D /* 0.5.18.json in Resources */ = {isa = PBXBuildFile; fileRef = D55B4D8545269C44AB27D3D0 /* 0.5.18.json */; };
 		34F0C9D4060B76B5D020654C /* 0.5.9.json in Resources */ = {isa = PBXBuildFile; fileRef = E0B3FDCCC3CB35AAA33977EA /* 0.5.9.json */; };
 		36DBFBCADADF9C0C5B4BA080 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41738F52625CC6311842BB5E /* AppViewModel.swift */; };
+		3C7DED24BCCE52F43DA8E8C6 /* DiskSpaceNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19CD2D60FCE100FAE2A0E44D /* DiskSpaceNotificationService.swift */; };
 		3D64C6ECB71946C0F6021DE9 /* 0.5.8.json in Resources */ = {isa = PBXBuildFile; fileRef = A78CC063A378D25BAFE7A767 /* 0.5.8.json */; };
+		3DCDE49CEF1302917C0BF7DB /* SystemHealthNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAEC7145766F553BED663558 /* SystemHealthNotificationService.swift */; };
 		41B06DBBD44FA17F718F4F6E /* 0.5.1.json in Resources */ = {isa = PBXBuildFile; fileRef = 4C07B13D67D2C06220DF1B9E /* 0.5.1.json */; };
 		43175AB60FC4909B189B5A13 /* 0.3.9.json in Resources */ = {isa = PBXBuildFile; fileRef = D6BF3C996FCBAA4513AD9F9A /* 0.3.9.json */; };
 		4709F41AF9D9E5ED27E3018D /* AIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 268149F6EA534326414CF175 /* AIKit */; };
@@ -94,6 +96,7 @@
 		D46B15E076D4D79FAA61A9F1 /* DockScanAnimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE77E6EAC751129191A39F6D /* DockScanAnimator.swift */; };
 		DAB86108A2724D50A153E610 /* SavedScanPromptOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6C028E81B0947C7D6A69EE9 /* SavedScanPromptOverlay.swift */; };
 		DB063CAC7875E4DDC2FE2A9D /* MenuBarMonitorController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 971832F0D34371AD6D227919 /* MenuBarMonitorController.swift */; };
+		DB7B6708505DFFED5A0362F1 /* 0.6.5.json in Resources */ = {isa = PBXBuildFile; fileRef = 69A80E5FA87260E54639C51F /* 0.6.5.json */; };
 		DD2F2233CFB17ABB37688ACD /* RecommendationReviewSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D515CF1494436D3A33BC32C /* RecommendationReviewSheet.swift */; };
 		DF328D0F13457A5F4FBEE1E8 /* ScanModePromptOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B62028DBE2C0E221B5303A /* ScanModePromptOverlay.swift */; };
 		E0B3A78BA988C335E31C8595 /* 0.3.3.json in Resources */ = {isa = PBXBuildFile; fileRef = 585C27DC3BE99A64AEDE2C68 /* 0.3.3.json */; };
@@ -133,6 +136,7 @@
 		16E12E0B51D60F2F32404DC0 /* MemoryAnalyzerMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryAnalyzerMonitor.swift; sourceTree = "<group>"; };
 		17073AD7FF404926E1B8C231 /* ScanLogMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanLogMonitor.swift; sourceTree = "<group>"; };
 		1824EBE404CDE19C9B86E756 /* 0.1.5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.5.json; sourceTree = "<group>"; };
+		19CD2D60FCE100FAE2A0E44D /* DiskSpaceNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskSpaceNotificationService.swift; sourceTree = "<group>"; };
 		21EBCE6D32125F4A901301F0 /* DiskWiseMarkdownText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskWiseMarkdownText.swift; sourceTree = "<group>"; };
 		238E83EDCC4C147C2BE4E4FB /* ScanningDockTileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanningDockTileView.swift; sourceTree = "<group>"; };
 		27A56F4CF3526711AAE9AE7B /* VolumeKeepAwakePulse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeKeepAwakePulse.swift; sourceTree = "<group>"; };
@@ -161,6 +165,7 @@
 		68AEC5E5D4795F6522D2BDFF /* 0.1.10.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.10.json; sourceTree = "<group>"; };
 		68DCBEA8FF30108E7C861517 /* 0.6.0.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.6.0.json; sourceTree = "<group>"; };
 		6930F12578EC666DA893730C /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		69A80E5FA87260E54639C51F /* 0.6.5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.6.5.json; sourceTree = "<group>"; };
 		6F9652CCD6DFF89AC365DBCD /* ActivityLogSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityLogSheet.swift; sourceTree = "<group>"; };
 		704B5BBC0BE69143CC463ED9 /* 0.4.0.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.4.0.json; sourceTree = "<group>"; };
 		755D3336D602D3FBBB813589 /* 0.5.16.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.16.json; sourceTree = "<group>"; };
@@ -201,6 +206,7 @@
 		B7DB0862BEAD6D13A019D0FD /* 0.6.2.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.6.2.json; sourceTree = "<group>"; };
 		B9433A60D26963A1B26DA291 /* MemoryAnalyzerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryAnalyzerView.swift; sourceTree = "<group>"; };
 		B9CA49BFF86E2DE13A0B87F6 /* install_python.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = install_python.sh; sourceTree = "<group>"; };
+		BAEC7145766F553BED663558 /* SystemHealthNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemHealthNotificationService.swift; sourceTree = "<group>"; };
 		BBB2B6BB069E423D075EDFE3 /* SystemOptimizationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemOptimizationView.swift; sourceTree = "<group>"; };
 		BE77E6EAC751129191A39F6D /* DockScanAnimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockScanAnimator.swift; sourceTree = "<group>"; };
 		C27E95DFD0F9841389B35E2F /* diskwise_scan.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = diskwise_scan.py; sourceTree = "<group>"; };
@@ -254,6 +260,7 @@
 			isa = PBXGroup;
 			children = (
 				2993D6F3C7272135BAABB652 /* ChatMessageFormatter.swift */,
+				19CD2D60FCE100FAE2A0E44D /* DiskSpaceNotificationService.swift */,
 				BE77E6EAC751129191A39F6D /* DockScanAnimator.swift */,
 				DCF61B84FF67A42557A15C53 /* DockVisibilityController.swift */,
 				57AABB29DD65A9BDEEAF5208 /* KeepAwakeController.swift */,
@@ -269,6 +276,7 @@
 				238E83EDCC4C147C2BE4E4FB /* ScanningDockTileView.swift */,
 				831704D62E5020E6E4F2219B /* ScanProgressPoller.swift */,
 				DD1DBFAFBE898F19B3B507D5 /* SystemHealthMonitor.swift */,
+				BAEC7145766F553BED663558 /* SystemHealthNotificationService.swift */,
 				27A56F4CF3526711AAE9AE7B /* VolumeKeepAwakePulse.swift */,
 			);
 			path = Services;
@@ -328,6 +336,7 @@
 				2A6023015E9A7D986EB17D42 /* 0.6.1.json */,
 				B7DB0862BEAD6D13A019D0FD /* 0.6.2.json */,
 				C936F9E4DDBAE8C20A5F61F8 /* 0.6.4.json */,
+				69A80E5FA87260E54639C51F /* 0.6.5.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -560,6 +569,7 @@
 				A95B375EB57B93CEB3A6A1CA /* 0.6.1.json in Resources */,
 				94D3EF8213E3A2C27E9C0D3E /* 0.6.2.json in Resources */,
 				FB1EE01EE283AA5723F4BECE /* 0.6.4.json in Resources */,
+				DB7B6708505DFFED5A0362F1 /* 0.6.5.json in Resources */,
 				BAC56BC5D44D164A6D1651C3 /* Assets.xcassets in Resources */,
 				7F3FA96EA3B2337449CD40D0 /* diskwise_scan.py in Resources */,
 				E559D2BF705EE1AB7F9CA4EA /* entitlements.mac.plist in Resources */,
@@ -623,6 +633,7 @@
 				36DBFBCADADF9C0C5B4BA080 /* AppViewModel.swift in Sources */,
 				010C8B0BDC4104CD1535A722 /* ChatMessageFormatter.swift in Sources */,
 				F4D258718C504E7A6365ADB6 /* DashboardView.swift in Sources */,
+				3C7DED24BCCE52F43DA8E8C6 /* DiskSpaceNotificationService.swift in Sources */,
 				2791E28A3F889BE0CA5591A3 /* DiskWiseApp.swift in Sources */,
 				8583AE0ED670AF78E5A92139 /* DiskWiseMarkdownText.swift in Sources */,
 				D46B15E076D4D79FAA61A9F1 /* DockScanAnimator.swift in Sources */,
@@ -658,6 +669,7 @@
 				C61435492234EF4EFEB45B5C /* StatusBadge.swift in Sources */,
 				9163047ADC6314366674E59B /* StorageBreakdownView.swift in Sources */,
 				8EA88D4A455BB6985DBB72A9 /* SystemHealthMonitor.swift in Sources */,
+				3DCDE49CEF1302917C0BF7DB /* SystemHealthNotificationService.swift in Sources */,
 				F5CDF3E090F86A36D4708FE1 /* SystemMemoryReliefView.swift in Sources */,
 				FA5575535E0F00F7409EB33C /* SystemOptimizationView.swift in Sources */,
 				B1CF70C5E32C91E0CB3E2E05 /* SystemStatusView.swift in Sources */,

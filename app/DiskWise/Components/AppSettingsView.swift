@@ -114,6 +114,21 @@ struct AppSettingsView: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+
+                Toggle(
+                    "Alert when disk space is low",
+                    isOn: $settings.diskSpaceNotificationsEnabled
+                )
+
+                Toggle(
+                    "Alert when system health is poor",
+                    isOn: $settings.systemHealthNotificationsEnabled
+                )
+
+                Text("Notifies when any mounted drive drops below 15% free space, or when free space falls below twice your RAM. Also alerts when the health score drops below 40 with memory cleanup suggestions.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Section("Appearance") {

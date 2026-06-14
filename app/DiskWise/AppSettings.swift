@@ -79,6 +79,8 @@ final class AppSettings: ObservableObject {
         static let launchAtLogin = "diskwise.settings.launchAtLogin"
         static let memoryAnalyzerEnabled = "diskwise.settings.memoryAnalyzerEnabled"
         static let memoryAnalyzerNotificationsEnabled = "diskwise.settings.memoryAnalyzerNotificationsEnabled"
+        static let diskSpaceNotificationsEnabled = "diskwise.settings.diskSpaceNotificationsEnabled"
+        static let systemHealthNotificationsEnabled = "diskwise.settings.systemHealthNotificationsEnabled"
         static let menuPaneOrder = "diskwise.settings.menuPaneOrder"
     }
 
@@ -191,6 +193,42 @@ final class AppSettings: ObservableObject {
             if memoryAnalyzerNotificationsEnabled {
                 Task {
                     await MemoryInsightNotificationService.shared.requestAuthorizationIfNeeded()
+                }
+            }
+        }
+    }
+
+    @Published var diskSpaceNotificationsEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(diskSpaceNotificationsEnabled, forKey: Keys.diskSpaceNotificationsEnabled)
+            if diskSpaceNotificationsEnabled {
+                Task {
+                    await DiskSpaceNotificationService.shared.requestAuthorizationIfNeeded()
+                }
+            } else {
+                Task {
+                    await DiskSpaceNotificationService.shared.checkVolumes(
+                        SystemVolumeMonitor.shared.volumes,
+                        notificationsEnabled: false
+                    )
+                }
+            }
+        }
+    }
+
+    @Published var systemHealthNotificationsEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(systemHealthNotificationsEnabled, forKey: Keys.systemHealthNotificationsEnabled)
+            if systemHealthNotificationsEnabled {
+                Task {
+                    await SystemHealthNotificationService.shared.requestAuthorizationIfNeeded()
+                }
+            } else {
+                Task {
+                    await SystemHealthNotificationService.shared.checkSnapshot(
+                        nil,
+                        notificationsEnabled: false
+                    )
                 }
             }
         }
@@ -336,6 +374,16 @@ final class AppSettings: ObservableObject {
         } else {
             memoryAnalyzerNotificationsEnabled = defaults.bool(forKey: Keys.memoryAnalyzerNotificationsEnabled)
         }
+        if defaults.object(forKey: Keys.diskSpaceNotificationsEnabled) == nil {
+            diskSpaceNotificationsEnabled = true
+        } else {
+            diskSpaceNotificationsEnabled = defaults.bool(forKey: Keys.diskSpaceNotificationsEnabled)
+        }
+        if defaults.object(forKey: Keys.systemHealthNotificationsEnabled) == nil {
+            systemHealthNotificationsEnabled = true
+        } else {
+            systemHealthNotificationsEnabled = defaults.bool(forKey: Keys.systemHealthNotificationsEnabled)
+        }
         menuPaneOrder = Self.resolvedMenuPaneOrder(
             stored: defaults.stringArray(forKey: Keys.menuPaneOrder)
         )
@@ -410,6 +458,8 @@ final class AppSettings: ObservableObject {
         launchAtLogin = false
         memoryAnalyzerEnabled = true
         memoryAnalyzerNotificationsEnabled = true
+        diskSpaceNotificationsEnabled = true
+        systemHealthNotificationsEnabled = true
         showMenuBarMonitorInstructions = false
         MenuBarHealthItemController.shared.syncVisibility(showHealthScore: false)
         DockVisibilityController.apply(hidden: false)

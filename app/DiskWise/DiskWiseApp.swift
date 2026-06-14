@@ -32,6 +32,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DockVisibilityController.apply(hidden: AppSettings.shared.hideFromDock)
 
         MemoryInsightNotificationService.shared.prepare()
+        DiskSpaceNotificationService.shared.prepare()
+        SystemHealthNotificationService.shared.prepare()
         MemoryAnalyzerMonitor.shared.startIfNeeded(settings: AppSettings.shared)
 
         NotificationCenter.default.addObserver(

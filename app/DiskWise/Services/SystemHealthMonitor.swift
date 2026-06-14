@@ -622,6 +622,31 @@ enum SystemHealthMonitorCore {
         "\(healthConditionLabel(for: score)) (\(score))"
     }
 
+    static let poorHealthScoreThreshold = 40
+
+    static func poorHealthMemoryCleanupSuggestions(for snapshot: SystemHealthSnapshot) -> [String] {
+        var suggestions: [String] = []
+
+        if snapshot.memoryUsedPercent >= 60 {
+            suggestions.append("Free inactive memory to reclaim cached RAM")
+        }
+
+        if let topMemory = significantMemoryProcesses(snapshot.topMemoryProcesses).first {
+            let size = MenuBarFormatters.compactFreeSpace(topMemory.memoryBytes)
+            suggestions.append("Close or restart \(topMemory.name) (\(size))")
+        }
+
+        if snapshot.memoryUsedPercent >= 75 {
+            suggestions.append("Quit unused apps and browser tabs to reduce memory pressure")
+        }
+
+        if suggestions.isEmpty {
+            suggestions.append("Use Free Memory to encourage macOS to reclaim inactive cache")
+        }
+
+        return Array(suggestions.prefix(3))
+    }
+
     private static func readHostName() -> String {
         ProcessInfo.processInfo.hostName
     }
@@ -1213,6 +1238,13 @@ final class SystemHealthMonitor: ObservableObject {
         systemVolume = volumes.first(where: { VolumeDiscovery.isSystemVolume(mountPath: $0.mountPath) })
             ?? volumes.first(where: \.isInternal)
         snapshot = SystemHealthMonitorCore.capture(volume: systemVolume, processLimit: processLimit)
+        let notificationsEnabled = AppSettings.shared.systemHealthNotificationsEnabled
+        Task {
+            await SystemHealthNotificationService.shared.checkSnapshot(
+                snapshot,
+                notificationsEnabled: notificationsEnabled
+            )
+        }
     }
 
     func refreshDetailed() {
