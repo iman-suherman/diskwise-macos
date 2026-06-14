@@ -56,7 +56,6 @@ enum ScanPhase: String, Sendable {
 enum DetailPane: String, CaseIterable, Identifiable {
     case overview
     case systemOptimization
-    case maintenance
     case duplicates
     case ai
     case activityLog
@@ -65,7 +64,7 @@ enum DetailPane: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     static let defaultMenuPaneOrder: [DetailPane] = [
-        .overview, .duplicates, .systemOptimization, .maintenance,
+        .overview, .duplicates, .systemOptimization,
     ]
 
     var isReorderableMenuItem: Bool {
@@ -76,7 +75,6 @@ enum DetailPane: String, CaseIterable, Identifiable {
         switch self {
         case .overview: return "Disk Analysis"
         case .systemOptimization: return "System Optimization"
-        case .maintenance: return "System Maintenance"
         case .duplicates: return "Duplicates Finder"
         case .ai: return "Ask DiskWise"
         case .activityLog: return "Activity Log"
@@ -88,7 +86,6 @@ enum DetailPane: String, CaseIterable, Identifiable {
         switch self {
         case .overview: return "internaldrive"
         case .systemOptimization: return "gauge.with.dots.needle.67percent"
-        case .maintenance: return "wrench.and.screwdriver.fill"
         case .duplicates: return "doc.on.doc"
         case .ai: return "sparkles"
         case .activityLog: return "list.bullet.rectangle"
@@ -100,13 +97,17 @@ enum DetailPane: String, CaseIterable, Identifiable {
         switch self {
         case .overview: return "Scan and analyze storage"
         case .systemOptimization: return "Health score, metrics, and AI insights"
-        case .maintenance: return "Caches, snapshots, cleanup"
         case .duplicates: return "Find and remove duplicate files"
         case .ai: return "Ask about your storage"
         case .activityLog: return "Scan, cleanup, and system events"
         case .settings: return "Scan limits, AI provider, and preferences"
         }
     }
+}
+
+enum SidebarSelection: Hashable {
+    case pane(DetailPane)
+    case maintenance(MaintenanceKind)
 }
 
 enum AppStatusKind {
@@ -159,7 +160,7 @@ final class AppViewModel: ObservableObject {
     @Published var fullDiskAccessWizardStep: FullDiskAccessWizardStep = .needsPermission
     @Published var hasFullDiskAccess = false
     @Published var missingExternalVolumePaths: [String] = []
-    @Published var selectedPane: DetailPane = .overview
+    @Published var sidebarSelection: SidebarSelection = .pane(.overview)
     @Published var selectedVolumeTab: VolumeDiskTab = .overview
     @Published var scanLogStatusLine: String?
     @Published var scanJustCompleted = false
@@ -1096,7 +1097,7 @@ final class AppViewModel: ObservableObject {
     func openResultsTab() {
         scanJustCompleted = false
         selectedVolumeTab = .breakdown
-        selectedPane = .overview
+        sidebarSelection = .pane(.overview)
     }
 
     func applyPolledScanProgress(_ progress: ScanProgress) {
@@ -1369,7 +1370,7 @@ final class AppViewModel: ObservableObject {
         }
 
         if !isVolumeBusy(volume) {
-            selectedPane = .overview
+            sidebarSelection = .pane(.overview)
             selectedVolumeTab = .breakdown
         }
 
@@ -1573,6 +1574,9 @@ final class AppViewModel: ObservableObject {
             scanPhase = .idle
             scanStartTime = nil
         }
+        logActivity(.duplicate, "Duplicate detection cancelled")
+        setStatus("Duplicate check cancelled", kind: .ready)
+        releaseCachedMemory()
     }
 
     func cancelStartupPrewarm() {
@@ -1900,7 +1904,7 @@ final class AppViewModel: ObservableObject {
 
         scanTask?.cancel()
         cancelDuplicateDetection()
-        selectedPane = .overview
+        sidebarSelection = .pane(.overview)
         selectedVolumeTab = .overview
         scanJustCompleted = false
         isScanning = true
@@ -2420,20 +2424,16 @@ final class AppViewModel: ObservableObject {
             openDuplicatesPane()
             scanForDuplicates()
         case "project_purge":
-            selectedPane = .maintenance
-            selectedMaintenanceKind = .nodeModules
+            openMaintenanceKind(.nodeModules)
             scanMaintenance(.nodeModules)
         case "delete_logs":
-            selectedPane = .maintenance
-            selectedMaintenanceKind = .logs
+            openMaintenanceKind(.logs)
             scanMaintenance(.logs)
         case "delete_cache":
-            selectedPane = .maintenance
-            selectedMaintenanceKind = .appCaches
+            openMaintenanceKind(.appCaches)
             scanMaintenance(.appCaches)
         case "thin_apfs_snapshots":
-            selectedPane = .maintenance
-            selectedMaintenanceKind = .apfsSnapshots
+            openMaintenanceKind(.apfsSnapshots)
             scanMaintenance(.apfsSnapshots)
         default:
             reviewRecommendation(recommendation)
@@ -2455,7 +2455,7 @@ final class AppViewModel: ObservableObject {
         )) ?? []
 
         if recommendation.type == "duplicate_cleanup" && files.isEmpty {
-            selectedPane = .duplicates
+            openDuplicatesPane()
             setStatus("Review duplicate groups in the Duplicates tab", kind: .ready)
             return
         }
@@ -2517,17 +2517,22 @@ final class AppViewModel: ObservableObject {
     }
 
     func openActivityLogPane() {
-        selectedPane = .activityLog
+        sidebarSelection = .pane(.activityLog)
     }
 
     func openSettingsPane() {
         showAbout = false
-        selectedPane = .settings
+        sidebarSelection = .pane(.settings)
         NSApp.activate(ignoringOtherApps: true)
     }
 
     func openDuplicatesPane() {
-        selectedPane = .duplicates
+        sidebarSelection = .pane(.duplicates)
+    }
+
+    func openMaintenanceKind(_ kind: MaintenanceKind) {
+        selectedMaintenanceKind = kind
+        sidebarSelection = .maintenance(kind)
     }
 
     @discardableResult
@@ -2620,6 +2625,7 @@ final class AppViewModel: ObservableObject {
 
     func scanMaintenance(_ kind: MaintenanceKind) {
         selectedMaintenanceKind = kind
+        sidebarSelection = .maintenance(kind)
         isMaintenanceScanning = true
         maintenanceStatusMessage = "Scanning \(kind.title.lowercased())…"
         setStatus(maintenanceStatusMessage, kind: .working)

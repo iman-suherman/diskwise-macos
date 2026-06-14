@@ -12,8 +12,18 @@ enum DiskSpaceAlertLevel: Int, Comparable {
         lhs.rawValue < rhs.rawValue
     }
 
+    /// Ignore tiny mounts (e.g. app DMGs) that are not meaningful storage targets.
+    static let minimumNotifiableTotalBytes: Int64 = 512 * 1024 * 1024
+
+    static func shouldNotify(for volume: MountedVolume) -> Bool {
+        volume.totalSize >= minimumNotifiableTotalBytes
+    }
+
     static func level(for volume: MountedVolume) -> DiskSpaceAlertLevel? {
-        if MenuBarDiskThresholds.isCriticallyLow(freeSize: volume.freeSize) {
+        guard shouldNotify(for: volume) else { return nil }
+
+        if VolumeDiscovery.isSystemVolume(mountPath: volume.mountPath),
+           MenuBarDiskThresholds.isCriticallyLow(freeSize: volume.freeSize) {
             return .critical
         }
         let freeFraction = max(0, 1 - volume.usageFraction)
@@ -98,7 +108,7 @@ final class DiskSpaceNotificationService {
 
         switch response.actionIdentifier {
         case Self.openDiskAnalysisIdentifier, UNNotificationDefaultActionIdentifier:
-            AppViewModel.current?.selectedPane = .overview
+            AppViewModel.current?.sidebarSelection = .pane(.overview)
             NSApp.activate(ignoringOtherApps: true)
             return true
         default:

@@ -33,11 +33,15 @@ struct VolumeDiskTabView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            header
+                .padding(.horizontal, 28)
+                .padding(.top, 28)
+                .padding(.bottom, 12)
+
             if viewModel.selectedVolume != nil {
                 volumeTabPicker
                     .padding(.horizontal, 28)
-                    .padding(.top, 16)
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 16)
             }
 
             Group {
@@ -53,8 +57,152 @@ struct VolumeDiskTabView: View {
         }
     }
 
+    private var header: some View {
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Disk Analysis")
+                    .font(.largeTitle.bold())
+                Text(headerSubtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: 12)
+
+            VStack(alignment: .trailing, spacing: 16) {
+                headerBadges
+
+                HStack(spacing: 8) {
+                    if let volume = viewModel.selectedVolume {
+                        if viewModel.isIndexed(volume) {
+                            Button {
+                                viewModel.scanSelectedVolume(mode: .fast)
+                            } label: {
+                                Label(
+                                    viewModel.isScanning
+                                        ? "Identifying…"
+                                        : (viewModel.isAnalyzing ? "Analyzing…" : "Rescan"),
+                                    systemImage: "arrow.triangle.2.circlepath"
+                                )
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(viewModel.isVolumeBusy(volume))
+
+                            Button {
+                                viewModel.scanSelectedVolume(mode: .deep)
+                            } label: {
+                                Label("Deep Scan", systemImage: "scope")
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.orange)
+                            .disabled(viewModel.isVolumeBusy(volume))
+                        } else {
+                            Button {
+                                viewModel.presentScanModePrompt(for: volume)
+                            } label: {
+                                Label(
+                                    viewModel.isScanning ? "Identifying…" : "Scan Drive",
+                                    systemImage: "arrow.triangle.2.circlepath"
+                                )
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(viewModel.isVolumeBusy(volume))
+                        }
+
+                        Button {
+                            viewModel.scanFolderOnSelectedVolume()
+                        } label: {
+                            Label("Scan Folder…", systemImage: "folder.badge.plus")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(viewModel.isVolumeBusy(volume))
+                    }
+
+                    VolumePickerMenu()
+                }
+            }
+        }
+    }
+
+    private var headerSubtitle: String {
+        if let volume = viewModel.selectedVolume {
+            return "\(volume.name) — scan drives, review breakdowns, and get cleanup insights."
+        }
+        return "Scan drives, review breakdowns, and get cleanup insights."
+    }
+
+    @ViewBuilder
+    private var headerBadges: some View {
+        if let volume = viewModel.selectedVolume {
+            SidebarDiskFreeSpaceBadge(volume: volume)
+        }
+    }
+
     private var volumeTabPicker: some View {
         DiskWiseIconTabBar(selection: $viewModel.selectedVolumeTab)
+    }
+}
+
+struct VolumePickerMenu: View {
+    @EnvironmentObject private var viewModel: AppViewModel
+
+    var body: some View {
+        Menu {
+            if !viewModel.internalVolumes.isEmpty {
+                Section("Internal SSD") {
+                    ForEach(viewModel.internalVolumes) { volume in
+                        volumeMenuButton(volume)
+                    }
+                }
+            }
+            if !viewModel.externalVolumes.isEmpty {
+                Section("External Drives") {
+                    ForEach(viewModel.externalVolumes) { volume in
+                        volumeMenuButton(volume)
+                    }
+                }
+            }
+            if viewModel.mountedVolumes.isEmpty {
+                Button("Grant Permission") {
+                    viewModel.presentFullDiskAccessOverlay()
+                }
+            }
+            Divider()
+            Button {
+                viewModel.refreshDrivesAfterPermissionChange()
+            } label: {
+                Label("Refresh Devices", systemImage: "arrow.clockwise")
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: viewModel.selectedVolume?.isInternal == false ? "externaldrive.fill" : "internaldrive.fill")
+                Text(viewModel.selectedVolume?.name ?? "Select Drive")
+                    .lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: 220)
+        }
+        .menuStyle(.borderlessButton)
+    }
+
+    private func volumeMenuButton(_ volume: MountedVolume) -> some View {
+        Button {
+            viewModel.selectedVolumePath = volume.mountPath
+            viewModel.selectVolume(volume)
+        } label: {
+            HStack {
+                Text(volume.name)
+                Spacer()
+                if viewModel.selectedVolumePath == volume.mountPath {
+                    Image(systemName: "checkmark")
+                }
+                Text(DiskWiseFormatters.bytes.string(fromByteCount: volume.freeSize) + " free")
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 }
 
@@ -195,13 +343,9 @@ struct OverviewTabView: View {
 
     @ViewBuilder
     private func resultsHeader(volume: MountedVolume, overview: StorageOverview) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(volume.name)
-                .font(.largeTitle.bold())
-            Text("Drive Overview")
-                .font(.title3)
-                .foregroundStyle(.secondary)
-        }
+        Text("Drive Overview")
+            .font(.title2.bold())
+            .foregroundStyle(.secondary)
 
         HStack(spacing: 16) {
             InsightCard(
@@ -241,7 +385,7 @@ struct BreakdownTabView: View {
 
                     StorageResultsChartsSection(volume: volume, overview: overview)
 
-                    if viewModel.totalDuplicateSavings > 0 || viewModel.isFindingDuplicates {
+                    if viewModel.totalDuplicateSavings > 0 {
                         duplicatesCallToAction
                     }
                 } else if viewModel.isScanning {
@@ -283,13 +427,9 @@ struct BreakdownTabView: View {
 
     @ViewBuilder
     private func breakdownHeader(volume: MountedVolume) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(volume.name)
-                .font(.largeTitle.bold())
-            Text("Storage Breakdown")
-                .font(.title3)
-                .foregroundStyle(.secondary)
-        }
+        Text("Storage Breakdown")
+            .font(.title2.bold())
+            .foregroundStyle(.secondary)
     }
 
     private var duplicatesCallToAction: some View {

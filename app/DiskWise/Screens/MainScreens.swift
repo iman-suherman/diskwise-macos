@@ -12,30 +12,37 @@ struct DuplicatesView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                header
+        VStack(spacing: 0) {
+            header
+                .padding(.horizontal, 28)
+                .padding(.top, 28)
+                .padding(.bottom, 12)
 
-                if !viewModel.duplicateGroups.isEmpty {
-                    cleanupActionBar
-                }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    if !viewModel.duplicateGroups.isEmpty {
+                        cleanupActionBar
+                    }
 
-                if viewModel.isFindingDuplicates {
-                    duplicateScanInProgress
-                } else if viewModel.duplicateGroups.isEmpty {
-                    duplicatesEmptyState
-                } else {
-                    howToCleanHint
+                    if viewModel.isFindingDuplicates {
+                        duplicateScanInProgress
+                    } else if viewModel.duplicateGroups.isEmpty {
+                        duplicatesEmptyState
+                    } else {
+                        howToCleanHint
 
-                    ForEach(viewModel.duplicateGroups) { group in
-                        DuplicateGroupCard(group: group) {
-                            selectedPreview = viewModel.previewCleanup(for: group)
+                        ForEach(viewModel.duplicateGroups) { group in
+                            DuplicateGroupCard(group: group) {
+                                selectedPreview = viewModel.previewCleanup(for: group)
+                            }
                         }
                     }
                 }
+                .padding(.horizontal, 28)
+                .padding(.bottom, 28)
             }
-            .padding(28)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .sheet(item: $selectedPreview) { preview in
             CleanupPreviewSheet(preview: preview) { result in
                 if result.movedCount > 0 {
@@ -46,23 +53,70 @@ struct DuplicatesView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Duplicate Files")
-                .font(.largeTitle.bold())
-
-            if totalReclaimable > 0 {
-                Text("\(DiskWiseFormatters.bytes.string(fromByteCount: totalReclaimable)) reclaimable across \(viewModel.duplicateGroups.count) groups")
-                    .font(.title3)
-                    .foregroundStyle(.orange)
-            } else if viewModel.isFindingDuplicates {
-                Text("Still checking your drive for duplicate files…")
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Duplicates Finder")
+                    .font(.largeTitle.bold())
+                Text(headerSubtitle)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-            } else {
-                Text("Run duplicate detection from this tab after identifying disk usage")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
             }
+
+            Spacer(minLength: 12)
+
+            VStack(alignment: .trailing, spacing: 16) {
+                headerBadges
+
+                HStack(spacing: 8) {
+                    if viewModel.isFindingDuplicates {
+                        Button {
+                            viewModel.cancelDuplicateDetection()
+                        } label: {
+                            Label("Cancel", systemImage: "xmark.circle")
+                        }
+                        .buttonStyle(.bordered)
+                    } else if viewModel.hasScanData {
+                        Button {
+                            viewModel.scanForDuplicates()
+                        } label: {
+                            Label(
+                                viewModel.duplicateGroups.isEmpty ? "Find Duplicates" : "Scan Again",
+                                systemImage: "doc.on.doc"
+                            )
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.orange)
+                    }
+                }
+            }
+        }
+    }
+
+    private var headerSubtitle: String {
+        if viewModel.isFindingDuplicates {
+            return "Checking indexed files for duplicate copies. This can take several minutes on large drives."
+        }
+        if totalReclaimable > 0 {
+            return "\(DiskWiseFormatters.bytes.string(fromByteCount: totalReclaimable)) reclaimable across \(viewModel.duplicateGroups.count) groups."
+        }
+        if viewModel.hasScanData {
+            return "Scan indexed files on the selected drive to find extra copies you can move to Trash."
+        }
+        return "Identify disk usage first, then scan here for duplicate files."
+    }
+
+    @ViewBuilder
+    private var headerBadges: some View {
+        if viewModel.isFindingDuplicates {
+            Label("Finding duplicates", systemImage: "doc.on.doc")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.orange)
+        } else if totalReclaimable > 0 {
+            Text("\(viewModel.duplicateGroups.count) groups")
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(.orange)
         }
     }
 
@@ -104,20 +158,20 @@ struct DuplicatesView: View {
             ContentUnavailableView {
                 Label("No duplicates found yet", systemImage: "doc.on.doc")
             } description: {
-                Text("Duplicate detection runs separately from the main identify → analyze workflow. Scan here when you want to find extra copies.")
+                Text("Use Find Duplicates in the header to scan indexed files for extra copies on the selected drive.")
             } actions: {
-                Button(viewModel.isFindingDuplicates ? "Finding…" : "Find Duplicates") {
+                Button("Find Duplicates") {
                     viewModel.scanForDuplicates()
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(viewModel.isFindingDuplicates)
+                .tint(.orange)
             }
             .frame(maxWidth: .infinity, minHeight: 300)
         } else {
             ContentUnavailableView(
                 "Identify disk usage first",
                 systemImage: "externaldrive",
-                description: Text("Select a drive and run Phase 1 (Identify usage) from the sidebar. Then return here to find duplicates.")
+                description: Text("Select a drive and run a scan from Disk Analysis. Then return here to find duplicates.")
             )
             .frame(maxWidth: .infinity, minHeight: 300)
         }
@@ -125,6 +179,16 @@ struct DuplicatesView: View {
 
     private var duplicateScanInProgress: some View {
         VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Duplicate scan in progress")
+                    .font(.headline)
+                Spacer()
+                Button("Cancel") {
+                    viewModel.cancelDuplicateDetection()
+                }
+                .buttonStyle(.bordered)
+            }
+
             if let progress = viewModel.duplicateScanProgress {
                 GroupBox {
                     VStack(alignment: .leading, spacing: 12) {

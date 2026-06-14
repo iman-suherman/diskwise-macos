@@ -7,9 +7,30 @@ public enum MaintenanceSection: String, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .clean: return "Clean"
-        case .projects: return "Projects"
-        case .system: return "System"
+        case .clean: return "Clean My Mac"
+        case .projects: return "Developer Projects"
+        case .system: return "System Cleanup"
+        }
+    }
+
+    public var description: String {
+        switch self {
+        case .clean:
+            return "Caches, logs, temporary files, Trash, and leftover installers."
+        case .projects:
+            return "Heavy project folders such as node_modules and build output that can be recreated."
+        case .system:
+            return "APFS snapshots, app removal, and system optimization tasks."
+        }
+    }
+
+    public var sidebarKinds: [MaintenanceKind] {
+        MaintenanceKind.allCases.filter { kind in
+            guard kind.section == self else { return false }
+            if self == .system {
+                return kind != .systemStatus
+            }
+            return true
         }
     }
 }
@@ -45,7 +66,7 @@ public enum MaintenanceKind: String, CaseIterable, Sendable, Identifiable {
 
     public static var groupedBySection: [(section: MaintenanceSection, kinds: [MaintenanceKind])] {
         MaintenanceSection.allCases.map { section in
-            (section, allCases.filter { $0.section == section })
+            (section, section.sidebarKinds)
         }
     }
 

@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import DiskScannerKit
+import MaintenanceKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -266,13 +267,14 @@ struct ContentView: View {
 
     @ToolbarContentBuilder
     private var launchToolbarContent: some ToolbarContent {
-        if viewModel.selectedPane == .overview {
+        if case .pane(let pane) = viewModel.sidebarSelection, pane != .overview {
             ToolbarItem(placement: .principal) {
-                volumePicker
+                Label(pane.title, systemImage: pane.icon)
+                    .font(.headline)
             }
-        } else {
+        } else if case .maintenance(let kind) = viewModel.sidebarSelection {
             ToolbarItem(placement: .principal) {
-                Label(viewModel.selectedPane.title, systemImage: viewModel.selectedPane.icon)
+                Label(kind.title, systemImage: kind.icon)
                     .font(.headline)
             }
         }
@@ -288,48 +290,6 @@ struct ContentView: View {
             )
         }
 
-        if viewModel.selectedPane == .overview, let volume = viewModel.selectedVolume {
-            ToolbarItemGroup(placement: .primaryAction) {
-                if viewModel.isIndexed(volume) {
-                    Button {
-                        viewModel.scanSelectedVolume(mode: .fast)
-                    } label: {
-                        Label(
-                            viewModel.isScanning
-                                ? "Identifying…"
-                                : (viewModel.isAnalyzing ? "Analyzing…" : "Rescan \(volume.name)"),
-                            systemImage: "arrow.triangle.2.circlepath"
-                        )
-                    }
-                    .disabled(viewModel.isVolumeBusy(volume))
-
-                    Button {
-                        viewModel.scanSelectedVolume(mode: .deep)
-                    } label: {
-                        Label("Deep Scan", systemImage: "scope")
-                    }
-                    .disabled(viewModel.isVolumeBusy(volume))
-                } else {
-                    Button {
-                        viewModel.presentScanModePrompt(for: volume)
-                    } label: {
-                        Label(
-                            viewModel.isScanning ? "Identifying…" : "Scan \(volume.name)",
-                            systemImage: "arrow.triangle.2.circlepath"
-                        )
-                    }
-                    .disabled(viewModel.isVolumeBusy(volume))
-                }
-
-                Button {
-                    viewModel.scanFolderOnSelectedVolume()
-                } label: {
-                    Label("Scan Folder…", systemImage: "folder.badge.plus")
-                }
-                .disabled(viewModel.isVolumeBusy(volume))
-            }
-        }
-
         ToolbarItem(placement: .automatic) {
             Button {
                 SparkleUpdaterController.shared.checkForUpdates()
@@ -340,83 +300,23 @@ struct ContentView: View {
         }
     }
 
-    private var volumePicker: some View {
-        Menu {
-            if !viewModel.internalVolumes.isEmpty {
-                Section("Internal SSD") {
-                    ForEach(viewModel.internalVolumes) { volume in
-                        volumeMenuButton(volume)
-                    }
-                }
-            }
-            if !viewModel.externalVolumes.isEmpty {
-                Section("External Drives") {
-                    ForEach(viewModel.externalVolumes) { volume in
-                        volumeMenuButton(volume)
-                    }
-                }
-            }
-            if viewModel.mountedVolumes.isEmpty {
-                Button("Grant Permission") {
-                    viewModel.presentFullDiskAccessOverlay()
-                }
-            }
-            Divider()
-            Button {
-                viewModel.refreshDrivesAfterPermissionChange()
-            } label: {
-                Label("Refresh Devices", systemImage: "arrow.clockwise")
-            }
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: viewModel.selectedVolume?.isInternal == false ? "externaldrive.fill" : "internaldrive.fill")
-                Text(viewModel.selectedVolume?.name ?? "Select Drive")
-                    .lineLimit(1)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: 280)
-        }
-        .menuStyle(.borderlessButton)
-    }
-
-    private func volumeMenuButton(_ volume: MountedVolume) -> some View {
-        Button {
-            viewModel.selectedVolumePath = volume.mountPath
-            viewModel.selectVolume(volume)
-        } label: {
-            HStack {
-                Text(volume.name)
-                Spacer()
-                if viewModel.selectedVolumePath == volume.mountPath {
-                    Image(systemName: "checkmark")
-                }
-                Text(DiskWiseFormatters.bytes.string(fromByteCount: volume.freeSize) + " free")
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
     @ViewBuilder
     private var detailContent: some View {
-        switch viewModel.selectedPane {
-        case .overview:
+        switch viewModel.sidebarSelection {
+        case .pane(.overview):
             VolumeDiskTabView()
-        case .systemOptimization:
+        case .pane(.systemOptimization):
             SystemOptimizationView()
-        case .maintenance:
-            MaintenanceView()
-        case .duplicates:
+        case .pane(.duplicates):
             DuplicatesView()
-        case .ai:
+        case .pane(.ai):
             VolumeDiskTabView()
                 .onAppear { viewModel.selectedVolumeTab = .insights }
-        case .activityLog:
+        case .pane(.activityLog):
             ActivityLogView(activityLog: viewModel.activityLog, embeddedInPanel: true)
                 .padding(28)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        case .settings:
+        case .pane(.settings):
             AppSettingsView(settings: appSettings, embeddedInPanel: true)
                 .onChange(of: appSettings.aiProviderPreference) { _, _ in
                     viewModel.refreshAIConfiguration()
@@ -430,6 +330,8 @@ struct ContentView: View {
                 .onChange(of: appSettings.ollamaModel) { _, _ in
                     viewModel.refreshAIConfiguration()
                 }
+        case .maintenance(let kind):
+            MaintenanceDetailView(kind: kind)
         }
     }
 
@@ -496,7 +398,7 @@ struct ContentView: View {
     }
 
     private var sidebar: some View {
-        List(selection: $viewModel.selectedPane) {
+        List(selection: $viewModel.sidebarSelection) {
             if viewModel.shouldShowFullDiskAccessBanner {
                 Section {
                     FullDiskAccessBanner(
@@ -524,11 +426,28 @@ struct ContentView: View {
                         icon: pane.icon,
                         trailing: { menuBadge(for: pane) }
                     )
-                    .tag(pane)
+                    .tag(SidebarSelection.pane(pane))
                 }
                 .onMove(perform: viewModel.moveMenuPane)
             } header: {
                 Text("Menu")
+            }
+
+            ForEach(MaintenanceSection.allCases, id: \.self) { section in
+                Section {
+                    ForEach(section.sidebarKinds) { kind in
+                        sidebarMenuRow(
+                            title: kind.title,
+                            subtitle: kind.subtitle,
+                            icon: kind.icon
+                        )
+                        .tag(SidebarSelection.maintenance(kind))
+                    }
+                } header: {
+                    Text(section.title)
+                } footer: {
+                    Text(section.description)
+                }
             }
 
             Section {
@@ -537,22 +456,17 @@ struct ContentView: View {
                     subtitle: DetailPane.activityLog.subtitle,
                     icon: DetailPane.activityLog.icon
                 )
-                .tag(DetailPane.activityLog)
+                .tag(SidebarSelection.pane(.activityLog))
 
                 if viewModel.hasScanData {
                     Button {
                         viewModel.openDuplicatesPane()
-                        if !viewModel.isFindingDuplicates && viewModel.duplicateGroups.isEmpty {
-                            viewModel.scanForDuplicates()
-                        }
                     } label: {
                         sidebarMenuRow(
-                            title: viewModel.isFindingDuplicates
-                                ? "Finding Duplicates…"
-                                : "Find Duplicates",
+                            title: "Review Duplicates",
                             subtitle: viewModel.totalDuplicateSavings > 0
                                 ? "\(DiskWiseFormatters.bytes.string(fromByteCount: viewModel.totalDuplicateSavings)) reclaimable"
-                                : "Scan indexed files for duplicate copies",
+                                : "Open Duplicates Finder to scan indexed files",
                             icon: "doc.on.doc"
                         )
                     }
@@ -578,11 +492,16 @@ struct ContentView: View {
                     subtitle: DetailPane.settings.subtitle,
                     icon: DetailPane.settings.icon
                 )
-                .tag(DetailPane.settings)
+                .tag(SidebarSelection.pane(.settings))
             } header: {
                 Text("Actions")
             }
         }
         .listStyle(.sidebar)
+        .onChange(of: viewModel.sidebarSelection) { _, selection in
+            if case .maintenance(let kind) = selection {
+                viewModel.selectedMaintenanceKind = kind
+            }
+        }
     }
 }

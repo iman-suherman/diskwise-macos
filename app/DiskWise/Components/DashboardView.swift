@@ -594,7 +594,7 @@ struct DashboardView: View {
 
                     StorageResultsChartsSection(volume: volume, overview: overview)
 
-                    if viewModel.totalDuplicateSavings > 0 || viewModel.isFindingDuplicates {
+                    if viewModel.totalDuplicateSavings > 0 {
                         duplicatesCallToAction
                     }
 

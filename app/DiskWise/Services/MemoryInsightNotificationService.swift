@@ -109,7 +109,7 @@ final class MemoryInsightNotificationService: NSObject, UNUserNotificationCenter
             MemoryAnalyzerMonitor.shared.captureNow()
             return true
         case Self.openAnalyzerIdentifier, UNNotificationDefaultActionIdentifier:
-            AppViewModel.current?.selectedPane = .systemOptimization
+            AppViewModel.current?.sidebarSelection = .pane(.systemOptimization)
             NSApp.activate(ignoringOtherApps: true)
             return true
         default:

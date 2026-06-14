@@ -125,7 +125,7 @@ final class SystemHealthNotificationService {
             SystemHealthMonitor.shared.refreshDetailed()
             return true
         case Self.openOptimizationIdentifier, UNNotificationDefaultActionIdentifier:
-            AppViewModel.current?.selectedPane = .systemOptimization
+            AppViewModel.current?.sidebarSelection = .pane(.systemOptimization)
             NSApp.activate(ignoringOtherApps: true)
             return true
         default:

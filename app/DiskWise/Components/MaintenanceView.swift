@@ -2,57 +2,51 @@ import SwiftUI
 import AppKit
 import MaintenanceKit
 
-struct MaintenanceView: View {
+struct MaintenanceDetailView: View {
+    let kind: MaintenanceKind
     @EnvironmentObject private var viewModel: AppViewModel
 
     var body: some View {
-        HSplitView {
-            maintenanceSidebar
-                .frame(minWidth: 240, idealWidth: 260, maxWidth: 300)
+        VStack(spacing: 0) {
+            sectionHeader
+                .padding(.horizontal, 28)
+                .padding(.top, 28)
+                .padding(.bottom, 12)
 
             maintenanceDetail
-                .frame(minWidth: 520)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .navigationTitle("System Maintenance")
         .onAppear {
-            if viewModel.systemSnapshot == nil {
+            viewModel.selectedMaintenanceKind = kind
+            if kind == .systemStatus {
                 viewModel.refreshSystemSnapshot()
             }
         }
     }
 
-    private var maintenanceSidebar: some View {
-        List(selection: $viewModel.selectedMaintenanceKind) {
-            ForEach(MaintenanceKind.groupedBySection, id: \.section) { group in
-                Section(group.section.title) {
-                    ForEach(group.kinds) { kind in
-                        Label {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(kind.title)
-                                Text(kind.subtitle)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(2)
-                            }
-                        } icon: {
-                            Image(systemName: kind.icon)
-                        }
-                        .tag(kind)
-                    }
-                }
+    private var sectionHeader: some View {
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(kind.section.title)
+                    .font(.largeTitle.bold())
+                Text(kind.section.description)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+
+            Spacer(minLength: 12)
+
+            Label(kind.title, systemImage: kind.icon)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
         }
-        .listStyle(.sidebar)
-        .onChange(of: viewModel.selectedMaintenanceKind) { _, newKind in
-            if newKind == .systemStatus {
-                viewModel.refreshSystemSnapshot()
-            }
-        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder
     private var maintenanceDetail: some View {
-        switch viewModel.selectedMaintenanceKind {
+        switch kind {
         case .apfsSnapshots:
             APFSSnapshotsPanel()
         case .appUninstall:
@@ -62,7 +56,7 @@ struct MaintenanceView: View {
         case .systemStatus:
             SystemStatusPanel()
         default:
-            MaintenanceScanPanel(kind: viewModel.selectedMaintenanceKind)
+            MaintenanceScanPanel(kind: kind)
         }
     }
 }
@@ -128,7 +122,8 @@ private struct APFSSnapshotsPanel: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .padding(24)
+        .padding(.horizontal, 28)
+        .padding(.bottom, 28)
     }
 }
 
@@ -161,7 +156,8 @@ private struct MaintenanceScanPanel: View {
                 emptyState
             }
         }
-        .padding(24)
+        .padding(.horizontal, 28)
+        .padding(.bottom, 28)
     }
 
     private var header: some View {
@@ -355,7 +351,8 @@ private struct AppUninstallPanel: View {
                 .listStyle(.inset(alternatesRowBackgrounds: true))
             }
         }
-        .padding(24)
+        .padding(.horizontal, 28)
+        .padding(.bottom, 28)
         .alert("Uninstall \(appPendingUninstall?.name ?? "app")?", isPresented: $showUninstallConfirm) {
             Button("Cancel", role: .cancel) {}
             Button("Move to Trash", role: .destructive) {
@@ -459,7 +456,8 @@ private struct OptimizePanel: View {
 
             Spacer()
         }
-        .padding(24)
+        .padding(.horizontal, 28)
+        .padding(.bottom, 28)
         .onAppear {
             viewModel.scanMaintenance(.optimize)
         }
@@ -496,7 +494,8 @@ private struct SystemStatusPanel: View {
 
             Spacer()
         }
-        .padding(24)
+        .padding(.horizontal, 28)
+        .padding(.bottom, 28)
     }
 
     private func healthHeader(_ snapshot: SystemSnapshot) -> some View {

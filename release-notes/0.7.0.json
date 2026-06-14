@@ -1,0 +1,19 @@
+{
+  "summary": "Maintenance is reorganized into Clean My Mac, Developer Projects, and System Cleanup; Disk Analysis and Duplicates Finder get sticky headers; duplicate scans can be cancelled; and false low-space alerts on tiny mounts are fixed.",
+  "introduced": [
+    "Clean My Mac sidebar section — App Caches, Browser Caches, Developer Caches, Logs, Temporary Files, Trash, and Installers each open directly from the sidebar with section descriptions",
+    "Developer Projects sidebar section — node_modules, Build Artifacts, and Virtual Environments as first-class menu items for reclaiming heavy project folders",
+    "System Cleanup sidebar section — APFS Snapshots, Uninstall Apps (with icon), and Optimize moved out of the old System Maintenance split view",
+    "Disk Analysis header — sticky title, drive picker, free-space badge, and scan actions matching System Optimization layout",
+    "Duplicates Finder header — Find Duplicates, Scan Again, and Cancel controls live in the pane instead of the sidebar Actions menu"
+  ],
+  "changed": [
+    "System Maintenance removed — cleanup tools are now grouped under three dedicated sidebar sections with sub-menus and footer descriptions",
+    "Duplicate detection — start and cancel scans only from Duplicates Finder; sidebar Actions links to Review Duplicates without auto-starting a scan",
+    "Disk Analysis toolbar — volume picker and scan buttons moved into the section header for a cleaner main toolbar",
+    "Maintenance detail panels — full-width layout with sticky section headers (Clean My Mac, Developer Projects, or System Cleanup) above each tool"
+  ],
+  "fixed": [
+    "Disk space notifications no longer fire for tiny mounts such as app disk images — RAM-based critical alerts apply only to the system disk, and volumes under 512 MB are ignored"
+  ]
+}
