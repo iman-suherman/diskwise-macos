@@ -24,4 +24,14 @@ final class MemoryProcessRulesTests: XCTestCase {
         XCTAssertTrue(MemoryProcessRules.isBrowserProcess("Google Chrome Helper (Renderer)"))
         XCTAssertFalse(MemoryProcessRules.isBrowserProcess("DiskWise"))
     }
+
+    func testUserFacingApplicationNameMapsOllamaSubprocesses() {
+        XCTAssertEqual(MemoryProcessRules.userFacingApplicationName(for: "ollama"), "Ollama")
+        XCTAssertEqual(MemoryProcessRules.userFacingApplicationName(for: "ollama serve"), "Ollama")
+        XCTAssertEqual(MemoryProcessRules.userFacingApplicationName(for: "llama-server"), "Ollama")
+    }
+
+    func testKnownBundleFragmentForOllama() {
+        XCTAssertEqual(MemoryProcessRules.knownBundleFragment(forApplicationName: "llama-server"), "com.electron.ollama")
+    }
 }

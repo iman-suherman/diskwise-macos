@@ -1,0 +1,11 @@
+{
+  "summary": "Restart and Focus App actions work for menu bar apps like Ollama, and Focus App now shows memory-saving steps before opening the browser.",
+  "introduced": [],
+  "changed": [
+    "Focus App — shows a Free memory in {app} dialog with browser-specific tips (close tabs, Task Manager, extensions) before an Open {app} button brings the app to the front"
+  ],
+  "fixed": [
+    "Restart App — menu bar and background apps such as Ollama are found via accessory activation policy and com.electron.ollama; subprocess names like ollama serve and llama-server resolve correctly",
+    "Quit App — same improved lookup for Ollama and other non-Dock apps with an installed .app bundle"
+  ]
+}

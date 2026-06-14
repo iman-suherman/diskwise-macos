@@ -5,6 +5,60 @@ enum MemoryAnalyzerScrollTarget {
     static let suggestedActions = "memory-analyzer-suggested-actions"
 }
 
+private struct MemoryActionAlertModifier: ViewModifier {
+    @Binding var actionMessage: String?
+    @Binding var quitTargetName: String?
+    @Binding var focusAppTarget: String?
+    let onQuit: (String) async -> Void
+    let onFocus: (String) async -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .alert("Memory Action", isPresented: Binding(
+                get: { actionMessage != nil },
+                set: { if !$0 { actionMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(actionMessage ?? "")
+            }
+            .alert(
+                "Quit App?",
+                isPresented: Binding(
+                    get: { quitTargetName != nil },
+                    set: { if !$0 { quitTargetName = nil } }
+                ),
+                presenting: quitTargetName
+            ) { name in
+                Button("Quit", role: .destructive) {
+                    Task { await onQuit(name) }
+                }
+                Button("Cancel", role: .cancel) {
+                    quitTargetName = nil
+                }
+            } message: { name in
+                Text("Quit \(name)? Unsaved work may be lost.")
+            }
+            .alert(
+                focusAppTarget.map { MemoryActionExecutor.focusAppAlertTitle(for: $0) } ?? "Free memory",
+                isPresented: Binding(
+                    get: { focusAppTarget != nil },
+                    set: { if !$0 { focusAppTarget = nil } }
+                ),
+                presenting: focusAppTarget
+            ) { name in
+                Button(MemoryActionExecutor.focusAppCTATitle(for: name)) {
+                    Task { await onFocus(name) }
+                }
+                Button("Cancel", role: .cancel) {
+                    focusAppTarget = nil
+                }
+            } message: { name in
+                Text(MemoryActionExecutor.focusAppInstructions(for: name))
+            }
+    }
+}
+
 struct MemoryAnalyzerView: View {
     var embeddedInOptimization: Bool = false
 
@@ -13,6 +67,7 @@ struct MemoryAnalyzerView: View {
 
     @State private var actionMessage: String?
     @State private var quitTargetName: String?
+    @State private var focusAppTarget: String?
 
     var body: some View {
         Group {
@@ -25,37 +80,19 @@ struct MemoryAnalyzerView: View {
                 }
             }
         }
+        .modifier(MemoryActionAlertModifier(
+            actionMessage: $actionMessage,
+            quitTargetName: $quitTargetName,
+            focusAppTarget: $focusAppTarget,
+            onQuit: performQuit,
+            onFocus: performFocus
+        ))
         .onAppear {
             guard !embeddedInOptimization else { return }
             monitor.applySettings(viewModel.appSettings)
             if monitor.report == nil {
                 monitor.captureNow()
             }
-        }
-        .alert("Memory Action", isPresented: Binding(
-            get: { actionMessage != nil },
-            set: { if !$0 { actionMessage = nil } }
-        )) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(actionMessage ?? "")
-        }
-        .alert(
-            "Quit App?",
-            isPresented: Binding(
-                get: { quitTargetName != nil },
-                set: { if !$0 { quitTargetName = nil } }
-            ),
-            presenting: quitTargetName
-        ) { name in
-            Button("Quit", role: .destructive) {
-                Task { await performQuit(named: name) }
-            }
-            Button("Cancel", role: .cancel) {
-                quitTargetName = nil
-            }
-        } message: { name in
-            Text("Quit \(name)? Unsaved work may be lost.")
         }
     }
 
@@ -369,6 +406,15 @@ struct MemoryAnalyzerView: View {
             quitTargetName = recommendation.targetProcessName
             return
         }
+        if recommendation.actionKind == .reduceTabs {
+            guard let name = recommendation.targetProcessName else { return }
+            if MemoryActionExecutor.canFocusApplication(named: name) {
+                focusAppTarget = name
+            } else {
+                actionMessage = MemoryActionExecutor.focusApplication(named: name)
+            }
+            return
+        }
         Task {
             actionMessage = await MemoryActionExecutor.perform(recommendation)
             monitor.captureNow()
@@ -381,6 +427,14 @@ struct MemoryAnalyzerView: View {
             kind: .quitProcess,
             targetProcessName: name
         )
+        monitor.captureNow()
+    }
+
+    private func performFocus(named name: String) async {
+        focusAppTarget = nil
+        if let error = MemoryActionExecutor.focusApplication(named: name) {
+            actionMessage = error
+        }
         monitor.captureNow()
     }
 
@@ -408,6 +462,7 @@ struct AppleIntelligenceInsightsView: View {
 
     @State private var actionMessage: String?
     @State private var quitTargetName: String?
+    @State private var focusAppTarget: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -426,31 +481,13 @@ struct AppleIntelligenceInsightsView: View {
                 collectingSamplesState
             }
         }
-        .alert("Memory Action", isPresented: Binding(
-            get: { actionMessage != nil },
-            set: { if !$0 { actionMessage = nil } }
-        )) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(actionMessage ?? "")
-        }
-        .alert(
-            "Quit App?",
-            isPresented: Binding(
-                get: { quitTargetName != nil },
-                set: { if !$0 { quitTargetName = nil } }
-            ),
-            presenting: quitTargetName
-        ) { name in
-            Button("Quit", role: .destructive) {
-                Task { await performQuit(named: name) }
-            }
-            Button("Cancel", role: .cancel) {
-                quitTargetName = nil
-            }
-        } message: { name in
-            Text("Quit \(name)? Unsaved work may be lost.")
-        }
+        .modifier(MemoryActionAlertModifier(
+            actionMessage: $actionMessage,
+            quitTargetName: $quitTargetName,
+            focusAppTarget: $focusAppTarget,
+            onQuit: performQuit,
+            onFocus: performFocus
+        ))
     }
 
     private var sectionHeading: some View {
@@ -528,6 +565,15 @@ struct AppleIntelligenceInsightsView: View {
             quitTargetName = recommendation.targetProcessName
             return
         }
+        if recommendation.actionKind == .reduceTabs {
+            guard let name = recommendation.targetProcessName else { return }
+            if MemoryActionExecutor.canFocusApplication(named: name) {
+                focusAppTarget = name
+            } else {
+                actionMessage = MemoryActionExecutor.focusApplication(named: name)
+            }
+            return
+        }
         Task {
             actionMessage = await MemoryActionExecutor.perform(recommendation)
             monitor.captureNow()
@@ -540,6 +586,14 @@ struct AppleIntelligenceInsightsView: View {
             kind: .quitProcess,
             targetProcessName: name
         )
+        monitor.captureNow()
+    }
+
+    private func performFocus(named name: String) async {
+        focusAppTarget = nil
+        if let error = MemoryActionExecutor.focusApplication(named: name) {
+            actionMessage = error
+        }
         monitor.captureNow()
     }
 }

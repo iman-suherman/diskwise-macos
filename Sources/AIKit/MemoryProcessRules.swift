@@ -14,7 +14,23 @@ public enum MemoryProcessRules {
             name = String(name[..<helperRange.lowerBound]).trimmingCharacters(in: .whitespaces)
         }
 
+        let lower = name.lowercased()
+        if lower == "ollama" || lower.hasPrefix("ollama ") || lower.hasPrefix("llama-server") {
+            return "Ollama"
+        }
+
         return name
+    }
+
+    /// Bundle ID fragment used to locate an installed app from a process or display name.
+    public static func knownBundleFragment(forApplicationName name: String) -> String? {
+        let lower = userFacingApplicationName(for: name).lowercased()
+        if lower.contains("chrome") { return "google.Chrome" }
+        if lower.contains("firefox") { return "org.mozilla.firefox" }
+        if lower.contains("safari") { return "com.apple.Safari" }
+        if lower.contains("edge") { return "com.microsoft.edgemac" }
+        if lower.contains("ollama") { return "com.electron.ollama" }
+        return nil
     }
 
     public static func isBrowserProcess(_ processName: String) -> Bool {
