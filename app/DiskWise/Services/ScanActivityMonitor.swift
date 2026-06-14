@@ -34,7 +34,7 @@ final class ScanActivityMonitor: ObservableObject {
         detail: String?,
         operationLabel: String?
     ) {
-        isScanning = true
+        guard isScanning else { return }
         self.progressFraction = progressFraction
         self.progressPercentLabel = progressPercentLabel
         self.detail = detail

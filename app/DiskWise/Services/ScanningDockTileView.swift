@@ -1,7 +1,10 @@
 import AppKit
+import SwiftUI
 
 final class ScanningDockTileView: NSView {
     private let scanningImage: NSImage
+    private let updatesDockTile: Bool
+    private let imageInsetFraction: CGFloat
     private var animationTimer: Timer?
     private var rotationAngle: CGFloat = 0
     private var pulsePhase: CGFloat = 0
@@ -16,10 +19,23 @@ final class ScanningDockTileView: NSView {
         }
     }
 
-    init(image: NSImage) {
+    init(image: NSImage, size: NSSize? = nil, updatesDockTile: Bool = true, imageInsetFraction: CGFloat = 0) {
         scanningImage = image
-        let size = NSApp.dockTile.size
-        super.init(frame: NSRect(origin: .zero, size: size))
+        self.updatesDockTile = updatesDockTile
+        self.imageInsetFraction = imageInsetFraction
+        let resolvedSize = size ?? NSApp.dockTile.size
+        super.init(frame: NSRect(origin: .zero, size: resolvedSize))
+    }
+
+    static func loadScanningImage() -> NSImage? {
+        if let image = NSImage(named: "DockScanning") {
+            return image
+        }
+        if let url = Bundle.main.url(forResource: "scanning", withExtension: "png"),
+           let image = NSImage(contentsOf: url) {
+            return image
+        }
+        return nil
     }
 
     @available(*, unavailable)
@@ -42,7 +58,9 @@ final class ScanningDockTileView: NSView {
             }
             self.pulsePhase += 0.1
             self.needsDisplay = true
-            NSApp.dockTile.display()
+            if self.updatesDockTile {
+                NSApp.dockTile.display()
+            }
         }
         if let animationTimer {
             RunLoop.main.add(animationTimer, forMode: .common)
@@ -61,7 +79,9 @@ final class ScanningDockTileView: NSView {
         let cornerRadius = bounds.width * 0.2237
         NSBezierPath(roundedRect: bounds, xRadius: cornerRadius, yRadius: cornerRadius).addClip()
 
-        scanningImage.draw(in: bounds, from: .zero, operation: .sourceOver, fraction: 1.0)
+        let inset = bounds.width * imageInsetFraction
+        let imageRect = bounds.insetBy(dx: inset, dy: inset)
+        scanningImage.draw(in: imageRect, from: .zero, operation: .sourceOver, fraction: 1.0)
 
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         let ringRadius = bounds.width * 0.44
@@ -128,5 +148,39 @@ final class ScanningDockTileView: NSView {
             y: badgeRect.midY - textSize.height / 2
         )
         (label as NSString).draw(at: textOrigin, withAttributes: attributes)
+    }
+}
+
+struct ScanningDockTileRepresentable: NSViewRepresentable {
+    var size: CGFloat = 88
+    var progressFraction: Double = 0
+    var progressLabel = ""
+    var statusDescription = ""
+
+    func makeNSView(context: Context) -> ScanningDockTileView {
+        let image = ScanningDockTileView.loadScanningImage()
+            ?? NSApp.applicationIconImage
+            ?? NSImage(systemSymbolName: "externaldrive.fill", accessibilityDescription: nil)!
+        let view = ScanningDockTileView(
+            image: image,
+            size: NSSize(width: size, height: size),
+            updatesDockTile: false
+        )
+        view.progressFraction = progressFraction
+        view.progressLabel = progressLabel
+        view.statusDescription = statusDescription
+        view.startAnimating()
+        return view
+    }
+
+    func updateNSView(_ nsView: ScanningDockTileView, context: Context) {
+        nsView.progressFraction = progressFraction
+        nsView.progressLabel = progressLabel
+        nsView.statusDescription = statusDescription
+        nsView.needsDisplay = true
+    }
+
+    static func dismantleNSView(_ nsView: ScanningDockTileView, coordinator: ()) {
+        nsView.stopAnimating()
     }
 }

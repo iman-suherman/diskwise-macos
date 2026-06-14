@@ -24,14 +24,33 @@ struct StartupSplashOverlay: View {
         )
     }
 
+    private var startupProgressFraction: Double {
+        let steps = visibleSteps
+        guard !steps.isEmpty else { return 0 }
+        let completed = steps.filter { completedSteps.contains($0) }.count
+        let activeBonus = activeStep.map { steps.contains($0) ? 0.35 : 0 } ?? 0
+        return min(1, (Double(completed) + activeBonus) / Double(steps.count))
+    }
+
+    private var startupProgressLabel: String {
+        "\(Int((startupProgressFraction * 100).rounded()))%"
+    }
+
     var body: some View {
         ZStack {
             Color.black.opacity(0.42)
                 .ignoresSafeArea()
 
             VStack(spacing: 20) {
-                StartupScanningHeroIcon()
-                    .accessibilityLabel(isPostUpgrade ? "Setting up DiskWise" : "Starting DiskWise")
+                ScanningDockTileRepresentable(
+                    size: 88,
+                    progressFraction: startupProgressFraction,
+                    progressLabel: startupProgressLabel,
+                    statusDescription: isPostUpgrade ? "Setting up DiskWise" : "Starting DiskWise"
+                )
+                .frame(width: 88, height: 88)
+                .shadow(color: .black.opacity(0.22), radius: 10, y: 4)
+                .accessibilityLabel(isPostUpgrade ? "Setting up DiskWise" : "Starting DiskWise")
 
                 VStack(spacing: 6) {
                     Text(isPostUpgrade ? "Setting up DiskWise \(version)" : "Starting DiskWise")
@@ -122,45 +141,6 @@ struct StartupSplashOverlay: View {
                 .foregroundStyle(isComplete || isActive ? .primary : .secondary)
                 .labelStyle(.titleAndIcon)
         }
-    }
-}
-
-private struct StartupScanningHeroIcon: View {
-    @State private var pulse = false
-
-    var body: some View {
-        Group {
-            if let image = scanningImage {
-                Image(nsImage: image)
-                    .resizable()
-                    .interpolation(.high)
-                    .frame(width: 88, height: 88)
-                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .shadow(color: .black.opacity(0.22), radius: 10, y: 4)
-                    .scaleEffect(pulse ? 1.04 : 0.96)
-                    .animation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true), value: pulse)
-            } else {
-                Image(nsImage: NSApp.applicationIconImage)
-                    .resizable()
-                    .interpolation(.high)
-                    .frame(width: 88, height: 88)
-                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            }
-        }
-        .onAppear {
-            pulse = true
-        }
-    }
-
-    private var scanningImage: NSImage? {
-        if let image = NSImage(named: "DockScanning") {
-            return image
-        }
-        if let url = Bundle.main.url(forResource: "scanning", withExtension: "png"),
-           let image = NSImage(contentsOf: url) {
-            return image
-        }
-        return nil
     }
 }
 

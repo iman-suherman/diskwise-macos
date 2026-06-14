@@ -372,7 +372,7 @@ struct OverviewTabView: View {
                 title: "Free",
                 value: DiskWiseFormatters.bytes.string(fromByteCount: volume.freeSize),
                 detail: "Available space",
-                accent: .green
+                accent: MenuBarDiskThresholds.statusColor(for: volume)
             )
         }
     }

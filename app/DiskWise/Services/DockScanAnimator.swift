@@ -10,11 +10,17 @@ final class DockScanAnimator {
     private init() {}
 
     func start() {
+        guard ScanActivityMonitor.shared.isScanning else { return }
         guard view == nil else { return }
         guard !AppSettings.shared.hideFromDock else { return }
-        guard let image = scanningImage else { return }
+        guard let image = ScanningDockTileView.loadScanningImage() else { return }
 
-        let scanView = ScanningDockTileView(image: image)
+        let scanView = ScanningDockTileView(
+            image: image,
+            size: NSApp.dockTile.size,
+            updatesDockTile: true,
+            imageInsetFraction: 0.08
+        )
         applyScanState(from: ScanActivityMonitor.shared, to: scanView)
         view = scanView
         NSApp.dockTile.contentView = scanView
@@ -34,17 +40,6 @@ final class DockScanAnimator {
         view = nil
         NSApp.dockTile.contentView = nil
         NSApp.dockTile.display()
-    }
-
-    private var scanningImage: NSImage? {
-        if let image = NSImage(named: "DockScanning") {
-            return image
-        }
-        if let url = Bundle.main.url(forResource: "scanning", withExtension: "png"),
-           let image = NSImage(contentsOf: url) {
-            return image
-        }
-        return nil
     }
 
     private func applyScanState(from monitor: ScanActivityMonitor, to view: ScanningDockTileView) {

@@ -115,19 +115,20 @@ enum MenuBarDiskThresholds {
         freeSize < physicalMemoryBytes * 2
     }
 
+    /// Matches Disk Analysis Overview free-space accent: green when healthy, orange when low, red when critical.
     static func statusColor(freeSize: Int64, freeFraction: Double) -> Color {
-        if isCriticallyLow(freeSize: freeSize) {
+        let fraction = max(0, min(1, freeFraction))
+        if isCriticallyLow(freeSize: freeSize) || fraction < 0.10 {
             return .red
         }
-
-        let fraction = max(0, min(1, freeFraction))
-        if fraction >= 0.5 {
-            return .green
-        }
-        if fraction >= 0.15 {
+        if fraction < 0.25 {
             return .orange
         }
-        return Color(red: 1, green: 0.35 + (fraction / 0.15) * 0.35, blue: 0.2)
+        return .green
+    }
+
+    static func statusColor(for volume: MountedVolume) -> Color {
+        statusColor(freeSize: volume.freeSize, freeFraction: max(0, 1 - volume.usageFraction))
     }
 }
 
@@ -221,15 +222,8 @@ struct MenuBarVolumeFreeSpaceLabel: View {
             .accessibilityLabel(accessibilityLabel)
     }
 
-    private var freeFraction: Double {
-        max(0, min(1, 1 - volume.usageFraction))
-    }
-
     private var statusColor: Color {
-        MenuBarDiskThresholds.statusColor(
-            freeSize: volume.freeSize,
-            freeFraction: freeFraction
-        )
+        MenuBarDiskThresholds.statusColor(for: volume)
     }
 
     private var accessibilityLabel: String {
@@ -237,7 +231,7 @@ struct MenuBarVolumeFreeSpaceLabel: View {
     }
 }
 
-/// Sidebar badge matching menu bar `HD (256GB)` free-space label and color thresholds.
+/// Sidebar and Disk Analysis header badge — same label and color as the menu bar free-space readout.
 struct SidebarDiskFreeSpaceBadge: View {
     let volume: MountedVolume
 
@@ -249,15 +243,8 @@ struct SidebarDiskFreeSpaceBadge: View {
             .accessibilityLabel(accessibilityLabel)
     }
 
-    private var freeFraction: Double {
-        max(0, min(1, 1 - volume.usageFraction))
-    }
-
     private var statusColor: Color {
-        MenuBarDiskThresholds.statusColor(
-            freeSize: volume.freeSize,
-            freeFraction: freeFraction
-        )
+        MenuBarDiskThresholds.statusColor(for: volume)
     }
 
     private var accessibilityLabel: String {
@@ -756,10 +743,7 @@ struct MenuBarPopoverContent: View {
     }
 
     private func usageColor(for volume: MountedVolume) -> Color {
-        MenuBarDiskThresholds.statusColor(
-            freeSize: volume.freeSize,
-            freeFraction: max(0, 1 - volume.usageFraction)
-        )
+        MenuBarDiskThresholds.statusColor(for: volume)
     }
 
     private func statHeader(_ title: String) -> some View {

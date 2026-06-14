@@ -1,0 +1,14 @@
+{
+  "summary": "Free-space colors stay consistent across the menu bar and Disk Analysis, the startup splash shows dock-style scan progress again, and the dock icon only animates during real scans.",
+  "introduced": [],
+  "changed": [
+    "Free-space colors — menu bar, Disk Analysis header badge, and Overview Free card share the same green/orange/red thresholds (25% and 10% free)",
+    "Startup splash — dock-style scanning animation with step-based progress badge replaces the static app icon during setup",
+    "Dock icon — scanning artwork appears only while a filesystem scan runs; normal icon on launch with sizing matched to other dock icons",
+    "Update button — toolbar control is icon-only (arrow.down.circle) with unchanged Check for Updates help tooltip"
+  ],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

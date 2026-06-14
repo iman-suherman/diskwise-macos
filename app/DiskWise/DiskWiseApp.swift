@@ -31,6 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         SystemVolumeMonitor.shared.refresh()
         MenuBarMonitorController.syncMenuBarItems(settings: AppSettings.shared)
         DockVisibilityController.apply(hidden: AppSettings.shared.hideFromDock)
+        DockScanAnimator.shared.stop()
 
         MemoryInsightNotificationService.shared.prepare()
         DiskSpaceNotificationService.shared.prepare()
@@ -298,10 +299,7 @@ struct ContentView: View {
             Button {
                 SparkleUpdaterController.shared.checkForUpdates()
             } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "arrow.down.circle")
-                    Text("Update")
-                }
+                Image(systemName: "arrow.down.circle")
             }
             .buttonStyle(.borderless)
             .help("Check for Updates…")
