@@ -34,6 +34,7 @@
 		33F7D9A75E5AB5098551D85D /* 0.5.18.json in Resources */ = {isa = PBXBuildFile; fileRef = D55B4D8545269C44AB27D3D0 /* 0.5.18.json */; };
 		34F0C9D4060B76B5D020654C /* 0.5.9.json in Resources */ = {isa = PBXBuildFile; fileRef = E0B3FDCCC3CB35AAA33977EA /* 0.5.9.json */; };
 		36DBFBCADADF9C0C5B4BA080 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41738F52625CC6311842BB5E /* AppViewModel.swift */; };
+		37E65E16FE154CA128660458 /* 0.7.1.json in Resources */ = {isa = PBXBuildFile; fileRef = FFD8556ADA315BC4BD73911B /* 0.7.1.json */; };
 		3C7DED24BCCE52F43DA8E8C6 /* DiskSpaceNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19CD2D60FCE100FAE2A0E44D /* DiskSpaceNotificationService.swift */; };
 		3D64C6ECB71946C0F6021DE9 /* 0.5.8.json in Resources */ = {isa = PBXBuildFile; fileRef = A78CC063A378D25BAFE7A767 /* 0.5.8.json */; };
 		3DCDE49CEF1302917C0BF7DB /* SystemHealthNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAEC7145766F553BED663558 /* SystemHealthNotificationService.swift */; };
@@ -247,6 +248,7 @@
 		F9360EC36C59D568DEE4B034 /* WhatsNewTourView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewTourView.swift; sourceTree = "<group>"; };
 		FB4C021EC521213A445B557D /* MemoryInsightActionMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryInsightActionMatcher.swift; sourceTree = "<group>"; };
 		FD14405937526107CBD36994 /* 0.1.0.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.0.json; sourceTree = "<group>"; };
+		FFD8556ADA315BC4BD73911B /* 0.7.1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.1.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -354,6 +356,7 @@
 				D77923302EECBDB096A59C78 /* 0.6.8.json */,
 				8D2B40F26DC40B81DD755E3F /* 0.6.9.json */,
 				2C08A11A1D6AA65C6E5C7144 /* 0.7.0.json */,
+				FFD8556ADA315BC4BD73911B /* 0.7.1.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -593,6 +596,7 @@
 				46FA2B8AEE922909C9904741 /* 0.6.8.json in Resources */,
 				4CB29676DDA65858C1FE9E47 /* 0.6.9.json in Resources */,
 				ADEEBB229E346E98CFE73C02 /* 0.7.0.json in Resources */,
+				37E65E16FE154CA128660458 /* 0.7.1.json in Resources */,
 				BAC56BC5D44D164A6D1651C3 /* Assets.xcassets in Resources */,
 				7F3FA96EA3B2337449CD40D0 /* diskwise_scan.py in Resources */,
 				E559D2BF705EE1AB7F9CA4EA /* entitlements.mac.plist in Resources */,

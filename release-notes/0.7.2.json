@@ -1,0 +1,12 @@
+{
+  "summary": "Fixes maintenance section tabs showing the wrong tool after switching sidebar items, and stops the sidebar and tab bar from shifting into the window title bar.",
+  "introduced": [],
+  "changed": [
+    "Maintenance sections keep their own tab selection — switching between Clean My Mac, Developer Projects, and System Cleanup resets to the correct sub-menu",
+    "Sidebar title pinned above the menu list so items no longer scroll into the traffic-light buttons"
+  ],
+  "fixed": [
+    "Developer Projects and other maintenance menus no longer show content from a previously visited section (e.g. Installers appearing under Developer Projects)",
+    "Maintenance tab bars and section headers no longer clip at the top of the window when changing sidebar selection"
+  ]
+}

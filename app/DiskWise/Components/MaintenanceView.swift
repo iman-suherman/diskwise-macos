@@ -5,16 +5,15 @@ import MaintenanceKit
 struct MaintenanceSectionView: View {
     let section: MaintenanceSection
     @EnvironmentObject private var viewModel: AppViewModel
+    @State private var selectedKind: MaintenanceKind
 
     private var kinds: [MaintenanceKind] {
         section.sidebarKinds
     }
 
-    private var selectedKind: Binding<MaintenanceKind> {
-        Binding(
-            get: { viewModel.selectedMaintenanceKind },
-            set: { viewModel.selectedMaintenanceKind = $0 }
-        )
+    init(section: MaintenanceSection) {
+        self.section = section
+        _selectedKind = State(initialValue: section.sidebarKinds.first ?? .appCaches)
     }
 
     var body: some View {
@@ -24,21 +23,33 @@ struct MaintenanceSectionView: View {
                 .padding(.top, 28)
                 .padding(.bottom, 12)
 
-            MaintenanceSectionTabBar(kinds: kinds, selection: selectedKind)
+            MaintenanceSectionTabBar(kinds: kinds, selection: $selectedKind)
                 .padding(.horizontal, 28)
                 .padding(.bottom, 16)
 
-            MaintenanceKindPanel(kind: viewModel.selectedMaintenanceKind)
-                .id(viewModel.selectedMaintenanceKind)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            ScrollView {
+                MaintenanceKindPanel(kind: selectedKind)
+                    .padding(.bottom, 28)
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear {
-            ensureSelectedKindMatchesSection()
+            syncSelectionFromViewModel()
         }
-        .onChange(of: viewModel.selectedMaintenanceKind) { _, kind in
+        .onChange(of: section) { _, _ in
+            syncSelectionFromViewModel()
+        }
+        .onChange(of: selectedKind) { _, kind in
+            viewModel.selectedMaintenanceKind = kind
+            clearStaleMaintenanceResult(for: kind)
             if kind == .systemStatus {
                 viewModel.refreshSystemSnapshot()
             }
+        }
+        .onChange(of: viewModel.selectedMaintenanceKind) { _, kind in
+            guard kinds.contains(kind), selectedKind != kind else { return }
+            selectedKind = kind
+            clearStaleMaintenanceResult(for: kind)
         }
     }
 
@@ -54,14 +65,20 @@ struct MaintenanceSectionView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func ensureSelectedKindMatchesSection() {
-        guard kinds.contains(viewModel.selectedMaintenanceKind) else {
-            viewModel.selectedMaintenanceKind = kinds.first ?? viewModel.selectedMaintenanceKind
-            return
-        }
-        if viewModel.selectedMaintenanceKind.section != section,
-           let first = kinds.first {
+    private func syncSelectionFromViewModel() {
+        if kinds.contains(viewModel.selectedMaintenanceKind) {
+            selectedKind = viewModel.selectedMaintenanceKind
+        } else if let first = kinds.first {
+            selectedKind = first
             viewModel.selectedMaintenanceKind = first
+        }
+        clearStaleMaintenanceResult(for: selectedKind)
+    }
+
+    private func clearStaleMaintenanceResult(for kind: MaintenanceKind) {
+        if viewModel.maintenanceScanResult?.kind != kind {
+            viewModel.maintenanceScanResult = nil
+            viewModel.maintenanceSelectedEntryIDs = []
         }
     }
 }
@@ -77,8 +94,9 @@ private struct MaintenanceSectionTabBar: View {
                     tabButton(kind)
                 }
             }
+            .padding(.vertical, 2)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
     }
 
     private func tabButton(_ kind: MaintenanceKind) -> some View {
@@ -115,12 +133,7 @@ struct MaintenanceKindPanel: View {
 
     var body: some View {
         maintenanceDetail
-            .onAppear {
-                viewModel.selectedMaintenanceKind = kind
-                if kind == .systemStatus {
-                    viewModel.refreshSystemSnapshot()
-                }
-            }
+            .id(kind)
     }
 
     @ViewBuilder
@@ -156,7 +169,7 @@ private struct APFSSnapshotsPanel: View {
             if viewModel.isMaintenanceScanning {
                 ProgressView("Listing snapshots…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let result = viewModel.maintenanceScanResult {
+            } else if let result = viewModel.maintenanceScanResult, result.kind == .apfsSnapshots {
                 if result.entries.isEmpty {
                     ContentUnavailableView(
                         "No local snapshots",
@@ -216,8 +229,8 @@ private struct MaintenanceScanPanel: View {
 
             if viewModel.isMaintenanceScanning {
                 ProgressView("Scanning…")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let result = viewModel.maintenanceScanResult {
+                    .frame(maxWidth: .infinity, minHeight: 240)
+            } else if let result = viewModel.maintenanceScanResult, result.kind == kind {
                 if result.entries.isEmpty {
                     ContentUnavailableView(
                         "Nothing found",

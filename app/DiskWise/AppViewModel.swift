@@ -2572,7 +2572,20 @@ final class AppViewModel: ObservableObject {
 
     func openMaintenanceKind(_ kind: MaintenanceKind) {
         selectedMaintenanceKind = kind
+        maintenanceScanResult = nil
+        maintenanceSelectedEntryIDs = []
         sidebarSelection = .pane(DetailPane.pane(for: kind.section))
+    }
+
+    func prepareMaintenanceSection(_ section: MaintenanceSection) {
+        let kinds = section.sidebarKinds
+        if !kinds.contains(selectedMaintenanceKind), let first = kinds.first {
+            selectedMaintenanceKind = first
+        }
+        if maintenanceScanResult?.kind != selectedMaintenanceKind {
+            maintenanceScanResult = nil
+            maintenanceSelectedEntryIDs = []
+        }
     }
 
     @discardableResult
@@ -2666,6 +2679,10 @@ final class AppViewModel: ObservableObject {
     func scanMaintenance(_ kind: MaintenanceKind) {
         selectedMaintenanceKind = kind
         sidebarSelection = .pane(DetailPane.pane(for: kind.section))
+        if maintenanceScanResult?.kind != kind {
+            maintenanceScanResult = nil
+            maintenanceSelectedEntryIDs = []
+        }
         isMaintenanceScanning = true
         maintenanceStatusMessage = "Scanning \(kind.title.lowercased())…"
         setStatus(maintenanceStatusMessage, kind: .working)

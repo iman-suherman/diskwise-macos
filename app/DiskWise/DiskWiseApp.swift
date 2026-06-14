@@ -123,9 +123,17 @@ struct ContentView: View {
             Group {
                 if viewModel.isMainContentReady {
                     NavigationSplitView {
-                        sidebar
-                            .navigationTitle("DiskWise")
-                            .navigationSplitViewColumnWidth(min: 260, ideal: 280, max: 340)
+                        VStack(spacing: 0) {
+                            Text("DiskWise")
+                                .font(.title2.bold())
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 16)
+                                .padding(.top, 10)
+                                .padding(.bottom, 6)
+
+                            sidebar
+                        }
+                        .navigationSplitViewColumnWidth(min: 260, ideal: 280, max: 340)
                     } detail: {
                         detailContent
                             .toolbar {
@@ -306,10 +314,13 @@ struct ContentView: View {
             DuplicatesView()
         case .pane(.cleanMyMac):
             MaintenanceSectionView(section: .clean)
+                .id(DetailPane.cleanMyMac)
         case .pane(.developerProjects):
             MaintenanceSectionView(section: .projects)
+                .id(DetailPane.developerProjects)
         case .pane(.systemCleanup):
             MaintenanceSectionView(section: .system)
+                .id(DetailPane.systemCleanup)
         case .pane(.ai):
             VolumeDiskTabView()
                 .onAppear { viewModel.selectedVolumeTab = .insights }
@@ -449,5 +460,10 @@ struct ContentView: View {
             }
         }
         .listStyle(.sidebar)
+        .onChange(of: viewModel.sidebarSelection) { _, selection in
+            if case .pane(let pane) = selection, let section = pane.maintenanceSection {
+                viewModel.prepareMaintenanceSection(section)
+            }
+        }
     }
 }
