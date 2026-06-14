@@ -13,9 +13,15 @@ enum ChatMessageFormatter {
         "Review first",
         "Memory overview",
         "Memory under pressure",
+        "Current memory state",
+        "Current Memory State Analysis",
         "Top consumers",
+        "Persistent memory consumers",
+        "Persistent Memory Consumers",
         "Optimization tips",
         "Suggested actions",
+        "Practical Habits for Efficient Use",
+        "Practical habits for efficient use",
         "Better computing habits",
     ]
 
@@ -129,5 +135,303 @@ enum ChatMessageFormatter {
             .components(separatedBy: "\n\n")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
+    }
+
+    static func parseMemoryInsight(_ text: String) -> [MemoryInsightSection] {
+        let normalized = normalizeMemoryInsightText(text)
+        let rawBlocks = normalized
+            .components(separatedBy: "\n\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        var sections: [MemoryInsightSection] = []
+        var currentTitle: String?
+        var currentItems: [MemoryInsightItem] = []
+
+        func flushSection() {
+            guard currentTitle != nil || !currentItems.isEmpty else { return }
+            let title = currentTitle
+            sections.append(
+                MemoryInsightSection(
+                    id: title ?? "section-\(sections.count)",
+                    title: title,
+                    items: currentItems
+                )
+            )
+            currentTitle = nil
+            currentItems = []
+        }
+
+        for block in rawBlocks {
+            if let heading = parseHeading(block) {
+                flushSection()
+                currentTitle = heading
+                continue
+            }
+
+            let lines = block
+                .components(separatedBy: "\n")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+
+            if lines.count == 1, let item = parseSingleLineInsight(lines[0]) {
+                currentItems.append(item)
+                continue
+            }
+
+            for line in lines {
+                if let item = parseSingleLineInsight(line) {
+                    currentItems.append(item)
+                } else {
+                    currentItems.append(.paragraph(line))
+                }
+            }
+        }
+
+        flushSection()
+        return sections
+    }
+
+    private static func normalizeMemoryInsightText(_ text: String) -> String {
+        var result = formatMemoryInsightForDisplay(text)
+
+        result = result.replacingOccurrences(
+            of: "UseCurrent:",
+            with: "Current:",
+            options: .regularExpression
+        )
+
+        result = result.replacingOccurrences(
+            of: "Memory Use\\s*Current:",
+            with: "Current:",
+            options: .regularExpression
+        )
+
+        result = result.replacingOccurrences(
+            of: "([0-9]+)\\.([A-Za-z])",
+            with: "$1. $2",
+            options: .regularExpression
+        )
+
+        result = result.replacingOccurrences(
+            of: "Tip\\s*(\\d+)\\s*:\\s*",
+            with: "\n\nTip $1: ",
+            options: .regularExpression
+        )
+
+        for header in sectionHeaders {
+            let escaped = NSRegularExpression.escapedPattern(for: header)
+            result = result.replacingOccurrences(
+                of: "(\(escaped))(?=[A-Za-z])",
+                with: "$1\n\n",
+                options: .regularExpression
+            )
+        }
+
+        result = result.replacingOccurrences(
+            of: "([a-z])([A-Z][a-z]{3,})",
+            with: "$1\n$2",
+            options: .regularExpression
+        )
+
+        result = result.replacingOccurrences(
+            of: "Trend:\\s*",
+            with: "\nTrend: ",
+            options: .regularExpression
+        )
+
+        result = result.replacingOccurrences(
+            of: "\n{3,}",
+            with: "\n\n",
+            options: .regularExpression
+        )
+
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func parseHeading(_ block: String) -> String? {
+        let trimmed = block.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.hasPrefix("### ") {
+            return String(trimmed.dropFirst(4)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if trimmed.hasPrefix("## ") {
+            return String(trimmed.dropFirst(3)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if trimmed.hasPrefix("# ") {
+            return String(trimmed.dropFirst(2)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        let singleLine = trimmed
+            .components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        guard singleLine.count == 1 else { return nil }
+        let line = singleLine[0]
+        let stripped = line
+            .replacingOccurrences(of: "**", with: "")
+            .replacingOccurrences(of: "__", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: ":"))
+
+        if sectionHeaders.contains(where: { $0.caseInsensitiveCompare(stripped) == .orderedSame }) {
+            return stripped
+        }
+
+        if stripped.count <= 48,
+           stripped == stripped.capitalized || stripped.contains(where: \.isUppercase),
+           !stripped.contains(".") {
+            return stripped
+        }
+
+        return nil
+    }
+
+    private static func parseSingleLineInsight(_ line: String) -> MemoryInsightItem? {
+        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        if let tip = parseTip(trimmed) {
+            return tip
+        }
+
+        if let bullet = parseBullet(trimmed) {
+            return bullet
+        }
+
+        if let metric = parseMetric(trimmed) {
+            return metric
+        }
+
+        return nil
+    }
+
+    private static func parseTip(_ line: String) -> MemoryInsightItem? {
+        let patterns = [
+            #"^Tip\s+(\d+)\s*:\s*(.+)$"#,
+            #"^(\d+)\.\s+(.+)$"#,
+        ]
+
+        for pattern in patterns {
+            guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
+                  let match = regex.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)),
+                  let numberRange = Range(match.range(at: 1), in: line),
+                  let bodyRange = Range(match.range(at: 2), in: line),
+                  let number = Int(line[numberRange]) else {
+                continue
+            }
+
+            let body = String(line[bodyRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+            if let dashRange = body.range(of: " — ") {
+                let title = String(body[..<dashRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+                let detail = String(body[dashRange.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                return .tip(number: number, title: title, body: detail)
+            }
+
+            let (title, detail) = splitTitleAndBody(body)
+            return .tip(number: number, title: title ?? "Tip \(number)", body: detail)
+        }
+
+        return nil
+    }
+
+    private static func parseBullet(_ line: String) -> MemoryInsightItem? {
+        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        let prefixes = ["- ", "• ", "* "]
+        guard let prefix = prefixes.first(where: { trimmed.hasPrefix($0) }) else { return nil }
+
+        let content = String(trimmed.dropFirst(prefix.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !content.isEmpty else { return nil }
+
+        if let colonIndex = content.firstIndex(of: ":") {
+            let label = String(content[..<colonIndex])
+                .replacingOccurrences(of: "**", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let value = String(content[content.index(after: colonIndex)...])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !label.isEmpty, !value.isEmpty {
+                if label.count <= 24, value.contains("%") || value.contains("→") {
+                    return .metric(label: label, value: value)
+                }
+                return .bullet(title: label, body: value)
+            }
+        }
+
+        let (title, detail) = splitTitleAndBody(content)
+        if let title, !detail.isEmpty {
+            return .bullet(title: title, body: detail)
+        }
+        return .bullet(title: nil, body: content)
+    }
+
+    private static func parseMetric(_ line: String) -> MemoryInsightItem? {
+        let stripped = line
+            .replacingOccurrences(of: "**", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let patterns = [
+            #"^(Current|Average|Peak|Trend):\s*(.+)$"#,
+            #"^([A-Za-z][A-Za-z ]{1,24}):\s*(.+)$"#,
+        ]
+
+        for pattern in patterns {
+            guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
+                  let match = regex.firstMatch(in: stripped, range: NSRange(stripped.startIndex..., in: stripped)),
+                  let labelRange = Range(match.range(at: 1), in: stripped),
+                  let valueRange = Range(match.range(at: 2), in: stripped) else {
+                continue
+            }
+
+            let label = String(stripped[labelRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+            let value = String(stripped[valueRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !label.isEmpty, !value.isEmpty else { continue }
+            return .metric(label: label, value: value)
+        }
+
+        return nil
+    }
+
+    private static func splitTitleAndBody(_ text: String) -> (String?, String) {
+        let cleaned = text
+            .replacingOccurrences(of: "**", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let colonIndex = cleaned.firstIndex(of: ":") {
+            let title = String(cleaned[..<colonIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
+            let body = String(cleaned[cleaned.index(after: colonIndex)...])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !title.isEmpty, !body.isEmpty {
+                return (title, body)
+            }
+        }
+
+        if let dashRange = cleaned.range(of: " — ") {
+            let title = String(cleaned[..<dashRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+            let body = String(cleaned[dashRange.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+            if !title.isEmpty, !body.isEmpty {
+                return (title, body)
+            }
+        }
+
+        if let range = cleaned.range(of: #"\n"#, options: .regularExpression) {
+            let title = String(cleaned[..<range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+            let body = String(cleaned[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+            if !title.isEmpty, !body.isEmpty {
+                return (title, body)
+            }
+        }
+
+        if let regex = try? NSRegularExpression(pattern: #"^(.{4,48}?)([A-Z][a-z].+)$"#),
+           let match = regex.firstMatch(in: cleaned, range: NSRange(cleaned.startIndex..., in: cleaned)),
+           let titleRange = Range(match.range(at: 1), in: cleaned),
+           let bodyRange = Range(match.range(at: 2), in: cleaned) {
+            let title = String(cleaned[titleRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+            let body = String(cleaned[bodyRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+            if title.count >= 4, body.count >= 8 {
+                return (title, body)
+            }
+        }
+
+        return (nil, cleaned)
     }
 }

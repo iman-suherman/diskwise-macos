@@ -201,28 +201,36 @@ public final class MemoryAnalysisEngine: @unchecked Sendable {
             return """
             ## Memory under pressure
 
-            Memory is at **\(String(format: "%.0f", report.currentUsedPercent))%**. The usual consumers are:
+            **Current:** \(String(format: "%.1f", report.currentUsedPercent))%
+            **Average:** \(String(format: "%.1f", report.averageUsedPercent))%
+            **Peak:** \(String(format: "%.1f", report.peakUsedPercent))%
+
+            ## Persistent memory consumers
 
             \(top)
 
-            Consider freeing inactive memory or quitting apps you are not using.
+            ## Recommendations
+
+            - **Free inactive memory:** Memory is under pressure. Purging inactive cache can help immediately.
             """
         }
 
         return """
         ## Memory overview
 
-        Based on **\(report.sampleCount) samples**, average use is **\(String(format: "%.0f", report.averageUsedPercent))%** with a peak of **\(String(format: "%.0f", report.peakUsedPercent))%**.
+        **Current:** \(String(format: "%.1f", report.currentUsedPercent))%
+        **Average:** \(String(format: "%.1f", report.averageUsedPercent))%
+        **Peak:** \(String(format: "%.1f", report.peakUsedPercent))%
 
-        ## Top consumers
+        ## Persistent memory consumers
 
         \(top)
 
         ## Better computing habits
 
-        - Close apps you are not actively using
-        - Keep browser tabs under control — each tab uses RAM
-        - Restart memory-heavy apps that have been open for days
+        Tip 1: Close unused apps — Quit apps you are not actively using.
+        Tip 2: Control browser tabs — Each tab uses RAM; close tabs you no longer need.
+        Tip 3: Restart heavy apps — Restart memory-heavy apps that have been open for days.
         """
     }
 

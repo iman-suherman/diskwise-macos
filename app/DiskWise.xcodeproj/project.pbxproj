@@ -78,6 +78,7 @@
 		BB038F6FBFEA2CBEA299AF07 /* 0.1.4.json in Resources */ = {isa = PBXBuildFile; fileRef = E4F4B1EEF9F20B8EF8430D6A /* 0.1.4.json */; };
 		BB5E744A21C6F3D1616AE025 /* 0.2.2.json in Resources */ = {isa = PBXBuildFile; fileRef = 85535EC62055DC25880DE6E7 /* 0.2.2.json */; };
 		BC7B15D5B937D14ECD2DC88E /* ScanLogMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17073AD7FF404926E1B8C231 /* ScanLogMonitor.swift */; };
+		BCC178A5B4049531784C13F4 /* MemoryInsightContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E44A3EA17C6392E5E93BC0 /* MemoryInsightContentView.swift */; };
 		BF36D88A5025F7EB71A8CEFA /* DockVisibilityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCF61B84FF67A42557A15C53 /* DockVisibilityController.swift */; };
 		C23802B4AAF74663F4B08133 /* VolumeKeepAwakePulse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A56F4CF3526711AAE9AE7B /* VolumeKeepAwakePulse.swift */; };
 		C256930CBBDF46341022ACC3 /* 0.1.10.json in Resources */ = {isa = PBXBuildFile; fileRef = 68AEC5E5D4795F6522D2BDFF /* 0.1.10.json */; };
@@ -183,6 +184,7 @@
 		97ED0A2D1367051023320312 /* 0.1.2.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.2.json; sourceTree = "<group>"; };
 		98EFAE1062F153FAFA7B0D8A /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		9CDFE3300525F7639DAF196F /* 0.5.14.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.14.json; sourceTree = "<group>"; };
+		A1E44A3EA17C6392E5E93BC0 /* MemoryInsightContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryInsightContentView.swift; sourceTree = "<group>"; };
 		A2CDC4AD9678214299B3247C /* 0.5.0.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.0.json; sourceTree = "<group>"; };
 		A3F4C97E4FF375B02034BE88 /* SystemMemoryReliefView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMemoryReliefView.swift; sourceTree = "<group>"; };
 		A6C028E81B0947C7D6A69EE9 /* SavedScanPromptOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedScanPromptOverlay.swift; sourceTree = "<group>"; };
@@ -371,6 +373,7 @@
 				A82F3A2475D36769351F8CBC /* IndexRebuildOverlay.swift */,
 				39A19DABD6BC39CB4E077008 /* MaintenanceView.swift */,
 				B9433A60D26963A1B26DA291 /* MemoryAnalyzerView.swift */,
+				A1E44A3EA17C6392E5E93BC0 /* MemoryInsightContentView.swift */,
 				2D1F08103579C30093C9CA6F /* MenuBarDiskMonitor.swift */,
 				8DE0414EB1623E719F460CAE /* MenuBarHealthScore.swift */,
 				5691892A76E1A24CE7AAF729 /* MenuBarMonitorInstructionOverlay.swift */,
@@ -626,6 +629,7 @@
 				AAAAA899D7754707AAD2D90F /* MemoryActionExecutor.swift in Sources */,
 				8F048F3CE1F6DDE014892441 /* MemoryAnalyzerMonitor.swift in Sources */,
 				AD9B75BC6DC71E2F9CF51405 /* MemoryAnalyzerView.swift in Sources */,
+				BCC178A5B4049531784C13F4 /* MemoryInsightContentView.swift in Sources */,
 				904D2F4452D1ED17A947CD64 /* MemoryInsightNotificationService.swift in Sources */,
 				03B0CC0B75C882455F238B4A /* MenuBarDiskMonitor.swift in Sources */,
 				FC6623E26E2D1FA21EC83507 /* MenuBarExtensionPrompt.swift in Sources */,

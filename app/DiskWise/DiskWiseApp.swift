@@ -472,18 +472,21 @@ struct ContentView: View {
         icon: String,
         @ViewBuilder trailing: () -> Trailing = { EmptyView() }
     ) -> some View {
-        HStack {
-            Label {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                    Text(subtitle)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            } icon: {
-                Image(systemName: icon)
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: icon)
+                .frame(width: 20, alignment: .center)
+                .foregroundStyle(.secondary)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .lineLimit(1)
+                Text(subtitle)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
+            .fixedSize(horizontal: false, vertical: true)
+
             Spacer(minLength: 4)
             trailing()
         }

@@ -268,23 +268,8 @@ struct MemoryAnalyzerView: View {
                         .font(.subheadline.weight(.semibold))
                     Spacer()
                 }
-                DiskWiseMarkdownText(
-                    text: summary,
-                    font: .subheadline,
-                    format: .memoryInsight
-                )
 
-                if !monitor.actionableRecommendations.isEmpty {
-                    Divider()
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Recommended actions")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                        ForEach(monitor.actionableRecommendations.prefix(3)) { recommendation in
-                            optimizationActionRow(recommendation)
-                        }
-                    }
-                }
+                MemoryInsightContentView(text: summary)
             }
         } label: {
             Label("Optimization Analysis", systemImage: "brain.head.profile")
@@ -312,15 +297,18 @@ struct MemoryAnalyzerView: View {
 
     @ViewBuilder
     private func recommendationsCard(_ report: MemoryAnalysisReport) -> some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 12) {
-                ForEach(report.recommendations) { recommendation in
-                    optimizationActionRow(recommendation)
-                        .padding(.vertical, 4)
+        let recommendations = monitor.actionableRecommendations
+        if !recommendations.isEmpty {
+            GroupBox {
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(recommendations) { recommendation in
+                        optimizationActionRow(recommendation)
+                            .padding(.vertical, 4)
+                    }
                 }
+            } label: {
+                Label("Suggested Actions", systemImage: "bolt.fill")
             }
-        } label: {
-            Label("Suggested Actions", systemImage: "bolt.fill")
         }
     }
 
