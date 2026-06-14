@@ -438,12 +438,21 @@ struct MenuBarPopoverContent: View {
     }
 
     private var scanProgressSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let isDeepScan = scanActivity.scanMode == .deep
+        let accent = isDeepScan ? Color.orange : Color.accentColor
+
+        return VStack(alignment: .leading, spacing: 12) {
+            if isDeepScan {
+                Label("Deep Scan", systemImage: "scope")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(accent)
+            }
+
             HStack(alignment: .firstTextBaseline) {
                 Text(scanActivity.progressPercentLabel)
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .monospacedDigit()
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(accent)
                 Spacer()
                 if let operationLabel = scanActivity.operationLabel {
                     Text(operationLabel)
@@ -454,6 +463,7 @@ struct MenuBarPopoverContent: View {
 
             ProgressView(value: scanActivity.progressFraction)
                 .progressViewStyle(.linear)
+                .tint(accent)
 
             if let detail = scanActivity.detail {
                 Text(detail)
@@ -463,7 +473,16 @@ struct MenuBarPopoverContent: View {
             }
         }
         .padding(12)
-        .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+        .background {
+            if isDeepScan {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.orange.opacity(0.08))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10)
+                            .strokeBorder(Color.orange.opacity(0.2), lineWidth: 1)
+                    }
+            }
+        }
     }
 
     @ViewBuilder

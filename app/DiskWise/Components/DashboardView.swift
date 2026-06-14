@@ -5,29 +5,51 @@ import DatabaseKit
 import AIKit
 import DiskScannerKit
 
+struct ScanTheme {
+    let mode: ScanMode
+
+    var isDeepScan: Bool { mode == .deep }
+    var accent: Color { isDeepScan ? .orange : Color.accentColor }
+
+    static func current(_ mode: ScanMode) -> ScanTheme {
+        ScanTheme(mode: mode)
+    }
+}
+
 struct ScanProgressPanel: View {
     @EnvironmentObject private var viewModel: AppViewModel
 
+    private var theme: ScanTheme {
+        ScanTheme.current(viewModel.appSettings.scanMode)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
+            if theme.isDeepScan {
+                DeepScanIndicator(theme: theme)
+            }
+
             ScanPanelHeader(
                 title: viewModel.selectedVolume.map { "Identifying usage on \($0.name)" } ?? "Identifying disk usage",
                 subtitle: viewModel.scanPhase.label,
                 icon: "doc.text.magnifyingglass",
                 progressFraction: viewModel.scanProgressFraction,
                 progressLabel: viewModel.scanProgressPercentLabel,
+                theme: theme,
                 onCancel: { viewModel.cancelScan() }
             )
 
             ScanStepList(
                 activeStep: viewModel.scanPhase.stepNumber,
-                duplicateDetail: nil
+                duplicateDetail: nil,
+                theme: theme
             )
 
             ScanProgressBar(
                 progressFraction: viewModel.scanProgressFraction,
                 progressLabel: viewModel.scanProgressPercentLabel,
-                estimatedRemaining: viewModel.scanEstimatedRemaining
+                estimatedRemaining: viewModel.scanEstimatedRemaining,
+                theme: theme
             )
 
             if let detail = viewModel.scanProgressDetail {
@@ -52,24 +74,27 @@ struct ScanProgressPanel: View {
                     ScanStatTile(
                         title: "Files",
                         value: progress.scannedCount.formatted(),
-                        icon: "doc.text"
+                        icon: "doc.text",
+                        theme: theme
                     )
                     ScanStatTile(
                         title: "Processed",
                         value: DiskWiseFormatters.bytes.string(fromByteCount: progress.bytesIndexed),
-                        icon: "externaldrive"
+                        icon: "externaldrive",
+                        theme: theme
                     )
                     ScanStatTile(
                         title: "Folders",
                         value: foldersLabel(for: progress),
-                        icon: "folder"
+                        icon: "folder",
+                        theme: theme
                     )
                 }
             }
 
-            ScanVerboseLogPanel()
+            ScanVerboseLogPanel(scanMode: viewModel.appSettings.scanMode)
         }
-        .scanPanelStyle()
+        .scanPanelStyle(theme: theme)
     }
 
     private func foldersLabel(for progress: ScanProgress) -> String {
@@ -83,6 +108,7 @@ struct ScanProgressPanel: View {
 }
 
 struct ScanVerboseLogPanel: View {
+    let scanMode: ScanMode
     @ObservedObject private var scanLogMonitor = ScanLogMonitor.shared
     @State private var copiedCommand = false
 
@@ -116,6 +142,7 @@ struct ScanVerboseLogPanel: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
+                .tint(scanMode == .deep ? .orange : nil)
             } else if scanLogMonitor.isActive {
                 Text("Preparing scanner log…")
                     .font(.caption)
@@ -125,6 +152,30 @@ struct ScanVerboseLogPanel: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+
+            if scanMode == .deep {
+                deepScanExplanation
+            }
+        }
+    }
+
+    private var deepScanExplanation: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("About deep scan", systemImage: "scope")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.orange)
+
+            Text(scanMode.scanningLogExplanation)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(Color.orange.opacity(0.2), lineWidth: 1)
         }
     }
 }
@@ -132,26 +183,37 @@ struct ScanVerboseLogPanel: View {
 struct BackgroundScanBanner: View {
     @EnvironmentObject private var viewModel: AppViewModel
 
+    private var theme: ScanTheme {
+        ScanTheme.current(viewModel.appSettings.scanMode)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            if theme.isDeepScan {
+                DeepScanIndicator(theme: theme)
+            }
+
             ScanPanelHeader(
                 title: "Analyzing storage",
                 subtitle: viewModel.scanPhase.label,
                 icon: "sparkles",
                 progressFraction: viewModel.scanProgressFraction,
                 progressLabel: viewModel.scanProgressPercentLabel,
+                theme: theme,
                 onCancel: { viewModel.cancelScan() }
             )
 
             ScanStepList(
                 activeStep: viewModel.scanPhase.stepNumber,
-                duplicateDetail: nil
+                duplicateDetail: nil,
+                theme: theme
             )
 
             ScanProgressBar(
                 progressFraction: viewModel.scanProgressFraction,
                 progressLabel: viewModel.scanProgressPercentLabel,
-                estimatedRemaining: viewModel.scanEstimatedRemaining
+                estimatedRemaining: viewModel.scanEstimatedRemaining,
+                theme: theme
             )
 
             HStack(spacing: 10) {
@@ -176,13 +238,40 @@ struct BackgroundScanBanner: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .scanPanelStyle()
+        .scanPanelStyle(theme: theme)
+    }
+}
+
+private struct DeepScanIndicator: View {
+    let theme: ScanTheme
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "scope")
+                .font(.caption.weight(.semibold))
+                .symbolEffect(.pulse, options: .repeating)
+            Text("Deep Scan in progress")
+                .font(.subheadline.weight(.semibold))
+            Spacer()
+            Text("Thorough indexing")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .foregroundStyle(theme.accent)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(theme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(theme.accent.opacity(0.25), lineWidth: 1)
+        }
     }
 }
 
 private struct ScanStepList: View {
     let activeStep: Int?
     let duplicateDetail: String?
+    var theme: ScanTheme = ScanTheme(mode: .fast)
 
     private let steps: [(number: Int, title: String, detail: String)] = [
         (1, "Identify usage", "Map APFS volumes and drill into the biggest directories"),
@@ -221,7 +310,7 @@ private struct ScanStepList: View {
     private func stepColor(for number: Int) -> Color {
         guard let activeStep else { return .secondary }
         if number < activeStep { return .green }
-        if number == activeStep { return .accentColor }
+        if number == activeStep { return theme.accent }
         return .secondary.opacity(0.5)
     }
 
@@ -239,6 +328,7 @@ private struct ScanPanelHeader: View {
     let icon: String
     let progressFraction: Double
     let progressLabel: String
+    var theme: ScanTheme = ScanTheme(mode: .fast)
     let onCancel: () -> Void
 
     var body: some View {
@@ -255,16 +345,17 @@ private struct ScanPanelHeader: View {
 
             ZStack {
                 Circle()
-                    .stroke(Color.accentColor.opacity(0.15), lineWidth: 8)
+                    .stroke(theme.accent.opacity(0.15), lineWidth: 8)
                     .frame(width: 72, height: 72)
                 Circle()
                     .trim(from: 0, to: progressFraction)
-                    .stroke(Color.accentColor.gradient, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                    .stroke(theme.accent.gradient, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                     .frame(width: 72, height: 72)
                     .animation(.easeInOut(duration: 0.35), value: progressFraction)
                 Text(progressLabel)
                     .font(.title3.bold().monospacedDigit())
+                    .foregroundStyle(theme.isDeepScan ? theme.accent : .primary)
             }
 
             Button("Cancel", action: onCancel)
@@ -277,13 +368,14 @@ private struct ScanProgressBar: View {
     let progressFraction: Double
     let progressLabel: String
     let estimatedRemaining: TimeInterval?
+    var theme: ScanTheme = ScanTheme(mode: .fast)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(progressLabel)
                     .font(.caption.weight(.semibold).monospacedDigit())
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(theme.accent)
                 Spacer()
                 if let remaining = estimatedRemaining {
                     Text("~\(DiskWiseFormatters.formatDuration(remaining)) left")
@@ -295,9 +387,9 @@ private struct ScanProgressBar: View {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Color.accentColor.opacity(0.12))
+                        .fill(theme.accent.opacity(0.12))
                     Capsule()
-                        .fill(Color.accentColor.gradient)
+                        .fill(theme.accent.gradient)
                         .frame(width: max(8, geometry.size.width * progressFraction))
                         .animation(.easeInOut(duration: 0.35), value: progressFraction)
                 }
@@ -308,12 +400,22 @@ private struct ScanProgressBar: View {
 }
 
 private extension View {
-    func scanPanelStyle() -> some View {
+    func scanPanelStyle(theme: ScanTheme = ScanTheme(mode: .fast)) -> some View {
         padding(22)
             .background {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(.ultraThinMaterial)
-                    .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
+                    .overlay {
+                        if theme.isDeepScan {
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .strokeBorder(theme.accent.opacity(0.35), lineWidth: 1.5)
+                        }
+                    }
+                    .shadow(
+                        color: theme.isDeepScan ? theme.accent.opacity(0.12) : .black.opacity(0.08),
+                        radius: 12,
+                        y: 4
+                    )
             }
     }
 }
@@ -322,12 +424,13 @@ private struct ScanStatTile: View {
     let title: String
     let value: String
     let icon: String
+    var theme: ScanTheme = ScanTheme(mode: .fast)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Label(title, systemImage: icon)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.isDeepScan ? theme.accent.opacity(0.85) : .secondary)
             Text(value)
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(1)
@@ -335,7 +438,10 @@ private struct ScanStatTile: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+        .background(
+            (theme.isDeepScan ? theme.accent.opacity(0.08) : Color.primary.opacity(0.05)),
+            in: RoundedRectangle(cornerRadius: 10)
+        )
     }
 }
 

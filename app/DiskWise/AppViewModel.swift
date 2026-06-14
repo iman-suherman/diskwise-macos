@@ -1843,7 +1843,7 @@ final class AppViewModel: ObservableObject {
             isFolderScan ? "Started folder scan" : "Started filesystem scan",
             detail: "\(appSettings.scanMode.title) · \(isFolderScan ? "\(scanLabel) on \(volume.name)" : volume.name)"
         )
-        ScanActivityMonitor.shared.beginScan(volumeName: scanLabel)
+        ScanActivityMonitor.shared.beginScan(volumeName: scanLabel, mode: appSettings.scanMode)
         ScanLogMonitor.shared.reset()
         ScanProgressSnapshot.shared.reset()
         if !usesPythonScanner, let progressURL = try? Self.makeProgressStatusURL() {
