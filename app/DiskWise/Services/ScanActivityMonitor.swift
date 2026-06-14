@@ -23,6 +23,7 @@ final class ScanActivityMonitor: ObservableObject {
         progressPercentLabel = "0%"
         detail = nil
         operationLabel = nil
+        DockScanAnimator.shared.start()
     }
 
     func update(
@@ -36,6 +37,7 @@ final class ScanActivityMonitor: ObservableObject {
         self.progressPercentLabel = progressPercentLabel
         self.detail = detail
         self.operationLabel = operationLabel
+        DockScanAnimator.shared.updateProgress(fraction: progressFraction, label: progressPercentLabel)
     }
 
     func endScan() {
@@ -46,5 +48,6 @@ final class ScanActivityMonitor: ObservableObject {
         progressPercentLabel = "0%"
         detail = nil
         operationLabel = nil
+        DockScanAnimator.shared.stop()
     }
 }

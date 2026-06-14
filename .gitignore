@@ -36,3 +36,4 @@ website/public/downloads/*.html
 .venv/
 __pycache__/
 *.pyc
+app/DiskWise/Resources/release-notes/

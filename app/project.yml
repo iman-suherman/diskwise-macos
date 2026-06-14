@@ -24,10 +24,18 @@ targets:
           - Assets/AppIcon.icns
           - Assets/AppIconSource.png
           - Assets/AppIconSource.raw.png
+    preBuildScripts:
+      - name: Sync Release Notes
+        script: |
+          mkdir -p "${SRCROOT}/DiskWise/Resources/release-notes"
+          rsync -a --delete "${SRCROOT}/../release-notes/" "${SRCROOT}/DiskWise/Resources/release-notes/"
+        basedOnDependencyAnalysis: false
     resources:
       - path: DiskWise/Assets/AppIcon.icns
       - path: DiskWise/Assets/AppIconSource.png
       - path: DiskWise/Resources/Scanner
+      - path: DiskWise/Resources/release-notes
+        type: folder
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: net.suherman.diskwise

@@ -1,0 +1,11 @@
+{
+  "summary": "DiskWise now shows an animated Dock icon while scanning, and What's New loads curated release notes for every version.",
+  "introduced": [
+    "Animated Dock tile during drive scans — switches from the normal icon to a scanning indicator with progress",
+    "Curated What's New pages loaded from release-notes JSON for versions without hand-built tour pages"
+  ],
+  "changed": [
+    "Release notes sync into the app bundle at build time so in-app What's New stays up to date"
+  ],
+  "fixed": []
+}

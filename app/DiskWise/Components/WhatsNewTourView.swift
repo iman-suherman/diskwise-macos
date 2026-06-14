@@ -63,8 +63,41 @@ enum WhatsNewContent {
         case "0.1.2":
             return v012Pages
         default:
+            if let curated = curatedPages(for: version) {
+                return curated
+            }
             return genericPages(version: version)
         }
+    }
+
+    private struct CuratedReleaseNotes: Decodable {
+        let summary: String
+        let introduced: [String]?
+        let changed: [String]?
+        let fixed: [String]?
+    }
+
+    /// Loads `release-notes/{version}.json` synced into the app bundle at build time.
+    private static func curatedPages(for version: String) -> [WhatsNewPage]? {
+        guard let url = Bundle.main.url(forResource: version, withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let notes = try? JSONDecoder().decode(CuratedReleaseNotes.self, from: data)
+        else {
+            return nil
+        }
+
+        let bullets = (notes.introduced ?? []) + (notes.changed ?? []) + (notes.fixed ?? [])
+        guard !notes.summary.isEmpty || !bullets.isEmpty else { return nil }
+
+        return [
+            WhatsNewPage(
+                id: "curated-\(version)",
+                icon: "sparkles",
+                title: "What’s new in DiskWise \(version)",
+                message: notes.summary,
+                bullets: bullets
+            ),
+        ]
     }
 
     private static let v0515Pages: [WhatsNewPage] = [
