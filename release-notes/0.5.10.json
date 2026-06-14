@@ -1,0 +1,10 @@
+{
+  "summary": "Storage charts stay hidden until a drive is scanned, and System Status explains how the health score is calculated.",
+  "introduced": [],
+  "changed": [
+    "Results charts and breakdowns appear only after the selected drive has been scanned",
+    "System Status shows the Good/Fair/Poor rating scale with the active label highlighted",
+    "Health score card includes the weighted formula and step-by-step calculation for the current score"
+  ],
+  "fixed": []
+}

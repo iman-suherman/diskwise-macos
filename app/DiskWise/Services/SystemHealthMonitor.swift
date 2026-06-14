@@ -47,10 +47,21 @@ struct HealthScoreFactor: Sendable {
     let detail: String
 }
 
+struct HealthScoreLabelBand: Sendable, Identifiable {
+    let label: String
+    let rangeDescription: String
+    let detail: String
+
+    var id: String { label }
+}
+
 struct HealthScoreExplanation: Sendable {
     let score: Int
     let label: String
     let summary: String
+    let formulaDetail: String
+    let formulaSteps: [String]
+    let labelBands: [HealthScoreLabelBand]
     let factors: [HealthScoreFactor]
     let recommendations: [String]
 }
@@ -187,6 +198,13 @@ enum SystemHealthMonitorCore {
             processorCount: snapshot.processorCount
         )
 
+        let formula = healthScoreFormula(
+            cpuComponent: cpuComponent,
+            memoryComponent: memoryComponent,
+            diskComponent: diskComponent,
+            score: snapshot.healthScore
+        )
+
         return HealthScoreExplanation(
             score: snapshot.healthScore,
             label: healthConditionLabel(for: snapshot.healthScore),
@@ -196,9 +214,59 @@ enum SystemHealthMonitorCore {
                 memoryUsedPercent: snapshot.memoryUsedPercent,
                 diskUsedPercent: snapshot.diskUsedPercent
             ),
+            formulaDetail: formula.detail,
+            formulaSteps: formula.steps,
+            labelBands: healthScoreLabelBands(),
             factors: factors,
             recommendations: recommendations
         )
+    }
+
+    static func healthScoreLabelBands() -> [HealthScoreLabelBand] {
+        [
+            HealthScoreLabelBand(
+                label: "Good",
+                rangeDescription: "70–100",
+                detail: "Comfortable headroom on CPU, memory, and disk for everyday work."
+            ),
+            HealthScoreLabelBand(
+                label: "Fair",
+                rangeDescription: "40–69",
+                detail: "The Mac is usable, but combined usage leaves less room for heavy workloads."
+            ),
+            HealthScoreLabelBand(
+                label: "Poor",
+                rangeDescription: "0–39",
+                detail: "Significant strain — expect slowdowns, fan noise, or memory pressure."
+            ),
+        ]
+    }
+
+    private static func healthScoreFormula(
+        cpuComponent: Double,
+        memoryComponent: Double,
+        diskComponent: Double,
+        score: Int
+    ) -> (detail: String, steps: [String]) {
+        let cpuPoints = cpuComponent * 0.4
+        let memoryPoints = memoryComponent * 0.35
+        let diskPoints = diskComponent * 0.25
+        let rawTotal = cpuPoints + memoryPoints + diskPoints
+
+        let detail =
+            "Headroom per resource is 100 minus usage %. Overall score = (CPU headroom × 40%) + (Memory headroom × 35%) + (Disk headroom × 25%), rounded to the nearest whole number."
+
+        let steps = [
+            "CPU headroom: 100 − CPU usage = \(String(format: "%.0f", cpuComponent))",
+            "Memory headroom: 100 − memory usage = \(String(format: "%.0f", memoryComponent))",
+            "Disk headroom: 100 − disk usage = \(String(format: "%.0f", diskComponent))",
+            "CPU contribution: \(String(format: "%.0f", cpuComponent)) × 0.40 = \(String(format: "%.1f", cpuPoints))",
+            "Memory contribution: \(String(format: "%.0f", memoryComponent)) × 0.35 = \(String(format: "%.1f", memoryPoints))",
+            "Disk contribution: \(String(format: "%.0f", diskComponent)) × 0.25 = \(String(format: "%.1f", diskPoints))",
+            "Total: \(String(format: "%.1f", cpuPoints)) + \(String(format: "%.1f", memoryPoints)) + \(String(format: "%.1f", diskPoints)) = \(String(format: "%.1f", rawTotal)) → \(score)/100",
+        ]
+
+        return (detail, steps)
     }
 
     private static func pressureLabel(for usagePercent: Double) -> String {

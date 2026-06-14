@@ -804,7 +804,21 @@ final class AppViewModel: ObservableObject {
     }
 
     var hasScanData: Bool {
-        overview != nil
+        guard selectedVolume != nil else {
+            return overview != nil
+        }
+        return showsStorageGraphAnalysis
+    }
+
+    /// Pie chart and category breakdown for the currently selected drive.
+    var showsStorageGraphAnalysis: Bool {
+        guard let volume = selectedVolume,
+              isIndexed(volume),
+              !isVolumeBusy(volume),
+              overview != nil else {
+            return false
+        }
+        return true
     }
 
     var totalDuplicateSavings: Int64 {

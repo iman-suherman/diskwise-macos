@@ -12,6 +12,8 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
+        case "0.5.10":
+            return v0510Pages
         case "0.5.9":
             return v059Pages
         case "0.5.8":
@@ -54,6 +56,29 @@ enum WhatsNewContent {
             return genericPages(version: version)
         }
     }
+
+    private static let v0510Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "scoped-charts",
+            icon: "chart.pie",
+            title: "Charts for the selected drive only",
+            message: "Storage pie charts and category breakdowns now appear only after the drive selected in the sidebar has been scanned.",
+            bullets: [
+                "Unscanned external drives show a scan prompt instead of another volume's results",
+                "Maintenance and duplicate actions follow the same per-drive rule",
+            ]
+        ),
+        WhatsNewPage(
+            id: "score-formula",
+            icon: "heart.text.square",
+            title: "Transparent health score",
+            message: "System Status explains the Good, Fair, and Poor rating scale and shows the weighted formula behind your score.",
+            bullets: [
+                "Rating legend highlights your current label, e.g. Fair (40–69)",
+                "Step-by-step CPU, memory, and disk contribution math",
+            ]
+        ),
+    ]
 
     private static let v059Pages: [WhatsNewPage] = [
         WhatsNewPage(

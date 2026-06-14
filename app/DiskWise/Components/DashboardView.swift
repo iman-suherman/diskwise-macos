@@ -229,7 +229,7 @@ struct BackgroundScanBanner: View {
                 .foregroundStyle(.secondary)
             }
 
-            if viewModel.hasScanData {
+            if viewModel.showsStorageGraphAnalysis {
                 Label("You can review storage breakdown below while this runs.", systemImage: "checkmark.circle")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -540,22 +540,14 @@ struct DashboardView: View {
                 }
 
                 if let volume = viewModel.selectedVolume,
-                   viewModel.isScanning || viewModel.isBackgroundWorkActive || viewModel.overview != nil {
-                    if let overview = viewModel.overview {
-                        storageHeader(volume: volume, overview: overview)
-                        unaccountedSpaceBanner(volume: volume, overview: overview)
-                    } else {
-                        scanningHeader(volume: volume)
-                    }
+                   viewModel.showsStorageGraphAnalysis,
+                   let overview = viewModel.overview {
+                    storageHeader(volume: volume, overview: overview)
+                    unaccountedSpaceBanner(volume: volume, overview: overview)
 
                     HStack(alignment: .top, spacing: 28) {
-                        if let overview = viewModel.overview {
-                            storageTypePieSection(overview: overview)
-                            categorySection(overview: overview)
-                        } else {
-                            storageTypePiePlaceholder
-                            categorySectionPlaceholder
-                        }
+                        storageTypePieSection(overview: overview)
+                        categorySection(overview: overview)
                     }
 
                     if viewModel.totalDuplicateSavings > 0 || viewModel.isFindingDuplicates {
@@ -570,6 +562,15 @@ struct DashboardView: View {
                         storageIntelligenceSection(report: report)
                         recommendationsSection(report: report)
                     }
+                } else if let volume = viewModel.selectedVolume,
+                          (viewModel.isScanning || viewModel.isVolumeBusy(volume)) {
+                    if viewModel.isScanning {
+                        ScanProgressPanel()
+                    } else {
+                        BackgroundScanBanner()
+                    }
+                } else if viewModel.selectedVolume != nil {
+                    unscannedVolumePlaceholder
                 } else if !viewModel.isScanning && !viewModel.isBackgroundWorkActive {
                     WelcomeView()
                 }
@@ -786,6 +787,27 @@ struct DashboardView: View {
                 .font(.title3)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var unscannedVolumePlaceholder: some View {
+        ContentUnavailableView {
+            Label("No scan results yet", systemImage: "chart.pie")
+        } description: {
+            if let volume = viewModel.selectedVolume {
+                Text("Scan \(volume.name) to see storage breakdown charts and top space consumers.")
+            } else {
+                Text("Select a drive and scan it to see storage breakdown charts.")
+            }
+        } actions: {
+            if let volume = viewModel.selectedVolume {
+                Button("Scan \(volume.name)") {
+                    viewModel.scan(volume: volume)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(viewModel.isVolumeBusy(volume))
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 320)
     }
 
     private var categorySectionPlaceholder: some View {

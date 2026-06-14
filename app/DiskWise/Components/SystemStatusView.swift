@@ -133,6 +133,10 @@ struct SystemStatusView: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
 
+                    healthLabelLegend(explanation)
+
+                    healthFormulaSection(explanation)
+
                     VStack(alignment: .leading, spacing: 10) {
                         ForEach(Array(explanation.factors.enumerated()), id: \.offset) { _, factor in
                             healthFactorRow(factor)
@@ -159,6 +163,76 @@ struct SystemStatusView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    @ViewBuilder
+    private func healthLabelLegend(_ explanation: HealthScoreExplanation) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Rating scale")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(explanation.labelBands) { band in
+                    HStack(alignment: .top, spacing: 10) {
+                        Text(band.label)
+                            .font(.caption.weight(band.label == explanation.label ? .bold : .semibold))
+                            .foregroundStyle(
+                                band.label == explanation.label
+                                    ? scoreColor(explanation.score)
+                                    : Color.secondary
+                            )
+                            .frame(width: 44, alignment: .leading)
+
+                        Text(band.rangeDescription)
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .frame(width: 52, alignment: .leading)
+
+                        Text(band.detail)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .background(
+                        band.label == explanation.label
+                            ? scoreColor(explanation.score).opacity(0.1)
+                            : Color.clear,
+                        in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    )
+                }
+            }
+        }
+        .padding(12)
+        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    @ViewBuilder
+    private func healthFormulaSection(_ explanation: HealthScoreExplanation) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("How \(explanation.label) (\(explanation.score)) is calculated")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Text(explanation.formulaDetail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(Array(explanation.formulaSteps.enumerated()), id: \.offset) { _, step in
+                    Text(step)
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+            }
+            .padding(.top, 4)
+        }
+        .padding(12)
+        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     @ViewBuilder

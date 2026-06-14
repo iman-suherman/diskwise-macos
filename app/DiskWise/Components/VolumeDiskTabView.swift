@@ -156,7 +156,7 @@ struct ResultsTabView: View {
                 }
 
                 if let volume = viewModel.selectedVolume,
-                   viewModel.overview != nil,
+                   viewModel.showsStorageGraphAnalysis,
                    let overview = viewModel.overview {
                     resultsHeader(volume: volume, overview: overview)
                     unaccountedSpaceBanner(volume: volume, overview: overview)
