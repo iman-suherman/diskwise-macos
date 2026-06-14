@@ -16,11 +16,11 @@ public enum MaintenanceSection: String, CaseIterable, Sendable {
     public var description: String {
         switch self {
         case .clean:
-            return "Caches, logs, temporary files, Trash, and leftover installers."
+            return "Caches, logs, temp files, Trash, and projects."
         case .projects:
-            return "Heavy project folders such as node_modules and build output that can be recreated."
+            return "node_modules, build output, and virtual envs."
         case .system:
-            return "APFS snapshots, app removal, and system optimization tasks."
+            return "Snapshots, app removal, and optimization."
         }
     }
 
@@ -58,7 +58,7 @@ public enum MaintenanceKind: String, CaseIterable, Sendable, Identifiable {
         case .appCaches, .browserCaches, .developerCaches, .logs, .tempFiles, .trash, .installers:
             return .clean
         case .nodeModules, .buildArtifacts, .virtualEnvironments:
-            return .projects
+            return .clean
         case .apfsSnapshots, .appUninstall, .optimize, .systemStatus:
             return .system
         }

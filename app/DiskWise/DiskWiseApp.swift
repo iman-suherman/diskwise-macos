@@ -315,9 +315,6 @@ struct ContentView: View {
         case .pane(.cleanMyMac):
             MaintenanceSectionView(section: .clean)
                 .id(DetailPane.cleanMyMac)
-        case .pane(.developerProjects):
-            MaintenanceSectionView(section: .projects)
-                .id(DetailPane.developerProjects)
         case .pane(.systemCleanup):
             MaintenanceSectionView(section: .system)
                 .id(DetailPane.systemCleanup)
@@ -457,6 +454,19 @@ struct ContentView: View {
                     .disabled(viewModel.isVolumeBusy(volume))
                     .buttonStyle(.borderless)
                 }
+            }
+
+            Section {
+                ForEach(DetailPane.utilityMenuPanes) { pane in
+                    sidebarMenuRow(
+                        title: pane.title,
+                        subtitle: pane.subtitle,
+                        icon: pane.icon
+                    )
+                    .tag(SidebarSelection.pane(pane))
+                }
+            } header: {
+                Text("General")
             }
         }
         .listStyle(.sidebar)

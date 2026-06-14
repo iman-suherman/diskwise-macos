@@ -54,6 +54,7 @@
 		6364632C8485413073CA9BB3 /* MainScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7606C2E2E0391264171C1F55 /* MainScreens.swift */; };
 		68EAF0F0D832F829DC54A2EC /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98EFAE1062F153FAFA7B0D8A /* AboutView.swift */; };
 		72B2EA208FA6F23B1F8A8F97 /* 0.1.9.json in Resources */ = {isa = PBXBuildFile; fileRef = B1C8159FF48669E7295F9738 /* 0.1.9.json */; };
+		7363E28A199FEB003256A74F /* 0.7.2.json in Resources */ = {isa = PBXBuildFile; fileRef = DE4613CFBCD420C3DE913DEC /* 0.7.2.json */; };
 		75E2033E8389AC2CF2A55666 /* ActivityLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57BB2C32DA1EC6AD699DBDBD /* ActivityLog.swift */; };
 		7D3DB7CE2ED58186491D8C35 /* 0.5.5.json in Resources */ = {isa = PBXBuildFile; fileRef = EAC96980391A69DA322FA935 /* 0.5.5.json */; };
 		7F3FA96EA3B2337449CD40D0 /* diskwise_scan.py in Resources */ = {isa = PBXBuildFile; fileRef = C27E95DFD0F9841389B35E2F /* diskwise_scan.py */; };
@@ -236,6 +237,7 @@
 		D920979DEAE9BF18B35E7E3F /* 0.3.8.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.3.8.json; sourceTree = "<group>"; };
 		DCF61B84FF67A42557A15C53 /* DockVisibilityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockVisibilityController.swift; sourceTree = "<group>"; };
 		DD1DBFAFBE898F19B3B507D5 /* SystemHealthMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemHealthMonitor.swift; sourceTree = "<group>"; };
+		DE4613CFBCD420C3DE913DEC /* 0.7.2.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.2.json; sourceTree = "<group>"; };
 		E07BA2DFFEA459773CAC869C /* 0.3.0.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.3.0.json; sourceTree = "<group>"; };
 		E0B3FDCCC3CB35AAA33977EA /* 0.5.9.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.9.json; sourceTree = "<group>"; };
 		E4F4B1EEF9F20B8EF8430D6A /* 0.1.4.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.4.json; sourceTree = "<group>"; };
@@ -357,6 +359,7 @@
 				8D2B40F26DC40B81DD755E3F /* 0.6.9.json */,
 				2C08A11A1D6AA65C6E5C7144 /* 0.7.0.json */,
 				FFD8556ADA315BC4BD73911B /* 0.7.1.json */,
+				DE4613CFBCD420C3DE913DEC /* 0.7.2.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -597,6 +600,7 @@
 				4CB29676DDA65858C1FE9E47 /* 0.6.9.json in Resources */,
 				ADEEBB229E346E98CFE73C02 /* 0.7.0.json in Resources */,
 				37E65E16FE154CA128660458 /* 0.7.1.json in Resources */,
+				7363E28A199FEB003256A74F /* 0.7.2.json in Resources */,
 				BAC56BC5D44D164A6D1651C3 /* Assets.xcassets in Resources */,
 				7F3FA96EA3B2337449CD40D0 /* diskwise_scan.py in Resources */,
 				E559D2BF705EE1AB7F9CA4EA /* entitlements.mac.plist in Resources */,

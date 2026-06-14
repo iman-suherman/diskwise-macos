@@ -391,13 +391,13 @@ final class AppSettings: ObservableObject {
     }
 
     static func resolvedMenuPaneOrder(stored: [String]?) -> [DetailPane] {
-        let validPanes = Set(DetailPane.defaultMenuPaneOrder)
+        let validPanes = Set(DetailPane.reorderableMenuPanes)
         guard let stored, !stored.isEmpty else {
-            return DetailPane.defaultMenuPaneOrder
+            return DetailPane.reorderableMenuPanes
         }
 
         var ordered = stored.compactMap { DetailPane(rawValue: $0) }.filter { $0.isReorderableMenuItem && validPanes.contains($0) }
-        for pane in DetailPane.defaultMenuPaneOrder where !ordered.contains(pane) {
+        for pane in DetailPane.reorderableMenuPanes where !ordered.contains(pane) {
             ordered.append(pane)
         }
         return ordered

@@ -58,7 +58,6 @@ enum DetailPane: String, CaseIterable, Identifiable {
     case systemOptimization
     case duplicates
     case cleanMyMac
-    case developerProjects
     case systemCleanup
     case ai
     case activityLog
@@ -66,25 +65,28 @@ enum DetailPane: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    static let defaultMenuPaneOrder: [DetailPane] = [
+    static let reorderableMenuPanes: [DetailPane] = [
         .overview,
         .duplicates,
         .cleanMyMac,
-        .developerProjects,
         .systemCleanup,
         .systemOptimization,
+    ]
+
+    static let utilityMenuPanes: [DetailPane] = [
         .activityLog,
         .settings,
     ]
 
+    static let defaultMenuPaneOrder: [DetailPane] = reorderableMenuPanes
+
     var isReorderableMenuItem: Bool {
-        Self.defaultMenuPaneOrder.contains(self)
+        Self.reorderableMenuPanes.contains(self)
     }
 
     var maintenanceSection: MaintenanceSection? {
         switch self {
         case .cleanMyMac: return .clean
-        case .developerProjects: return .projects
         case .systemCleanup: return .system
         default: return nil
         }
@@ -92,8 +94,7 @@ enum DetailPane: String, CaseIterable, Identifiable {
 
     static func pane(for section: MaintenanceSection) -> DetailPane {
         switch section {
-        case .clean: return .cleanMyMac
-        case .projects: return .developerProjects
+        case .clean, .projects: return .cleanMyMac
         case .system: return .systemCleanup
         }
     }
@@ -104,7 +105,6 @@ enum DetailPane: String, CaseIterable, Identifiable {
         case .systemOptimization: return "System Optimization"
         case .duplicates: return "Duplicates Finder"
         case .cleanMyMac: return MaintenanceSection.clean.title
-        case .developerProjects: return MaintenanceSection.projects.title
         case .systemCleanup: return MaintenanceSection.system.title
         case .ai: return "Ask DiskWise"
         case .activityLog: return "Activity Log"
@@ -118,7 +118,6 @@ enum DetailPane: String, CaseIterable, Identifiable {
         case .systemOptimization: return "gauge.with.dots.needle.67percent"
         case .duplicates: return "doc.on.doc"
         case .cleanMyMac: return "sparkles.rectangle.stack"
-        case .developerProjects: return "chevron.left.forwardslash.chevron.right"
         case .systemCleanup: return "gearshape.2"
         case .ai: return "sparkles"
         case .activityLog: return "list.bullet.rectangle"
@@ -132,7 +131,6 @@ enum DetailPane: String, CaseIterable, Identifiable {
         case .systemOptimization: return "Health score, metrics, and AI insights"
         case .duplicates: return "Find and remove duplicate files"
         case .cleanMyMac: return MaintenanceSection.clean.description
-        case .developerProjects: return MaintenanceSection.projects.description
         case .systemCleanup: return MaintenanceSection.system.description
         case .ai: return "Ask about your storage"
         case .activityLog: return "Scan, cleanup, and system events"

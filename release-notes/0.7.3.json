@@ -1,0 +1,12 @@
+{
+  "summary": "Simplifies the sidebar by removing Developer Projects, moving project cleanup into Clean My Mac, and pinning Activity Log and Settings in a separate General section at the bottom.",
+  "introduced": [
+    "General sidebar section — Activity Log and Settings grouped at the bottom, separate from the reorderable Menu"
+  ],
+  "changed": [
+    "Developer Projects removed from the sidebar — node_modules, Build Artifacts, and Virtual Environments are now tabs under Clean My Mac",
+    "Menu section — only Disk Analysis, Duplicates Finder, Clean My Mac, System Cleanup, and System Optimization are draggable",
+    "Shorter descriptions for Clean My Mac, Developer Projects (internal), and System Cleanup maintenance sections"
+  ],
+  "fixed": []
+}
