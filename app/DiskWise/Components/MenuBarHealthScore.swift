@@ -31,6 +31,7 @@ struct MenuBarHealthPopoverContent: View {
     @ObservedObject var monitor: SystemHealthMonitor
     @ObservedObject var settings: AppSettings
     var onOpenMainWindow: (() -> Void)? = nil
+    var onClose: (() -> Void)? = nil
 
     var body: some View {
         ScrollView {
@@ -84,6 +85,10 @@ struct MenuBarHealthPopoverContent: View {
             }
             .buttonStyle(.borderless)
             .help("Refresh system metrics")
+
+            if let onClose {
+                MenuBarPopoverCloseButton(onClose: onClose)
+            }
         }
     }
 
@@ -347,7 +352,8 @@ final class MenuBarHealthItemController: NSObject {
             MenuBarHealthPopoverContent(
                 monitor: monitor,
                 settings: AppSettings.shared,
-                onOpenMainWindow: { [weak self] in self?.popoverSession.close() }
+                onOpenMainWindow: { [weak self] in self?.popoverSession.close() },
+                onClose: { [weak self] in self?.popoverSession.close() }
             )
         } onShow: { [monitor] in
             monitor.refresh()

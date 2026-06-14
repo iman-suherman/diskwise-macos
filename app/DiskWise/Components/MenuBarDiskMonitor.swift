@@ -204,6 +204,20 @@ enum MenuBarPopoverMetrics {
     static let scanningHeight: CGFloat = 320
 }
 
+struct MenuBarPopoverCloseButton: View {
+    var onClose: () -> Void
+
+    var body: some View {
+        Button(action: onClose) {
+            Image(systemName: "xmark.circle.fill")
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.borderless)
+        .help("Close")
+    }
+}
+
 struct MenuBarKeepAwakeSection: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject private var keepAwake = KeepAwakeController.shared
@@ -313,6 +327,7 @@ struct MenuBarPopoverContent: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var scanActivity = ScanActivityMonitor.shared
     var onOpenMainWindow: (() -> Void)? = nil
+    var onClose: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -335,6 +350,10 @@ struct MenuBarPopoverContent: View {
                     }
                     .buttonStyle(.borderless)
                     .help("Refresh disk space now")
+                }
+
+                if let onClose {
+                    MenuBarPopoverCloseButton(onClose: onClose)
                 }
             }
 
@@ -617,7 +636,8 @@ final class MenuBarStatusItemController: NSObject {
             MenuBarPopoverContent(
                 monitor: monitor,
                 settings: AppSettings.shared,
-                onOpenMainWindow: { [weak self] in self?.popoverSession.close() }
+                onOpenMainWindow: { [weak self] in self?.popoverSession.close() },
+                onClose: { [weak self] in self?.popoverSession.close() }
             )
         } onShow: { [monitor] in
             monitor.refresh()
