@@ -1,0 +1,12 @@
+{
+  "summary": "Deep scans now show an orange in-progress theme, a clear indicator, and an explanation under the scanner log.",
+  "introduced": [
+    "Deep Scan in progress banner with pulsing scope icon while a thorough scan runs",
+    "About deep scan section under Scanner log — explains file-by-file indexing, better unmapped-space coverage, and expected duration"
+  ],
+  "changed": [
+    "Deep scan uses an orange theme (progress ring, bar, steps, stat tiles, and panel border) so it is visually distinct from Fast scan",
+    "Menu bar popover shows a Deep Scan label and orange progress styling during thorough indexing"
+  ],
+  "fixed": []
+}
