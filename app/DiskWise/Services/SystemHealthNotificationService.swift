@@ -26,7 +26,7 @@ final class SystemHealthNotificationService {
         )
         let open = UNNotificationAction(
             identifier: Self.openOptimizationIdentifier,
-            title: "Open System Optimization",
+            title: "Review Suggested Actions",
             options: [.foreground]
         )
         let category = UNNotificationCategory(
@@ -125,8 +125,7 @@ final class SystemHealthNotificationService {
             SystemHealthMonitor.shared.refreshDetailed()
             return true
         case Self.openOptimizationIdentifier, UNNotificationDefaultActionIdentifier:
-            AppViewModel.current?.sidebarSelection = .pane(.systemOptimization)
-            NSApp.activate(ignoringOtherApps: true)
+            AppViewModel.current?.openMemoryAnalyzerSuggestedActions()
             return true
         default:
             return false

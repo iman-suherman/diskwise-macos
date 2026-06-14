@@ -1,0 +1,13 @@
+{
+  "summary": "Disk space alerts use clearer thresholds, memory and health notifications jump to Suggested Actions, Focus App works for Chrome helpers, and the menu bar Free Up Memory panel no longer gets stuck.",
+  "introduced": [],
+  "changed": [
+    "Disk space alerts — all mounted drives notify when free space drops below 10% or below 100 GB, whichever threshold is lower for that drive (tiny app disk images still ignored)",
+    "Health and memory notifications — tapping the banner or Review Suggested Actions opens System Optimization → Memory Analyzer and scrolls to Suggested Actions",
+    "Review Suggested Actions — notification action label replaces Open System Optimization / Open Memory Analyzer on poor-health and memory insight alerts"
+  ],
+  "fixed": [
+    "Menu bar Free Up Memory — popover dismisses before purge/admin prompts and shows a standalone result dialog so System Status no longer hangs with a stuck close button",
+    "Focus App — resolves helper process names such as Google Chrome Helper (Renderer) to the main Dock app so Chrome, Slack, and other Electron apps activate correctly"
+  ]
+}

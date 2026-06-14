@@ -5,6 +5,26 @@ public enum MemoryProcessRules {
         processName.lowercased().contains("diskwise")
     }
 
+    /// Maps helper/agent process labels to the user-facing app name shown in the Dock.
+    public static func userFacingApplicationName(for processName: String) -> String {
+        var name = processName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return name }
+
+        if let helperRange = name.range(of: " Helper", options: .caseInsensitive) {
+            name = String(name[..<helperRange.lowerBound]).trimmingCharacters(in: .whitespaces)
+        }
+
+        return name
+    }
+
+    public static func isBrowserProcess(_ processName: String) -> Bool {
+        let nameLower = userFacingApplicationName(for: processName).lowercased()
+        return nameLower.contains("chrome")
+            || nameLower.contains("safari")
+            || nameLower.contains("firefox")
+            || nameLower.contains("edge")
+    }
+
     public static func highMemoryUsageDetail(
         for processName: String,
         averageGB: Double,

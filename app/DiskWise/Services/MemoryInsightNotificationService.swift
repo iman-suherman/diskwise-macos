@@ -109,8 +109,7 @@ final class MemoryInsightNotificationService: NSObject, UNUserNotificationCenter
             MemoryAnalyzerMonitor.shared.captureNow()
             return true
         case Self.openAnalyzerIdentifier, UNNotificationDefaultActionIdentifier:
-            AppViewModel.current?.sidebarSelection = .pane(.systemOptimization)
-            NSApp.activate(ignoringOtherApps: true)
+            AppViewModel.current?.openMemoryAnalyzerSuggestedActions()
             return true
         default:
             return false
@@ -147,7 +146,7 @@ final class MemoryInsightNotificationService: NSObject, UNUserNotificationCenter
         )
         let open = UNNotificationAction(
             identifier: Self.openAnalyzerIdentifier,
-            title: "Open Memory Analyzer",
+            title: "Review Suggested Actions",
             options: [.foreground]
         )
         let category = UNNotificationCategory(

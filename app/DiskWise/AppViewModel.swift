@@ -194,6 +194,7 @@ final class AppViewModel: ObservableObject {
     @Published var hasFullDiskAccess = false
     @Published var missingExternalVolumePaths: [String] = []
     @Published var sidebarSelection: SidebarSelection = .pane(.overview)
+    @Published var systemOptimizationNavigationRequest: SystemOptimizationNavigationRequest?
     @Published var selectedVolumeTab: VolumeDiskTab = .overview
     @Published var scanLogStatusLine: String?
     @Published var scanJustCompleted = false
@@ -2566,6 +2567,16 @@ final class AppViewModel: ObservableObject {
             selectedDuplicatesTab = .review
         }
         sidebarSelection = .pane(.duplicates)
+    }
+
+    func openMemoryAnalyzerSuggestedActions() {
+        sidebarSelection = .pane(.systemOptimization)
+        systemOptimizationNavigationRequest = SystemOptimizationNavigationRequest(
+            tab: .memoryAnalyzer,
+            scrollAnchor: MemoryAnalyzerScrollTarget.suggestedActions
+        )
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.windows.first { $0.canBecomeMain }?.makeKeyAndOrderFront(nil)
     }
 
     func openMaintenanceKind(_ kind: MaintenanceKind) {

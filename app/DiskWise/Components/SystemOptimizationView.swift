@@ -29,6 +29,16 @@ enum SystemOptimizationTab: String, CaseIterable, Identifiable {
 
 extension SystemOptimizationTab: DiskWiseTabRepresentable {}
 
+struct SystemOptimizationNavigationRequest: Equatable {
+    let id = UUID()
+    let tab: SystemOptimizationTab
+    let scrollAnchor: String?
+
+    static func == (lhs: SystemOptimizationNavigationRequest, rhs: SystemOptimizationNavigationRequest) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
 struct SystemOptimizationView: View {
     @EnvironmentObject private var viewModel: AppViewModel
     @ObservedObject private var healthMonitor = SystemHealthMonitor.shared
@@ -47,27 +57,35 @@ struct SystemOptimizationView: View {
                 .padding(.horizontal, 28)
                 .padding(.bottom, 16)
 
-            ScrollView {
-                Group {
-                    switch selectedTab {
-                    case .systemStatus:
-                        SystemStatusView(
-                            embeddedInOptimization: true,
-                            displaySection: .summary
-                        )
-                    case .memoryAnalyzer:
-                        MemoryAnalyzerView(embeddedInOptimization: true)
-                    case .appleIntelligence:
-                        AppleIntelligenceInsightsView()
-                    case .processUsage:
-                        SystemStatusView(
-                            embeddedInOptimization: true,
-                            displaySection: .processUsage
-                        )
+            ScrollViewReader { proxy in
+                ScrollView {
+                    Group {
+                        switch selectedTab {
+                        case .systemStatus:
+                            SystemStatusView(
+                                embeddedInOptimization: true,
+                                displaySection: .summary
+                            )
+                        case .memoryAnalyzer:
+                            MemoryAnalyzerView(embeddedInOptimization: true)
+                        case .appleIntelligence:
+                            AppleIntelligenceInsightsView()
+                        case .processUsage:
+                            SystemStatusView(
+                                embeddedInOptimization: true,
+                                displaySection: .processUsage
+                            )
+                        }
                     }
+                    .padding(.horizontal, 28)
+                    .padding(.bottom, 28)
                 }
-                .padding(.horizontal, 28)
-                .padding(.bottom, 28)
+                .onAppear {
+                    applyNavigationRequest(viewModel.systemOptimizationNavigationRequest, proxy: proxy)
+                }
+                .onChange(of: viewModel.systemOptimizationNavigationRequest?.id) { _, _ in
+                    applyNavigationRequest(viewModel.systemOptimizationNavigationRequest, proxy: proxy)
+                }
             }
         }
         .onAppear {
@@ -152,6 +170,22 @@ struct SystemOptimizationView: View {
     private func healthScoreColor(_ score: Int) -> Color {
         let rgb = SystemHealthMonitorCore.healthScoreColor(score)
         return Color(red: rgb.red, green: rgb.green, blue: rgb.blue)
+    }
+
+    private func applyNavigationRequest(
+        _ request: SystemOptimizationNavigationRequest?,
+        proxy: ScrollViewProxy
+    ) {
+        guard let request else { return }
+        selectedTab = request.tab
+        viewModel.systemOptimizationNavigationRequest = nil
+        guard let anchor = request.scrollAnchor else { return }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(200))
+            withAnimation {
+                proxy.scrollTo(anchor, anchor: .top)
+            }
+        }
     }
 }
 

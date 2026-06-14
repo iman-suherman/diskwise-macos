@@ -397,7 +397,8 @@ enum SystemHealthMonitorCore {
         }
 
         let adminApproved = await MainActor.run {
-            runPurgeWithAdministratorPrivileges()
+            MenuBarPopoverSession.closeActivePopover()
+            return runPurgeWithAdministratorPrivileges()
         }
         if adminApproved {
             return memoryReliefResult(before: before, usedAdmin: true)

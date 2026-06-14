@@ -6,7 +6,6 @@ import UserNotifications
 
 enum DiskSpaceAlertLevel: Int, Comparable {
     case low
-    case critical
 
     static func < (lhs: DiskSpaceAlertLevel, rhs: DiskSpaceAlertLevel) -> Bool {
         lhs.rawValue < rhs.rawValue
@@ -14,23 +13,27 @@ enum DiskSpaceAlertLevel: Int, Comparable {
 
     /// Ignore tiny mounts (e.g. app DMGs) that are not meaningful storage targets.
     static let minimumNotifiableTotalBytes: Int64 = 512 * 1024 * 1024
+    static let lowSpaceFractionThreshold = 0.10
+    static let lowSpaceBytesCap: Int64 = 100 * 1_000_000_000
 
     static func shouldNotify(for volume: MountedVolume) -> Bool {
         volume.totalSize >= minimumNotifiableTotalBytes
     }
 
+    /// Free-space floor for alerts: the lower of 10% of capacity or 100 GB.
+    static func lowSpaceFreeBytesThreshold(for totalSize: Int64) -> Int64 {
+        let percentThreshold = Int64(Double(totalSize) * lowSpaceFractionThreshold)
+        return min(percentThreshold, lowSpaceBytesCap)
+    }
+
+    static func isLowOnSpace(freeSize: Int64, totalSize: Int64) -> Bool {
+        freeSize < lowSpaceFreeBytesThreshold(for: totalSize)
+    }
+
     static func level(for volume: MountedVolume) -> DiskSpaceAlertLevel? {
         guard shouldNotify(for: volume) else { return nil }
-
-        if VolumeDiscovery.isSystemVolume(mountPath: volume.mountPath),
-           MenuBarDiskThresholds.isCriticallyLow(freeSize: volume.freeSize) {
-            return .critical
-        }
-        let freeFraction = max(0, 1 - volume.usageFraction)
-        if freeFraction < 0.15 {
-            return .low
-        }
-        return nil
+        guard isLowOnSpace(freeSize: volume.freeSize, totalSize: volume.totalSize) else { return nil }
+        return .low
     }
 }
 
@@ -138,18 +141,18 @@ final class DiskSpaceNotificationService {
         guard authorized else { return }
 
         let content = UNMutableNotificationContent()
-        content.title = notificationTitle(for: volume, level: level)
+        content.title = notificationTitle(for: volume)
         content.subtitle = "DiskWise · \(volume.name)"
-        content.body = notificationBody(for: volume, level: level)
+        content.body = notificationBody(for: volume)
         content.sound = .default
         content.categoryIdentifier = Self.categoryIdentifier
         content.userInfo = [
             "mountPath": volume.mountPath,
-            "alertLevel": level == .critical ? "critical" : "low",
+            "alertLevel": "low",
         ]
 
         let request = UNNotificationRequest(
-            identifier: "disk-space-\(volume.mountPath)-\(level == .critical ? "critical" : "low")",
+            identifier: "disk-space-\(volume.mountPath)-low",
             content: content,
             trigger: nil
         )
@@ -163,25 +166,14 @@ final class DiskSpaceNotificationService {
         }
     }
 
-    private func notificationTitle(for volume: MountedVolume, level: DiskSpaceAlertLevel) -> String {
-        switch level {
-        case .critical:
-            return "\(volume.name) is critically low on space"
-        case .low:
-            return "\(volume.name) is running low on space"
-        }
+    private func notificationTitle(for volume: MountedVolume) -> String {
+        "\(volume.name) is running low on space"
     }
 
-    private func notificationBody(for volume: MountedVolume, level: DiskSpaceAlertLevel) -> String {
+    private func notificationBody(for volume: MountedVolume) -> String {
         let freeBytes = MenuBarFormatters.resolvedFreeBytes(for: volume)
         let freeLabel = MenuBarFormatters.readableFreeSpace(freeBytes)
         let freePercent = Int((max(0, 1 - volume.usageFraction) * 100).rounded())
-
-        switch level {
-        case .critical:
-            return "Only \(freeLabel) free (\(freePercent)% remaining) — less than twice your RAM. Free space now to avoid slowdowns."
-        case .low:
-            return "Only \(freeLabel) free (\(freePercent)% remaining). Review large files and safe cleanup options."
-        }
+        return "Only \(freeLabel) free (\(freePercent)% remaining). Review large files and safe cleanup options."
     }
 }

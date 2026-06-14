@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct SystemMemoryReliefControl: View {
@@ -5,6 +6,8 @@ struct SystemMemoryReliefControl: View {
     let snapshot: SystemHealthSnapshot
     var compact: Bool = false
     var onStatusMessage: ((String) -> Void)?
+    /// Called before purge in menu bar popover so the panel can dismiss before auth dialogs.
+    var onWillFreeMemory: (() -> Void)?
     var trigger: Binding<Int>?
 
     @State private var isFreeingMemory = false
@@ -19,17 +22,7 @@ struct SystemMemoryReliefControl: View {
             }
         }
         .background { triggerListener }
-        .alert(
-            "Memory Relief",
-            isPresented: Binding(
-                get: { memoryReliefMessage != nil },
-                set: { if !$0 { memoryReliefMessage = nil } }
-            )
-        ) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(memoryReliefMessage ?? "")
-        }
+        .modifier(MemoryReliefResultAlert(message: $memoryReliefMessage, enabled: !compact))
     }
 
     @ViewBuilder
@@ -139,36 +132,55 @@ struct SystemMemoryReliefControl: View {
         isFreeingMemory = true
         defer { isFreeingMemory = false }
 
+        if compact {
+            await MainActor.run {
+                onWillFreeMemory?()
+            }
+        }
+
         let beforeScore = monitor.snapshot?.healthScore
         let result = await monitor.freeUpMemory()
         let afterScore = monitor.snapshot?.healthScore
+        let message = resultMessage(for: result, beforeScore: beforeScore, afterScore: afterScore)
 
+        if compact {
+            await MainActor.run {
+                Self.presentMemoryReliefAlert(message)
+            }
+        } else {
+            memoryReliefMessage = message
+        }
+    }
+
+    private func resultMessage(
+        for result: MemoryReliefResult,
+        beforeScore: Int?,
+        afterScore: Int?
+    ) -> String {
         switch result {
         case .relieved(_, let message):
             onStatusMessage?("Memory freed")
-            memoryReliefMessage = Self.scoreChangeMessage(
-                base: message,
-                beforeScore: beforeScore,
-                afterScore: afterScore
-            )
+            return Self.scoreChangeMessage(base: message, beforeScore: beforeScore, afterScore: afterScore)
         case .improved(let message):
             onStatusMessage?("Memory pressure improved")
-            memoryReliefMessage = Self.scoreChangeMessage(
-                base: message,
-                beforeScore: beforeScore,
-                afterScore: afterScore
-            )
+            return Self.scoreChangeMessage(base: message, beforeScore: beforeScore, afterScore: afterScore)
         case .noMeasurableChange(let message):
-            memoryReliefMessage = Self.scoreChangeMessage(
-                base: message,
-                beforeScore: beforeScore,
-                afterScore: afterScore
-            )
+            return Self.scoreChangeMessage(base: message, beforeScore: beforeScore, afterScore: afterScore)
         case .requiresAdmin(let message):
-            memoryReliefMessage = message
+            return message
         case .failed(let message):
-            memoryReliefMessage = message
+            return message
         }
+    }
+
+    @MainActor
+    private static func presentMemoryReliefAlert(_ message: String) {
+        let alert = NSAlert()
+        alert.messageText = "Memory Relief"
+        alert.informativeText = message
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
 
     static func scoreChangeMessage(base: String, beforeScore: Int?, afterScore: Int?) -> String {
@@ -180,5 +192,28 @@ struct SystemMemoryReliefControl: View {
             return "\(base)\n\nHealth score is now \(afterScore) (was \(beforeScore))."
         }
         return "\(base)\n\nHealth score remains \(afterScore)."
+    }
+}
+
+private struct MemoryReliefResultAlert: ViewModifier {
+    @Binding var message: String?
+    let enabled: Bool
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content.alert(
+                "Memory Relief",
+                isPresented: Binding(
+                    get: { message != nil },
+                    set: { if !$0 { message = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(message ?? "")
+            }
+        } else {
+            content
+        }
     }
 }

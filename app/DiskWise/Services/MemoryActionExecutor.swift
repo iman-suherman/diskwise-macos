@@ -3,6 +3,18 @@ import AIKit
 
 @MainActor
 enum MemoryActionExecutor {
+    private struct BrowserBundleHint {
+        let keyword: String
+        let bundleFragment: String
+    }
+
+    private static let browserBundleHints: [BrowserBundleHint] = [
+        BrowserBundleHint(keyword: "chrome", bundleFragment: "google.Chrome"),
+        BrowserBundleHint(keyword: "firefox", bundleFragment: "org.mozilla.firefox"),
+        BrowserBundleHint(keyword: "safari", bundleFragment: "com.apple.Safari"),
+        BrowserBundleHint(keyword: "edge", bundleFragment: "com.microsoft.edgemac"),
+    ]
+
     static func perform(_ recommendation: MemoryActionRecommendation) async -> String {
         await perform(
             kind: recommendation.actionKind,
@@ -55,42 +67,97 @@ enum MemoryActionExecutor {
         }
     }
 
+    private static var userFacingApplications: [NSRunningApplication] {
+        NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }
+    }
+
     private static func runningApplication(named name: String) -> NSRunningApplication? {
-        NSWorkspace.shared.runningApplications.first {
-            $0.localizedName?.caseInsensitiveCompare(name) == .orderedSame
-                || ($0.localizedName?.lowercased().contains(name.lowercased()) == true)
+        let resolvedName = MemoryProcessRules.userFacingApplicationName(for: name)
+        let searchNames = uniqueNames(resolvedName, name)
+
+        for searchName in searchNames {
+            if let app = userFacingApplications.first(where: { app in
+                app.localizedName?.caseInsensitiveCompare(searchName) == .orderedSame
+            }) {
+                return app
+            }
         }
+
+        let processNameLower = name.lowercased()
+        if let app = userFacingApplications.first(where: { app in
+            guard let localized = app.localizedName else { return false }
+            return processNameLower.hasPrefix(localized.lowercased() + " ")
+        }) {
+            return app
+        }
+
+        let resolvedLower = resolvedName.lowercased()
+        for hint in browserBundleHints where resolvedLower.contains(hint.keyword) {
+            if let app = userFacingApplications.first(where: {
+                $0.bundleIdentifier?.localizedCaseInsensitiveContains(hint.bundleFragment) == true
+            }) {
+                return app
+            }
+        }
+
+        return userFacingApplications.first { app in
+            guard let localized = app.localizedName else { return false }
+            let localizedLower = localized.lowercased()
+            return localizedLower.contains(resolvedLower) || resolvedLower.contains(localizedLower)
+        }
+    }
+
+    private static func uniqueNames(_ names: String...) -> [String] {
+        var seen = Set<String>()
+        var ordered: [String] = []
+        for name in names {
+            let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            let key = trimmed.lowercased()
+            guard seen.insert(key).inserted else { continue }
+            ordered.append(trimmed)
+        }
+        return ordered
+    }
+
+    private static func displayName(for app: NSRunningApplication, fallback: String) -> String {
+        app.localizedName ?? MemoryProcessRules.userFacingApplicationName(for: fallback)
     }
 
     private static func quitApplication(named name: String) -> String {
         guard let app = runningApplication(named: name) else {
-            return "\(name) is not running as a user application."
+            let resolvedName = MemoryProcessRules.userFacingApplicationName(for: name)
+            return "\(resolvedName) is not running as a user application."
         }
+        let appName = displayName(for: app, fallback: name)
         return app.terminate()
-            ? "Sent quit signal to \(name)."
-            : "Could not quit \(name). It may ignore quit requests."
+            ? "Sent quit signal to \(appName)."
+            : "Could not quit \(appName). It may ignore quit requests."
     }
 
     private static func restartApplication(named name: String) -> String {
         guard let app = runningApplication(named: name),
               let bundleURL = app.bundleURL else {
-            return "\(name) is not running as a user application."
+            let resolvedName = MemoryProcessRules.userFacingApplicationName(for: name)
+            return "\(resolvedName) is not running as a user application."
         }
-        let localizedName = app.localizedName ?? name
+        let appName = displayName(for: app, fallback: name)
         _ = app.terminate()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
             let config = NSWorkspace.OpenConfiguration()
             config.activates = true
             NSWorkspace.shared.openApplication(at: bundleURL, configuration: config) { _, _ in }
         }
-        return "Restarting \(localizedName)…"
+        return "Restarting \(appName)…"
     }
 
     private static func activateApplication(named name: String) -> String {
         guard let app = runningApplication(named: name) else {
-            return "\(name) is not running."
+            let resolvedName = MemoryProcessRules.userFacingApplicationName(for: name)
+            return "\(resolvedName) is not running."
         }
         app.activate()
-        return "Brought \(name) to the front so you can close unused tabs."
+        let appName = displayName(for: app, fallback: name)
+        return "Brought \(appName) to the front so you can close unused tabs."
     }
 }

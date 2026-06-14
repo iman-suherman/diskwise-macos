@@ -170,7 +170,7 @@ public final class MemoryAnalysisEngine: @unchecked Sendable {
 
         for profile in persistentConsumers.prefix(5) {
             let avgGB = Double(profile.averageMemoryBytes) / 1_073_741_824
-            let nameLower = profile.name.lowercased()
+            let displayName = MemoryProcessRules.userFacingApplicationName(for: profile.name)
 
             if MemoryProcessRules.isDiskWise(profile.name) {
                 if profile.averageMemoryBytes >= 1_500 * 1024 * 1024, profile.sampleCount >= 2 {
@@ -190,13 +190,13 @@ public final class MemoryAnalysisEngine: @unchecked Sendable {
                 continue
             }
 
-            if nameLower.contains("chrome") || nameLower.contains("safari") || nameLower.contains("firefox") || nameLower.contains("edge") {
+            if MemoryProcessRules.isBrowserProcess(profile.name) {
                 items.append(
                     MemoryActionRecommendation(
-                        title: "Trim \(profile.name) tabs",
-                        detail: "\(profile.name) averages \(String(format: "%.1f", avgGB)) GB across \(profile.sampleCount) samples. Close unused tabs or enable tab discarding.",
+                        title: "Trim \(displayName) tabs",
+                        detail: "\(displayName) averages \(String(format: "%.1f", avgGB)) GB across \(profile.sampleCount) samples. Close unused tabs or enable tab discarding.",
                         actionKind: .reduceTabs,
-                        targetProcessName: profile.name,
+                        targetProcessName: displayName,
                         priority: 80
                     )
                 )
@@ -206,14 +206,14 @@ public final class MemoryAnalysisEngine: @unchecked Sendable {
             if profile.averageMemoryBytes >= 2 * 1024 * 1024 * 1024, profile.sampleCount >= 2 {
                 items.append(
                     MemoryActionRecommendation(
-                        title: "Restart \(profile.name)",
+                        title: "Restart \(displayName)",
                         detail: MemoryProcessRules.highMemoryUsageDetail(
-                            for: profile.name,
+                            for: displayName,
                             averageGB: avgGB,
                             sampleCount: profile.sampleCount
                         ),
                         actionKind: .restartApp,
-                        targetProcessName: profile.name,
+                        targetProcessName: displayName,
                         priority: 75
                     )
                 )
@@ -223,10 +223,10 @@ public final class MemoryAnalysisEngine: @unchecked Sendable {
             if profile.averageMemoryBytes >= 1_500 * 1024 * 1024, profile.sampleCount >= 3 {
                 items.append(
                     MemoryActionRecommendation(
-                        title: "Quit \(profile.name) when idle",
-                        detail: "\(profile.name) appears in \(profile.sampleCount) samples averaging \(String(format: "%.1f", avgGB)) GB.",
+                        title: "Quit \(displayName) when idle",
+                        detail: "\(displayName) appears in \(profile.sampleCount) samples averaging \(String(format: "%.1f", avgGB)) GB.",
                         actionKind: .quitProcess,
-                        targetProcessName: profile.name,
+                        targetProcessName: displayName,
                         priority: 65
                     )
                 )

@@ -63,7 +63,7 @@ enum MemoryInsightActionMatcher {
         }
 
         let lower = body.lowercased()
-        let name = consumer.name
+        let name = MemoryProcessRules.userFacingApplicationName(for: consumer.name)
         let avgGB = Double(consumer.averageMemoryBytes) / 1_073_741_824
         let nameLower = name.lowercased()
 
@@ -71,8 +71,7 @@ enum MemoryInsightActionMatcher {
             return nil
         }
 
-        if nameLower.contains("chrome") || nameLower.contains("safari")
-            || nameLower.contains("firefox") || nameLower.contains("edge") {
+        if MemoryProcessRules.isBrowserProcess(name) {
             return MemoryActionRecommendation(
                 title: "Trim \(name) tabs",
                 detail: body,
@@ -127,15 +126,14 @@ enum MemoryInsightActionMatcher {
 
         if lower.contains("tab") || lower.contains("browser") {
             if let browser = report.persistentConsumers.first(where: {
-                let name = $0.name.lowercased()
-                return name.contains("chrome") || name.contains("safari")
-                    || name.contains("firefox") || name.contains("edge")
+                MemoryProcessRules.isBrowserProcess($0.name)
             }) {
+                let name = MemoryProcessRules.userFacingApplicationName(for: browser.name)
                 return MemoryActionRecommendation(
-                    title: "Focus \(browser.name)",
+                    title: "Focus \(name)",
                     detail: body,
                     actionKind: .reduceTabs,
-                    targetProcessName: browser.name,
+                    targetProcessName: name,
                     priority: 55
                 )
             }
@@ -143,11 +141,12 @@ enum MemoryInsightActionMatcher {
 
         if lower.contains("restart") && !lower.contains("mac") {
             if let heavy = report.persistentConsumers.first(where: { !MemoryProcessRules.isDiskWise($0.name) }) {
+                let name = MemoryProcessRules.userFacingApplicationName(for: heavy.name)
                 return MemoryActionRecommendation(
-                    title: "Restart \(heavy.name)",
+                    title: "Restart \(name)",
                     detail: body,
                     actionKind: .restartApp,
-                    targetProcessName: heavy.name,
+                    targetProcessName: name,
                     priority: 50
                 )
             }

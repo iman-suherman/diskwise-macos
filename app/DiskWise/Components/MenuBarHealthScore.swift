@@ -44,7 +44,8 @@ struct MenuBarHealthPopoverContent: View {
                     SystemMemoryReliefControl(
                         monitor: monitor,
                         snapshot: snapshot,
-                        compact: true
+                        compact: true,
+                        onWillFreeMemory: onClose
                     )
                     detailsSection(snapshot)
                     topProcessesSection(snapshot)

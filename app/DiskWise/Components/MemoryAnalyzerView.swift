@@ -1,6 +1,10 @@
 import AIKit
 import SwiftUI
 
+enum MemoryAnalyzerScrollTarget {
+    static let suggestedActions = "memory-analyzer-suggested-actions"
+}
+
 struct MemoryAnalyzerView: View {
     var embeddedInOptimization: Bool = false
 
@@ -333,6 +337,7 @@ struct MemoryAnalyzerView: View {
             } label: {
                 Label("Suggested Actions", systemImage: "bolt.fill")
             }
+            .id(MemoryAnalyzerScrollTarget.suggestedActions)
         }
     }
 

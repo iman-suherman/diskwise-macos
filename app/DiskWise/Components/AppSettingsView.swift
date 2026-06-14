@@ -210,7 +210,7 @@ struct AppSettingsView: View {
                     isOn: $settings.systemHealthNotificationsEnabled
                 )
 
-                Text("Notifies when a mounted drive drops below 15% free space. The system disk also alerts when free space falls below twice your RAM. Tiny mounts such as app disk images are ignored.")
+                Text("Notifies when any mounted drive (except tiny app disk images) drops below 10% free or below 100 GB free — whichever threshold is lower for that drive.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
