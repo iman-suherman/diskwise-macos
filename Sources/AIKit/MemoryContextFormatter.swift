@@ -60,6 +60,12 @@ enum MemoryContextFormatter {
         ## Recommendations
         - **<Action title>:** <one sentence detail>
 
+        ## Quitting or restarting apps
+        - **<App name>:** <guidance; omit if not recommended>
+
+        ## macOS system services
+        - **<Service topic>:** <guidance — say when action is not recommended>
+
         ## Better computing habits
         Tip 1: <Short title> — <one sentence detail>
         Tip 2: <Short title> — <one sentence detail>

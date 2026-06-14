@@ -62,6 +62,7 @@
 		91E4D218C3A7026E8D8F22CA /* MetadataKit in Frameworks */ = {isa = PBXBuildFile; productRef = E118092959DEFDD022BB88EC /* MetadataKit */; };
 		9384448034396B64ABBF3D19 /* MenuBarHealthScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE0414EB1623E719F460CAE /* MenuBarHealthScore.swift */; };
 		94D3EF8213E3A2C27E9C0D3E /* 0.6.2.json in Resources */ = {isa = PBXBuildFile; fileRef = B7DB0862BEAD6D13A019D0FD /* 0.6.2.json */; };
+		A00A29FB7A9AB8CF36925A53 /* MemoryInsightActionMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB4C021EC521213A445B557D /* MemoryInsightActionMatcher.swift */; };
 		A1E6344A43CABB46455859D5 /* DuplicateKit in Frameworks */ = {isa = PBXBuildFile; productRef = E44897D5C0C445D604A9F3CB /* DuplicateKit */; };
 		A95B375EB57B93CEB3A6A1CA /* 0.6.1.json in Resources */ = {isa = PBXBuildFile; fileRef = 2A6023015E9A7D986EB17D42 /* 0.6.1.json */; };
 		AAAAA899D7754707AAD2D90F /* MemoryActionExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F390C5E410CA72074E3A8BE7 /* MemoryActionExecutor.swift */; };
@@ -113,6 +114,7 @@
 		FA5575535E0F00F7409EB33C /* SystemOptimizationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB2B6BB069E423D075EDFE3 /* SystemOptimizationView.swift */; };
 		FAB2B6356F46985804A0B25C /* StartupSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9632663F581782670036F59C /* StartupSplashView.swift */; };
 		FACE59C51DED810AEC1F3B65 /* ScanningDockTileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 238E83EDCC4C147C2BE4E4FB /* ScanningDockTileView.swift */; };
+		FB1EE01EE283AA5723F4BECE /* 0.6.4.json in Resources */ = {isa = PBXBuildFile; fileRef = C936F9E4DDBAE8C20A5F61F8 /* 0.6.4.json */; };
 		FC44ADD51FA39A6B7F20E292 /* 0.3.2.json in Resources */ = {isa = PBXBuildFile; fileRef = EA71528515544DA6FC276B6D /* 0.3.2.json */; };
 		FC6623E26E2D1FA21EC83507 /* MenuBarExtensionPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */; };
 		FCE4BBDDC79F3B9E5D5C20E0 /* install_python.sh in Resources */ = {isa = PBXBuildFile; fileRef = B9CA49BFF86E2DE13A0B87F6 /* install_python.sh */; };
@@ -203,6 +205,7 @@
 		BE77E6EAC751129191A39F6D /* DockScanAnimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockScanAnimator.swift; sourceTree = "<group>"; };
 		C27E95DFD0F9841389B35E2F /* diskwise_scan.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = diskwise_scan.py; sourceTree = "<group>"; };
 		C91D0D7194E3DC4018956A4D /* 0.1.8.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.8.json; sourceTree = "<group>"; };
+		C936F9E4DDBAE8C20A5F61F8 /* 0.6.4.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.6.4.json; sourceTree = "<group>"; };
 		C9B62028DBE2C0E221B5303A /* ScanModePromptOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanModePromptOverlay.swift; sourceTree = "<group>"; };
 		CA4A5662A24D793ACEF0B235 /* 0.5.20.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.20.json; sourceTree = "<group>"; };
 		CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarExtensionPrompt.swift; sourceTree = "<group>"; };
@@ -224,6 +227,7 @@
 		F2B0EC8C9101C78D4830FB22 /* 0.5.10.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.10.json; sourceTree = "<group>"; };
 		F390C5E410CA72074E3A8BE7 /* MemoryActionExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryActionExecutor.swift; sourceTree = "<group>"; };
 		F9360EC36C59D568DEE4B034 /* WhatsNewTourView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewTourView.swift; sourceTree = "<group>"; };
+		FB4C021EC521213A445B557D /* MemoryInsightActionMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryInsightActionMatcher.swift; sourceTree = "<group>"; };
 		FD14405937526107CBD36994 /* 0.1.0.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.0.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -256,6 +260,7 @@
 				950473F382728BB7A8C75C98 /* LaunchSnapshotStore.swift */,
 				F390C5E410CA72074E3A8BE7 /* MemoryActionExecutor.swift */,
 				16E12E0B51D60F2F32404DC0 /* MemoryAnalyzerMonitor.swift */,
+				FB4C021EC521213A445B557D /* MemoryInsightActionMatcher.swift */,
 				9040D8189C7D40E73615348C /* MemoryInsightNotificationService.swift */,
 				CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */,
 				971832F0D34371AD6D227919 /* MenuBarMonitorController.swift */,
@@ -322,6 +327,7 @@
 				68DCBEA8FF30108E7C861517 /* 0.6.0.json */,
 				2A6023015E9A7D986EB17D42 /* 0.6.1.json */,
 				B7DB0862BEAD6D13A019D0FD /* 0.6.2.json */,
+				C936F9E4DDBAE8C20A5F61F8 /* 0.6.4.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -553,6 +559,7 @@
 				B3DC246BB66ED1E1451B986D /* 0.6.0.json in Resources */,
 				A95B375EB57B93CEB3A6A1CA /* 0.6.1.json in Resources */,
 				94D3EF8213E3A2C27E9C0D3E /* 0.6.2.json in Resources */,
+				FB1EE01EE283AA5723F4BECE /* 0.6.4.json in Resources */,
 				BAC56BC5D44D164A6D1651C3 /* Assets.xcassets in Resources */,
 				7F3FA96EA3B2337449CD40D0 /* diskwise_scan.py in Resources */,
 				E559D2BF705EE1AB7F9CA4EA /* entitlements.mac.plist in Resources */,
@@ -629,6 +636,7 @@
 				AAAAA899D7754707AAD2D90F /* MemoryActionExecutor.swift in Sources */,
 				8F048F3CE1F6DDE014892441 /* MemoryAnalyzerMonitor.swift in Sources */,
 				AD9B75BC6DC71E2F9CF51405 /* MemoryAnalyzerView.swift in Sources */,
+				A00A29FB7A9AB8CF36925A53 /* MemoryInsightActionMatcher.swift in Sources */,
 				BCC178A5B4049531784C13F4 /* MemoryInsightContentView.swift in Sources */,
 				904D2F4452D1ED17A947CD64 /* MemoryInsightNotificationService.swift in Sources */,
 				03B0CC0B75C882455F238B4A /* MenuBarDiskMonitor.swift in Sources */,

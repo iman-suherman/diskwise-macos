@@ -8,6 +8,8 @@ final class MemoryAnalyzerMonitor: ObservableObject {
     @Published private(set) var samples: [MemorySampleRecord] = []
     @Published private(set) var report: MemoryAnalysisReport?
     @Published private(set) var isAnalyzing = false
+    @Published private(set) var streamingAISummary = ""
+    @Published private(set) var isStreamingAISummary = false
     @Published private(set) var lastSampleAt: Date?
     @Published private(set) var lastAIAnalysisAt: Date?
     @Published private(set) var aiProviderLabel = "Rule-based"
@@ -154,17 +156,50 @@ final class MemoryAnalyzerMonitor: ObservableObject {
         analysisTask?.cancel()
         analysisTask = Task { @MainActor in
             isAnalyzing = true
+            isStreamingAISummary = true
+            streamingAISummary = ""
             defer {
                 isAnalyzing = false
+                isStreamingAISummary = false
                 samplesSinceLastAnalysis = 0
             }
 
             let status = await analysisEngine.providerStatus()
             aiProviderLabel = status.isGenerativeAvailable ? status.displayName : "Rule-based"
 
-            let result = await analysisEngine.analyze(samples: samples)
+            let base = analysisEngine.prepareReport(from: samples)
+            let context = MemoryAnalysisContext(report: base, recentSamples: samples)
+            let fallback = analysisEngine.fallbackSummary(for: base)
+            let stream = analysisEngine.streamMemorySummary(context: context, fallback: fallback)
+
+            var finalSummary = ""
+            do {
+                for try await partial in stream {
+                    guard !Task.isCancelled else { return }
+                    finalSummary = partial
+                    streamingAISummary = partial
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+                finalSummary = fallback
+                streamingAISummary = fallback
+            }
+
             guard !Task.isCancelled else { return }
+            let trimmed = finalSummary.trimmingCharacters(in: .whitespacesAndNewlines)
+            let aiSummary = trimmed.isEmpty ? fallback : trimmed
+            let result = MemoryAnalysisReport(
+                sampledAt: base.sampledAt,
+                sampleCount: base.sampleCount,
+                currentUsedPercent: base.currentUsedPercent,
+                averageUsedPercent: base.averageUsedPercent,
+                peakUsedPercent: base.peakUsedPercent,
+                persistentConsumers: base.persistentConsumers,
+                recommendations: base.recommendations,
+                aiSummary: aiSummary
+            )
             report = result
+            streamingAISummary = aiSummary
             lastAIAnalysisAt = Date()
             await deliverInsightNotificationIfNeeded(for: result)
         }

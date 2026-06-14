@@ -163,4 +163,52 @@ public actor AIProviderResolver {
         }
         return nil
     }
+
+    public func streamAnalyzeMemory(
+        context: MemoryAnalysisContext,
+        fallback: String
+    ) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                if await foundationModelsProvider.isAvailable() {
+                    let stream = foundationModelsProvider.streamAnalyzeMemory(context: context)
+                    if await streamMemory(stream, to: continuation) {
+                        return
+                    }
+                }
+                if configuration.enableOllamaDevMode, await ollamaProvider().isAvailable() {
+                    let stream = ollamaProvider().streamAnalyzeMemory(context: context)
+                    if await streamMemory(stream, to: continuation) {
+                        return
+                    }
+                }
+                if let summary = await analyzeMemory(context: context) {
+                    for try await partial in StreamingText.simulatedReveal(summary) {
+                        continuation.yield(partial)
+                    }
+                    continuation.finish()
+                    return
+                }
+                for try await partial in StreamingText.simulatedReveal(fallback) {
+                    continuation.yield(partial)
+                }
+                continuation.finish()
+            }
+        }
+    }
+
+    private func streamMemory(
+        _ stream: AsyncThrowingStream<String, Error>,
+        to continuation: AsyncThrowingStream<String, Error>.Continuation
+    ) async -> Bool {
+        do {
+            for try await partial in stream {
+                continuation.yield(partial)
+            }
+            continuation.finish()
+            return true
+        } catch {
+            return false
+        }
+    }
 }

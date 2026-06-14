@@ -23,6 +23,8 @@ enum ChatMessageFormatter {
         "Practical Habits for Efficient Use",
         "Practical habits for efficient use",
         "Better computing habits",
+        "Quitting or restarting apps",
+        "macOS system services",
     ]
 
     static func formatForDisplay(_ text: String) -> String {
@@ -179,17 +181,69 @@ enum ChatMessageFormatter {
                 continue
             }
 
-            for line in lines {
-                if let item = parseSingleLineInsight(line) {
-                    currentItems.append(item)
-                } else {
-                    currentItems.append(.paragraph(line))
+            if lines.count > 1, isSubheading(lines[0]) {
+                currentItems.append(.subheading(cleanMarkdown(lines[0])))
+                for line in lines.dropFirst() {
+                    appendParsedLine(line, to: &currentItems)
                 }
+                continue
+            }
+
+            for line in lines {
+                appendParsedLine(line, to: &currentItems)
             }
         }
 
         flushSection()
-        return sections
+        return mergeDuplicateSections(sections)
+    }
+
+    private static func appendParsedLine(_ line: String, to items: inout [MemoryInsightItem]) {
+        if let item = parseSingleLineInsight(line) {
+            items.append(item)
+        } else {
+            let cleaned = cleanMarkdown(line)
+            guard !cleaned.isEmpty else { return }
+            items.append(.paragraph(cleaned))
+        }
+    }
+
+    private static func isSubheading(_ line: String) -> Bool {
+        let stripped = cleanMarkdown(line)
+        guard !stripped.isEmpty else { return false }
+        guard !stripped.hasPrefix("-") else { return false }
+        guard stripped.count <= 56 else { return false }
+        guard !stripped.contains("avg ") else { return false }
+        return !stripped.contains(where: { $0 == "%" })
+    }
+
+    private static func cleanMarkdown(_ text: String) -> String {
+        text
+            .replacingOccurrences(of: "**", with: "")
+            .replacingOccurrences(of: "__", with: "")
+            .replacingOccurrences(of: "##", with: "")
+            .replacingOccurrences(of: "\\.\\.", with: ".", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: ":"))
+    }
+
+    private static func mergeDuplicateSections(_ sections: [MemoryInsightSection]) -> [MemoryInsightSection] {
+        var merged: [MemoryInsightSection] = []
+        for section in sections {
+            if let last = merged.last,
+               let lastTitle = last.title,
+               let sectionTitle = section.title,
+               lastTitle.caseInsensitiveCompare(sectionTitle) == .orderedSame {
+                merged[merged.count - 1] = MemoryInsightSection(
+                    id: last.id,
+                    title: last.title,
+                    items: last.items + section.items
+                )
+            } else {
+                merged.append(section)
+            }
+        }
+        return merged
     }
 
     private static func normalizeMemoryInsightText(_ text: String) -> String {
@@ -231,6 +285,18 @@ enum ChatMessageFormatter {
         result = result.replacingOccurrences(
             of: "([a-z])([A-Z][a-z]{3,})",
             with: "$1\n$2",
+            options: .regularExpression
+        )
+
+        result = result.replacingOccurrences(
+            of: "([^\\n])- \\*\\*",
+            with: "$1\n- **",
+            options: .regularExpression
+        )
+
+        result = result.replacingOccurrences(
+            of: "\\.\\.+",
+            with: ".",
             options: .regularExpression
         )
 
@@ -336,16 +402,21 @@ enum ChatMessageFormatter {
     }
 
     private static func parseBullet(_ line: String) -> MemoryInsightItem? {
-        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-        let prefixes = ["- ", "• ", "* "]
-        guard let prefix = prefixes.first(where: { trimmed.hasPrefix($0) }) else { return nil }
+        var trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("-") || trimmed.hasPrefix("•") || trimmed.hasPrefix("*") else { return nil }
 
-        let content = String(trimmed.dropFirst(prefix.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        trimmed = String(trimmed.dropFirst()).trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.hasPrefix("*") || trimmed.hasPrefix("-") {
+            trimmed = String(trimmed.dropFirst()).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        let content = trimmed
+            .replacingOccurrences(of: "**", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !content.isEmpty else { return nil }
 
         if let colonIndex = content.firstIndex(of: ":") {
             let label = String(content[..<colonIndex])
-                .replacingOccurrences(of: "**", with: "")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             let value = String(content[content.index(after: colonIndex)...])
                 .trimmingCharacters(in: .whitespacesAndNewlines)

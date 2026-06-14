@@ -1,0 +1,19 @@
+{
+  "summary": "Memory Analyzer now streams AI insights live with inline actions on each suggestion, Activity Log and Settings open in the main panel, and insight formatting is cleaner for app and system-service guidance.",
+  "introduced": [
+    "Live streaming optimization analysis — Re-analyze streams Apple Intelligence output token-by-token with a typing cursor, then switches to structured sections when complete",
+    "Inline insight actions — each persistent-consumer suggestion and Better computing habits tip can show a Quit, Restart, Free Memory, or Focus action when applicable",
+    "Activity Log and Settings in the main panel — sidebar Actions rows open full-panel views instead of modal sheets or a separate Settings window"
+  ],
+  "changed": [
+    "Memory insight parser recognizes subsections such as Quitting or restarting apps and macOS system services as labeled groups instead of raw markdown bullets",
+    "Duplicate Persistent memory consumers sections are merged automatically when AI output repeats the same heading",
+    "Suggested Actions matcher skips not-recommended guidance for critical system services so informational bullets do not show misleading buttons",
+    "Settings and Activity Log menu commands (⌘,) and Help → Activity Log route to the in-app panels"
+  ],
+  "fixed": [
+    "Raw markdown bullets like - **Virtual Machine Service for vfkit:** no longer appear in the insights card — titles and descriptions render as clean rows",
+    "Double periods and stray ## headings are stripped from AI insight text",
+    "Better computing habits tips display with action buttons when a matching memory recommendation is available"
+  ]
+}

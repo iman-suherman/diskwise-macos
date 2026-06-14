@@ -15,7 +15,26 @@ public final class MemoryAnalysisEngine: @unchecked Sendable {
         let base = buildRuleBasedReport(from: samples)
         let context = MemoryAnalysisContext(report: base, recentSamples: samples)
         let aiSummary = await consultant.analyzeMemory(context: context)
-        return MemoryAnalysisReport(
+        return finalizedReport(base: base, aiSummary: aiSummary)
+    }
+
+    public func prepareReport(from samples: [MemorySampleRecord]) -> MemoryAnalysisReport {
+        buildRuleBasedReport(from: samples)
+    }
+
+    public func fallbackSummary(for report: MemoryAnalysisReport) -> String {
+        ruleBasedSummary(for: report)
+    }
+
+    public func streamMemorySummary(
+        context: MemoryAnalysisContext,
+        fallback: String
+    ) -> AsyncThrowingStream<String, Error> {
+        consultant.streamAnalyzeMemory(context: context, fallback: fallback)
+    }
+
+    private func finalizedReport(base: MemoryAnalysisReport, aiSummary: String?) -> MemoryAnalysisReport {
+        MemoryAnalysisReport(
             sampledAt: base.sampledAt,
             sampleCount: base.sampleCount,
             currentUsedPercent: base.currentUsedPercent,

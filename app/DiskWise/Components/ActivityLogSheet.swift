@@ -1,13 +1,58 @@
 import SwiftUI
 import AppKit
 
-struct ActivityLogSheet: View {
+struct ActivityLogView: View {
     @ObservedObject var activityLog: ActivityLog
+    var embeddedInPanel: Bool = false
     @Environment(\.dismiss) private var dismiss
     @State private var copiedConfirmation = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            header
+
+            toolbar
+
+            if activityLog.entries.isEmpty {
+                ContentUnavailableView(
+                    "No activity yet",
+                    systemImage: "list.bullet.rectangle",
+                    description: Text("Scan a drive or run cleanup to populate the log.")
+                )
+                .frame(maxWidth: .infinity, minHeight: embeddedInPanel ? 320 : nil)
+                .frame(maxHeight: embeddedInPanel ? .infinity : nil)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 10) {
+                        ForEach(activityLog.entries.reversed()) { entry in
+                            ActivityLogRow(entry: entry)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+                .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
+                .frame(maxHeight: embeddedInPanel ? .infinity : nil)
+            }
+        }
+        .padding(embeddedInPanel ? 0 : 24)
+        .frame(
+            minWidth: embeddedInPanel ? nil : 720,
+            minHeight: embeddedInPanel ? nil : 520
+        )
+        .frame(maxWidth: embeddedInPanel ? .infinity : nil, maxHeight: embeddedInPanel ? .infinity : nil, alignment: .topLeading)
+    }
+
+    @ViewBuilder
+    private var header: some View {
+        if embeddedInPanel {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Activity Log")
+                    .font(.largeTitle.bold())
+                Text("Recent scan, cleanup, and error events. Share this with support when reporting an issue.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        } else {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Activity Log")
@@ -21,55 +66,36 @@ struct ActivityLogSheet: View {
 
                 Button("Done") { dismiss() }
             }
-
-            HStack(spacing: 12) {
-                Button {
-                    copyToPasteboard()
-                } label: {
-                    Label(copiedConfirmation ? "Copied" : "Copy Log", systemImage: copiedConfirmation ? "checkmark" : "doc.on.doc")
-                }
-                .buttonStyle(.bordered)
-
-                Button {
-                    saveToFile()
-                } label: {
-                    Label("Save Log…", systemImage: "square.and.arrow.down")
-                }
-                .buttonStyle(.bordered)
-
-                Button("Clear") {
-                    activityLog.clear()
-                }
-                .buttonStyle(.borderless)
-
-                Spacer()
-
-                Text("\(activityLog.entries.count.formatted()) events")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            if activityLog.entries.isEmpty {
-                ContentUnavailableView(
-                    "No activity yet",
-                    systemImage: "list.bullet.rectangle",
-                    description: Text("Scan a drive or run cleanup to populate the log.")
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 10) {
-                        ForEach(activityLog.entries.reversed()) { entry in
-                            ActivityLogRow(entry: entry)
-                        }
-                    }
-                    .padding(.vertical, 4)
-                }
-                .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
-            }
         }
-        .padding(24)
-        .frame(minWidth: 720, minHeight: 520)
+    }
+
+    private var toolbar: some View {
+        HStack(spacing: 12) {
+            Button {
+                copyToPasteboard()
+            } label: {
+                Label(copiedConfirmation ? "Copied" : "Copy Log", systemImage: copiedConfirmation ? "checkmark" : "doc.on.doc")
+            }
+            .buttonStyle(.bordered)
+
+            Button {
+                saveToFile()
+            } label: {
+                Label("Save Log…", systemImage: "square.and.arrow.down")
+            }
+            .buttonStyle(.bordered)
+
+            Button("Clear") {
+                activityLog.clear()
+            }
+            .buttonStyle(.borderless)
+
+            Spacer()
+
+            Text("\(activityLog.entries.count.formatted()) events")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private func copyToPasteboard() {

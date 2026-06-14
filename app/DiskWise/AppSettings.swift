@@ -348,7 +348,7 @@ final class AppSettings: ObservableObject {
             return DetailPane.defaultMenuPaneOrder
         }
 
-        var ordered = stored.compactMap { DetailPane(rawValue: $0) }.filter { validPanes.contains($0) }
+        var ordered = stored.compactMap { DetailPane(rawValue: $0) }.filter { $0.isReorderableMenuItem && validPanes.contains($0) }
         for pane in DetailPane.defaultMenuPaneOrder where !ordered.contains(pane) {
             ordered.append(pane)
         }

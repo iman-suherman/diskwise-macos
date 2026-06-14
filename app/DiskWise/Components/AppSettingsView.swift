@@ -4,9 +4,37 @@ import AIKit
 
 struct AppSettingsView: View {
     @ObservedObject var settings: AppSettings
+    var embeddedInPanel: Bool = false
 
     var body: some View {
-        Form {
+        Group {
+            if embeddedInPanel {
+                ScrollView {
+                    settingsForm
+                        .padding(28)
+                }
+            } else {
+                settingsForm
+            }
+        }
+        .sheet(isPresented: $settings.showMenuBarMonitorInstructions) {
+            MenuBarMonitorInstructionSheet()
+        }
+    }
+
+    private var settingsForm: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if embeddedInPanel {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Settings")
+                        .font(.largeTitle.bold())
+                    Text("Scan limits, AI provider, menu bar monitor, and preferences.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Form {
             Section {
                 Text(
                     "Step 1 always starts with Fast scan unless you choose Deep scan when indexing a drive. Adjust duplicate and analysis limits below for steps 2 and 3."
@@ -168,13 +196,12 @@ struct AppSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 560, height: 540)
-        .navigationTitle("Settings")
+        }
+        .frame(width: embeddedInPanel ? nil : 560, height: embeddedInPanel ? nil : 540)
+        .frame(maxWidth: embeddedInPanel ? 720 : nil, alignment: .leading)
+        .navigationTitle(embeddedInPanel ? "" : "Settings")
         .onAppear {
             SystemVolumeMonitor.shared.refresh()
-        }
-        .sheet(isPresented: $settings.showMenuBarMonitorInstructions) {
-            MenuBarMonitorInstructionSheet()
         }
     }
 

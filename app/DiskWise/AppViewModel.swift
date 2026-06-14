@@ -59,12 +59,18 @@ enum DetailPane: String, CaseIterable, Identifiable {
     case maintenance
     case duplicates
     case ai
+    case activityLog
+    case settings
 
     var id: String { rawValue }
 
     static let defaultMenuPaneOrder: [DetailPane] = [
         .overview, .duplicates, .systemOptimization, .maintenance,
     ]
+
+    var isReorderableMenuItem: Bool {
+        Self.defaultMenuPaneOrder.contains(self)
+    }
 
     var title: String {
         switch self {
@@ -73,6 +79,8 @@ enum DetailPane: String, CaseIterable, Identifiable {
         case .maintenance: return "System Maintenance"
         case .duplicates: return "Duplicates Finder"
         case .ai: return "Ask DiskWise"
+        case .activityLog: return "Activity Log"
+        case .settings: return "Settings"
         }
     }
 
@@ -83,6 +91,8 @@ enum DetailPane: String, CaseIterable, Identifiable {
         case .maintenance: return "wrench.and.screwdriver.fill"
         case .duplicates: return "doc.on.doc"
         case .ai: return "sparkles"
+        case .activityLog: return "list.bullet.rectangle"
+        case .settings: return "gearshape"
         }
     }
 
@@ -93,6 +103,8 @@ enum DetailPane: String, CaseIterable, Identifiable {
         case .maintenance: return "Caches, snapshots, cleanup"
         case .duplicates: return "Find and remove duplicate files"
         case .ai: return "Ask about your storage"
+        case .activityLog: return "Scan, cleanup, and system events"
+        case .settings: return "Scan limits, AI provider, and preferences"
         }
     }
 }
@@ -163,7 +175,6 @@ final class AppViewModel: ObservableObject {
     @Published var hoveredStorageCategory: String?
     @Published var recommendationReview: RecommendationReviewState?
     @Published var categoryCleanupPreview: CleanupPreview?
-    @Published var showActivityLog = false
     @Published var showAbout = false
     @Published var showWhatsNewTour = false
     @Published var showIndexRebuildPrompt = false
@@ -2490,6 +2501,16 @@ final class AppViewModel: ObservableObject {
         var order = appSettings.menuPaneOrder
         order.move(fromOffsets: source, toOffset: destination)
         appSettings.menuPaneOrder = order
+    }
+
+    func openActivityLogPane() {
+        selectedPane = .activityLog
+    }
+
+    func openSettingsPane() {
+        showAbout = false
+        selectedPane = .settings
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     func openDuplicatesPane() {

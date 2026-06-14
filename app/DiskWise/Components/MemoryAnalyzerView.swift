@@ -65,8 +65,11 @@ struct MemoryAnalyzerView: View {
                 memoryOverviewCard(report)
                 trendCard
                 persistentConsumersCard(report)
-                if let summary = report.aiSummary {
-                    aiInsightsCard(summary, report: report)
+                if monitor.isStreamingAISummary || report.aiSummary != nil {
+                    let summaryText = monitor.isStreamingAISummary
+                        ? monitor.streamingAISummary
+                        : (report.aiSummary ?? "")
+                    aiInsightsCard(summaryText, report: report)
                 }
                 recommendationsCard(report)
             } else {
@@ -267,9 +270,24 @@ struct MemoryAnalyzerView: View {
                     Text("Apple Intelligence Insights")
                         .font(.subheadline.weight(.semibold))
                     Spacer()
+                    if monitor.isAnalyzing {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
                 }
 
-                MemoryInsightContentView(text: summary)
+                if monitor.isStreamingAISummary {
+                    MemoryInsightStreamingView(
+                        text: monitor.streamingAISummary,
+                        isStreaming: monitor.isAnalyzing
+                    )
+                } else {
+                    MemoryInsightContentView(
+                        text: summary,
+                        report: report,
+                        onPerformAction: performInsightAction
+                    )
+                }
             }
         } label: {
             Label("Optimization Analysis", systemImage: "brain.head.profile")
@@ -329,6 +347,10 @@ struct MemoryAnalyzerView: View {
                 .controlSize(.small)
             }
         }
+    }
+
+    private func performInsightAction(_ recommendation: MemoryActionRecommendation) {
+        performRecommendation(recommendation)
     }
 
     private func performRecommendation(_ recommendation: MemoryActionRecommendation) {

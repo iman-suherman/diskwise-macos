@@ -61,6 +61,25 @@ public final class AIConsultantService: @unchecked Sendable {
         await resolver.analyzeMemory(context: context)
     }
 
+    public func streamAnalyzeMemory(
+        context: MemoryAnalysisContext,
+        fallback: String
+    ) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                let stream = await resolver.streamAnalyzeMemory(context: context, fallback: fallback)
+                do {
+                    for try await partial in stream {
+                        continuation.yield(partial)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
+
     public func generateReport(context: AIChatContext) async throws -> String {
         try await resolver.generateReport(context: context)
     }

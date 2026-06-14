@@ -53,7 +53,6 @@ struct DiskWiseApp: App {
     @SceneBuilder
     var body: some Scene {
         mainWindow
-        settingsScene
     }
 
     private var mainWindow: some Scene {
@@ -95,29 +94,17 @@ struct DiskWiseApp: App {
                     )
                 )
             }
+            CommandGroup(replacing: .appSettings) {
+                Button("Settings…") {
+                    viewModel.openSettingsPane()
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
             CommandGroup(replacing: .help) {
                 Button("Activity Log…") {
-                    viewModel.showActivityLog = true
+                    viewModel.openActivityLogPane()
                 }
             }
-        }
-    }
-
-    private var settingsScene: some Scene {
-        Settings {
-            AppSettingsView(settings: appSettings)
-                .onChange(of: appSettings.aiProviderPreference) { _, _ in
-                    viewModel.refreshAIConfiguration()
-                }
-                .onChange(of: appSettings.enableOllamaDevMode) { _, _ in
-                    viewModel.refreshAIConfiguration()
-                }
-                .onChange(of: appSettings.ollamaBaseURL) { _, _ in
-                    viewModel.refreshAIConfiguration()
-                }
-                .onChange(of: appSettings.ollamaModel) { _, _ in
-                    viewModel.refreshAIConfiguration()
-                }
         }
     }
 }
@@ -125,7 +112,6 @@ struct DiskWiseApp: App {
 struct ContentView: View {
     @EnvironmentObject private var viewModel: AppViewModel
     @EnvironmentObject private var appSettings: AppSettings
-    @Environment(\.openSettings) private var openSettings
     @ObservedObject private var volumeMonitor = SystemVolumeMonitor.shared
     @ObservedObject private var healthMonitor = SystemHealthMonitor.shared
 
@@ -208,7 +194,7 @@ struct ContentView: View {
             if viewModel.showWhatsNewTour {
                 ReleaseNotesSplashOverlay(
                     version: AppSettings.currentAppVersion,
-                    onOpenSettings: { openSettings() },
+                    onOpenSettings: { viewModel.openSettingsPane() },
                     onContinue: { viewModel.finishWhatsNewTour() }
                 )
             }
@@ -267,11 +253,8 @@ struct ContentView: View {
             viewModel.checkPythonOnAppActivation()
             viewModel.checkForUpdatesWhenEligible()
         }
-        .sheet(isPresented: $viewModel.showActivityLog) {
-            ActivityLogSheet(activityLog: viewModel.activityLog)
-        }
         .sheet(isPresented: $viewModel.showAbout) {
-            AboutView(onOpenSettings: { openSettings() })
+            AboutView(onOpenSettings: { viewModel.openSettingsPane() })
                 .environmentObject(appSettings)
         }
         .sheet(isPresented: $appSettings.showMenuBarMonitorInstructions) {
@@ -427,6 +410,24 @@ struct ContentView: View {
         case .ai:
             VolumeDiskTabView()
                 .onAppear { viewModel.selectedVolumeTab = .aiAnalysis }
+        case .activityLog:
+            ActivityLogView(activityLog: viewModel.activityLog, embeddedInPanel: true)
+                .padding(28)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        case .settings:
+            AppSettingsView(settings: appSettings, embeddedInPanel: true)
+                .onChange(of: appSettings.aiProviderPreference) { _, _ in
+                    viewModel.refreshAIConfiguration()
+                }
+                .onChange(of: appSettings.enableOllamaDevMode) { _, _ in
+                    viewModel.refreshAIConfiguration()
+                }
+                .onChange(of: appSettings.ollamaBaseURL) { _, _ in
+                    viewModel.refreshAIConfiguration()
+                }
+                .onChange(of: appSettings.ollamaModel) { _, _ in
+                    viewModel.refreshAIConfiguration()
+                }
         }
     }
 
@@ -529,16 +530,12 @@ struct ContentView: View {
             }
 
             Section {
-                Button {
-                    viewModel.showActivityLog = true
-                } label: {
-                    sidebarMenuRow(
-                        title: "Activity Log",
-                        subtitle: "Scan, cleanup, and system events",
-                        icon: "list.bullet.rectangle"
-                    )
-                }
-                .buttonStyle(.borderless)
+                sidebarMenuRow(
+                    title: DetailPane.activityLog.title,
+                    subtitle: DetailPane.activityLog.subtitle,
+                    icon: DetailPane.activityLog.icon
+                )
+                .tag(DetailPane.activityLog)
 
                 if viewModel.hasScanData {
                     Button {
@@ -574,16 +571,12 @@ struct ContentView: View {
                     .buttonStyle(.borderless)
                 }
 
-                Button {
-                    openSettings()
-                } label: {
-                    sidebarMenuRow(
-                        title: "Settings",
-                        subtitle: "Scan limits, AI provider, and preferences",
-                        icon: "gearshape"
-                    )
-                }
-                .buttonStyle(.borderless)
+                sidebarMenuRow(
+                    title: DetailPane.settings.title,
+                    subtitle: DetailPane.settings.subtitle,
+                    icon: DetailPane.settings.icon
+                )
+                .tag(DetailPane.settings)
             } header: {
                 Text("Actions")
             }
