@@ -1,0 +1,14 @@
+{
+  "summary": "Memory Analyzer with periodic RAM monitoring, Apple Intelligence optimization tips, and a navigation pivot — menus in the sidebar, drives in the top toolbar.",
+  "introduced": [
+    "Memory Analyzer — samples memory every 20–30 seconds, tracks usual RAM consumers, and surfaces optimization actions",
+    "Apple Intelligence memory insights — AI-powered analysis of how to run apps more efficiently, with rule-based fallback",
+    "Suggested actions — free inactive memory, quit or restart heavy apps, and focus browsers to trim tabs",
+    "Menu-first navigation — Disk, Memory Analyzer, System Status, Maintenance, and Duplicates live in the sidebar",
+    "Drive picker in the top toolbar — select internal and external volumes for disk analysis from the menu bar area"
+  ],
+  "changed": [
+    "Navigation layout pivoted: feature menus moved from the top toolbar to the sidebar; volume list moved to the top toolbar"
+  ],
+  "fixed": []
+}

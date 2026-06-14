@@ -47,8 +47,8 @@ targets:
         INFOPLIST_FILE: DiskWise/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
-        CURRENT_PROJECT_VERSION: 5022
-        MARKETING_VERSION: 0.5.22
+        CURRENT_PROJECT_VERSION: 6000
+        MARKETING_VERSION: 0.6.0
         ENABLE_HARDENED_RUNTIME: YES
         SPARKLE_PUBLIC_ED_KEY: B6P7+AkeawAfMFk4f5j3+0diuQWorDuCYNrVX0vJeV0=
         OTHER_LDFLAGS: $(inherited) -weak_framework FoundationModels

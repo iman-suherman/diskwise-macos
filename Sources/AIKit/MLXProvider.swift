@@ -39,6 +39,10 @@ public struct MLXProvider: GenerativeAIProvider, Sendable {
         nil
     }
 
+    public func analyzeMemory(context: MemoryAnalysisContext) async throws -> String? {
+        nil
+    }
+
     private func installedModelURL() -> URL? {
         guard let contents = try? FileManager.default.contentsOfDirectory(
             at: modelDirectory,

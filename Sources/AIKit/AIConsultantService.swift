@@ -57,6 +57,10 @@ public final class AIConsultantService: @unchecked Sendable {
         await resolver.enrichAnalysis(context: context)
     }
 
+    public func analyzeMemory(context: MemoryAnalysisContext) async -> String? {
+        await resolver.analyzeMemory(context: context)
+    }
+
     public func generateReport(context: AIChatContext) async throws -> String {
         try await resolver.generateReport(context: context)
     }

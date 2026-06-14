@@ -55,6 +55,7 @@ enum ScanPhase: String, Sendable {
 
 enum DetailPane: String, CaseIterable, Identifiable {
     case overview
+    case memoryAnalyzer
     case systemStatus
     case maintenance
     case duplicates
@@ -62,9 +63,14 @@ enum DetailPane: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    static var navigationCases: [DetailPane] {
+        [.overview, .memoryAnalyzer, .systemStatus, .maintenance, .duplicates]
+    }
+
     var title: String {
         switch self {
-        case .overview: return "Overview"
+        case .overview: return "Disk"
+        case .memoryAnalyzer: return "Memory Analyzer"
         case .systemStatus: return "System Status"
         case .maintenance: return "Maintenance"
         case .duplicates: return "Duplicates"
@@ -74,11 +80,23 @@ enum DetailPane: String, CaseIterable, Identifiable {
 
     var icon: String {
         switch self {
-        case .overview: return "chart.pie"
+        case .overview: return "internaldrive"
+        case .memoryAnalyzer: return "memorychip"
         case .systemStatus: return "heart.text.square"
         case .maintenance: return "wrench.and.screwdriver.fill"
         case .duplicates: return "doc.on.doc"
         case .ai: return "sparkles"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .overview: return "Scan and analyze storage"
+        case .memoryAnalyzer: return "Periodic RAM monitoring"
+        case .systemStatus: return "Live CPU and memory metrics"
+        case .maintenance: return "Caches, snapshots, cleanup"
+        case .duplicates: return "Find duplicate files"
+        case .ai: return "Ask about your storage"
         }
     }
 }
@@ -1736,6 +1754,7 @@ final class AppViewModel: ObservableObject {
         let configuration = appSettings.aiProviderConfiguration
         aiEngine?.updateConsultantConfiguration(configuration)
         aiConsultant?.updateConfiguration(configuration)
+        MemoryAnalyzerMonitor.shared.refreshConfiguration(from: appSettings)
     }
 
     private func refreshAIInsightsAwait() async {

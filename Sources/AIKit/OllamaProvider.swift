@@ -84,6 +84,16 @@ public struct OllamaProvider: GenerativeAIProvider, Sendable {
         return response.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : response
     }
 
+    public func analyzeMemory(context: MemoryAnalysisContext) async throws -> String? {
+        let prompt = """
+        \(MemoryContextFormatter.analysisInstructions())
+
+        \(MemoryContextFormatter.format(context))
+        """
+        let response = try await generate(prompt: prompt, stream: false)
+        return response.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : response
+    }
+
     private func generate(prompt: String, stream: Bool) async throws -> String {
         var accumulated = ""
         for try await partial in streamGenerate(prompt: prompt, liveStream: stream) {

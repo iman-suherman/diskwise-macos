@@ -266,58 +266,15 @@ struct ContentView: View {
 
     @ToolbarContentBuilder
     private var launchToolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .principal) {
-            Picker("View", selection: $viewModel.selectedPane) {
-                Label {
-                    Text("Disk")
-                } icon: {
-                    Image(systemName: "internaldrive")
-                }
-                .tag(DetailPane.overview)
-
-                Label {
-                    HStack(spacing: 6) {
-                        Text(DetailPane.systemStatus.title)
-                        if let score = SystemHealthMonitor.shared.snapshot?.healthScore {
-                            Text("\(score)")
-                                .font(.caption2.weight(.bold))
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(healthScoreBadgeColor(score).opacity(0.18), in: Capsule())
-                                .foregroundStyle(healthScoreBadgeColor(score))
-                        }
-                    }
-                } icon: {
-                    Image(systemName: DetailPane.systemStatus.icon)
-                }
-                .tag(DetailPane.systemStatus)
-
-                Label {
-                    Text(DetailPane.maintenance.title)
-                } icon: {
-                    Image(systemName: DetailPane.maintenance.icon)
-                }
-                .tag(DetailPane.maintenance)
-
-                Label {
-                    HStack(spacing: 6) {
-                        Text(DetailPane.duplicates.title)
-                        if viewModel.duplicateGroups.count > 0 {
-                            Text("\(viewModel.duplicateGroups.count)")
-                                .font(.caption2.weight(.bold))
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.orange.opacity(0.9), in: Capsule())
-                                .foregroundStyle(.white)
-                        }
-                    }
-                } icon: {
-                    Image(systemName: DetailPane.duplicates.icon)
-                }
-                .tag(DetailPane.duplicates)
+        if viewModel.selectedPane == .overview {
+            ToolbarItem(placement: .principal) {
+                volumePicker
             }
-            .pickerStyle(.segmented)
-            .frame(maxWidth: 560)
+        } else {
+            ToolbarItem(placement: .principal) {
+                Label(viewModel.selectedPane.title, systemImage: viewModel.selectedPane.icon)
+                    .font(.headline)
+            }
         }
 
         ToolbarItem(placement: .status) {
@@ -331,7 +288,30 @@ struct ContentView: View {
             )
         }
 
-        ToolbarItem(placement: .primaryAction) {
+        if viewModel.selectedPane == .overview, let volume = viewModel.selectedVolume {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button {
+                    viewModel.scanSelectedVolume()
+                } label: {
+                    Label(
+                        viewModel.isScanning
+                            ? "Identifying…"
+                            : (viewModel.isAnalyzing ? "Analyzing…" : viewModel.scanActionTitle(for: volume)),
+                        systemImage: "arrow.triangle.2.circlepath"
+                    )
+                }
+                .disabled(viewModel.isVolumeBusy(volume))
+
+                Button {
+                    viewModel.scanFolderOnSelectedVolume()
+                } label: {
+                    Label("Scan Folder…", systemImage: "folder.badge.plus")
+                }
+                .disabled(viewModel.isVolumeBusy(volume))
+            }
+        }
+
+        ToolbarItem(placement: .automatic) {
             Button {
                 SparkleUpdaterController.shared.checkForUpdates()
             } label: {
@@ -341,11 +321,71 @@ struct ContentView: View {
         }
     }
 
+    private var volumePicker: some View {
+        Menu {
+            if !viewModel.internalVolumes.isEmpty {
+                Section("Internal SSD") {
+                    ForEach(viewModel.internalVolumes) { volume in
+                        volumeMenuButton(volume)
+                    }
+                }
+            }
+            if !viewModel.externalVolumes.isEmpty {
+                Section("External Drives") {
+                    ForEach(viewModel.externalVolumes) { volume in
+                        volumeMenuButton(volume)
+                    }
+                }
+            }
+            if viewModel.mountedVolumes.isEmpty {
+                Button("Grant Permission") {
+                    viewModel.presentFullDiskAccessOverlay()
+                }
+            }
+            Divider()
+            Button {
+                viewModel.refreshDrivesAfterPermissionChange()
+            } label: {
+                Label("Refresh Devices", systemImage: "arrow.clockwise")
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: viewModel.selectedVolume?.isInternal == false ? "externaldrive.fill" : "internaldrive.fill")
+                Text(viewModel.selectedVolume?.name ?? "Select Drive")
+                    .lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: 280)
+        }
+        .menuStyle(.borderlessButton)
+    }
+
+    private func volumeMenuButton(_ volume: MountedVolume) -> some View {
+        Button {
+            viewModel.selectedVolumePath = volume.mountPath
+            viewModel.selectVolume(volume)
+        } label: {
+            HStack {
+                Text(volume.name)
+                Spacer()
+                if viewModel.selectedVolumePath == volume.mountPath {
+                    Image(systemName: "checkmark")
+                }
+                Text(DiskWiseFormatters.bytes.string(fromByteCount: volume.freeSize) + " free")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
     @ViewBuilder
     private var detailContent: some View {
         switch viewModel.selectedPane {
         case .overview:
             VolumeDiskTabView()
+        case .memoryAnalyzer:
+            MemoryAnalyzerView()
         case .systemStatus:
             SystemStatusView()
         case .maintenance:
@@ -363,8 +403,44 @@ struct ContentView: View {
         return Color(red: rgb.red, green: rgb.green, blue: rgb.blue)
     }
 
+    private func menuBadge(for pane: DetailPane) -> some View {
+        Group {
+            switch pane {
+            case .systemStatus:
+                if let score = SystemHealthMonitor.shared.snapshot?.healthScore {
+                    Text("\(score)")
+                        .font(.caption2.weight(.bold))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(healthScoreBadgeColor(score).opacity(0.18), in: Capsule())
+                        .foregroundStyle(healthScoreBadgeColor(score))
+                }
+            case .duplicates:
+                if viewModel.duplicateGroups.count > 0 {
+                    Text("\(viewModel.duplicateGroups.count)")
+                        .font(.caption2.weight(.bold))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.orange.opacity(0.9), in: Capsule())
+                        .foregroundStyle(.white)
+                }
+            case .memoryAnalyzer:
+                if let report = MemoryAnalyzerMonitor.shared.report, report.currentUsedPercent >= 80 {
+                    Text("!")
+                        .font(.caption2.weight(.bold))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.red.opacity(0.85), in: Capsule())
+                        .foregroundStyle(.white)
+                }
+            default:
+                EmptyView()
+            }
+        }
+    }
+
     private var sidebar: some View {
-        List(selection: $viewModel.selectedVolumePath) {
+        List(selection: $viewModel.selectedPane) {
             if viewModel.shouldShowFullDiskAccessBanner {
                 Section {
                     FullDiskAccessBanner(
@@ -384,137 +460,67 @@ struct ContentView: View {
                 }
             }
 
-            if !viewModel.internalVolumes.isEmpty {
-                Section {
-                    ForEach(viewModel.internalVolumes) { volume in
-                        DeviceSidebarRow(
-                            volume: volume,
-                            isSelected: viewModel.selectedVolumePath == volume.mountPath,
-                            isIndexed: viewModel.isIndexed(volume),
-                            isScanDisabled: viewModel.isVolumeBusy(volume),
-                            onScan: { viewModel.scan(volume: volume) },
-                            onScanFolder: { viewModel.scanFolder(on: volume) },
-                            onEject: volume.isEjectable ? { viewModel.ejectVolume(volume) } : nil
-                        )
-                        .tag(volume.mountPath)
+            Section {
+                ForEach(DetailPane.navigationCases) { pane in
+                    HStack {
+                        Label {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(pane.title)
+                                Text(pane.subtitle)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                            }
+                        } icon: {
+                            Image(systemName: pane.icon)
+                        }
+                        Spacer(minLength: 4)
+                        menuBadge(for: pane)
                     }
-                } header: {
-                    Label("Internal SSD", systemImage: "internaldrive")
+                    .tag(pane)
                 }
-            }
-
-            if !viewModel.externalVolumes.isEmpty {
-                Section {
-                    ForEach(viewModel.externalVolumes) { volume in
-                        DeviceSidebarRow(
-                            volume: volume,
-                            isSelected: viewModel.selectedVolumePath == volume.mountPath,
-                            isIndexed: viewModel.isIndexed(volume),
-                            isScanDisabled: viewModel.isVolumeBusy(volume),
-                            isEjectDisabled: viewModel.isVolumeBusy(volume),
-                            onScan: { viewModel.scan(volume: volume) },
-                            onScanFolder: { viewModel.scanFolder(on: volume) },
-                            onEject: volume.isEjectable ? { viewModel.ejectVolume(volume) } : nil
-                        )
-                        .tag(volume.mountPath)
-                    }
-                } header: {
-                    Label("External Drives", systemImage: "externaldrive")
-                }
-            }
-
-            if viewModel.mountedVolumes.isEmpty {
-                Section {
-                    ContentUnavailableView(
-                        "No devices found",
-                        systemImage: "externaldrive.trianglebadge.exclamationmark",
-                        description: Text("Connect a drive or grant Full Disk Access.")
-                    )
-
-                    Button("Grant Permission") {
-                        viewModel.presentFullDiskAccessOverlay()
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
+            } header: {
+                Text("Menu")
             }
 
             Section {
                 Button {
-                    viewModel.refreshDrivesAfterPermissionChange()
+                    viewModel.showActivityLog = true
                 } label: {
-                    Label("Refresh Devices", systemImage: "arrow.clockwise")
+                    Label("Activity Log", systemImage: "list.bullet.rectangle")
                 }
                 .buttonStyle(.borderless)
 
-                if let volume = viewModel.selectedVolume {
+                if viewModel.hasScanData {
                     Button {
-                        viewModel.scanSelectedVolume()
+                        viewModel.openDuplicatesPane()
+                        if !viewModel.isFindingDuplicates && viewModel.duplicateGroups.isEmpty {
+                            viewModel.scanForDuplicates()
+                        }
                     } label: {
-                        Label(
-                            viewModel.isScanning
-                                ? "Identifying…"
-                                : (viewModel.isAnalyzing
-                                    ? "Analyzing…"
-                                    : viewModel.scanActionTitle(for: volume)),
-                            systemImage: "arrow.triangle.2.circlepath"
-                        )
-                    }
-                    .disabled(viewModel.isVolumeBusy(volume))
-
-                    Button {
-                        viewModel.scanFolderOnSelectedVolume()
-                    } label: {
-                        Label(
-                            viewModel.isScanning ? "Scanning…" : "Scan Folder…",
-                            systemImage: "folder.badge.plus"
-                        )
-                    }
-                    .disabled(viewModel.isVolumeBusy(volume))
-
-                    Button {
-                        viewModel.showActivityLog = true
-                    } label: {
-                        Label("Activity Log", systemImage: "list.bullet.rectangle")
+                        Label {
+                            if viewModel.isFindingDuplicates {
+                                Text("Finding duplicates…")
+                            } else if viewModel.totalDuplicateSavings > 0 {
+                                Text("Find Duplicates · \(DiskWiseFormatters.bytes.string(fromByteCount: viewModel.totalDuplicateSavings))")
+                            } else {
+                                Text("Find Duplicates")
+                            }
+                        } icon: {
+                            Image(systemName: "doc.on.doc")
+                        }
                     }
                     .buttonStyle(.borderless)
+                }
 
-                    if viewModel.hasScanData {
-                        Button {
-                            viewModel.selectedPane = .maintenance
-                        } label: {
-                            Label("Maintenance", systemImage: "wrench.and.screwdriver.fill")
-                        }
-                        .buttonStyle(.borderless)
-
-                        Button {
-                            viewModel.openDuplicatesPane()
-                            if !viewModel.isFindingDuplicates && viewModel.duplicateGroups.isEmpty {
-                                viewModel.scanForDuplicates()
-                            }
-                        } label: {
-                            Label {
-                                if viewModel.isFindingDuplicates {
-                                    Text("Finding duplicates…")
-                                } else if viewModel.totalDuplicateSavings > 0 {
-                                    Text("Duplicates · \(DiskWiseFormatters.bytes.string(fromByteCount: viewModel.totalDuplicateSavings))")
-                                } else {
-                                    Text("Find Duplicates")
-                                }
-                            } icon: {
-                                Image(systemName: "doc.on.doc")
-                            }
-                        }
-                        .buttonStyle(.borderless)
+                if viewModel.canEjectSelectedVolume, let volume = viewModel.selectedVolume {
+                    Button {
+                        viewModel.ejectSelectedVolume()
+                    } label: {
+                        Label("Eject \(volume.name)", systemImage: "eject.fill")
                     }
-
-                    if viewModel.canEjectSelectedVolume {
-                        Button {
-                            viewModel.ejectSelectedVolume()
-                        } label: {
-                            Label("Eject \(volume.name)", systemImage: "eject.fill")
-                        }
-                        .disabled(viewModel.isVolumeBusy(volume))
-                    }
+                    .disabled(viewModel.isVolumeBusy(volume))
+                    .buttonStyle(.borderless)
                 }
 
                 Button {
@@ -527,12 +533,6 @@ struct ContentView: View {
                 Text("Actions")
             }
         }
-        .onChange(of: viewModel.selectedVolumePath) { _, newValue in
-            guard let newValue,
-                  let volume = viewModel.mountedVolumes.first(where: { $0.mountPath == newValue }) else {
-                return
-            }
-            viewModel.selectVolume(volume)
-        }
+        .listStyle(.sidebar)
     }
 }

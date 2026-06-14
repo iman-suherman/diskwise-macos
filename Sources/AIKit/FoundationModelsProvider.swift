@@ -104,6 +104,20 @@ public struct FoundationModelsProvider: GenerativeAIProvider, Sendable {
         return nil
     }
 
+    public func analyzeMemory(context: MemoryAnalysisContext) async throws -> String? {
+        #if canImport(FoundationModels)
+        if #available(macOS 26.0, *) {
+            let response = try await generate(
+                instructions: MemoryContextFormatter.analysisInstructions(),
+                prompt: MemoryContextFormatter.format(context)
+            )
+            let trimmed = response.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+        #endif
+        return nil
+    }
+
     #if canImport(FoundationModels)
     @available(macOS 26.0, *)
     private func generate(instructions: String, prompt: String) async throws -> String {

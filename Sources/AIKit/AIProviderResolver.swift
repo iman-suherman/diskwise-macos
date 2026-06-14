@@ -144,4 +144,23 @@ public actor AIProviderResolver {
             context: context
         )
     }
+
+    public func analyzeMemory(context: MemoryAnalysisContext) async -> String? {
+        if await foundationModelsProvider.isAvailable() {
+            if let summary = try? await foundationModelsProvider.analyzeMemory(context: context) {
+                return summary
+            }
+        }
+        if await mlxProvider.isAvailable() {
+            if let summary = try? await mlxProvider.analyzeMemory(context: context) {
+                return summary
+            }
+        }
+        if configuration.enableOllamaDevMode, await ollamaProvider().isAvailable() {
+            if let summary = try? await ollamaProvider().analyzeMemory(context: context) {
+                return summary
+            }
+        }
+        return nil
+    }
 }
