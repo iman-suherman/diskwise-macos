@@ -1,0 +1,8 @@
+{
+  "summary": "Menu bar disk and health popovers now include an explicit close button.",
+  "introduced": [
+    "Close button on menu bar popovers — dismiss disk space and health score panels without clicking outside"
+  ],
+  "changed": [],
+  "fixed": []
+}
