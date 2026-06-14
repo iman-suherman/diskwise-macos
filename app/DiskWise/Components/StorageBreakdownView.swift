@@ -47,79 +47,23 @@ struct StorageTypePieChart: View {
     let onShowInFinder: (String) -> Void
     let onDelete: (String) -> Void
 
+    private let maxPieSize: CGFloat = 240
+
     @State private var angleSelection: String?
 
+    private var highlightedName: String? {
+        hoveredName ?? selectedName
+    }
+
     var body: some View {
-        GeometryReader { geometry in
-            let side = geometry.size.width
+        HStack(alignment: .center, spacing: 28) {
+            pieChartRing
+                .frame(width: maxPieSize, height: maxPieSize)
 
-            ZStack {
-                Chart(items, id: \.name) { item in
-                    SectorMark(
-                        angle: .value("Size", item.totalSize),
-                        innerRadius: .ratio(0.58),
-                        angularInset: 2
-                    )
-                    .cornerRadius(4)
-                    .foregroundStyle(by: .value("Type", item.name))
-                    .opacity(segmentOpacity(for: item.name))
-                }
-                .chartForegroundStyleScale(
-                    domain: items.map(\.name),
-                    range: items.map { CategoryPalette.color(for: $0.name) }
-                )
-                .chartAngleSelection(value: $angleSelection)
-                .chartLegend(.hidden)
-                .frame(width: side, height: side)
-
-                centerLabel
-                    .frame(width: side * 0.44)
-            }
-            .frame(width: side, height: side)
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
-            .contextMenu {
-                if let name = contextMenuCategory {
-                    Button {
-                        onShowInFinder(name)
-                    } label: {
-                        Label("Show in Finder", systemImage: "folder")
-                    }
-
-                    Button(role: .destructive) {
-                        onDelete(name)
-                    } label: {
-                        Label("Move to Trash…", systemImage: "trash")
-                    }
-                }
-            }
-            .onContinuousHover { phase in
-                switch phase {
-                case .active(let location):
-                    onHover(
-                        PieChartHitTester.category(
-                            at: location,
-                            in: CGSize(width: side, height: side),
-                            items: items,
-                            totalSize: totalSize
-                        )
-                    )
-                case .ended:
-                    onHover(nil)
-                }
-            }
-            .onTapGesture { location in
-                if let name = PieChartHitTester.category(
-                    at: location,
-                    in: CGSize(width: side, height: side),
-                    items: items,
-                    totalSize: totalSize
-                ) {
-                    onSelect(name)
-                }
-            }
+            detailPanel
+                .frame(maxWidth: .infinity, minHeight: maxPieSize, alignment: .leading)
         }
-        .aspectRatio(1, contentMode: .fit)
+        .frame(maxWidth: .infinity)
         .animation(.easeInOut(duration: 0.2), value: hoveredName)
         .animation(.easeInOut(duration: 0.2), value: selectedName)
         .onChange(of: angleSelection) { _, newValue in
@@ -129,31 +73,229 @@ struct StorageTypePieChart: View {
         }
     }
 
+    private var pieChartRing: some View {
+        ZStack {
+            Chart(items, id: \.name) { item in
+                SectorMark(
+                    angle: .value("Size", item.totalSize),
+                    innerRadius: .ratio(0.58),
+                    angularInset: 2
+                )
+                .cornerRadius(4)
+                .foregroundStyle(by: .value("Type", item.name))
+                .opacity(segmentOpacity(for: item.name))
+            }
+            .chartForegroundStyleScale(
+                domain: items.map(\.name),
+                range: items.map { CategoryPalette.color(for: $0.name) }
+            )
+            .chartAngleSelection(value: $angleSelection)
+            .chartLegend(.hidden)
+
+            centerLabel
+                .frame(width: maxPieSize * 0.44)
+        }
+        .contentShape(Rectangle())
+        .contextMenu {
+            if let name = contextMenuCategory {
+                Button {
+                    onShowInFinder(name)
+                } label: {
+                    Label("Show in Finder", systemImage: "folder")
+                }
+
+                Button(role: .destructive) {
+                    onDelete(name)
+                } label: {
+                    Label("Move to Trash…", systemImage: "trash")
+                }
+            }
+        }
+        .onContinuousHover { phase in
+            switch phase {
+            case .active(let location):
+                onHover(
+                    PieChartHitTester.category(
+                        at: location,
+                        in: CGSize(width: maxPieSize, height: maxPieSize),
+                        items: items,
+                        totalSize: totalSize
+                    )
+                )
+            case .ended:
+                onHover(nil)
+            }
+        }
+        .onTapGesture { location in
+            if let name = PieChartHitTester.category(
+                at: location,
+                in: CGSize(width: maxPieSize, height: maxPieSize),
+                items: items,
+                totalSize: totalSize
+            ) {
+                onSelect(name)
+            }
+        }
+    }
+
     @ViewBuilder
-    private var centerLabel: some View {
-        VStack(spacing: 4) {
-            if let displayName = hoveredName ?? selectedName,
-               let item = items.first(where: { $0.name == displayName }) {
-                Image(systemName: CategoryPalette.icon(for: displayName))
-                    .font(.title3)
-                    .foregroundStyle(CategoryPalette.color(for: displayName))
-                Text(displayName)
-                    .font(.headline)
-                Text("\(Int(fraction(for: item.totalSize) * 100))%")
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
-                Text(DiskWiseFormatters.bytes.string(fromByteCount: item.totalSize))
-                    .font(.caption)
+    private var detailPanel: some View {
+        if let name = highlightedName,
+           let item = items.first(where: { $0.name == name }) {
+            highlightedDetail(item)
+        } else {
+            idleLegend
+        }
+    }
+
+    @ViewBuilder
+    private func highlightedDetail(_ item: (name: String, totalSize: Int64, fileCount: Int)) -> some View {
+        let color = CategoryPalette.color(for: item.name)
+        let fraction = fraction(for: item.totalSize)
+
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) {
+                Image(systemName: CategoryPalette.icon(for: item.name))
+                    .font(.title2)
+                    .foregroundStyle(color)
+                    .frame(width: 32)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.name)
+                        .font(.title3.weight(.semibold))
+                    Text("\(item.fileCount.formatted()) files indexed")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text("\(Int(fraction * 100))%")
+                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                Text("of indexed storage")
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
+            }
+
+            Text(DiskWiseFormatters.bytes.string(fromByteCount: item.totalSize))
+                .font(.title3.weight(.semibold))
+
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.primary.opacity(0.08))
+                    Capsule()
+                        .fill(color.gradient)
+                        .frame(width: max(8, geometry.size.width * fraction))
+                }
+            }
+            .frame(height: 10)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("All types")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                ForEach(items, id: \.name) { legendItem in
+                    legendRow(legendItem, emphasize: legendItem.name == item.name)
+                        .onHover { hovering in
+                            onHover(hovering ? legendItem.name : selectedName)
+                        }
+                }
+            }
+
+            if selectedName == item.name {
+                Label("Showing largest files below", systemImage: "list.bullet")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
             } else {
-                Text("Indexed")
+                Text("Click slice for full file list")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(DiskWiseFormatters.bytes.string(fromByteCount: totalSize))
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                Text("\(items.count) types")
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var idleLegend: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Storage by Type")
+                    .font(.headline)
+                Text("Hover or click a slice to inspect a category.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(items, id: \.name) { item in
+                    legendRow(item, emphasize: false)
+                        .onHover { hovering in
+                            onHover(hovering ? item.name : selectedName)
+                        }
+                }
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Indexed total")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(DiskWiseFormatters.bytes.string(fromByteCount: totalSize))
+                    .font(.title3.weight(.semibold))
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func legendRow(
+        _ item: (name: String, totalSize: Int64, fileCount: Int),
+        emphasize: Bool
+    ) -> some View {
+        let color = CategoryPalette.color(for: item.name)
+        let fraction = fraction(for: item.totalSize)
+
+        return HStack(spacing: 10) {
+            Circle()
+                .fill(color)
+                .frame(width: emphasize ? 10 : 8, height: emphasize ? 10 : 8)
+
+            Text(item.name)
+                .font(emphasize ? .subheadline.weight(.semibold) : .caption)
+                .foregroundStyle(emphasize ? .primary : .secondary)
+
+            Spacer(minLength: 0)
+
+            Text("\(Int(fraction * 100))%")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+
+            Text(DiskWiseFormatters.bytes.string(fromByteCount: item.totalSize))
+                .font(emphasize ? .subheadline.weight(.medium) : .caption)
+                .foregroundStyle(emphasize ? .primary : .secondary)
+                .frame(minWidth: 64, alignment: .trailing)
+        }
+        .opacity(
+            highlightedName == nil || highlightedName == item.name || !emphasize
+                ? 1
+                : 0.45
+        )
+    }
+
+    @ViewBuilder
+    private var centerLabel: some View {
+        VStack(spacing: 4) {
+            Text("Indexed")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(DiskWiseFormatters.bytes.string(fromByteCount: totalSize))
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+            Text("\(items.count) types")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         }
         .multilineTextAlignment(.center)
     }
@@ -168,9 +310,8 @@ struct StorageTypePieChart: View {
     }
 
     private func segmentOpacity(for name: String) -> Double {
-        let highlighted = hoveredName ?? selectedName
-        guard let highlighted else { return 1 }
-        return highlighted == name ? 1 : 0.22
+        guard let highlightedName else { return 1 }
+        return highlightedName == name ? 1 : 0.22
     }
 }
 

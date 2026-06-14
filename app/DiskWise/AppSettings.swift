@@ -82,6 +82,7 @@ final class AppSettings: ObservableObject {
         static let showMenuBarDiskFreeGB = "diskwise.settings.showMenuBarDiskFreeGB"
         static let menuBarFreeSpaceVolumes = "diskwise.settings.menuBarFreeSpaceVolumes"
         static let showMenuBarHealthScore = "diskwise.settings.showMenuBarHealthScore"
+        static let keepAwakeEnabled = "diskwise.settings.keepAwakeEnabled"
         static let hideFromDock = "diskwise.settings.hideFromDock"
         static let launchAtLogin = "diskwise.settings.launchAtLogin"
     }
@@ -158,6 +159,13 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    @Published var keepAwakeEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(keepAwakeEnabled, forKey: Keys.keepAwakeEnabled)
+            KeepAwakeController.shared.apply(enabled: keepAwakeEnabled)
+        }
+    }
+
     @Published var hideFromDock: Bool {
         didSet {
             UserDefaults.standard.set(hideFromDock, forKey: Keys.hideFromDock)
@@ -198,6 +206,10 @@ final class AppSettings: ObservableObject {
     func setMenuBarHealthScoreVisible(_ visible: Bool) {
         showMenuBarHealthScore = visible
         MenuBarMonitorController.syncMenuBarItems(settings: self)
+    }
+
+    func setKeepAwakeEnabled(_ enabled: Bool) {
+        keepAwakeEnabled = enabled
     }
 
     func setHideFromDock(_ hidden: Bool) {
@@ -260,11 +272,13 @@ final class AppSettings: ObservableObject {
             showMenuBarHealthScore = false
         }
         hideFromDock = defaults.bool(forKey: Keys.hideFromDock)
+        keepAwakeEnabled = defaults.bool(forKey: Keys.keepAwakeEnabled)
         if defaults.object(forKey: Keys.launchAtLogin) == nil {
             launchAtLogin = MenuBarMonitorController.launchAtLoginEnabled
         } else {
             launchAtLogin = defaults.bool(forKey: Keys.launchAtLogin)
         }
+        KeepAwakeController.shared.apply(enabled: keepAwakeEnabled)
     }
 
     static var currentAppVersion: String {
@@ -320,6 +334,7 @@ final class AppSettings: ObservableObject {
         enableOllamaDevMode = false
         menuBarFreeSpaceVolumePaths = []
         showMenuBarHealthScore = false
+        keepAwakeEnabled = false
         hideFromDock = false
         launchAtLogin = false
         showMenuBarMonitorInstructions = false

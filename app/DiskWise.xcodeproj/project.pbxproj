@@ -13,6 +13,7 @@
 		12181882218C57B9CAC4A122 /* DatabaseKit in Frameworks */ = {isa = PBXBuildFile; productRef = 603D826F44FE9A518C0D3BDD /* DatabaseKit */; };
 		12B3019096123619E84C856A /* ScanActivityMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 894ADEF97DF74C5A2CC2FB56 /* ScanActivityMonitor.swift */; };
 		158813C796EA13AB146C66FC /* PythonSetupPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F503999EF5B8D256503AAB /* PythonSetupPrompt.swift */; };
+		1CD543F02D09EA6CAE866DED /* KeepAwakeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57AABB29DD65A9BDEEAF5208 /* KeepAwakeController.swift */; };
 		1F51D2B07CD65407C66DC665 /* ScanProgressPoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 831704D62E5020E6E4F2219B /* ScanProgressPoller.swift */; };
 		2791E28A3F889BE0CA5591A3 /* DiskWiseApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955E6302377D998824A2996E /* DiskWiseApp.swift */; };
 		2A5FFCD2AAE4999E1A451013 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = CA8CA1FCB359C47B036826D8 /* Sparkle */; };
@@ -66,6 +67,7 @@
 		3EAC0147A7FB6FEF4116785C /* AppSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsView.swift; sourceTree = "<group>"; };
 		41738F52625CC6311842BB5E /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
 		5691892A76E1A24CE7AAF729 /* MenuBarMonitorInstructionOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarMonitorInstructionOverlay.swift; sourceTree = "<group>"; };
+		57AABB29DD65A9BDEEAF5208 /* KeepAwakeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepAwakeController.swift; sourceTree = "<group>"; };
 		57BB2C32DA1EC6AD699DBDBD /* ActivityLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityLog.swift; sourceTree = "<group>"; };
 		61EB1B1E7AD0267851557FD9 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		64E3813DA348AA12313FC982 /* SystemStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemStatusView.swift; sourceTree = "<group>"; };
@@ -125,6 +127,7 @@
 			children = (
 				2993D6F3C7272135BAABB652 /* ChatMessageFormatter.swift */,
 				DCF61B84FF67A42557A15C53 /* DockVisibilityController.swift */,
+				57AABB29DD65A9BDEEAF5208 /* KeepAwakeController.swift */,
 				950473F382728BB7A8C75C98 /* LaunchSnapshotStore.swift */,
 				CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */,
 				971832F0D34371AD6D227919 /* MenuBarMonitorController.swift */,
@@ -330,6 +333,7 @@
 				BF36D88A5025F7EB71A8CEFA /* DockVisibilityController.swift in Sources */,
 				F07314D38ACD7FE6E5B9D233 /* FullDiskAccessPrompt.swift in Sources */,
 				E1C624A7270A0BE8EA9B8147 /* IndexRebuildOverlay.swift in Sources */,
+				1CD543F02D09EA6CAE866DED /* KeepAwakeController.swift in Sources */,
 				00F1E36FDE8C30DA106DBCB3 /* LaunchSnapshotStore.swift in Sources */,
 				6364632C8485413073CA9BB3 /* MainScreens.swift in Sources */,
 				E8EBB3946721C85434EA08EB /* MaintenanceView.swift in Sources */,

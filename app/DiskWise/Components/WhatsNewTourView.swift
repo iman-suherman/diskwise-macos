@@ -12,6 +12,8 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
+        case "0.5.13":
+            return v0513Pages
         case "0.5.12":
             return v0512Pages
         case "0.5.11":
@@ -60,6 +62,39 @@ enum WhatsNewContent {
             return genericPages(version: version)
         }
     }
+
+    private static let v0513Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "keep-awake",
+            icon: "bolt.fill",
+            title: "Keep Awake mode",
+            message: "Prevent your Mac from sleeping while DiskWise is running — useful during long scans or when drives must stay accessible.",
+            bullets: [
+                "Toggle Always on from Settings or the disk menu bar popover",
+                "Blocks system and display idle sleep until you turn it off",
+            ]
+        ),
+        WhatsNewPage(
+            id: "menu-bar-layout",
+            icon: "menubar.rectangle",
+            title: "Wider disk menu bar popover",
+            message: "The disk space menu bar panel is wider so Keep Awake and drive visibility toggles sit side by side.",
+            bullets: [
+                "Keep Awake on the left, menu bar drive toggles on the right",
+                "Refresh button now shows the Refresh label",
+            ]
+        ),
+        WhatsNewPage(
+            id: "pie-layout",
+            icon: "chart.pie",
+            title: "Compact Results pie chart",
+            message: "The storage pie chart is sized to fit the section with category legend and details on the right when you hover or select a slice.",
+            bullets: [
+                "Hover syncs the pie with the breakdown below",
+                "Right-click slices for Show in Finder or Move to Trash",
+            ]
+        ),
+    ]
 
     private static let v0512Pages: [WhatsNewPage] = [
         WhatsNewPage(

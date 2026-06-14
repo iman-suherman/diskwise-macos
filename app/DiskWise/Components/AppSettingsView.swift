@@ -65,10 +65,17 @@ struct AppSettingsView: View {
             }
 
             Section("Menu bar monitor") {
-                MenuBarVolumeToggleSection(
-                    settings: settings,
-                    volumes: SystemVolumeMonitor.shared.volumes
-                )
+                HStack(alignment: .top, spacing: 24) {
+                    MenuBarKeepAwakeSection(settings: settings)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    MenuBarVolumeToggleSection(
+                        settings: settings,
+                        volumes: SystemVolumeMonitor.shared.volumes,
+                        showsSectionTitle: false
+                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
 
                 Toggle(
                     "Show health score",
@@ -156,7 +163,7 @@ struct AppSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 520, height: 500)
+        .frame(width: 560, height: 540)
         .navigationTitle("Settings")
         .onAppear {
             SystemVolumeMonitor.shared.refresh()

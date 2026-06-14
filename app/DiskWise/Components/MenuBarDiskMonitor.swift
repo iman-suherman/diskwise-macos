@@ -192,14 +192,56 @@ struct MenuBarVolumeFreeSpaceLabelView: View {
     }
 }
 
+private enum MenuBarPopoverMetrics {
+    static let width: CGFloat = 520
+}
+
+struct MenuBarKeepAwakeSection: View {
+    @ObservedObject var settings: AppSettings
+    @ObservedObject private var keepAwake = KeepAwakeController.shared
+    var compact: Bool = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: compact ? 8 : 10) {
+            Text("Keep Awake")
+                .font(.subheadline.weight(.semibold))
+
+            Toggle(
+                "Always on",
+                isOn: Binding(
+                    get: { settings.keepAwakeEnabled },
+                    set: { settings.setKeepAwakeEnabled($0) }
+                )
+            )
+
+            if keepAwake.isActive {
+                Label("Mac will not sleep while enabled", systemImage: "bolt.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            } else {
+                Text("Prevents system and display sleep while DiskWise is running — useful during long scans or drive activity.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+}
+
 struct MenuBarVolumeToggleSection: View {
     @ObservedObject var settings: AppSettings
     let volumes: [MountedVolume]
+    var showsSectionTitle: Bool = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Show free space in menu bar")
-                .font(.subheadline.weight(.semibold))
+            if showsSectionTitle {
+                Text("Show free space in menu bar")
+                    .font(.subheadline.weight(.semibold))
+            } else {
+                Text("Menu bar drives")
+                    .font(.subheadline.weight(.semibold))
+            }
 
             if volumes.isEmpty {
                 Text("No drives detected")
@@ -247,7 +289,7 @@ struct MenuBarPopoverContent: View {
                     Button {
                         monitor.refresh()
                     } label: {
-                        Image(systemName: "arrow.clockwise")
+                        Label("Refresh", systemImage: "arrow.clockwise")
                     }
                     .buttonStyle(.borderless)
                     .help("Refresh disk space now")
@@ -280,15 +322,22 @@ struct MenuBarPopoverContent: View {
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Menu bar display")
-                    .font(.subheadline.weight(.semibold))
+            Text("Menu bar display")
+                .font(.subheadline.weight(.semibold))
+
+            HStack(alignment: .top, spacing: 24) {
+                MenuBarKeepAwakeSection(settings: settings, compact: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                 MenuBarVolumeToggleSection(
                     settings: settings,
-                    volumes: monitor.volumes
+                    volumes: monitor.volumes,
+                    showsSectionTitle: false
                 )
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
 
+            HStack(spacing: 24) {
                 Toggle(
                     "Show health score",
                     isOn: Binding(
@@ -296,6 +345,7 @@ struct MenuBarPopoverContent: View {
                         set: { settings.setMenuBarHealthScoreVisible($0) }
                     )
                 )
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 Toggle(
                     "Show DiskWise in Dock",
@@ -304,6 +354,7 @@ struct MenuBarPopoverContent: View {
                         set: { settings.setHideFromDock(!$0) }
                     )
                 )
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             Divider()
@@ -316,7 +367,7 @@ struct MenuBarPopoverContent: View {
             .frame(maxWidth: .infinity)
         }
         .padding(16)
-        .frame(width: 300)
+        .frame(width: MenuBarPopoverMetrics.width)
     }
 
     private var volumeName: String {
@@ -499,8 +550,8 @@ final class MenuBarStatusItemController: NSObject {
 
         let popover = NSPopover()
         popover.contentSize = NSSize(
-            width: 300,
-            height: ScanActivityMonitor.shared.isScanning ? 320 : 420
+            width: MenuBarPopoverMetrics.width,
+            height: ScanActivityMonitor.shared.isScanning ? 320 : 440
         )
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(

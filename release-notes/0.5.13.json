@@ -1,0 +1,12 @@
+{
+  "summary": "Keep Awake mode, a wider disk menu bar popover, and a more compact Results pie chart.",
+  "introduced": [
+    "Keep Awake (Always on) prevents system and display sleep while DiskWise is running — toggle from Settings or the disk menu bar",
+    "Disk menu bar popover is wider with Keep Awake and drive toggles side by side"
+  ],
+  "changed": [
+    "Results pie chart is compact with category legend and details on the right when highlighted",
+    "Disk menu bar refresh button now shows the Refresh label like System Status"
+  ],
+  "fixed": []
+}
