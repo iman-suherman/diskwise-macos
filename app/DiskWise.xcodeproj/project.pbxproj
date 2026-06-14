@@ -40,6 +40,7 @@
 		3DCDE49CEF1302917C0BF7DB /* SystemHealthNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAEC7145766F553BED663558 /* SystemHealthNotificationService.swift */; };
 		41B06DBBD44FA17F718F4F6E /* 0.5.1.json in Resources */ = {isa = PBXBuildFile; fileRef = 4C07B13D67D2C06220DF1B9E /* 0.5.1.json */; };
 		43175AB60FC4909B189B5A13 /* 0.3.9.json in Resources */ = {isa = PBXBuildFile; fileRef = D6BF3C996FCBAA4513AD9F9A /* 0.3.9.json */; };
+		43812CC0CAC331665A839E8B /* MemoryIssueHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 049FE94153CD8C506C36E4B6 /* MemoryIssueHistoryStore.swift */; };
 		46FA2B8AEE922909C9904741 /* 0.6.8.json in Resources */ = {isa = PBXBuildFile; fileRef = D77923302EECBDB096A59C78 /* 0.6.8.json */; };
 		4709F41AF9D9E5ED27E3018D /* AIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 268149F6EA534326414CF175 /* AIKit */; };
 		47AE898E15A7382D1290A848 /* 0.5.20.json in Resources */ = {isa = PBXBuildFile; fileRef = CA4A5662A24D793ACEF0B235 /* 0.5.20.json */; };
@@ -50,9 +51,11 @@
 		4EF9EF0F2E65F2CA9C42005F /* CleanupKit in Frameworks */ = {isa = PBXBuildFile; productRef = 873697E510808232A5864DDB /* CleanupKit */; };
 		50F2B27FC2096A06C3D489A2 /* 0.3.0.json in Resources */ = {isa = PBXBuildFile; fileRef = E07BA2DFFEA459773CAC869C /* 0.3.0.json */; };
 		5859A10FF74FA776495B0C10 /* 0.1.5.json in Resources */ = {isa = PBXBuildFile; fileRef = 1824EBE404CDE19C9B86E756 /* 0.1.5.json */; };
+		5DFD07E54D9D275EAA4738AB /* 0.7.5.json in Resources */ = {isa = PBXBuildFile; fileRef = 16E23BB557336EA8EE0B3D6F /* 0.7.5.json */; };
 		6318B6DBFB0D7C217BB8872A /* 0.2.3.json in Resources */ = {isa = PBXBuildFile; fileRef = 89301AF45127E0756C73A84D /* 0.2.3.json */; };
 		6364632C8485413073CA9BB3 /* MainScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7606C2E2E0391264171C1F55 /* MainScreens.swift */; };
 		68EAF0F0D832F829DC54A2EC /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98EFAE1062F153FAFA7B0D8A /* AboutView.swift */; };
+		72866D3338346773621D17C0 /* StorageCleanupInsightsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF84008C7D0F508E5B8F5851 /* StorageCleanupInsightsSection.swift */; };
 		72B2EA208FA6F23B1F8A8F97 /* 0.1.9.json in Resources */ = {isa = PBXBuildFile; fileRef = B1C8159FF48669E7295F9738 /* 0.1.9.json */; };
 		7363E28A199FEB003256A74F /* 0.7.2.json in Resources */ = {isa = PBXBuildFile; fileRef = DE4613CFBCD420C3DE913DEC /* 0.7.2.json */; };
 		75E2033E8389AC2CF2A55666 /* ActivityLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57BB2C32DA1EC6AD699DBDBD /* ActivityLog.swift */; };
@@ -71,6 +74,7 @@
 		94D3EF8213E3A2C27E9C0D3E /* 0.6.2.json in Resources */ = {isa = PBXBuildFile; fileRef = B7DB0862BEAD6D13A019D0FD /* 0.6.2.json */; };
 		A00A29FB7A9AB8CF36925A53 /* MemoryInsightActionMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB4C021EC521213A445B557D /* MemoryInsightActionMatcher.swift */; };
 		A1E6344A43CABB46455859D5 /* DuplicateKit in Frameworks */ = {isa = PBXBuildFile; productRef = E44897D5C0C445D604A9F3CB /* DuplicateKit */; };
+		A8EB01EF6D724668896DB76B /* MemoryIssuePatternsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B279AA786CF5493C396C6AC4 /* MemoryIssuePatternsView.swift */; };
 		A95B375EB57B93CEB3A6A1CA /* 0.6.1.json in Resources */ = {isa = PBXBuildFile; fileRef = 2A6023015E9A7D986EB17D42 /* 0.6.1.json */; };
 		AAAAA899D7754707AAD2D90F /* MemoryActionExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F390C5E410CA72074E3A8BE7 /* MemoryActionExecutor.swift */; };
 		AD9B75BC6DC71E2F9CF51405 /* MemoryAnalyzerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9433A60D26963A1B26DA291 /* MemoryAnalyzerView.swift */; };
@@ -135,6 +139,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		049FE94153CD8C506C36E4B6 /* MemoryIssueHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryIssueHistoryStore.swift; sourceTree = "<group>"; };
 		0B6D957A611AA96E50E10CBF /* 0.1.3.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.3.json; sourceTree = "<group>"; };
 		0B913AECBCDED431CB20AFD2 /* 0.5.11.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.11.json; sourceTree = "<group>"; };
 		0FF3D9E21CD3A7F219755FE8 /* 0.5.13.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.13.json; sourceTree = "<group>"; };
@@ -144,6 +149,7 @@
 		15BE9BA6642050B89F9552F0 /* entitlements.mac.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = entitlements.mac.plist; sourceTree = "<group>"; };
 		164178EA164A45740BA3F2D8 /* 0.5.12.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.12.json; sourceTree = "<group>"; };
 		16E12E0B51D60F2F32404DC0 /* MemoryAnalyzerMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryAnalyzerMonitor.swift; sourceTree = "<group>"; };
+		16E23BB557336EA8EE0B3D6F /* 0.7.5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.5.json; sourceTree = "<group>"; };
 		17073AD7FF404926E1B8C231 /* ScanLogMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanLogMonitor.swift; sourceTree = "<group>"; };
 		1824EBE404CDE19C9B86E756 /* 0.1.5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.5.json; sourceTree = "<group>"; };
 		19CD2D60FCE100FAE2A0E44D /* DiskSpaceNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskSpaceNotificationService.swift; sourceTree = "<group>"; };
@@ -220,6 +226,7 @@
 		AFD9C0D25CF62C96CB4B8902 /* 0.5.6.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.6.json; sourceTree = "<group>"; };
 		B1C8159FF48669E7295F9738 /* 0.1.9.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.9.json; sourceTree = "<group>"; };
 		B21446A4062305538747C91B /* DiskWise.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DiskWise.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B279AA786CF5493C396C6AC4 /* MemoryIssuePatternsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryIssuePatternsView.swift; sourceTree = "<group>"; };
 		B7DB0862BEAD6D13A019D0FD /* 0.6.2.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.6.2.json; sourceTree = "<group>"; };
 		B9433A60D26963A1B26DA291 /* MemoryAnalyzerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryAnalyzerView.swift; sourceTree = "<group>"; };
 		B9CA49BFF86E2DE13A0B87F6 /* install_python.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = install_python.sh; sourceTree = "<group>"; };
@@ -254,6 +261,7 @@
 		F9360EC36C59D568DEE4B034 /* WhatsNewTourView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewTourView.swift; sourceTree = "<group>"; };
 		FB4C021EC521213A445B557D /* MemoryInsightActionMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryInsightActionMatcher.swift; sourceTree = "<group>"; };
 		FD14405937526107CBD36994 /* 0.1.0.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.0.json; sourceTree = "<group>"; };
+		FF84008C7D0F508E5B8F5851 /* StorageCleanupInsightsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageCleanupInsightsSection.swift; sourceTree = "<group>"; };
 		FFD8556ADA315BC4BD73911B /* 0.7.1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.1.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -289,6 +297,7 @@
 				16E12E0B51D60F2F32404DC0 /* MemoryAnalyzerMonitor.swift */,
 				FB4C021EC521213A445B557D /* MemoryInsightActionMatcher.swift */,
 				9040D8189C7D40E73615348C /* MemoryInsightNotificationService.swift */,
+				049FE94153CD8C506C36E4B6 /* MemoryIssueHistoryStore.swift */,
 				CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */,
 				971832F0D34371AD6D227919 /* MenuBarMonitorController.swift */,
 				894ADEF97DF74C5A2CC2FB56 /* ScanActivityMonitor.swift */,
@@ -366,6 +375,7 @@
 				DE4613CFBCD420C3DE913DEC /* 0.7.2.json */,
 				49A525C2BC72235A53027DEB /* 0.7.3.json */,
 				379B778859113D86535C101F /* 0.7.4.json */,
+				16E23BB557336EA8EE0B3D6F /* 0.7.5.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -419,6 +429,7 @@
 				B9433A60D26963A1B26DA291 /* MemoryAnalyzerView.swift */,
 				7651FCF0CBEA357BEBDCFA2D /* MemoryInsightChatView.swift */,
 				A1E44A3EA17C6392E5E93BC0 /* MemoryInsightContentView.swift */,
+				B279AA786CF5493C396C6AC4 /* MemoryIssuePatternsView.swift */,
 				2D1F08103579C30093C9CA6F /* MenuBarDiskMonitor.swift */,
 				8DE0414EB1623E719F460CAE /* MenuBarHealthScore.swift */,
 				5691892A76E1A24CE7AAF729 /* MenuBarMonitorInstructionOverlay.swift */,
@@ -430,6 +441,7 @@
 				9632663F581782670036F59C /* StartupSplashView.swift */,
 				2BF737B0AA3066062F3881A4 /* StatusBadge.swift */,
 				D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */,
+				FF84008C7D0F508E5B8F5851 /* StorageCleanupInsightsSection.swift */,
 				A3F4C97E4FF375B02034BE88 /* SystemMemoryReliefView.swift */,
 				BBB2B6BB069E423D075EDFE3 /* SystemOptimizationView.swift */,
 				64E3813DA348AA12313FC982 /* SystemStatusView.swift */,
@@ -609,6 +621,7 @@
 				7363E28A199FEB003256A74F /* 0.7.2.json in Resources */,
 				EB56D9F7608C74B1ED807A5D /* 0.7.3.json in Resources */,
 				BD59F8106D44F5E87359A802 /* 0.7.4.json in Resources */,
+				5DFD07E54D9D275EAA4738AB /* 0.7.5.json in Resources */,
 				BAC56BC5D44D164A6D1651C3 /* Assets.xcassets in Resources */,
 				7F3FA96EA3B2337449CD40D0 /* diskwise_scan.py in Resources */,
 				E559D2BF705EE1AB7F9CA4EA /* entitlements.mac.plist in Resources */,
@@ -690,6 +703,8 @@
 				C0AAFDD1A73DEA203B988C30 /* MemoryInsightChatView.swift in Sources */,
 				BCC178A5B4049531784C13F4 /* MemoryInsightContentView.swift in Sources */,
 				904D2F4452D1ED17A947CD64 /* MemoryInsightNotificationService.swift in Sources */,
+				43812CC0CAC331665A839E8B /* MemoryIssueHistoryStore.swift in Sources */,
+				A8EB01EF6D724668896DB76B /* MemoryIssuePatternsView.swift in Sources */,
 				03B0CC0B75C882455F238B4A /* MenuBarDiskMonitor.swift in Sources */,
 				FC6623E26E2D1FA21EC83507 /* MenuBarExtensionPrompt.swift in Sources */,
 				9384448034396B64ABBF3D19 /* MenuBarHealthScore.swift in Sources */,
@@ -708,6 +723,7 @@
 				FAB2B6356F46985804A0B25C /* StartupSplashView.swift in Sources */,
 				C61435492234EF4EFEB45B5C /* StatusBadge.swift in Sources */,
 				9163047ADC6314366674E59B /* StorageBreakdownView.swift in Sources */,
+				72866D3338346773621D17C0 /* StorageCleanupInsightsSection.swift in Sources */,
 				8EA88D4A455BB6985DBB72A9 /* SystemHealthMonitor.swift in Sources */,
 				3DCDE49CEF1302917C0BF7DB /* SystemHealthNotificationService.swift in Sources */,
 				F5CDF3E090F86A36D4708FE1 /* SystemMemoryReliefView.swift in Sources */,

@@ -3,6 +3,7 @@ import SwiftUI
 enum SystemOptimizationTab: String, CaseIterable, Identifiable {
     case systemStatus
     case memoryAnalyzer
+    case issueHistory
     case appleIntelligence
     case processUsage
 
@@ -12,6 +13,7 @@ enum SystemOptimizationTab: String, CaseIterable, Identifiable {
         switch self {
         case .systemStatus: return "System Status"
         case .memoryAnalyzer: return "Memory Analyzer"
+        case .issueHistory: return "Issue History"
         case .appleIntelligence: return "Apple Intelligence"
         case .processUsage: return "Process Usage"
         }
@@ -21,6 +23,7 @@ enum SystemOptimizationTab: String, CaseIterable, Identifiable {
         switch self {
         case .systemStatus: return "heart.text.square"
         case .memoryAnalyzer: return "memorychip"
+        case .issueHistory: return "clock.arrow.circlepath"
         case .appleIntelligence: return "sparkles"
         case .processUsage: return "cpu"
         }
@@ -68,6 +71,8 @@ struct SystemOptimizationView: View {
                             )
                         case .memoryAnalyzer:
                             MemoryAnalyzerView(embeddedInOptimization: true)
+                        case .issueHistory:
+                            MemoryIssuePatternsView()
                         case .appleIntelligence:
                             AppleIntelligenceInsightsView()
                         case .processUsage:

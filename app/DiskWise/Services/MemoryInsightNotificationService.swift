@@ -43,21 +43,13 @@ final class MemoryInsightNotificationService: NSObject, UNUserNotificationCenter
         }
     }
 
-    func notifyIfNeeded(
+    func notify(
         for report: MemoryAnalysisReport,
-        previousFingerprint: String?,
-        notificationsEnabled: Bool
-    ) async -> String? {
-        guard notificationsEnabled else { return previousFingerprint }
-        guard let recommendation = topActionableRecommendation(in: report) else {
-            return previousFingerprint
-        }
-
-        let fingerprint = insightFingerprint(for: report, recommendation: recommendation)
-        guard fingerprint != previousFingerprint else { return previousFingerprint }
-
-        let authorized = await requestAuthorizationIfNeeded()
-        guard authorized else { return previousFingerprint }
+        recommendation: MemoryActionRecommendation,
+        issueKey: String
+    ) async -> Bool {
+        let granted = await requestAuthorizationIfNeeded()
+        guard granted else { return false }
 
         let actionTitle = MemoryActionExecutor.actionTitle(for: recommendation) ?? "Perform Action"
         registerCategory(for: recommendation.actionKind, title: actionTitle)
@@ -73,19 +65,20 @@ final class MemoryInsightNotificationService: NSObject, UNUserNotificationCenter
             "actionKind": recommendation.actionKind.rawValue,
             "targetProcessName": recommendation.targetProcessName ?? "",
             "title": recommendation.title,
+            "issueKey": issueKey,
         ]
 
         let request = UNNotificationRequest(
-            identifier: "memory-insight-\(fingerprint)",
+            identifier: "memory-insight-\(issueKey)-\(Int(Date().timeIntervalSince1970))",
             content: content,
             trigger: nil
         )
 
         do {
             try await center.add(request)
-            return fingerprint
+            return true
         } catch {
-            return previousFingerprint
+            return false
         }
     }
 
@@ -160,18 +153,6 @@ final class MemoryInsightNotificationService: NSObject, UNUserNotificationCenter
             categories.insert(category)
             self.center.setNotificationCategories(categories)
         }
-    }
-
-    private func topActionableRecommendation(in report: MemoryAnalysisReport) -> MemoryActionRecommendation? {
-        report.recommendations.first { $0.actionKind != .informational && $0.priority >= 65 }
-    }
-
-    private func insightFingerprint(
-        for report: MemoryAnalysisReport,
-        recommendation: MemoryActionRecommendation
-    ) -> String {
-        let summaryPrefix = report.aiSummary?.prefix(120) ?? ""
-        return "\(recommendation.id.uuidString)|\(summaryPrefix)"
     }
 
     private func notificationBody(

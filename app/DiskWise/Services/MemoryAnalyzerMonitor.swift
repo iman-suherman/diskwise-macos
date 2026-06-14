@@ -16,6 +16,8 @@ final class MemoryAnalyzerMonitor: ObservableObject {
     @Published private(set) var isRunning = false
     @Published var memoryChatResponses: [AIChatMessage] = []
     @Published var memoryChatQuestion = ""
+    @Published private(set) var issuePatternAISummary = ""
+    @Published private(set) var isAnalyzingIssuePatterns = false
     @Published var isMemoryChatTyping = false
 
     private let maxSamples = 24
@@ -33,6 +35,7 @@ final class MemoryAnalyzerMonitor: ObservableObject {
     private var lastNotificationAt: Date?
     private var memoryChatSessionID = UUID()
     private var memoryChatTask: Task<Void, Never>?
+    private var issuePatternAnalysisTask: Task<Void, Never>?
 
     private init() {
         analysisEngine = MemoryAnalysisEngine()
@@ -43,6 +46,7 @@ final class MemoryAnalyzerMonitor: ObservableObject {
         analysisTask?.cancel()
         periodicAITask?.cancel()
         memoryChatTask?.cancel()
+        issuePatternAnalysisTask?.cancel()
     }
 
     func startIfNeeded(settings: AppSettings = .shared) {
@@ -188,6 +192,48 @@ final class MemoryAnalyzerMonitor: ObservableObject {
         memoryChatResponses[index].isStreaming = isStreaming
     }
 
+    func refreshIssuePatternAnalysis() {
+        issuePatternAnalysisTask?.cancel()
+        let patterns = MemoryIssueHistoryStore.shared.patterns
+        guard !patterns.isEmpty else {
+            issuePatternAISummary = ""
+            return
+        }
+
+        let prompt = MemoryIssuePatternEngine.analysisPrompt(for: patterns)
+        let fallback = MemoryIssuePatternEngine.ruleBasedAnalysis(for: patterns)
+        let context = MemoryAnalysisContext(
+            report: report ?? analysisEngine.prepareReport(from: samples),
+            recentSamples: samples
+        )
+
+        issuePatternAnalysisTask = Task {
+            isAnalyzingIssuePatterns = true
+            issuePatternAISummary = ""
+            defer { isAnalyzingIssuePatterns = false }
+
+            let stream = analysisEngine.streamMemoryRespond(to: prompt, context: context)
+            var receivedContent = false
+
+            do {
+                for try await partial in stream {
+                    guard !Task.isCancelled else { return }
+                    receivedContent = true
+                    issuePatternAISummary = partial
+                }
+                guard !Task.isCancelled else { return }
+                if issuePatternAISummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    issuePatternAISummary = fallback
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+                if !receivedContent {
+                    issuePatternAISummary = fallback
+                }
+            }
+        }
+    }
+
     func releasePresentationMemory() {
         if !isAnalyzing && !isStreamingAISummary {
             streamingAISummary = report?.aiSummary ?? ""
@@ -302,21 +348,43 @@ final class MemoryAnalyzerMonitor: ObservableObject {
     }
 
     private func deliverInsightNotificationIfNeeded(for report: MemoryAnalysisReport) async {
+        guard let recommendation = primaryActionableRecommendation else { return }
+
+        let outcome = MemoryIssueHistoryStore.shared.registerOccurrence(
+            report: report,
+            recommendation: recommendation
+        )
+
+        if outcome.occurrenceRecorded {
+            refreshIssuePatternAnalysis()
+        }
+
         guard settings.memoryAnalyzerNotificationsEnabled else { return }
-        if let lastNotificationAt,
-           Date().timeIntervalSince(lastNotificationAt) < notificationCooldown {
+
+        guard outcome.shouldNotify else {
+            if outcome.occurrenceRecorded {
+                MemoryIssueHistoryStore.shared.recordSuppressedNotification(issueKey: outcome.issueKey)
+            }
             return
         }
 
-        let previous = insightFingerprint
-        let updated = await MemoryInsightNotificationService.shared.notifyIfNeeded(
-            for: report,
-            previousFingerprint: previous,
-            notificationsEnabled: settings.memoryAnalyzerNotificationsEnabled
-        )
+        if let lastNotificationAt,
+           Date().timeIntervalSince(lastNotificationAt) < notificationCooldown {
+            if outcome.occurrenceRecorded {
+                MemoryIssueHistoryStore.shared.recordSuppressedNotification(issueKey: outcome.issueKey)
+            }
+            return
+        }
 
-        guard updated != previous else { return }
-        insightFingerprint = updated
+        let sent = await MemoryInsightNotificationService.shared.notify(
+            for: report,
+            recommendation: recommendation,
+            issueKey: outcome.issueKey
+        )
+        guard sent else { return }
+
+        MemoryIssueHistoryStore.shared.markNotified(issueKey: outcome.issueKey)
+        insightFingerprint = outcome.issueKey
         lastNotificationAt = Date()
     }
 }

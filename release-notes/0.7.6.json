@@ -1,0 +1,17 @@
+{
+  "summary": "Scan Breakdown now includes Apple Intelligence cleanup actions, and Memory Analyzer groups recurring alerts into Issue History with smarter notification timing.",
+  "introduced": [
+    "Issue History — new System Optimization tab lists recurring memory issues with occurrence counts, average/median intervals, alerts sent, and suppressed repeats",
+    "Issue History AI analysis — summarizes patterns and suggests habits to reduce repeat memory pressure alerts",
+    "Breakdown cleanup plan — after fast or deep scans, Apple Intelligence cleanup suggestions and Take Action cards appear on the Breakdown tab by bucket (Safe to Clean, Review First, Personal)"
+  ],
+  "changed": [
+    "Memory Analyzer notifications — similar issues share one stable key; repeats are recorded but only notify again after about 4 hours, with a 20-minute global cooldown between any alerts",
+    "Scan complete banner — points to View Breakdown & Cleanup instead of breakdown-only wording",
+    "Check for Update — toolbar button shows icon plus Check for Update label in the top-right update control"
+  ],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

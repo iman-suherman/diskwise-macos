@@ -288,14 +288,14 @@ struct OverviewTabView: View {
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(.green)
 
-                Text("Disk usage has been indexed. Review the breakdown and insights in the other tabs.")
+                Text("Disk usage has been indexed. Open Breakdown for charts, Apple Intelligence cleanup suggestions, and one-click actions.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
                 Button {
                     viewModel.openResultsTab()
                 } label: {
-                    Label("View Breakdown", systemImage: "chart.pie")
+                    Label("View Breakdown & Cleanup", systemImage: "chart.pie")
                         .frame(minWidth: 180)
                 }
                 .buttonStyle(.borderedProminent)
@@ -385,6 +385,16 @@ struct BreakdownTabView: View {
 
                     StorageResultsChartsSection(volume: volume, overview: overview)
 
+                    if viewModel.isAnalyzing {
+                        analyzingCleanupPlanBanner
+                    }
+
+                    if let report = viewModel.analysisReport {
+                        StorageCleanupInsightsSection(report: report)
+                    } else if viewModel.isAnalyzing {
+                        preparingCleanupPlanPlaceholder
+                    }
+
                     if viewModel.totalDuplicateSavings > 0 {
                         duplicatesCallToAction
                     }
@@ -395,6 +405,49 @@ struct BreakdownTabView: View {
                 }
             }
             .padding(28)
+        }
+        .sheet(item: $viewModel.recommendationReview) { review in
+            RecommendationReviewSheet(state: review)
+                .environmentObject(viewModel)
+        }
+        .sheet(item: $viewModel.categoryCleanupPreview) { preview in
+            CleanupPreviewSheet(
+                preview: preview,
+                subject: "file\(preview.items.count == 1 ? "" : "s")"
+            ) { _ in
+                viewModel.dismissCategoryCleanupPreview()
+                viewModel.reload()
+            }
+            .environmentObject(viewModel)
+        }
+    }
+
+    private var analyzingCleanupPlanBanner: some View {
+        GroupBox {
+            HStack(spacing: 12) {
+                ProgressView().controlSize(.regular)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Building your cleanup plan")
+                        .font(.headline)
+                    Text("Apple Intelligence is analyzing indexed files and grouping safe cleanup actions below the charts.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var preparingCleanupPlanPlaceholder: some View {
+        GroupBox {
+            HStack(spacing: 12) {
+                ProgressView().controlSize(.small)
+                Text("Preparing Apple Intelligence cleanup suggestions…")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -472,24 +525,23 @@ struct InsightsTabView: View {
                     BackgroundScanBanner()
                 }
 
-                if !viewModel.topConsumers.isEmpty {
-                    topConsumersSection
+                if viewModel.analysisReport != nil {
+                    breakdownCleanupLink
                 }
 
-                if let report = viewModel.analysisReport {
-                    storageIntelligenceSection(report: report)
-                    recommendationsSection(report: report)
+                if !viewModel.topConsumers.isEmpty {
+                    topConsumersSection
                 } else if viewModel.isScanning || viewModel.isAnalyzing {
                     ContentUnavailableView {
                         Label("Analysis in progress", systemImage: "lightbulb")
                     } description: {
-                        Text("Insights appear after the scan and storage analysis finish.")
+                        Text("Top space consumers appear after the scan and storage analysis finish.")
                     }
-                } else if viewModel.topConsumers.isEmpty {
+                } else {
                     ContentUnavailableView {
                         Label("No insights yet", systemImage: "lightbulb")
                     } description: {
-                        Text("Scan this drive to generate cleanup recommendations and top space consumers.")
+                        Text("Scan this drive to see top space consumers and ask follow-up questions.")
                     } actions: {
                         if let volume = viewModel.selectedVolume {
                             Button("Scan \(volume.name)") {
@@ -506,19 +558,34 @@ struct InsightsTabView: View {
             }
             .padding(28)
         }
-        .sheet(item: $viewModel.recommendationReview) { review in
-            RecommendationReviewSheet(state: review)
-                .environmentObject(viewModel)
-        }
-        .sheet(item: $viewModel.categoryCleanupPreview) { preview in
-            CleanupPreviewSheet(
-                preview: preview,
-                subject: "file\(preview.items.count == 1 ? "" : "s")"
-            ) { _ in
-                viewModel.dismissCategoryCleanupPreview()
-                viewModel.reload()
+    }
+
+    private var breakdownCleanupLink: some View {
+        GroupBox {
+            HStack(spacing: 16) {
+                Image(systemName: "sparkles")
+                    .font(.title2)
+                    .foregroundStyle(.purple)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Cleanup actions live on Breakdown")
+                        .font(.headline)
+                    Text("Apple Intelligence groups Safe to Clean, Review First, and Personal sections with Take Action buttons next to your storage charts.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer()
+
+                Button {
+                    viewModel.selectedVolumeTab = .breakdown
+                } label: {
+                    Label("Open Breakdown", systemImage: "chart.pie")
+                }
+                .buttonStyle(.borderedProminent)
             }
-            .environmentObject(viewModel)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -540,56 +607,6 @@ struct InsightsTabView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    @ViewBuilder
-    private func storageIntelligenceSection(report: AnalysisReport) -> some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Label("Storage Intelligence", systemImage: "sparkles")
-                        .font(.headline)
-                    Spacer()
-                    Text("Potential savings: \(DiskWiseFormatters.bytes.string(fromByteCount: report.potentialReclaimableSpace))")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.orange)
-                }
-
-                if !viewModel.aiAnalysisSummary.isEmpty {
-                    Text(viewModel.aiAnalysisSummary)
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    @ViewBuilder
-    private func recommendationsSection(report: AnalysisReport) -> some View {
-        ForEach(ActionBucket.allCases) { bucket in
-            let items = report.recommendationsByBucket[bucket, default: []]
-            if !items.isEmpty {
-                GroupBox {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Label(bucket.title, systemImage: bucket.icon)
-                            .font(.headline)
-
-                        Text(bucket.subtitle)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                            ForEach(Array(items.enumerated()), id: \.offset) { _, recommendation in
-                                RecommendationActionCard(recommendation: recommendation, bucket: bucket) {
-                                    viewModel.handleRecommendation(recommendation)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }
