@@ -77,12 +77,9 @@ enum WhatsNewContent {
         let fixed: [String]?
     }
 
-    /// Loads `release-notes/{version}.json` synced into the app bundle at build time.
+    /// Loads `release-notes/{version}.json` copied into the app bundle at build time.
     private static func curatedPages(for version: String) -> [WhatsNewPage]? {
-        guard let url = Bundle.main.url(forResource: version, withExtension: "json"),
-              let data = try? Data(contentsOf: url),
-              let notes = try? JSONDecoder().decode(CuratedReleaseNotes.self, from: data)
-        else {
+        guard let notes = loadCuratedReleaseNotes(for: version) else {
             return nil
         }
 
@@ -98,6 +95,22 @@ enum WhatsNewContent {
                 bullets: bullets
             ),
         ]
+    }
+
+    private static func loadCuratedReleaseNotes(for version: String) -> CuratedReleaseNotes? {
+        let bundle = Bundle.main
+        let candidates: [URL?] = [
+            bundle.url(forResource: version, withExtension: "json"),
+            bundle.url(forResource: version, withExtension: "json", subdirectory: "release-notes"),
+        ]
+
+        for url in candidates.compactMap({ $0 }) {
+            guard let data = try? Data(contentsOf: url) else { continue }
+            if let notes = try? JSONDecoder().decode(CuratedReleaseNotes.self, from: data) {
+                return notes
+            }
+        }
+        return nil
     }
 
     private static let v0515Pages: [WhatsNewPage] = [

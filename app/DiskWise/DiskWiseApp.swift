@@ -330,6 +330,15 @@ struct ContentView: View {
                     : nil
             )
         }
+
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                SparkleUpdaterController.shared.checkForUpdates()
+            } label: {
+                Label("Check for Updates", systemImage: "arrow.down.circle")
+            }
+            .help("Check for Updates…")
+        }
     }
 
     @ViewBuilder

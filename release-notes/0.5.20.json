@@ -1,0 +1,10 @@
+{
+  "summary": "What's New now loads curated release notes correctly, and you can check for updates from the toolbar.",
+  "introduced": [
+    "Check for Updates button in the top-right toolbar"
+  ],
+  "changed": [],
+  "fixed": [
+    "What's New tour now shows curated release notes instead of the generic placeholder after updating"
+  ]
+}

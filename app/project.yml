@@ -30,12 +30,17 @@ targets:
           mkdir -p "${SRCROOT}/DiskWise/Resources/release-notes"
           rsync -a --delete "${SRCROOT}/../release-notes/" "${SRCROOT}/DiskWise/Resources/release-notes/"
         basedOnDependencyAnalysis: false
+    postBuildScripts:
+      - name: Bundle Release Notes
+        script: |
+          DEST="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}"
+          mkdir -p "$DEST"
+          rsync -a "${SRCROOT}/../release-notes/"*.json "$DEST/"
+        basedOnDependencyAnalysis: false
     resources:
       - path: DiskWise/Assets/AppIcon.icns
       - path: DiskWise/Assets/AppIconSource.png
       - path: DiskWise/Resources/Scanner
-      - path: DiskWise/Resources/release-notes
-        type: folder
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: net.suherman.diskwise

@@ -62,6 +62,7 @@
 		B45D56C55BA3F20C1925612B /* 0.5.13.json in Resources */ = {isa = PBXBuildFile; fileRef = 0FF3D9E21CD3A7F219755FE8 /* 0.5.13.json */; };
 		B7284DB7D37A1021F42F9A6C /* MenuBarMonitorInstructionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5691892A76E1A24CE7AAF729 /* MenuBarMonitorInstructionOverlay.swift */; };
 		B73481DF81F7E6AFBE8BDB1E /* 0.4.1.json in Resources */ = {isa = PBXBuildFile; fileRef = A837FD3874FB7FAF41F641AD /* 0.4.1.json */; };
+		B7B1E3914BEC481C3C31919E /* 0.5.19.json in Resources */ = {isa = PBXBuildFile; fileRef = 29ACCD97F5F5EACC612CD0DA /* 0.5.19.json */; };
 		BA19BFD4653B3A6A79FD66E9 /* 0.5.2.json in Resources */ = {isa = PBXBuildFile; fileRef = 113502CA74BB9433B18AF27C /* 0.5.2.json */; };
 		BAC56BC5D44D164A6D1651C3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9604CB761CB34350EFF29978 /* Assets.xcassets */; };
 		BB038F6FBFEA2CBEA299AF07 /* 0.1.4.json in Resources */ = {isa = PBXBuildFile; fileRef = E4F4B1EEF9F20B8EF8430D6A /* 0.1.4.json */; };
@@ -116,6 +117,7 @@
 		1824EBE404CDE19C9B86E756 /* 0.1.5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.5.json; sourceTree = "<group>"; };
 		238E83EDCC4C147C2BE4E4FB /* ScanningDockTileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanningDockTileView.swift; sourceTree = "<group>"; };
 		2993D6F3C7272135BAABB652 /* ChatMessageFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessageFormatter.swift; sourceTree = "<group>"; };
+		29ACCD97F5F5EACC612CD0DA /* 0.5.19.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.19.json; sourceTree = "<group>"; };
 		2BF737B0AA3066062F3881A4 /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
 		2D1F08103579C30093C9CA6F /* MenuBarDiskMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarDiskMonitor.swift; sourceTree = "<group>"; };
 		3044C9BB20E3915450F34DC3 /* 0.5.15.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.15.json; sourceTree = "<group>"; };
@@ -279,6 +281,7 @@
 				755D3336D602D3FBBB813589 /* 0.5.16.json */,
 				83C02ED276CE351ADBF7F7BF /* 0.5.17.json */,
 				D55B4D8545269C44AB27D3D0 /* 0.5.18.json */,
+				29ACCD97F5F5EACC612CD0DA /* 0.5.19.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -392,6 +395,7 @@
 				6C5768CBE3E569CC501A7EF1 /* Sources */,
 				82AEB93B51E839E2C6A572C8 /* Resources */,
 				53BE0238EFCC3D54112D48FA /* Frameworks */,
+				BC923289362F1C6891C4B3ED /* Bundle Release Notes */,
 			);
 			buildRules = (
 			);
@@ -490,6 +494,7 @@
 				CF5EA10F2F59A9990E2B461A /* 0.5.16.json in Resources */,
 				2F9870AD506728F8B45304FD /* 0.5.17.json in Resources */,
 				33F7D9A75E5AB5098551D85D /* 0.5.18.json in Resources */,
+				B7B1E3914BEC481C3C31919E /* 0.5.19.json in Resources */,
 				BA19BFD4653B3A6A79FD66E9 /* 0.5.2.json in Resources */,
 				90BAF4E7882287C932D8E9E6 /* 0.5.4.json in Resources */,
 				7D3DB7CE2ED58186491D8C35 /* 0.5.5.json in Resources */,
@@ -507,6 +512,25 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		BC923289362F1C6891C4B3ED /* Bundle Release Notes */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Bundle Release Notes";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "DEST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}\"\nmkdir -p \"$DEST\"\nrsync -a \"${SRCROOT}/../release-notes/\"*.json \"$DEST/\"\n";
+		};
 		D9BDD155766662C81C1FB835 /* Sync Release Notes */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;

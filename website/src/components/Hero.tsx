@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { LocalReleaseDate } from "@/components/LocalReleaseDate";
+import { ScanningHeroIcon } from "@/components/ScanningHeroIcon";
 import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 import { DownloadButton } from "@/components/DownloadButton";
 import { useLatestVersion } from "@/hooks/useRegistry";
@@ -71,16 +71,7 @@ export function Hero() {
             aria-hidden
             className="absolute inset-0 scale-90 rounded-full bg-gradient-to-br from-brand-blue/35 via-brand-purple/20 to-brand-green/15 blur-3xl"
           />
-          <Image
-            src="/hero.png"
-            alt={`${BRAND_NAME} app icon`}
-            width={896}
-            height={878}
-            priority
-            unoptimized
-            sizes="(max-width: 1024px) 90vw, 32rem"
-            className="app-icon-hero relative h-auto w-full object-contain drop-shadow-[0_20px_50px_rgba(0,122,255,0.45)]"
-          />
+          <ScanningHeroIcon priority className="relative w-full" />
         </div>
       </div>
 
