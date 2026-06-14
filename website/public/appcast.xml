@@ -3,68 +3,59 @@
     <channel>
         <title>DiskWise</title>
         <item>
-            <title>0.5.1</title>
-            <pubDate>Sun, 14 Jun 2026 07:11:11 +1000</pubDate>
-            <sparkle:version>5001</sparkle:version>
-            <sparkle:shortVersionString>0.5.1</sparkle:shortVersionString>
+            <title>0.5.10</title>
+            <pubDate>Sun, 14 Jun 2026 11:17:26 +1000</pubDate>
+            <sparkle:version>5010</sparkle:version>
+            <sparkle:shortVersionString>0.5.10</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[<ul>
-<li><strong>What's new</strong><ul>
-<li>Startup wizard that opens a bundled install script in Terminal or links to python.org when Python 3.8+ is missing</li>
-</ul></li>
 <li><strong>Improvements</strong><ul>
-<li>Python scanner discovery checks Homebrew, system, and python.org framework installs and validates version 3.8 or newer</li>
+<li>Results charts and breakdowns appear only after the selected drive has been scanned</li>
+<li>System Status shows the Good/Fair/Poor rating scale with the active label highlighted</li>
+<li>Health score card includes the weighted formula and step-by-step calculation for the current score</li>
 </ul></li>
 </ul>
 ]]></description>
-            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.5.1.zip" length="12933167" type="application/octet-stream" sparkle:edSignature="SXaAGak3OMVg0v3ssgdxaU2klVgOgelXUM7zniyjPaTT4UGlV8nqP86qVzJLjjzBNL4ErXc98fYIuv7k4JZaCg=="/>
+            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.5.10.zip" length="13359971" type="application/octet-stream" sparkle:edSignature="Mb4o681FjEydLgX7BKoNkg7HbpWQJcu/4QWVFkgMzahP35h67+XEG8UzvfHdmUPd2j2ygY4lgOq+DUwSuhzYBg=="/>
         </item>
         <item>
-            <title>0.5.0</title>
-            <pubDate>Sun, 14 Jun 2026 06:59:42 +1000</pubDate>
-            <sparkle:version>5000</sparkle:version>
-            <sparkle:shortVersionString>0.5.0</sparkle:shortVersionString>
+            <title>0.5.9</title>
+            <pubDate>Sun, 14 Jun 2026 09:58:52 +1000</pubDate>
+            <sparkle:version>5009</sparkle:version>
+            <sparkle:shortVersionString>0.5.9</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[<ul>
-<li><strong>What's new</strong><ul>
-<li>Bundled Python scanner for Phase 1 volume indexing with JSON progress streaming into the existing UI</li>
-<li>Scanner log panel on the dashboard with an Open in Terminal action to tail verbose scan output</li>
-</ul></li>
 <li><strong>Improvements</strong><ul>
-<li>Version update checks run at most once per day while the main window is open and the app is in the foreground — not at startup or when only the menu bar is active</li>
-</ul></li>
-</ul>
-]]></description>
-            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.5.0.zip" length="12847775" type="application/octet-stream" sparkle:edSignature="mosrR+G96ZLxClmNgOmbjTSQCWkEHneRY5dcNicFHaVQ+eCTKHrridteTt7t16KvD9+INdPG9Two8/MeDm8+BA=="/>
-        </item>
-        <item>
-            <title>0.4.1</title>
-            <pubDate>Sun, 14 Jun 2026 06:54:09 +1000</pubDate>
-            <sparkle:version>4001</sparkle:version>
-            <sparkle:shortVersionString>0.4.1</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<ul>
-<li><strong>What's new</strong><ul>
-<li>Choose internal and external drives individually for menu bar free-space readouts (for example, HD 12GB or 6 2.8TB)</li>
-</ul></li>
-<li><strong>Improvements</strong><ul>
-<li>Removed remaining-percentage menu bar option</li>
-<li>Health menu bar icon shows condition with score, for example Fair (50)</li>
-<li>System status top CPU and memory lists use full application names from Activity Monitor</li>
+<li>Storage results, category file lists, and top consumers now filter to the selected sidebar drive only</li>
+<li>Switching drives reloads that volume's indexed results automatically after startup</li>
+<li>System-volume scans skip mounted external volumes so they are indexed on their own drive</li>
+<li>Health score card explains Fair/Good/Poor ratings with CPU, memory, and disk breakdowns plus suggestions</li>
+<li>Top CPU and Top Memory only show significant usage; process detail sheets add role explanations</li>
 </ul></li>
 <li><strong>Fixes</strong><ul>
-<li>Top CPU and memory process names no longer truncate to short comm labels like Cu or Library</li>
+<li>Internal SSD scan results no longer mix in files from external volumes such as Media or External Storage</li>
 </ul></li>
 </ul>
 ]]></description>
-            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.4.1.zip" length="12775117" type="application/octet-stream" sparkle:edSignature="MHfGVdJqrTSWafJW6K0wRIdNceRe7yp52JYQU8HMkxRDTmfxfOy2pfbOvi79NMfTXf+1u/eK3Tb8AIHuP2YwBA=="/>
-            <sparkle:deltas>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4001-4000.delta" sparkle:deltaFrom="4000" length="902490" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="pFNq5FmzOGqsgHCGgmVBbyNgex31WBalqoGvAE/ykz4Eo92fWABJZfULLLP4ZeNjfq3avHEYo8p9/vlSoGl5Ag=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4001-3009.delta" sparkle:deltaFrom="3009" length="1013186" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="OZ78fbcv8Cr3RvMu4zt/J7oUCGSfNUMKHQRF/y2P/fvXXWu6oYZq6000Cst2yJXbTZaEuFENPfTrM+KO1+1hBg=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4001-3007.delta" sparkle:deltaFrom="3007" length="1189810" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="IftQb1fjiDaVGaPepUagEyad+neLJ70V7F6qNiVrDRYmCPpnus4Xpsm2VmLhlepaUzXrD9BomG0ZRDZUUyzmAw=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4001-3005.delta" sparkle:deltaFrom="3005" length="1239370" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="3Ny2VX0Wsvig3WDzcP5Hphthr2iudWxmJe2qB/+6uJlAVCXa7XKh+DEr2g27fCWMEUK95EHqMSno/7qgN7DEBQ=="/>
-                <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise4001-3006.delta" sparkle:deltaFrom="3006" length="1270010" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="RYxXZ8YZt6ZieFNRCQyKqpR93qFYyxCjmo8Z7+85ZJvR2AzOvqtUnnPeE/NhE5XuqX9B7oxIfdmhlV0o1s+iDA=="/>
-            </sparkle:deltas>
+            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.5.9.zip" length="13307138" type="application/octet-stream" sparkle:edSignature="TN0TBFmRkAExve2nOczirfGnm6dE3UeoWLEAw07l7OhiqA2x8gYATHqOo4fpBiVm1Zg+aBCPgfdEmwSovE+GBA=="/>
+        </item>
+        <item>
+            <title>0.5.8</title>
+            <pubDate>Sun, 14 Jun 2026 09:49:14 +1000</pubDate>
+            <sparkle:version>5008</sparkle:version>
+            <sparkle:shortVersionString>0.5.8</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<ul>
+<li><strong>What's new</strong><ul>
+<li>System Status tab in the toolbar with health score, metrics, and top CPU / top memory process lists</li>
+<li>Process detail sheet with owner, bundle ID, executable path, and quit or force quit actions</li>
+</ul></li>
+<li><strong>Improvements</strong><ul>
+<li>System health monitoring uses a shared service for the menu bar badge and System Status tab</li>
+</ul></li>
+</ul>
+]]></description>
+            <enclosure url="https://diskwise-download.suherman.net/downloads/DiskWise-0.5.8.zip" length="13226480" type="application/octet-stream" sparkle:edSignature="9F4XWHkvt+7ZnRJS08D7mbZ456aTn/dQlwFJDk+9kXLwBnpUJcK2Ht0h0CqC8Ta5TqT1OEq3kK2hVM1s15JJAQ=="/>
         </item>
     </channel>
 </rss>

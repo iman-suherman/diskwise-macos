@@ -1273,6 +1273,11 @@ final class AppViewModel: ObservableObject {
             selectedDiskID = nil
         }
 
+        if !isVolumeBusy(volume) {
+            selectedPane = .overview
+            selectedVolumeTab = .results
+        }
+
         if volumeChanged {
             clearLoadedScanPresentation()
         }

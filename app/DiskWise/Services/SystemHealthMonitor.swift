@@ -66,6 +66,14 @@ struct HealthScoreExplanation: Sendable {
     let recommendations: [String]
 }
 
+enum MemoryReliefResult: Sendable, Equatable {
+    case relieved(freedBytes: Int64, message: String)
+    case improved(message: String)
+    case noMeasurableChange(message: String)
+    case requiresAdmin(message: String)
+    case failed(String)
+}
+
 enum ProcessTerminateResult: Sendable, Equatable {
     case terminated
     case permissionDenied
@@ -379,6 +387,98 @@ enum SystemHealthMonitorCore {
             return "No process holds more than \(thresholdGB). \(String(format: "%.1f", snapshot.memoryUsedPercent))% of \(MenuBarFormatters.gigabytes(snapshot.physicalMemoryBytes)) is in use — memory is comfortably distributed."
         }
         return "No process exceeds \(thresholdGB), but \(String(format: "%.1f", snapshot.memoryUsedPercent))% of memory is in use overall. macOS may be keeping file cache in RAM, which improves performance and is released when apps need it."
+    }
+
+    static func freeInactiveMemory() async -> MemoryReliefResult {
+        let before = readMemoryUsage()
+
+        if runPurgeCommand() {
+            return memoryReliefResult(before: before, usedAdmin: false)
+        }
+
+        let adminApproved = await MainActor.run {
+            runPurgeWithAdministratorPrivileges()
+        }
+        if adminApproved {
+            return memoryReliefResult(before: before, usedAdmin: true)
+        }
+
+        if runMemoryPressure(level: "warn") {
+            return memoryReliefResult(
+                before: before,
+                usedAdmin: false,
+                fallbackMessage: "Memory pressure was raised to encourage macOS to reclaim inactive cache."
+            )
+        }
+
+        return .requiresAdmin(
+            message: "DiskWise could not purge inactive memory without administrator approval. Approve the system prompt when asked, or quit heavy apps from Top Memory below."
+        )
+    }
+
+    private static func memoryReliefResult(
+        before: (usedBytes: Int64, usedPercent: Double),
+        usedAdmin: Bool,
+        fallbackMessage: String? = nil
+    ) -> MemoryReliefResult {
+        usleep(600_000)
+        let after = readMemoryUsage()
+        let freedBytes = max(0, before.usedBytes - after.usedBytes)
+        let prefix = usedAdmin ? "Purged inactive memory with administrator approval." : "Purged inactive memory and disk caches."
+
+        if freedBytes >= 64 * 1024 * 1024 {
+            return .relieved(
+                freedBytes: freedBytes,
+                message: "\(prefix) About \(MenuBarFormatters.gigabytes(freedBytes)) became available."
+            )
+        }
+
+        if after.usedPercent + 1.0 < before.usedPercent {
+            return .improved(
+                message: "\(prefix) Memory pressure dropped from \(String(format: "%.1f", before.usedPercent))% to \(String(format: "%.1f", after.usedPercent))%."
+            )
+        }
+
+        if let fallbackMessage {
+            return .noMeasurableChange(message: fallbackMessage)
+        }
+
+        return .noMeasurableChange(
+            message: "\(prefix) macOS did not report a large change — file cache may already be lean, or apps are actively using RAM."
+        )
+    }
+
+    private static func runPurgeCommand() -> Bool {
+        runExecutable(path: "/usr/sbin/purge", arguments: [])
+    }
+
+    @MainActor
+    private static func runPurgeWithAdministratorPrivileges() -> Bool {
+        let script = "do shell script \"/usr/sbin/purge\" with administrator privileges"
+        var errorInfo: NSDictionary?
+        guard let appleScript = NSAppleScript(source: script) else { return false }
+        appleScript.executeAndReturnError(&errorInfo)
+        return errorInfo == nil
+    }
+
+    private static func runMemoryPressure(level: String) -> Bool {
+        runExecutable(path: "/usr/bin/memory_pressure", arguments: ["-l", level])
+    }
+
+    private static func runExecutable(path: String, arguments: [String]) -> Bool {
+        guard FileManager.default.isExecutableFile(atPath: path) else { return false }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: path)
+        process.arguments = arguments
+        process.standardOutput = Pipe()
+        process.standardError = Pipe()
+        do {
+            try process.run()
+        } catch {
+            return false
+        }
+        process.waitUntilExit()
+        return process.terminationStatus == 0
     }
 
     /// Fast path for startup — score and system metrics only; process lists load later.
@@ -1115,6 +1215,12 @@ final class SystemHealthMonitor: ObservableObject {
 
     func refreshDetailed() {
         refresh(processLimit: 15)
+    }
+
+    func freeUpMemory() async -> MemoryReliefResult {
+        let result = await SystemHealthMonitorCore.freeInactiveMemory()
+        refreshDetailed()
+        return result
     }
 
     private func startObserving() {

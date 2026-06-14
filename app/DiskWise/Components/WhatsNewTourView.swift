@@ -12,6 +12,8 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
+        case "0.5.11":
+            return v0511Pages
         case "0.5.10":
             return v0510Pages
         case "0.5.9":
@@ -56,6 +58,30 @@ enum WhatsNewContent {
             return genericPages(version: version)
         }
     }
+
+    private static let v0511Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "free-memory",
+            icon: "memorychip",
+            title: "Free up memory from System Status",
+            message: "Run purge to reclaim inactive RAM and disk caches, then see your health score update with before and after feedback.",
+            bullets: [
+                "One-click Free Up Memory with optional administrator approval",
+                "Score change summary after memory pressure improves",
+                "Top Memory list still helps when apps hold RAM",
+            ]
+        ),
+        WhatsNewPage(
+            id: "drive-results-nav",
+            icon: "chart.pie",
+            title: "Drives open Results automatically",
+            message: "Selecting a volume in the sidebar now switches back to the Results tab so storage breakdown always matches the chosen drive.",
+            bullets: [
+                "Works from System Status, Maintenance, Duplicates, and AI Analysis",
+                "Scan-in-progress on a busy drive keeps the Scanning tab",
+            ]
+        ),
+    ]
 
     private static let v0510Pages: [WhatsNewPage] = [
         WhatsNewPage(

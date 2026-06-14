@@ -1,0 +1,10 @@
+{
+  "summary": "Free up memory from System Status and return to Results when selecting a drive.",
+  "introduced": [
+    "Free Up Memory action in System Status runs purge to reclaim inactive RAM and refresh the health score"
+  ],
+  "changed": [
+    "Selecting any drive in the sidebar returns to the Results tab from System Status, Maintenance, or other sections"
+  ],
+  "fixed": []
+}
