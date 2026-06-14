@@ -14,6 +14,9 @@ final class MemoryAnalyzerMonitor: ObservableObject {
     @Published private(set) var lastAIAnalysisAt: Date?
     @Published private(set) var aiProviderLabel = "Rule-based"
     @Published private(set) var isRunning = false
+    @Published var memoryChatResponses: [AIChatMessage] = []
+    @Published var memoryChatQuestion = ""
+    @Published var isMemoryChatTyping = false
 
     private let maxSamples = 24
     private let notificationCooldown: TimeInterval = 20 * 60
@@ -28,6 +31,8 @@ final class MemoryAnalyzerMonitor: ObservableObject {
     private var settings: AppSettings = .shared
     private var insightFingerprint: String?
     private var lastNotificationAt: Date?
+    private var memoryChatSessionID = UUID()
+    private var memoryChatTask: Task<Void, Never>?
 
     private init() {
         analysisEngine = MemoryAnalysisEngine()
@@ -37,6 +42,7 @@ final class MemoryAnalyzerMonitor: ObservableObject {
         sampleTask?.cancel()
         analysisTask?.cancel()
         periodicAITask?.cancel()
+        memoryChatTask?.cancel()
     }
 
     func startIfNeeded(settings: AppSettings = .shared) {
@@ -96,6 +102,92 @@ final class MemoryAnalyzerMonitor: ObservableObject {
 
     var actionableRecommendations: [MemoryActionRecommendation] {
         report?.recommendations.filter { $0.actionKind != .informational } ?? []
+    }
+
+    func suggestedMemoryQuestions(for report: MemoryAnalysisReport) -> [String] {
+        MemoryChatEngine.defaultQuestions(for: report)
+    }
+
+    func clearMemoryChat() {
+        memoryChatTask?.cancel()
+        memoryChatTask = nil
+        memoryChatSessionID = UUID()
+        memoryChatResponses = []
+        memoryChatQuestion = ""
+        isMemoryChatTyping = false
+    }
+
+    func askMemoryChat(question: String) {
+        let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        guard let report else {
+            memoryChatResponses.append(AIChatMessage(
+                role: .assistant,
+                text: "Collect a few memory samples first, then I can answer questions about your RAM usage."
+            ))
+            return
+        }
+
+        memoryChatQuestion = ""
+        memoryChatResponses.append(AIChatMessage(role: .user, text: trimmed))
+
+        let context = MemoryAnalysisContext(report: report, recentSamples: samples)
+        let assistantID = UUID()
+        let sessionID = memoryChatSessionID
+        memoryChatResponses.append(AIChatMessage(id: assistantID, role: .assistant, text: "", isStreaming: true))
+        isMemoryChatTyping = true
+
+        memoryChatTask?.cancel()
+        memoryChatTask = Task {
+            let stream = analysisEngine.streamMemoryRespond(to: trimmed, context: context)
+            var receivedContent = false
+
+            do {
+                for try await partial in stream {
+                    guard !Task.isCancelled, sessionID == self.memoryChatSessionID else { return }
+                    receivedContent = true
+                    isMemoryChatTyping = false
+                    updateMemoryAssistantMessage(id: assistantID, text: partial, isStreaming: true)
+                }
+
+                guard !Task.isCancelled, sessionID == self.memoryChatSessionID else { return }
+                isMemoryChatTyping = false
+                updateMemoryAssistantMessage(
+                    id: assistantID,
+                    text: memoryAssistantMessageText(id: assistantID),
+                    isStreaming: false
+                )
+            } catch {
+                guard !Task.isCancelled, sessionID == self.memoryChatSessionID else { return }
+                let fallback = MemoryChatEngine.answer(question: trimmed, context: context)
+                isMemoryChatTyping = false
+                if receivedContent {
+                    updateMemoryAssistantMessage(
+                        id: assistantID,
+                        text: memoryAssistantMessageText(id: assistantID),
+                        isStreaming: false
+                    )
+                } else {
+                    updateMemoryAssistantMessage(id: assistantID, text: fallback, isStreaming: false)
+                }
+            }
+        }
+    }
+
+    private func memoryAssistantMessageText(id: UUID) -> String {
+        memoryChatResponses.first(where: { $0.id == id })?.text ?? ""
+    }
+
+    private func updateMemoryAssistantMessage(id: UUID, text: String, isStreaming: Bool) {
+        guard let index = memoryChatResponses.firstIndex(where: { $0.id == id }) else { return }
+        memoryChatResponses[index].text = text
+        memoryChatResponses[index].isStreaming = isStreaming
+    }
+
+    func releasePresentationMemory() {
+        if !isAnalyzing && !isStreamingAISummary {
+            streamingAISummary = report?.aiSummary ?? ""
+        }
     }
 
     private func startSampling() {

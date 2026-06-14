@@ -197,6 +197,33 @@ public actor AIProviderResolver {
         }
     }
 
+    public func streamRespondMemory(
+        to question: String,
+        context: MemoryAnalysisContext
+    ) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                if await foundationModelsProvider.isAvailable() {
+                    let stream = foundationModelsProvider.streamRespondMemory(to: question, context: context)
+                    if await streamMemory(stream, to: continuation) {
+                        return
+                    }
+                }
+                if configuration.enableOllamaDevMode, await ollamaProvider().isAvailable() {
+                    let stream = ollamaProvider().streamRespondMemory(to: question, context: context)
+                    if await streamMemory(stream, to: continuation) {
+                        return
+                    }
+                }
+                let fallback = MemoryChatEngine.answer(question: question, context: context)
+                for try await partial in StreamingText.simulatedReveal(fallback) {
+                    continuation.yield(partial)
+                }
+                continuation.finish()
+            }
+        }
+    }
+
     private func streamMemory(
         _ stream: AsyncThrowingStream<String, Error>,
         to continuation: AsyncThrowingStream<String, Error>.Continuation

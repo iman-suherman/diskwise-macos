@@ -67,6 +67,10 @@ enum MemoryInsightActionMatcher {
         let avgGB = Double(consumer.averageMemoryBytes) / 1_073_741_824
         let nameLower = name.lowercased()
 
+        if MemoryProcessRules.isDiskWise(name) {
+            return nil
+        }
+
         if nameLower.contains("chrome") || nameLower.contains("safari")
             || nameLower.contains("firefox") || nameLower.contains("edge") {
             return MemoryActionRecommendation(
@@ -138,7 +142,7 @@ enum MemoryInsightActionMatcher {
         }
 
         if lower.contains("restart") && !lower.contains("mac") {
-            if let heavy = report.persistentConsumers.first {
+            if let heavy = report.persistentConsumers.first(where: { !MemoryProcessRules.isDiskWise($0.name) }) {
                 return MemoryActionRecommendation(
                     title: "Restart \(heavy.name)",
                     detail: body,

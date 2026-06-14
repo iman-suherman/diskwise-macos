@@ -3,6 +3,7 @@ import SwiftUI
 
 struct MemoryAnalyzerView: View {
     var embeddedInOptimization: Bool = false
+    var insightsActive: Bool = true
 
     @EnvironmentObject private var viewModel: AppViewModel
     @ObservedObject private var monitor = MemoryAnalyzerMonitor.shared
@@ -279,14 +280,21 @@ struct MemoryAnalyzerView: View {
                 if monitor.isStreamingAISummary {
                     MemoryInsightStreamingView(
                         text: monitor.streamingAISummary,
-                        isStreaming: monitor.isAnalyzing
+                        isStreaming: monitor.isAnalyzing,
+                        insightsActive: insightsActive
                     )
                 } else {
                     MemoryInsightContentView(
                         text: summary,
                         report: report,
+                        insightsActive: insightsActive,
                         onPerformAction: performInsightAction
                     )
+                }
+
+                if insightsActive && !monitor.isStreamingAISummary {
+                    Divider()
+                    MemoryInsightChatView(report: report, monitor: monitor)
                 }
             }
         } label: {

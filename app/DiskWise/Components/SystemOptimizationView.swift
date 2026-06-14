@@ -58,7 +58,10 @@ struct SystemOptimizationView: View {
                             displaySection: .summary
                         )
                     case .memoryAnalyzer:
-                        MemoryAnalyzerView(embeddedInOptimization: true)
+                        MemoryAnalyzerView(
+                            embeddedInOptimization: true,
+                            insightsActive: true
+                        )
                     case .processUsage:
                         SystemStatusView(
                             embeddedInOptimization: true,
@@ -77,8 +80,16 @@ struct SystemOptimizationView: View {
                 memoryMonitor.captureNow()
             }
         }
+        .onChange(of: selectedTab) { _, tab in
+            if tab != .memoryAnalyzer {
+                memoryMonitor.releasePresentationMemory()
+                viewModel.releaseIdleOptimizationMemory()
+            }
+        }
         .onDisappear {
             healthMonitor.refresh(processLimit: 5)
+            memoryMonitor.releasePresentationMemory()
+            viewModel.releaseIdleOptimizationMemory()
         }
     }
 
@@ -134,7 +145,7 @@ struct SystemOptimizationView: View {
     private var scoreBadges: some View {
         if let score = healthMonitor.snapshot?.healthScore {
             SidebarLabelScoreBadge(
-                label: "Health",
+                label: SystemHealthMonitorCore.healthConditionLabel(for: score),
                 score: "\(score)",
                 color: healthScoreColor(score)
             )
@@ -157,7 +168,7 @@ struct SidebarLabelScoreBadge: View {
             .font(.caption.weight(.semibold))
             .monospacedDigit()
             .foregroundStyle(color)
-            .accessibilityLabel("\(label) score \(score)")
+            .accessibilityLabel("\(label) \(score)")
     }
 }
 
@@ -168,7 +179,7 @@ struct SidebarStackedScoreBadges: View {
     var body: some View {
         if let healthScore {
             SidebarLabelScoreBadge(
-                label: "Health",
+                label: SystemHealthMonitorCore.healthConditionLabel(for: healthScore),
                 score: "\(healthScore)",
                 color: healthColor(healthScore)
             )

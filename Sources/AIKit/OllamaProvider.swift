@@ -103,6 +103,17 @@ public struct OllamaProvider: GenerativeAIProvider, Sendable {
         return streamGenerate(prompt: prompt, liveStream: true)
     }
 
+    public func streamRespondMemory(to question: String, context: MemoryAnalysisContext) -> AsyncThrowingStream<String, Error> {
+        let prompt = """
+        \(MemoryContextFormatter.chatInstructions())
+
+        \(MemoryContextFormatter.format(context))
+
+        User question: \(question)
+        """
+        return streamGenerate(prompt: prompt, liveStream: true)
+    }
+
     private func generate(prompt: String, stream: Bool) async throws -> String {
         var accumulated = ""
         for try await partial in streamGenerate(prompt: prompt, liveStream: stream) {

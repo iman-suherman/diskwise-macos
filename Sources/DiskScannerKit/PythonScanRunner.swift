@@ -129,6 +129,7 @@ public final class PythonScanRunner: @unchecked Sendable {
         session: PythonScanSession,
         onProgress: (@Sendable (ScanProgress) -> Void)? = nil,
         onLogLine: (@Sendable (String) -> Void)? = nil,
+        onFile: (@Sendable (ScannedFile) -> Void)? = nil,
         isCancelled: (@Sendable () -> Bool)? = nil
     ) throws -> [ScannedFile] {
         guard fileManager.fileExists(atPath: mountPath.path) else {
@@ -201,7 +202,11 @@ public final class PythonScanRunner: @unchecked Sendable {
                 case .progress(let progress):
                     onProgress?(progress)
                 case .file(let scanned):
-                    scannedFiles.append(scanned)
+                    if let onFile {
+                        onFile(scanned)
+                    } else {
+                        scannedFiles.append(scanned)
+                    }
                 case .log(let message):
                     onLogLine?(message)
                 case .done:

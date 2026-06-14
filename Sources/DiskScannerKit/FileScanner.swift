@@ -24,12 +24,24 @@ public final class FileScanner: @unchecked Sendable {
         self.batchSize = batchSize
     }
 
+    private func record(
+        _ scanned: ScannedFile,
+        in results: inout [ScannedFile],
+        onFile: (@Sendable (ScannedFile) -> Void)?
+    ) {
+        onFile?(scanned)
+        if onFile == nil {
+            results.append(scanned)
+        }
+    }
+
     public func scan(
         mountPath: URL,
         mode: ScanMode = .fast,
         tieredVolumeScan: Bool = false,
         incrementalContext: IncrementalScanContext? = nil,
         onProgress: (@Sendable (ScanProgress) -> Void)? = nil,
+        onFile: (@Sendable (ScannedFile) -> Void)? = nil,
         isCancelled: (@Sendable () -> Bool)? = nil
     ) throws -> [ScannedFile] {
         guard fileManager.fileExists(atPath: mountPath.path) else {
@@ -52,6 +64,12 @@ public final class FileScanner: @unchecked Sendable {
                     force: true,
                     onProgress: onProgress
                 )
+                if let onFile {
+                    for file in cached {
+                        onFile(file)
+                    }
+                    return []
+                }
                 return cached
             }
         }
@@ -62,6 +80,7 @@ public final class FileScanner: @unchecked Sendable {
                 mode: mode,
                 incrementalContext: incrementalContext,
                 onProgress: onProgress,
+                onFile: onFile,
                 isCancelled: isCancelled
             )
         }
@@ -70,14 +89,17 @@ public final class FileScanner: @unchecked Sendable {
             mountPath: mountPath,
             mode: mode,
             onProgress: onProgress,
+            onFile: onFile,
             isCancelled: isCancelled
         )
-        IncrementalScanSupport.recordFolderCompletion(
-            at: mountPath,
-            results: results,
-            context: incrementalContext,
-            fileManager: fileManager
-        )
+        if onFile == nil {
+            IncrementalScanSupport.recordFolderCompletion(
+                at: mountPath,
+                results: results,
+                context: incrementalContext,
+                fileManager: fileManager
+            )
+        }
         return results
     }
 
@@ -86,6 +108,7 @@ public final class FileScanner: @unchecked Sendable {
         mode: ScanMode,
         incrementalContext: IncrementalScanContext?,
         onProgress: (@Sendable (ScanProgress) -> Void)?,
+        onFile: (@Sendable (ScannedFile) -> Void)?,
         isCancelled: (@Sendable () -> Bool)?
     ) throws -> [ScannedFile] {
         let childNames = (try? fileManager.contentsOfDirectory(atPath: mountPath.path)) ?? []
@@ -101,6 +124,7 @@ public final class FileScanner: @unchecked Sendable {
                 mountPath: mountPath,
                 mode: mode,
                 onProgress: onProgress,
+                onFile: onFile,
                 isCancelled: isCancelled
             )
         }
@@ -149,9 +173,12 @@ public final class FileScanner: @unchecked Sendable {
                 under: mountPath,
                 incrementalContext: incrementalContext,
                 aggregator: aggregator,
+                onFile: onFile,
                 isCancelled: isCancelled
             )
-            results.append(contentsOf: summarizeResults.entries)
+            if onFile == nil {
+                results.append(contentsOf: summarizeResults.entries)
+            }
             scannedCount = summarizeResults.scannedCount
             indexedBytes = summarizeResults.indexedBytes
         }
@@ -162,9 +189,12 @@ public final class FileScanner: @unchecked Sendable {
                 mode: mode,
                 incrementalContext: incrementalContext,
                 aggregator: aggregator,
+                onFile: onFile,
                 isCancelled: isCancelled
             )
-            results.append(contentsOf: drillResults)
+            if onFile == nil {
+                results.append(contentsOf: drillResults)
+            }
             scannedCount += drillResults.filter { !$0.isDirectory }.count
             indexedBytes += drillResults.reduce(Int64(0)) { $0 + ($1.isDirectory ? 0 : $1.size) }
         }
@@ -175,12 +205,14 @@ public final class FileScanner: @unchecked Sendable {
             detail: "Finished mapping \(total.formatted()) folders"
         )
 
-        IncrementalScanSupport.recordFolderCompletion(
-            at: mountPath,
-            results: results,
-            context: incrementalContext,
-            fileManager: fileManager
-        )
+        if onFile == nil {
+            IncrementalScanSupport.recordFolderCompletion(
+                at: mountPath,
+                results: results,
+                context: incrementalContext,
+                fileManager: fileManager
+            )
+        }
 
         return results
     }
@@ -190,6 +222,7 @@ public final class FileScanner: @unchecked Sendable {
         mode: ScanMode,
         incrementalContext: IncrementalScanContext?,
         aggregator: ScanProgressAggregator,
+        onFile: (@Sendable (ScannedFile) -> Void)?,
         isCancelled: (@Sendable () -> Bool)?
     ) throws -> [ScannedFile] {
         var combined: [ScannedFile] = []
@@ -215,7 +248,13 @@ public final class FileScanner: @unchecked Sendable {
                     detail: "Reusing cached index for \(label)"
                 )
                 let batch = IncrementalScanSupport.cachedFiles(at: directory, context: incrementalContext)
-                combined.append(contentsOf: batch)
+                if let onFile {
+                    for file in batch {
+                        onFile(file)
+                    }
+                } else {
+                    combined.append(contentsOf: batch)
+                }
                 aggregator.didComplete(
                     directory.path,
                     results: batch,
@@ -235,15 +274,18 @@ public final class FileScanner: @unchecked Sendable {
                 mountPath: directory,
                 mode: mode,
                 onProgress: nil,
+                onFile: onFile,
                 isCancelled: isCancelled
             )
-            combined.append(contentsOf: batch)
-            IncrementalScanSupport.recordFolderCompletion(
-                at: directory,
-                results: batch,
-                context: incrementalContext,
-                fileManager: fileManager
-            )
+            if onFile == nil {
+                combined.append(contentsOf: batch)
+                IncrementalScanSupport.recordFolderCompletion(
+                    at: directory,
+                    results: batch,
+                    context: incrementalContext,
+                    fileManager: fileManager
+                )
+            }
             aggregator.didComplete(
                 directory.path,
                 results: batch,
@@ -266,6 +308,7 @@ public final class FileScanner: @unchecked Sendable {
         under mountPath: URL,
         incrementalContext: IncrementalScanContext?,
         aggregator: ScanProgressAggregator,
+        onFile: (@Sendable (ScannedFile) -> Void)?,
         isCancelled: (@Sendable () -> Bool)?
     ) throws -> SummarizeBatchResult {
         var entries: [ScannedFile] = []
@@ -286,7 +329,13 @@ public final class FileScanner: @unchecked Sendable {
                     detail: "Reusing cached index for \(name)"
                 )
                 let cached = IncrementalScanSupport.cachedFiles(at: childURL, context: incrementalContext)
-                entries.append(contentsOf: cached)
+                if let onFile {
+                    for file in cached {
+                        onFile(file)
+                    }
+                } else {
+                    entries.append(contentsOf: cached)
+                }
                 count += cached.count
                 bytes += cached.reduce(0) { $0 + $1.size }
                 aggregator.didComplete(
@@ -320,16 +369,18 @@ public final class FileScanner: @unchecked Sendable {
                 isDirectory: false
             )
 
-            entries.append(entry)
+            record(entry, in: &entries, onFile: onFile)
             count += 1
             bytes += size
 
-            IncrementalScanSupport.recordFolderCompletion(
-                at: childURL,
-                results: [entry],
-                context: incrementalContext,
-                fileManager: fileManager
-            )
+            if onFile == nil {
+                IncrementalScanSupport.recordFolderCompletion(
+                    at: childURL,
+                    results: [entry],
+                    context: incrementalContext,
+                    fileManager: fileManager
+                )
+            }
             aggregator.didComplete(
                 childURL.path,
                 results: [entry],
@@ -349,6 +400,7 @@ public final class FileScanner: @unchecked Sendable {
         mountPath: URL,
         mode: ScanMode,
         onProgress: (@Sendable (ScanProgress) -> Void)?,
+        onFile: (@Sendable (ScannedFile) -> Void)? = nil,
         isCancelled: (@Sendable () -> Bool)?
     ) throws -> [ScannedFile] {
         var results: [ScannedFile] = []
@@ -370,6 +422,7 @@ public final class FileScanner: @unchecked Sendable {
                 to: &results,
                 scannedCount: &scannedCount,
                 indexedBytes: &indexedBytes,
+                onFile: onFile,
                 isCancelled: isCancelled
             )
         }
@@ -417,7 +470,8 @@ public final class FileScanner: @unchecked Sendable {
                         lastAccessed: values.contentAccessDate,
                         to: &results,
                         scannedCount: &scannedCount,
-                        indexedBytes: &indexedBytes
+                        indexedBytes: &indexedBytes,
+                        onFile: onFile
                     )
                     enumerator?.skipDescendants()
                     reportProgressIfNeeded(
@@ -440,7 +494,8 @@ public final class FileScanner: @unchecked Sendable {
                         lastAccessed: values.contentAccessDate,
                         to: &results,
                         scannedCount: &scannedCount,
-                        indexedBytes: &indexedBytes
+                        indexedBytes: &indexedBytes,
+                        onFile: onFile
                     )
                     enumerator?.skipDescendants()
                     reportProgressIfNeeded(
@@ -460,6 +515,7 @@ public final class FileScanner: @unchecked Sendable {
                         to: &results,
                         scannedCount: &scannedCount,
                         indexedBytes: &indexedBytes,
+                        onFile: onFile,
                         isCancelled: isCancelled
                     )
                 }
@@ -479,7 +535,7 @@ public final class FileScanner: @unchecked Sendable {
                 extensionName: item.pathExtension.isEmpty ? nil : item.pathExtension.lowercased(),
                 isDirectory: isDirectory
             )
-            results.append(scanned)
+            record(scanned, in: &results, onFile: onFile)
             scannedCount += 1
 
             reportProgressIfNeeded(
@@ -511,11 +567,12 @@ public final class FileScanner: @unchecked Sendable {
         lastAccessed: Date?,
         to results: inout [ScannedFile],
         scannedCount: inout Int,
-        indexedBytes: inout Int64
+        indexedBytes: inout Int64,
+        onFile: (@Sendable (ScannedFile) -> Void)? = nil
     ) {
         let size = FastDirectorySize.sizeOfDirectory(at: url.path, fileManager: fileManager)
         indexedBytes += size
-        results.append(
+        record(
             ScannedFile(
                 path: url.path,
                 size: size,
@@ -524,7 +581,9 @@ public final class FileScanner: @unchecked Sendable {
                 lastAccessed: lastAccessed,
                 extensionName: nil,
                 isDirectory: false
-            )
+            ),
+            in: &results,
+            onFile: onFile
         )
         scannedCount += 1
     }
@@ -534,6 +593,7 @@ public final class FileScanner: @unchecked Sendable {
         to results: inout [ScannedFile],
         scannedCount: inout Int,
         indexedBytes: inout Int64,
+        onFile: (@Sendable (ScannedFile) -> Void)? = nil,
         isCancelled: (@Sendable () -> Bool)?
     ) {
         for name in DirectorySizeOnlyPatterns.hiddenFolderNames {
@@ -559,7 +619,8 @@ public final class FileScanner: @unchecked Sendable {
                 lastAccessed: values?.contentAccessDate,
                 to: &results,
                 scannedCount: &scannedCount,
-                indexedBytes: &indexedBytes
+                indexedBytes: &indexedBytes,
+                onFile: onFile
             )
         }
     }
@@ -684,12 +745,17 @@ public final class ScanEngine: @unchecked Sendable {
         )
 
         let incrementalContext = IncrementalScanContext.make(database: database, diskID: diskID)
+        let sink = ScanVolumeFileSink(ingester: ScanFileIngester(database: database, diskID: diskID))
+        try sink.beginScan(folderPathPrefix: isFolderScan ? root.path : nil)
 
-        var scannedFiles: [ScannedFile]
+        let ingestFile: @Sendable (ScannedFile) -> Void = { scanned in
+            sink.ingest(scanned)
+        }
+
         if let pythonRunner {
             let session = try pythonRunner.makeSession()
             onScanSessionStarted?(session)
-            scannedFiles = try pythonRunner.scan(
+            _ = try pythonRunner.scan(
                 mountPath: root,
                 mode: mode,
                 tieredVolumeScan: tieredVolumeScan,
@@ -697,45 +763,48 @@ public final class ScanEngine: @unchecked Sendable {
                 session: session,
                 onProgress: onProgress,
                 onLogLine: onLogLine,
+                onFile: ingestFile,
                 isCancelled: isCancelled
             )
         } else {
-            scannedFiles = try scanner.scan(
+            _ = try scanner.scan(
                 mountPath: root,
                 mode: mode,
                 tieredVolumeScan: tieredVolumeScan,
                 incrementalContext: incrementalContext,
                 onProgress: onProgress,
+                onFile: ingestFile,
                 isCancelled: isCancelled
             )
         }
+
+        try sink.checkForError()
 
         if isCancelled?() == true {
             throw FileScannerError.cancelled
         }
 
-        let gapScannedCount = scannedFiles.filter { !$0.isDirectory }.count
-        let gapIndexedBytes = scannedFiles.reduce(0) { $0 + ($1.isDirectory ? 0 : $1.size) }
         onProgress?(
             ScanProgress(
-                scannedCount: gapScannedCount,
+                scannedCount: 0,
                 currentPath: root.path,
-                bytesIndexed: gapIndexedBytes,
+                bytesIndexed: 0,
                 operation: .fillingGaps,
                 detail: "Measuring folders that could not be fully indexed"
             )
         )
 
-        StorageGapFill.appendGaps(
+        let gapFiles = try StorageGapFill.collectGaps(
             scanRoot: root,
-            to: &scannedFiles,
+            diskID: diskID,
+            database: database,
             isCancelled: isCancelled,
             onProgress: { path, processed, total in
                 onProgress?(
                     ScanProgress(
-                        scannedCount: gapScannedCount,
+                        scannedCount: 0,
                         currentPath: path,
-                        bytesIndexed: gapIndexedBytes,
+                        bytesIndexed: 0,
                         operation: .fillingGaps,
                         detail: "Filling coverage gaps (\(processed)/\(total))",
                         directoriesProcessed: processed,
@@ -745,61 +814,21 @@ public final class ScanEngine: @unchecked Sendable {
             }
         )
 
+        for gap in gapFiles {
+            try sink.ingestGap(gap)
+        }
+
         if isCancelled?() == true {
             throw FileScannerError.cancelled
         }
 
-        var indexedBytes: Int64 = 0
-        var fileCount = 0
-        let batchSize = 2_500
-
-        let scannedAt = Date()
-        try database.replaceIndexedFiles(
-            forDiskID: diskID,
-            folderPathPrefix: isFolderScan ? root.path : nil,
-            scannedAt: scannedAt
-        ) { db in
-            var batch: [FileRecord] = []
-            batch.reserveCapacity(batchSize)
-
-            for scanned in scannedFiles where !scanned.isDirectory {
-                let url = URL(fileURLWithPath: scanned.path)
-                batch.append(
-                    FileRecord(
-                        diskID: diskID,
-                        path: scanned.path,
-                        size: scanned.size,
-                        mimeType: FileClassifier.mimeType(for: url),
-                        category: FileClassifier.category(for: url, isDirectory: false),
-                        createdAt: scanned.createdAt,
-                        modifiedAt: scanned.modifiedAt,
-                        lastAccessed: scanned.lastAccessed,
-                        extensionName: scanned.extensionName
-                    )
-                )
-                indexedBytes += scanned.size
-                fileCount += 1
-
-                if batch.count >= batchSize {
-                    for file in batch {
-                        try file.insert(db, onConflict: .replace)
-                    }
-                    batch.removeAll(keepingCapacity: true)
-                }
-            }
-
-            for file in batch {
-                try file.insert(db, onConflict: .replace)
-            }
-        }
-
-        scannedFiles.removeAll(keepingCapacity: false)
+        let ingestSummary = try sink.finalize(scannedAt: Date())
         database.releaseMemory()
 
         return ScanSummary(
             diskID: diskID,
-            scannedFiles: fileCount,
-            indexedBytes: indexedBytes,
+            scannedFiles: ingestSummary.fileCount,
+            indexedBytes: ingestSummary.indexedBytes,
             duration: Date().timeIntervalSince(start),
             mode: mode
         )

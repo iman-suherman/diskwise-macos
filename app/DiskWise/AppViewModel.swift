@@ -2036,6 +2036,7 @@ final class AppViewModel: ObservableObject {
         selectedDiskID = summary.diskID
         selectedVolumePath = volumeMountPath
         reload()
+        releaseCachedMemory()
         refreshInsights()
         if isRebuildingIndex {
             completeIndexRebuildStep(.identifying)
@@ -2202,6 +2203,10 @@ final class AppViewModel: ObservableObject {
         categoryDetailFiles = []
         llmReport = ""
         database?.releaseMemory()
+    }
+
+    func releaseIdleOptimizationMemory() {
+        releaseCachedMemory()
     }
 
     func generateLLMReport() {

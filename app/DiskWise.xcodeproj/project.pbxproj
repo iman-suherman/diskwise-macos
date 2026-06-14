@@ -83,9 +83,11 @@
 		BB5E744A21C6F3D1616AE025 /* 0.2.2.json in Resources */ = {isa = PBXBuildFile; fileRef = 85535EC62055DC25880DE6E7 /* 0.2.2.json */; };
 		BC7B15D5B937D14ECD2DC88E /* ScanLogMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17073AD7FF404926E1B8C231 /* ScanLogMonitor.swift */; };
 		BCC178A5B4049531784C13F4 /* MemoryInsightContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E44A3EA17C6392E5E93BC0 /* MemoryInsightContentView.swift */; };
+		C1A2B3C4D5E6F708192A3B4C /* MemoryInsightChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60718293A4B5C6D7E8F /* MemoryInsightChatView.swift */; };
 		BF36D88A5025F7EB71A8CEFA /* DockVisibilityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCF61B84FF67A42557A15C53 /* DockVisibilityController.swift */; };
 		C23802B4AAF74663F4B08133 /* VolumeKeepAwakePulse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A56F4CF3526711AAE9AE7B /* VolumeKeepAwakePulse.swift */; };
 		C256930CBBDF46341022ACC3 /* 0.1.10.json in Resources */ = {isa = PBXBuildFile; fileRef = 68AEC5E5D4795F6522D2BDFF /* 0.1.10.json */; };
+		C3431BB2FF1AC970B0753F56 /* 0.6.7.json in Resources */ = {isa = PBXBuildFile; fileRef = 48D63726017BAD71010C8039 /* 0.6.7.json */; };
 		C61435492234EF4EFEB45B5C /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BF737B0AA3066062F3881A4 /* StatusBadge.swift */; };
 		C84FBDE95F4E69048130E448 /* 0.5.6.json in Resources */ = {isa = PBXBuildFile; fileRef = AFD9C0D25CF62C96CB4B8902 /* 0.5.6.json */; };
 		C9D4B856CC4D658C4888B06B /* ActivityLogSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9652CCD6DFF89AC365DBCD /* ActivityLogSheet.swift */; };
@@ -152,6 +154,7 @@
 		3FC5F48B0692AC0FECCBDCAD /* 0.6.6.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.6.6.json; sourceTree = "<group>"; };
 		41738F52625CC6311842BB5E /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
 		44B3BF38BECE6B26FF5ABB44 /* 0.2.0.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.2.0.json; sourceTree = "<group>"; };
+		48D63726017BAD71010C8039 /* 0.6.7.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.6.7.json; sourceTree = "<group>"; };
 		4C07B13D67D2C06220DF1B9E /* 0.5.1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.1.json; sourceTree = "<group>"; };
 		5162987824989B2B14143DA5 /* 0.5.4.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.4.json; sourceTree = "<group>"; };
 		5691892A76E1A24CE7AAF729 /* MenuBarMonitorInstructionOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarMonitorInstructionOverlay.swift; sourceTree = "<group>"; };
@@ -194,6 +197,7 @@
 		98EFAE1062F153FAFA7B0D8A /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		9CDFE3300525F7639DAF196F /* 0.5.14.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.14.json; sourceTree = "<group>"; };
 		A1E44A3EA17C6392E5E93BC0 /* MemoryInsightContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryInsightContentView.swift; sourceTree = "<group>"; };
+		D4E5F60718293A4B5C6D7E8F /* MemoryInsightChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryInsightChatView.swift; sourceTree = "<group>"; };
 		A2CDC4AD9678214299B3247C /* 0.5.0.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.0.json; sourceTree = "<group>"; };
 		A3F4C97E4FF375B02034BE88 /* SystemMemoryReliefView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMemoryReliefView.swift; sourceTree = "<group>"; };
 		A6C028E81B0947C7D6A69EE9 /* SavedScanPromptOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedScanPromptOverlay.swift; sourceTree = "<group>"; };
@@ -340,6 +344,7 @@
 				C936F9E4DDBAE8C20A5F61F8 /* 0.6.4.json */,
 				69A80E5FA87260E54639C51F /* 0.6.5.json */,
 				3FC5F48B0692AC0FECCBDCAD /* 0.6.6.json */,
+				48D63726017BAD71010C8039 /* 0.6.7.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -392,6 +397,7 @@
 				39A19DABD6BC39CB4E077008 /* MaintenanceView.swift */,
 				B9433A60D26963A1B26DA291 /* MemoryAnalyzerView.swift */,
 				A1E44A3EA17C6392E5E93BC0 /* MemoryInsightContentView.swift */,
+				D4E5F60718293A4B5C6D7E8F /* MemoryInsightChatView.swift */,
 				2D1F08103579C30093C9CA6F /* MenuBarDiskMonitor.swift */,
 				8DE0414EB1623E719F460CAE /* MenuBarHealthScore.swift */,
 				5691892A76E1A24CE7AAF729 /* MenuBarMonitorInstructionOverlay.swift */,
@@ -574,6 +580,7 @@
 				FB1EE01EE283AA5723F4BECE /* 0.6.4.json in Resources */,
 				DB7B6708505DFFED5A0362F1 /* 0.6.5.json in Resources */,
 				0D0DF4F2D8F9177BA8063379 /* 0.6.6.json in Resources */,
+				C3431BB2FF1AC970B0753F56 /* 0.6.7.json in Resources */,
 				BAC56BC5D44D164A6D1651C3 /* Assets.xcassets in Resources */,
 				7F3FA96EA3B2337449CD40D0 /* diskwise_scan.py in Resources */,
 				E559D2BF705EE1AB7F9CA4EA /* entitlements.mac.plist in Resources */,
@@ -653,6 +660,7 @@
 				AD9B75BC6DC71E2F9CF51405 /* MemoryAnalyzerView.swift in Sources */,
 				A00A29FB7A9AB8CF36925A53 /* MemoryInsightActionMatcher.swift in Sources */,
 				BCC178A5B4049531784C13F4 /* MemoryInsightContentView.swift in Sources */,
+				C1A2B3C4D5E6F708192A3B4C /* MemoryInsightChatView.swift in Sources */,
 				904D2F4452D1ED17A947CD64 /* MemoryInsightNotificationService.swift in Sources */,
 				03B0CC0B75C882455F238B4A /* MenuBarDiskMonitor.swift in Sources */,
 				FC6623E26E2D1FA21EC83507 /* MenuBarExtensionPrompt.swift in Sources */,

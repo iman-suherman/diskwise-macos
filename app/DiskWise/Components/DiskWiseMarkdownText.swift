@@ -1,4 +1,5 @@
 import SwiftUI
+import WebKit
 
 enum DiskWiseMarkdownFormat {
     case chat
@@ -78,6 +79,98 @@ struct DiskWiseMarkdownText: View {
                 .font(font)
                 .lineSpacing(lineSpacing)
                 .textSelection(.enabled)
+        }
+    }
+}
+
+struct DiskWiseHTMLMarkdownView: View {
+    let text: String
+    var format: DiskWiseMarkdownFormat = .memoryInsight
+    var isActive: Bool = true
+
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var contentHeight: CGFloat = 120
+
+    var body: some View {
+        Group {
+            if isActive {
+                DiskWiseHTMLMarkdownWebView(
+                    html: htmlDocument,
+                    contentHeight: $contentHeight
+                )
+                .frame(height: max(contentHeight, 40))
+            } else if !text.isEmpty {
+                DiskWiseMarkdownText(text: text, font: .body, format: format)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var htmlDocument: String {
+        switch format {
+        case .memoryInsight:
+            return ChatMessageFormatter.memoryInsightHTMLDocument(
+                from: text,
+                isDark: colorScheme == .dark
+            )
+        case .chat:
+            let markdown = ChatMessageFormatter.formatForDisplay(text)
+            return ChatMessageFormatter.memoryInsightHTMLDocument(
+                from: markdown,
+                isDark: colorScheme == .dark
+            )
+        }
+    }
+}
+
+private struct DiskWiseHTMLMarkdownWebView: NSViewRepresentable {
+    let html: String
+    @Binding var contentHeight: CGFloat
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(contentHeight: $contentHeight)
+    }
+
+    func makeNSView(context: Context) -> WKWebView {
+        let configuration = WKWebViewConfiguration()
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.setValue(false, forKey: "drawsBackground")
+        webView.navigationDelegate = context.coordinator
+        return webView
+    }
+
+    func updateNSView(_ webView: WKWebView, context: Context) {
+        context.coordinator.contentHeight = $contentHeight
+        guard context.coordinator.lastHTML != html else { return }
+        context.coordinator.lastHTML = html
+        if html.isEmpty {
+            webView.loadHTMLString("<html><body></body></html>", baseURL: nil)
+        } else {
+            webView.loadHTMLString(html, baseURL: nil)
+        }
+    }
+
+    final class Coordinator: NSObject, WKNavigationDelegate {
+        var contentHeight: Binding<CGFloat>
+        var lastHTML: String?
+
+        init(contentHeight: Binding<CGFloat>) {
+            self.contentHeight = contentHeight
+        }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            webView.evaluateJavaScript("document.body.scrollHeight") { [weak self] result, _ in
+                guard let self else { return }
+                if let height = result as? CGFloat, height > 0 {
+                    DispatchQueue.main.async {
+                        self.contentHeight.wrappedValue = height + 8
+                    }
+                } else if let height = result as? Double, height > 0 {
+                    DispatchQueue.main.async {
+                        self.contentHeight.wrappedValue = CGFloat(height) + 8
+                    }
+                }
+            }
         }
     }
 }

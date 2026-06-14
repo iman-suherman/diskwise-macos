@@ -163,7 +163,8 @@ final class DiskSpaceNotificationService {
     }
 
     private func notificationBody(for volume: MountedVolume, level: DiskSpaceAlertLevel) -> String {
-        let freeLabel = MenuBarFormatters.compactFreeSpace(volume.freeSize)
+        let freeBytes = MenuBarFormatters.resolvedFreeBytes(for: volume)
+        let freeLabel = MenuBarFormatters.readableFreeSpace(freeBytes)
         let freePercent = Int((max(0, 1 - volume.usageFraction) * 100).rounded())
 
         switch level {

@@ -132,6 +132,24 @@ public struct FoundationModelsProvider: GenerativeAIProvider, Sendable {
         }
     }
 
+    public func streamRespondMemory(to question: String, context: MemoryAnalysisContext) -> AsyncThrowingStream<String, Error> {
+        #if canImport(FoundationModels)
+        if #available(macOS 26.0, *) {
+            return streamGenerate(
+                instructions: MemoryContextFormatter.chatInstructions(),
+                prompt: """
+                \(MemoryContextFormatter.format(context))
+
+                User question: \(question)
+                """
+            )
+        }
+        #endif
+        return AsyncThrowingStream { continuation in
+            continuation.finish(throwing: AIConsultantError.providerUnavailable)
+        }
+    }
+
     #if canImport(FoundationModels)
     @available(macOS 26.0, *)
     private func generate(instructions: String, prompt: String) async throws -> String {

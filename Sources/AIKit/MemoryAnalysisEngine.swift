@@ -33,6 +33,13 @@ public final class MemoryAnalysisEngine: @unchecked Sendable {
         consultant.streamAnalyzeMemory(context: context, fallback: fallback)
     }
 
+    public func streamMemoryRespond(
+        to question: String,
+        context: MemoryAnalysisContext
+    ) -> AsyncThrowingStream<String, Error> {
+        consultant.streamRespondMemory(to: question, context: context)
+    }
+
     private func finalizedReport(base: MemoryAnalysisReport, aiSummary: String?) -> MemoryAnalysisReport {
         MemoryAnalysisReport(
             sampledAt: base.sampledAt,
@@ -165,6 +172,24 @@ public final class MemoryAnalysisEngine: @unchecked Sendable {
             let avgGB = Double(profile.averageMemoryBytes) / 1_073_741_824
             let nameLower = profile.name.lowercased()
 
+            if MemoryProcessRules.isDiskWise(profile.name) {
+                if profile.averageMemoryBytes >= 1_500 * 1024 * 1024, profile.sampleCount >= 2 {
+                    items.append(
+                        MemoryActionRecommendation(
+                            title: "DiskWise memory is elevated",
+                            detail: MemoryProcessRules.highMemoryUsageDetail(
+                                for: profile.name,
+                                averageGB: avgGB,
+                                sampleCount: profile.sampleCount
+                            ),
+                            actionKind: .informational,
+                            priority: 55
+                        )
+                    )
+                }
+                continue
+            }
+
             if nameLower.contains("chrome") || nameLower.contains("safari") || nameLower.contains("firefox") || nameLower.contains("edge") {
                 items.append(
                     MemoryActionRecommendation(
@@ -182,7 +207,11 @@ public final class MemoryAnalysisEngine: @unchecked Sendable {
                 items.append(
                     MemoryActionRecommendation(
                         title: "Restart \(profile.name)",
-                        detail: "\(profile.name) consistently uses \(String(format: "%.1f", avgGB)) GB. Restarting can clear memory leaks.",
+                        detail: MemoryProcessRules.highMemoryUsageDetail(
+                            for: profile.name,
+                            averageGB: avgGB,
+                            sampleCount: profile.sampleCount
+                        ),
                         actionKind: .restartApp,
                         targetProcessName: profile.name,
                         priority: 75

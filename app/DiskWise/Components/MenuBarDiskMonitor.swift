@@ -144,18 +144,59 @@ enum MenuBarFormatters {
     }
 
     static func compactFreeSpace(_ bytes: Int64) -> String {
+        readableFreeSpace(bytes, includeSpace: false)
+    }
+
+    static func readableFreeSpace(_ bytes: Int64, includeSpace: Bool = true) -> String {
+        let unit = includeSpace ? " " : ""
+        guard bytes > 0 else { return includeSpace ? "0 B" : "0B" }
+
         let gigabytes = Double(bytes) / 1_000_000_000
         if gigabytes >= 1000 {
             let terabytes = gigabytes / 1000
             if terabytes >= 10 {
-                return String(format: "%.0fTB", terabytes)
+                return String(format: "%.0f\(unit)TB", terabytes)
             }
-            return String(format: "%.1fTB", terabytes)
+            return String(format: "%.1f\(unit)TB", terabytes)
         }
         if gigabytes >= 10 {
-            return String(format: "%.0fGB", gigabytes)
+            return String(format: "%.0f\(unit)GB", gigabytes)
         }
-        return String(format: "%.1fGB", gigabytes)
+        if gigabytes >= 1 {
+            return String(format: "%.1f\(unit)GB", gigabytes)
+        }
+
+        let megabytes = Double(bytes) / 1_000_000
+        if megabytes >= 100 {
+            return String(format: "%.0f\(unit)MB", megabytes)
+        }
+        if megabytes >= 1 {
+            return String(format: "%.1f\(unit)MB", megabytes)
+        }
+
+        let kilobytes = Double(bytes) / 1_000
+        if kilobytes >= 1 {
+            return String(format: "%.0f\(unit)KB", kilobytes)
+        }
+
+        return includeSpace ? "\(bytes) B" : "\(bytes)B"
+    }
+
+    static func resolvedFreeBytes(for volume: MountedVolume) -> Int64 {
+        let reported = max(0, volume.freeSize)
+        guard volume.totalSize > 0 else { return reported }
+
+        let implied = Int64((Double(volume.totalSize) * max(0, 1 - volume.usageFraction)).rounded())
+        if reported == 0, implied > 0 {
+            return implied
+        }
+        if reported > 0, implied > 0 {
+            let ratio = Double(reported) / Double(implied)
+            if ratio < 0.5 || ratio > 2.0 {
+                return implied
+            }
+        }
+        return reported > 0 ? reported : implied
     }
 
     static func menuBarShortVolumeName(_ volumeName: String) -> String {

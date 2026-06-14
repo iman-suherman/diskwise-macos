@@ -33,6 +33,7 @@ enum MemoryInsightItem: Identifiable {
 struct MemoryInsightStreamingView: View {
     let text: String
     let isStreaming: Bool
+    var insightsActive: Bool = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -44,17 +45,17 @@ struct MemoryInsightStreamingView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-            } else {
-                Text(text)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineSpacing(5)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else if isStreaming {
+                DiskWiseMarkdownText(
+                    text: text,
+                    font: .subheadline,
+                    foregroundStyle: .secondary,
+                    format: .memoryInsight
+                )
 
-                if isStreaming {
-                    MemoryInsightStreamingCursor()
-                }
+                MemoryInsightStreamingCursor()
+            } else {
+                DiskWiseHTMLMarkdownView(text: text, format: .memoryInsight, isActive: insightsActive)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -64,123 +65,89 @@ struct MemoryInsightStreamingView: View {
 struct MemoryInsightContentView: View {
     let text: String
     var report: MemoryAnalysisReport?
+    var insightsActive: Bool = true
     var onPerformAction: ((MemoryActionRecommendation) -> Void)?
 
     private var sections: [MemoryInsightSection] {
         ChatMessageFormatter.parseMemoryInsight(text)
     }
 
+    private var actionableItems: [(MemoryInsightItem, MemoryActionRecommendation)] {
+        guard let report else { return [] }
+        return sections.flatMap(\.items).compactMap { item in
+            guard let recommendation = recommendation(for: item, report: report),
+                  MemoryActionExecutor.actionTitle(for: recommendation) != nil else {
+                return nil
+            }
+            return (item, recommendation)
+        }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            ForEach(sections) { section in
-                sectionView(section)
+        VStack(alignment: .leading, spacing: 16) {
+            DiskWiseHTMLMarkdownView(text: text, format: .memoryInsight, isActive: insightsActive)
+
+            if !actionableItems.isEmpty, let onPerformAction {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Quick Actions")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    ForEach(Array(actionableItems.enumerated()), id: \.offset) { _, entry in
+                        actionRow(
+                            item: entry.0,
+                            recommendation: entry.1,
+                            action: onPerformAction
+                        )
+                    }
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    @ViewBuilder
-    private func sectionView(_ section: MemoryInsightSection) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if let title = section.title {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-            }
-
-            ForEach(Array(section.items.enumerated()), id: \.offset) { _, item in
-                itemView(item)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func itemView(_ item: MemoryInsightItem) -> some View {
-        switch item {
-        case .paragraph(let text):
-            insightMarkdown(text)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-        case .subheading(let text):
-            Text(text)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-                .padding(.top, 4)
-
-        case .metric(let label, let value):
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(label)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 72, alignment: .leading)
-                Text(value)
-                    .font(.subheadline.monospacedDigit())
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-        case .bullet(let title, let body):
-            actionRow(
-                icon: "lightbulb",
-                title: title,
-                body: body,
-                recommendation: resolvedRecommendation(title: title, body: body)
-            )
-
-        case .tip(let number, let title, let body):
-            actionRow(
-                icon: "\(number).circle.fill",
-                title: title,
-                body: body,
-                recommendation: resolvedRecommendation(title: title, body: body),
-                numbered: number
-            )
-        }
     }
 
     @ViewBuilder
     private func actionRow(
-        icon: String,
+        item: MemoryInsightItem,
+        recommendation: MemoryActionRecommendation,
+        action: @escaping (MemoryActionRecommendation) -> Void
+    ) -> some View {
+        switch item {
+        case .bullet(let title, let body):
+            actionRowContent(title: title, body: body, recommendation: recommendation, action: action)
+        case .tip(_, let title, let body):
+            actionRowContent(title: title, body: body, recommendation: recommendation, action: action)
+        default:
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder
+    private func actionRowContent(
         title: String?,
         body: String,
-        recommendation: MemoryActionRecommendation?,
-        numbered: Int? = nil
+        recommendation: MemoryActionRecommendation,
+        action: @escaping (MemoryActionRecommendation) -> Void
     ) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Group {
-                if let numbered {
-                    Text("\(numbered).")
-                        .font(.caption.weight(.bold).monospacedDigit())
-                } else {
-                    Image(systemName: icon)
-                        .font(.subheadline)
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    if let title, !title.isEmpty {
+                        Text(title)
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    Text(body)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-            }
-            .foregroundStyle(.secondary)
-            .frame(width: 20, alignment: numbered == nil ? .center : .trailing)
-            .padding(.top, numbered == nil ? 1 : 2)
 
-            VStack(alignment: .leading, spacing: 4) {
-                if let title, !title.isEmpty {
-                    Text(title)
-                        .font(.subheadline.weight(.semibold))
-                }
-                Text(body)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+                Spacer(minLength: 8)
 
-            Spacer(minLength: 8)
-
-            if let recommendation, let onPerformAction {
-                insightActionButton(for: recommendation, action: onPerformAction)
+                insightActionButton(for: recommendation, action: action)
             }
-        }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     @ViewBuilder
@@ -205,21 +172,15 @@ struct MemoryInsightContentView: View {
         }
     }
 
-    private func resolvedRecommendation(title: String?, body: String) -> MemoryActionRecommendation? {
-        guard let report else { return nil }
-        return MemoryInsightActionMatcher.recommendation(forTitle: title, body: body, report: report)
-    }
-
-    @ViewBuilder
-    private func insightMarkdown(_ text: String) -> some View {
-        let cleaned = text
-            .replacingOccurrences(of: "**", with: "")
-            .replacingOccurrences(of: "__", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        Text(cleaned)
-            .lineSpacing(4)
-            .textSelection(.enabled)
+    private func recommendation(for item: MemoryInsightItem, report: MemoryAnalysisReport) -> MemoryActionRecommendation? {
+        switch item {
+        case .bullet(let title, let body):
+            return MemoryInsightActionMatcher.recommendation(forTitle: title, body: body, report: report)
+        case .tip(_, let title, let body):
+            return MemoryInsightActionMatcher.recommendation(forTitle: title, body: body, report: report)
+        default:
+            return nil
+        }
     }
 }
 

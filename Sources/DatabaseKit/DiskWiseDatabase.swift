@@ -118,24 +118,69 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         insertFiles: (Database) throws -> Void
     ) throws {
         try dbQueue.write { db in
-            if let folderPathPrefix {
-                let normalized = folderPathPrefix.hasSuffix("/")
-                    ? String(folderPathPrefix.dropLast())
-                    : folderPathPrefix
-                try db.execute(
-                    sql: "DELETE FROM files WHERE disk_id = ? AND (path = ? OR path LIKE ?)",
-                    arguments: [diskID, normalized, normalized + "/%"]
-                )
-            } else {
-                try db.execute(sql: "DELETE FROM files WHERE disk_id = ?", arguments: [diskID])
-            }
-
+            try Self.deleteIndexedFiles(in: db, diskID: diskID, folderPathPrefix: folderPathPrefix)
             try insertFiles(db)
-
             try db.execute(
                 sql: "UPDATE disks SET scanned_at = ? WHERE id = ?",
                 arguments: [scannedAt, diskID]
             )
+        }
+    }
+
+    public func beginVolumeScan(forDiskID diskID: Int64, folderPathPrefix: String?) throws {
+        try dbQueue.write { db in
+            try Self.deleteIndexedFiles(in: db, diskID: diskID, folderPathPrefix: folderPathPrefix)
+        }
+    }
+
+    public func insertIndexedFiles(_ files: [FileRecord]) throws {
+        guard !files.isEmpty else { return }
+        try dbQueue.write { db in
+            for file in files {
+                try file.insert(db, onConflict: .replace)
+            }
+        }
+    }
+
+    public func finalizeVolumeScan(forDiskID diskID: Int64, scannedAt: Date) throws {
+        try dbQueue.write { db in
+            try db.execute(
+                sql: "UPDATE disks SET scanned_at = ? WHERE id = ?",
+                arguments: [scannedAt, diskID]
+            )
+        }
+    }
+
+    public func sumIndexedBytes(forDiskID diskID: Int64, underPath path: String) throws -> Int64 {
+        let normalized = path.hasSuffix("/") ? String(path.dropLast()) : path
+        return try dbQueue.read { db in
+            try Int64.fetchOne(
+                db,
+                sql: """
+                SELECT COALESCE(SUM(size), 0)
+                FROM files
+                WHERE disk_id = ? AND (path = ? OR path LIKE ?)
+                """,
+                arguments: [diskID, normalized, normalized + "/%"]
+            ) ?? 0
+        }
+    }
+
+    private static func deleteIndexedFiles(
+        in db: Database,
+        diskID: Int64,
+        folderPathPrefix: String?
+    ) throws {
+        if let folderPathPrefix {
+            let normalized = folderPathPrefix.hasSuffix("/")
+                ? String(folderPathPrefix.dropLast())
+                : folderPathPrefix
+            try db.execute(
+                sql: "DELETE FROM files WHERE disk_id = ? AND (path = ? OR path LIKE ?)",
+                arguments: [diskID, normalized, normalized + "/%"]
+            )
+        } else {
+            try db.execute(sql: "DELETE FROM files WHERE disk_id = ?", arguments: [diskID])
         }
     }
 

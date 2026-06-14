@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 enum ChatMessageFormatter {
@@ -130,6 +131,134 @@ enum ChatMessageFormatter {
         result = formatForDisplay(result)
 
         return result.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    static func memoryInsightRenderableMarkdown(_ text: String) -> String {
+        var result = formatMemoryInsightForDisplay(text)
+        guard !result.isEmpty else { return result }
+
+        for header in sectionHeaders {
+            let escaped = NSRegularExpression.escapedPattern(for: header)
+            result = result.replacingOccurrences(
+                of: "(?m)^\\s*\(escaped)\\s*:?\\s*$",
+                with: "## \(header)",
+                options: .regularExpression
+            )
+        }
+
+        result = result.replacingOccurrences(
+            of: "(?m)^Tip\\s+(\\d+)\\s*:\\s*",
+            with: "### Tip $1: ",
+            options: .regularExpression
+        )
+
+        result = result.replacingOccurrences(of: "• ", with: "- ")
+        result = result.replacingOccurrences(of: "\n{3,}", with: "\n\n", options: .regularExpression)
+
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    static func memoryInsightHTMLDocument(from text: String, isDark: Bool) -> String {
+        let markdown = memoryInsightRenderableMarkdown(text)
+        let body: String
+
+        if let attributed = try? AttributedString(
+            markdown: markdown,
+            options: AttributedString.MarkdownParsingOptions(
+                interpretedSyntax: .full,
+                failurePolicy: .returnPartiallyParsedIfPossible
+            )
+        ) {
+            let nsAttributed = NSAttributedString(attributed)
+            if nsAttributed.length > 0,
+               let data = try? nsAttributed.data(
+                from: NSRange(location: 0, length: nsAttributed.length),
+                documentAttributes: [
+                    .documentType: NSAttributedString.DocumentType.html,
+                    .characterEncoding: String.Encoding.utf8.rawValue,
+                ]
+               ),
+               let fragment = String(data: data, encoding: .utf8) {
+                body = fragment
+            } else {
+                body = "<pre>\(escapeHTML(markdown))</pre>"
+            }
+        } else {
+            body = "<pre>\(escapeHTML(markdown))</pre>"
+        }
+
+        return htmlPage(body: body, isDark: isDark)
+    }
+
+    private static func escapeHTML(_ text: String) -> String {
+        text
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+    }
+
+    private static func htmlPage(body: String, isDark: Bool) -> String {
+        let textColor = isDark ? "#E8E8ED" : "#1D1D1F"
+        let secondaryColor = isDark ? "#A1A1A6" : "#6E6E73"
+        let accentColor = isDark ? "#6EA8FE" : "#0066CC"
+        let cardColor = isDark ? "#2C2C2E" : "#F5F5F7"
+        let borderColor = isDark ? "#3A3A3C" : "#D2D2D7"
+
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          :root {
+            color-scheme: \(isDark ? "dark" : "light");
+          }
+          html, body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            color: \(textColor);
+            font: -apple-system-body;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+            font-size: 13px;
+            line-height: 1.55;
+          }
+          body { padding: 2px 0; }
+          h1, h2, h3, h4 {
+            color: \(textColor);
+            margin: 1.1em 0 0.45em;
+            line-height: 1.25;
+            font-weight: 600;
+          }
+          h2 { font-size: 15px; }
+          h3 { font-size: 14px; }
+          p { margin: 0.55em 0; color: \(secondaryColor); }
+          strong, b { color: \(textColor); font-weight: 600; }
+          ul, ol {
+            margin: 0.5em 0 0.8em;
+            padding-left: 1.25em;
+            color: \(secondaryColor);
+          }
+          li { margin: 0.35em 0; }
+          li::marker { color: \(accentColor); }
+          code, pre {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            background: \(cardColor);
+            border: 1px solid \(borderColor);
+            border-radius: 6px;
+          }
+          pre {
+            white-space: pre-wrap;
+            padding: 10px 12px;
+            margin: 0.6em 0;
+          }
+          a { color: \(accentColor); text-decoration: none; }
+        </style>
+        </head>
+        <body>\(body)</body>
+        </html>
+        """
     }
 
     static func memoryInsightBlocks(_ text: String) -> [String] {
