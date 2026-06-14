@@ -1054,10 +1054,13 @@ final class AppViewModel: ObservableObject {
             return "Only \(coverage)% of used space is mapped. macOS hides protected folders until DiskWise has Full Disk Access."
         }
         if coverage < 50 {
-            return "Only \(coverage)% of used space is mapped. A rescan after granting Full Disk Access usually improves coverage."
+            return "Only \(coverage)% of used space is mapped. Grant Full Disk Access and run a Deep scan to index protected paths individually."
         }
-        if appSettings.scanMode == .fast {
-            return "Only \(coverage)% mapped. A Deep scan indexes more paths; some gap may still be APFS snapshots or purgeable space."
+        if coverage < 90 {
+            if appSettings.scanMode == .fast {
+                return "Only \(coverage)% mapped. Fast scan estimates system folders — a Deep scan indexes every file and often improves coverage."
+            }
+            return "Only \(coverage)% mapped. Rescan with Deep scan to re-index protected paths; some gap may still be APFS snapshots or purgeable space."
         }
         return "Only \(coverage)% mapped. The remainder may be APFS snapshots, purgeable space, or paths macOS does not expose to apps."
     }

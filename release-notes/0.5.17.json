@@ -1,0 +1,11 @@
+{
+  "summary": "The unmapped-space banner now explains Deep scan and offers a one-click rescan to map more used space.",
+  "introduced": [
+    "About Deep scan callout in the unmapped-space banner — explains file-by-file indexing vs Fast scan estimates"
+  ],
+  "changed": [
+    "How to map more steps always include Deep scan with duration guidance and a Rescan with Deep Scan button",
+    "Coverage messages below 90% now suggest Deep scan when Fast scan may have left system folders estimated"
+  ],
+  "fixed": []
+}

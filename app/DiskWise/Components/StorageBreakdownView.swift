@@ -360,14 +360,16 @@ struct UnmappedStorageBanner: View {
 
                         Label("Grant Full Disk Access so DiskWise can read protected folders.", systemImage: "1.circle")
                         Label("Rescan this drive after access is granted.", systemImage: "2.circle")
-                        if viewModel.appSettings.scanMode == .fast {
-                            Label("Switch to Deep scan in Settings for broader indexing.", systemImage: "3.circle")
-                        } else {
-                            Label("Some space may remain unmapped even after a Deep scan (snapshots, purgeable cache).", systemImage: "3.circle")
-                        }
+                        Label(deepScanBullet, systemImage: "3.circle")
+                        Label(
+                            "Some space may remain unmapped even after a Deep scan (APFS snapshots, purgeable cache).",
+                            systemImage: "4.circle"
+                        )
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                    deepScanCallout
 
                     HStack(spacing: 12) {
                         if !viewModel.hasFullDiskAccess {
@@ -386,17 +388,47 @@ struct UnmappedStorageBanner: View {
                         }
                         .buttonStyle(.bordered)
 
-                        if viewModel.appSettings.scanMode == .fast {
-                            Button("Use Deep Scan") {
-                                viewModel.appSettings.scanMode = .deep
-                                viewModel.scan(volume: volume)
-                            }
-                            .buttonStyle(.bordered)
+                        Button(deepScanButtonTitle) {
+                            viewModel.appSettings.scanMode = .deep
+                            viewModel.scan(volume: volume)
                         }
+                        .buttonStyle(.bordered)
+                        .tint(.orange)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+        }
+    }
+
+    private var deepScanBullet: String {
+        if viewModel.appSettings.scanMode == .deep {
+            return "Rescan with Deep scan — indexes every file individually instead of estimating system folders."
+        }
+        return "Run a Deep scan — indexes every file individually instead of estimating system folders (10–25 min on large drives)."
+    }
+
+    private var deepScanButtonTitle: String {
+        viewModel.appSettings.scanMode == .deep ? "Rescan with Deep Scan" : "Use Deep Scan"
+    }
+
+    private var deepScanCallout: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("About Deep scan", systemImage: "scope")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.orange)
+
+            Text(ScanMode.deep.unmappedDeepScanExplanation)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(Color.orange.opacity(0.2), lineWidth: 1)
         }
     }
 }

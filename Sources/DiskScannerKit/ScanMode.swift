@@ -36,4 +36,13 @@ public enum ScanMode: String, Sendable, CaseIterable, Identifiable {
             """
         }
     }
+
+    /// Shown in the unmapped-space banner when explaining or suggesting deep scan.
+    public var unmappedDeepScanExplanation: String {
+        """
+        Deep scan walks every file and folder individually instead of estimating macOS system directories in one step. \
+        DiskWise records exact paths and sizes, which usually improves coverage of protected folders, app containers, and other paths Fast scan skips. \
+        Expect 10–25 minutes on large drives.
+        """
+    }
 }
