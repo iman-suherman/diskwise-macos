@@ -1,0 +1,18 @@
+{
+  "summary": "Memory Analyzer gains a follow-up chatbot and richer HTML insights, System Optimization shows Fair/Good/Poor labels, disk alerts report correct free-space units, and scans use far less RAM.",
+  "introduced": [
+    "Memory insight chatbot — ask follow-up questions below Apple Intelligence Insights with predefined chips (top consumers, quit apps, memory pressure, free inactive memory) and streaming answers",
+    "HTML markdown insights — Apple Intelligence memory summaries render as styled HTML for clearer headings, bullets, and metrics",
+    "Fair/Good/Poor health badge — System Optimization and sidebar show the rating label with score (e.g. Fair (47)) instead of generic Health (47)"
+  ],
+  "changed": [
+    "Streaming scan ingestion — Python and Swift scans write files to SQLite in 2,500-file batches instead of holding the entire drive in RAM before indexing",
+    "Gap-fill reads indexed bytes from the database so coverage gaps can be filled without keeping all scan results in memory",
+    "DiskWise no longer recommends restarting itself for memory leaks; elevated DiskWise usage is explained as post-scan working set with an informational note",
+    "Other apps now get high memory usage guidance instead of leak wording when restart is suggested",
+    "SQLite cache and WebKit views release after scans finish and when you leave the Memory Analyzer tab"
+  ],
+  "fixed": [
+    "Disk space notifications show correct free-space units (MB or GB) instead of misleading values like 0.0GB free with a high remaining percentage"
+  ]
+}
