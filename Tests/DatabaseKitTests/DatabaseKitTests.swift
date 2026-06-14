@@ -70,5 +70,41 @@ final class DatabaseKitTests: XCTestCase {
         let videos = try database.videosWithDuplicateSizes(forDiskID: diskID, limit: 10)
         XCTAssertEqual(videos.count, 2)
     }
+
+    func testScanHistoryInsertAndFetch() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("diskwise-test-\(UUID().uuidString).sqlite")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let database = try DiskWiseDatabase(path: url)
+        _ = try database.upsertDisk(
+            DiskRecord(name: "Macintosh HD", mountPath: "/", totalSize: 1_000_000, freeSize: 500_000)
+        )
+        let diskID = try XCTUnwrap(try database.allDisks().first?.id)
+
+        let snapshot = ScanHistorySnapshot(
+            categorySummaries: [
+                CategorySummary(category: .video, totalSize: 500, fileCount: 2),
+                CategorySummary(category: .photo, totalSize: 300, fileCount: 5),
+            ],
+            topConsumers: [SpaceConsumer(name: "Movies", totalSize: 500, fileCount: 2)]
+        )
+        let json = try XCTUnwrap(ScanHistoryRecord.encodeSnapshot(snapshot))
+        try database.insertScanHistory(
+            ScanHistoryRecord(
+                diskID: diskID,
+                scanMode: "fast",
+                fileCount: 7,
+                indexedBytes: 800,
+                freeBytes: 500_000,
+                durationSeconds: 120,
+                snapshotJSON: json
+            )
+        )
+
+        let history = try database.scanHistory(forDiskID: diskID)
+        XCTAssertEqual(history.count, 1)
+        XCTAssertEqual(history.first?.scanMode, "fast")
+        XCTAssertEqual(history.first?.decodedSnapshot()?.majorCategories.count, 2)
+    }
 }
 #endif

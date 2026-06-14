@@ -898,6 +898,48 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         }
     }
 
+    public func insertScanHistory(_ record: ScanHistoryRecord) throws {
+        try dbQueue.write { db in
+            var inserted = record
+            try inserted.insert(db)
+            let count = try Int.fetchOne(
+                db,
+                sql: "SELECT COUNT(*) FROM scan_history WHERE disk_id = ?",
+                arguments: [record.diskID]
+            ) ?? 0
+            if count > 40 {
+                try db.execute(
+                    sql: """
+                    DELETE FROM scan_history
+                    WHERE disk_id = ?
+                      AND id NOT IN (
+                        SELECT id FROM scan_history
+                        WHERE disk_id = ?
+                        ORDER BY scanned_at DESC
+                        LIMIT 40
+                      )
+                    """,
+                    arguments: [record.diskID, record.diskID]
+                )
+            }
+        }
+    }
+
+    public func scanHistory(forDiskID diskID: Int64, limit: Int = 30) throws -> [ScanHistoryRecord] {
+        try dbQueue.read { db in
+            try ScanHistoryRecord.fetchAll(
+                db,
+                sql: """
+                SELECT * FROM scan_history
+                WHERE disk_id = ?
+                ORDER BY scanned_at DESC
+                LIMIT ?
+                """,
+                arguments: [diskID, limit]
+            )
+        }
+    }
+
     private static func scopedWhere(
         diskID: Int64,
         pathScope: PathScopeFilter?,

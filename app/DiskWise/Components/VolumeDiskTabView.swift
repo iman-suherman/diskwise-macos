@@ -7,6 +7,7 @@ import DiskScannerKit
 enum VolumeDiskTab: String, CaseIterable, Identifiable {
     case overview
     case breakdown
+    case history
     case insights
 
     var id: String { rawValue }
@@ -15,6 +16,7 @@ enum VolumeDiskTab: String, CaseIterable, Identifiable {
         switch self {
         case .overview: return "Overview"
         case .breakdown: return "Breakdown"
+        case .history: return "History"
         case .insights: return "Insights"
         }
     }
@@ -23,6 +25,7 @@ enum VolumeDiskTab: String, CaseIterable, Identifiable {
         switch self {
         case .overview: return "internaldrive"
         case .breakdown: return "chart.pie"
+        case .history: return "clock.arrow.circlepath"
         case .insights: return "lightbulb"
         }
     }
@@ -50,6 +53,8 @@ struct VolumeDiskTabView: View {
                     OverviewTabView()
                 case .breakdown:
                     BreakdownTabView()
+                case .history:
+                    ScanHistoryTabView()
                 case .insights:
                     InsightsTabView()
                 }

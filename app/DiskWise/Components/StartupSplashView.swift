@@ -48,8 +48,7 @@ struct StartupSplashOverlay: View {
                     }
                 }
 
-                ProgressView()
-                    .controlSize(.regular)
+                startupActivityIndicator
                     .padding(.top, 4)
 
                 Text(currentMessage)
@@ -115,8 +114,7 @@ struct StartupSplashOverlay: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.green)
                 } else if isActive {
-                    ProgressView()
-                        .controlSize(.small)
+                    StartupStepActivityIcon()
                 } else {
                     Image(systemName: "circle")
                         .foregroundStyle(.tertiary)
@@ -129,6 +127,39 @@ struct StartupSplashOverlay: View {
                 .foregroundStyle(isComplete || isActive ? .primary : .secondary)
                 .labelStyle(.titleAndIcon)
         }
+    }
+
+    private var startupActivityIndicator: some View {
+        StartupScanningIndicator(size: 40, weight: .regular)
+            .accessibilityLabel(isPostUpgrade ? "Setting up DiskWise" : "Starting DiskWise")
+    }
+}
+
+private struct StartupScanningIndicator: View {
+    let size: CGFloat
+    var weight: Font.Weight = .regular
+    var useFilledSymbol = true
+
+    @State private var rotation: Double = 0
+
+    var body: some View {
+        Image(systemName: useFilledSymbol ? "arrow.triangle.2.circlepath.circle.fill" : "arrow.triangle.2.circlepath")
+            .font(.system(size: size, weight: weight))
+            .foregroundStyle(Color.accentColor)
+            .symbolRenderingMode(.hierarchical)
+            .rotationEffect(.degrees(rotation))
+            .onAppear {
+                withAnimation(.linear(duration: 1.4).repeatForever(autoreverses: false)) {
+                    rotation = 360
+                }
+            }
+    }
+}
+
+private struct StartupStepActivityIcon: View {
+    var body: some View {
+        StartupScanningIndicator(size: 12, weight: .semibold, useFilledSymbol: false)
+            .frame(width: 18, height: 18)
     }
 }
 

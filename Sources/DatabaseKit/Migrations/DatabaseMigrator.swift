@@ -103,6 +103,23 @@ enum DiskWiseMigrator {
             }
         }
 
+        migrator.registerMigration("v4_scan_history") { db in
+            try db.create(table: "scan_history") { table in
+                table.autoIncrementedPrimaryKey("id")
+                table.column("disk_id", .integer)
+                    .notNull()
+                    .indexed()
+                    .references("disks", onDelete: .cascade)
+                table.column("scan_mode", .text).notNull()
+                table.column("scanned_at", .datetime).notNull().indexed()
+                table.column("file_count", .integer).notNull()
+                table.column("indexed_bytes", .integer).notNull()
+                table.column("free_bytes", .integer).notNull()
+                table.column("duration_seconds", .double).notNull()
+                table.column("snapshot_json", .text).notNull()
+            }
+        }
+
         return migrator
     }
 }

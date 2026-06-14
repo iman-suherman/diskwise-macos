@@ -36,6 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DiskSpaceNotificationService.shared.prepare()
         SystemHealthNotificationService.shared.prepare()
         MemoryAnalyzerMonitor.shared.startIfNeeded(settings: AppSettings.shared)
+        ScanScheduleService.shared.start()
 
         NotificationCenter.default.addObserver(
             forName: NSWindow.didBecomeKeyNotification,
@@ -299,7 +300,7 @@ struct ContentView: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.down.circle")
-                    Text("Check for Update")
+                    Text("Update")
                 }
             }
             .buttonStyle(.borderless)

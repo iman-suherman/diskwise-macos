@@ -1,0 +1,15 @@
+{
+  "summary": "Disk Analysis gains a History tab with scan snapshots and per-drive scheduled fast/deep scans, plus a clearer startup splash and toolbar update label.",
+  "introduced": [
+    "Scan History — new Disk Analysis tab records fast and deep scans with major category usage, top folders, duration, and indexed size per drive",
+    "Scheduled scans — enable weekday fast scans (6 AM) and weekly deep scans (Sunday 2 AM) per drive, with Enable recommended schedule and Run now actions"
+  ],
+  "changed": [
+    "Startup splash — Setting up DiskWise uses the animated scanning icon instead of a generic spinner while setup steps run",
+    "Update button — toolbar control label shortened to Update (help tooltip unchanged)"
+  ],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

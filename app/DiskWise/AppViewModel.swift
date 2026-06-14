@@ -220,6 +220,8 @@ final class AppViewModel: ObservableObject {
     @Published var showSavedScanPrompt = false
     @Published var showScanModePrompt = false
     @Published private(set) var activeScanMode: ScanMode = .fast
+    @Published var scanHistoryRecords: [ScanHistoryRecord] = []
+    @Published var volumeScanSchedule: VolumeScanScheduleConfig = ScanScheduleAdvisor.recommendedSchedule()
     @Published var selectedMaintenanceKind: MaintenanceKind = .appCaches
     @Published var selectedDuplicatesTab: DuplicatesTab = .find
     @Published var maintenanceScanResult: MaintenanceScanResult?
@@ -262,6 +264,7 @@ final class AppViewModel: ObservableObject {
     private var aiChatTask: Task<Void, Never>?
     private var aiChatSessionID = UUID()
     private var scanStartTime: Date?
+    private var pendingVolumeScanHistory: PendingVolumeScanHistoryContext?
     private var prewarmTask: Task<Void, Never>?
     private var prewarmSkipTimerTask: Task<Void, Never>?
     private var launchDataPrewarmed = false
@@ -1411,6 +1414,8 @@ final class AppViewModel: ObservableObject {
 
         if volumeChanged {
             clearLoadedScanPresentation()
+            reloadVolumeScanSchedule()
+            refreshScanHistory()
         }
 
         setStatus("Selected \(volume.name)", kind: .ready)
@@ -1930,6 +1935,81 @@ final class AppViewModel: ObservableObject {
         refreshAnalysisReportInBackground()
     }
 
+    func refreshScanHistory() {
+        guard let diskID = selectedDiskID else {
+            scanHistoryRecords = []
+            return
+        }
+        scanHistoryRecords = (try? database.scanHistory(forDiskID: diskID)) ?? []
+    }
+
+    func reloadVolumeScanSchedule() {
+        guard let mountPath = selectedVolumePath else {
+            volumeScanSchedule = ScanScheduleAdvisor.recommendedSchedule()
+            return
+        }
+        volumeScanSchedule = VolumeScanScheduleStore.shared.schedule(forMountPath: mountPath)
+    }
+
+    func applyRecommendedScanSchedule() {
+        volumeScanSchedule = ScanScheduleAdvisor.recommendedScheduleWithBothEnabled()
+        persistVolumeScanSchedule()
+    }
+
+    func setFastScanScheduleEnabled(_ enabled: Bool) {
+        volumeScanSchedule.fastScanEnabled = enabled
+        persistVolumeScanSchedule()
+    }
+
+    func setDeepScanScheduleEnabled(_ enabled: Bool) {
+        volumeScanSchedule.deepScanEnabled = enabled
+        persistVolumeScanSchedule()
+    }
+
+    func runDueScheduledScansNow() {
+        guard let volume = selectedVolume, !isVolumeBusy(volume) else { return }
+        if volumeScanSchedule.fastScanEnabled {
+            scan(volume: volume, mode: .fast)
+        } else if volumeScanSchedule.deepScanEnabled {
+            scan(volume: volume, mode: .deep)
+        }
+    }
+
+    private func persistVolumeScanSchedule() {
+        guard let mountPath = selectedVolumePath else { return }
+        VolumeScanScheduleStore.shared.save(volumeScanSchedule, forMountPath: mountPath)
+    }
+
+    private func recordScanHistoryIfNeeded(forDiskID diskID: Int64) {
+        guard let context = pendingVolumeScanHistory else { return }
+        pendingVolumeScanHistory = nil
+
+        let oldThreshold = Calendar.current.date(byAdding: .year, value: -2, to: Date()) ?? Date()
+        guard let overview = try? database.storageOverview(
+            forDiskID: diskID,
+            oldFileThreshold: oldThreshold
+        ) else { return }
+
+        let consumers = (try? database.topConsumers(forDiskID: diskID, limit: 8)) ?? []
+        let snapshot = ScanHistorySnapshot(
+            categorySummaries: overview.categorySummaries,
+            topConsumers: consumers
+        )
+        guard let snapshotJSON = ScanHistoryRecord.encodeSnapshot(snapshot) else { return }
+
+        let record = ScanHistoryRecord(
+            diskID: diskID,
+            scanMode: context.mode.rawValue,
+            fileCount: overview.fileCount,
+            indexedBytes: overview.totalSize,
+            freeBytes: selectedVolume?.freeSize ?? 0,
+            durationSeconds: max(0, Date().timeIntervalSince(context.startedAt)),
+            snapshotJSON: snapshotJSON
+        )
+        try? database.insertScanHistory(record)
+        refreshScanHistory()
+    }
+
     func scan(volume: MountedVolume, folder: URL? = nil, mode: ScanMode = .fast) {
         if usesPythonScanner, !isPythonAvailable {
             presentPythonSetupOverlay()
@@ -1952,6 +2032,9 @@ final class AppViewModel: ObservableObject {
         let volumeRootPath = volumeURL.standardizedFileURL.path
         let scanRootPath = scanRoot.standardizedFileURL.path
         let isFolderScan = scanRootPath != volumeRootPath
+        pendingVolumeScanHistory = isFolderScan
+            ? nil
+            : PendingVolumeScanHistoryContext(mode: mode, startedAt: Date())
         let scanLabel = isFolderScan
             ? (scanRoot.lastPathComponent.isEmpty ? scanRoot.path : scanRoot.lastPathComponent)
             : volume.name
@@ -2112,6 +2195,7 @@ final class AppViewModel: ObservableObject {
                     self.refreshInsights()
                     if let diskID = self.selectedDiskID {
                         self.persistLaunchSnapshotIfReady(forDiskID: diskID)
+                        self.recordScanHistoryIfNeeded(forDiskID: diskID)
                     }
                     self.openResultsTab()
                     self.logActivity(.recommendation, "Action plan ready", detail: volumeName)
@@ -2874,4 +2958,9 @@ struct AIChatMessage: Identifiable, Equatable {
         self.text = text
         self.isStreaming = isStreaming
     }
+}
+
+private struct PendingVolumeScanHistoryContext {
+    let mode: ScanMode
+    let startedAt: Date
 }
