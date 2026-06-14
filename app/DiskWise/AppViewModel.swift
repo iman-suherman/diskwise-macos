@@ -160,7 +160,7 @@ final class AppViewModel: ObservableObject {
     @Published var hasFullDiskAccess = false
     @Published var missingExternalVolumePaths: [String] = []
     @Published var selectedPane: DetailPane = .overview
-    @Published var selectedVolumeTab: VolumeDiskTab = .scanning
+    @Published var selectedVolumeTab: VolumeDiskTab = .overview
     @Published var scanLogStatusLine: String?
     @Published var scanJustCompleted = false
     @Published var aiQuestion = ""
@@ -305,7 +305,7 @@ final class AppViewModel: ObservableObject {
             schedulePostLaunchWork()
             return
         }
-        selectedVolumeTab = .results
+        selectedVolumeTab = .breakdown
         setStatus("Loaded saved scan for \(volume.name)", kind: .success)
         isMainContentReady = true
         presentMenuBarExtensionPromptIfNeeded()
@@ -676,7 +676,7 @@ final class AppViewModel: ObservableObject {
             if !launchDataPrewarmed {
                 refreshInsights()
             }
-            selectedVolumeTab = .results
+            selectedVolumeTab = .breakdown
             setStatus("Loaded saved scan for \(volume.name)", kind: .success)
         } else {
             clearLoadedScanPresentation()
@@ -1095,7 +1095,7 @@ final class AppViewModel: ObservableObject {
 
     func openResultsTab() {
         scanJustCompleted = false
-        selectedVolumeTab = .results
+        selectedVolumeTab = .breakdown
         selectedPane = .overview
     }
 
@@ -1370,7 +1370,7 @@ final class AppViewModel: ObservableObject {
 
         if !isVolumeBusy(volume) {
             selectedPane = .overview
-            selectedVolumeTab = .results
+            selectedVolumeTab = .breakdown
         }
 
         if volumeChanged {
@@ -1424,6 +1424,10 @@ final class AppViewModel: ObservableObject {
             return
         }
         scan(volume: selectedVolume, mode: mode)
+    }
+
+    func startMenuBarScan(for volume: MountedVolume, mode: ScanMode) {
+        startScan(with: mode, volume: volume)
     }
 
     func scanSelectedVolume(mode: ScanMode = .fast) {
@@ -1897,7 +1901,7 @@ final class AppViewModel: ObservableObject {
         scanTask?.cancel()
         cancelDuplicateDetection()
         selectedPane = .overview
-        selectedVolumeTab = .scanning
+        selectedVolumeTab = .overview
         scanJustCompleted = false
         isScanning = true
         scanPhase = .identifying
@@ -1926,7 +1930,11 @@ final class AppViewModel: ObservableObject {
             isFolderScan ? "Started folder scan" : "Started filesystem scan",
             detail: "\(mode.title) · \(isFolderScan ? "\(scanLabel) on \(volume.name)" : volume.name)"
         )
-        ScanActivityMonitor.shared.beginScan(volumeName: scanLabel, mode: mode)
+        ScanActivityMonitor.shared.beginScan(
+            volumeName: scanLabel,
+            volumeMountPath: volume.mountPath,
+            mode: mode
+        )
         ScanLogMonitor.shared.reset()
         ScanProgressSnapshot.shared.reset()
         if !usesPythonScanner, let progressURL = try? Self.makeProgressStatusURL() {
@@ -2024,7 +2032,7 @@ final class AppViewModel: ObservableObject {
         scanPhase = .analyzing
         scanProgress = nil
         scanJustCompleted = true
-        selectedVolumeTab = .scanning
+        selectedVolumeTab = .overview
         selectedDiskID = summary.diskID
         selectedVolumePath = volumeMountPath
         reload()

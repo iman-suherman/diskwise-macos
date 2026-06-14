@@ -3,6 +3,7 @@ import SwiftUI
 enum SystemOptimizationTab: String, CaseIterable, Identifiable {
     case systemStatus
     case memoryAnalyzer
+    case processUsage
 
     var id: String { rawValue }
 
@@ -10,6 +11,7 @@ enum SystemOptimizationTab: String, CaseIterable, Identifiable {
         switch self {
         case .systemStatus: return "System Status"
         case .memoryAnalyzer: return "Memory Analyzer"
+        case .processUsage: return "Process Usage"
         }
     }
 
@@ -17,6 +19,7 @@ enum SystemOptimizationTab: String, CaseIterable, Identifiable {
         switch self {
         case .systemStatus: return "heart.text.square"
         case .memoryAnalyzer: return "memorychip"
+        case .processUsage: return "cpu"
         }
     }
 }
@@ -42,7 +45,7 @@ struct SystemOptimizationView: View {
                 }
             }
             .pickerStyle(.segmented)
-            .frame(maxWidth: 640)
+            .frame(maxWidth: 720)
             .padding(.horizontal, 28)
             .padding(.bottom, 16)
 
@@ -50,9 +53,17 @@ struct SystemOptimizationView: View {
                 Group {
                     switch selectedTab {
                     case .systemStatus:
-                        SystemStatusView(embeddedInOptimization: true)
+                        SystemStatusView(
+                            embeddedInOptimization: true,
+                            displaySection: .summary
+                        )
                     case .memoryAnalyzer:
                         MemoryAnalyzerView(embeddedInOptimization: true)
+                    case .processUsage:
+                        SystemStatusView(
+                            embeddedInOptimization: true,
+                            displaySection: .processUsage
+                        )
                     }
                 }
                 .padding(.horizontal, 28)

@@ -5,28 +5,25 @@ import AIKit
 import DiskScannerKit
 
 enum VolumeDiskTab: String, CaseIterable, Identifiable {
-    case scanning
-    case results
-    case recommendations
-    case aiAnalysis
+    case overview
+    case breakdown
+    case insights
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .scanning: return "Scanning"
-        case .results: return "Results"
-        case .recommendations: return "Recommendations"
-        case .aiAnalysis: return "AI Analysis"
+        case .overview: return "Overview"
+        case .breakdown: return "Breakdown"
+        case .insights: return "Insights"
         }
     }
 
     var icon: String {
         switch self {
-        case .scanning: return "arrow.triangle.2.circlepath"
-        case .results: return "chart.pie"
-        case .recommendations: return "lightbulb"
-        case .aiAnalysis: return "sparkles"
+        case .overview: return "internaldrive"
+        case .breakdown: return "chart.pie"
+        case .insights: return "lightbulb"
         }
     }
 }
@@ -45,14 +42,12 @@ struct VolumeDiskTabView: View {
 
             Group {
                 switch viewModel.selectedVolumeTab {
-                case .scanning:
-                    ScanningTabView()
-                case .results:
-                    ResultsTabView()
-                case .recommendations:
-                    RecommendationsTabView()
-                case .aiAnalysis:
-                    AIAnalysisTabView()
+                case .overview:
+                    OverviewTabView()
+                case .breakdown:
+                    BreakdownTabView()
+                case .insights:
+                    InsightsTabView()
                 }
             }
         }
@@ -66,11 +61,11 @@ struct VolumeDiskTabView: View {
             }
         }
         .pickerStyle(.segmented)
-        .frame(maxWidth: 640)
+        .frame(maxWidth: 720)
     }
 }
 
-struct ScanningTabView: View {
+struct OverviewTabView: View {
     @EnvironmentObject private var viewModel: AppViewModel
 
     var body: some View {
@@ -82,6 +77,10 @@ struct ScanningTabView: View {
                     scanCompleteBanner
                 } else if viewModel.isBackgroundWorkActive {
                     BackgroundScanBanner()
+                } else if let volume = viewModel.selectedVolume,
+                          viewModel.showsStorageGraphAnalysis,
+                          let overview = viewModel.overview {
+                    resultsHeader(volume: volume, overview: overview)
                 } else if let volume = viewModel.selectedVolume, !viewModel.isIndexed(volume) {
                     UnindexedVolumeScanPanel(volume: volume)
                 } else if let volume = viewModel.selectedVolume, viewModel.isIndexed(volume) {
@@ -101,14 +100,14 @@ struct ScanningTabView: View {
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(.green)
 
-                Text("Disk usage has been indexed. Review the breakdown and recommendations in the other tabs.")
+                Text("Disk usage has been indexed. Review the breakdown and insights in the other tabs.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
                 Button {
                     viewModel.openResultsTab()
                 } label: {
-                    Label("View Results", systemImage: "chart.pie")
+                    Label("View Breakdown", systemImage: "chart.pie")
                         .frame(minWidth: 180)
                 }
                 .buttonStyle(.borderedProminent)
@@ -153,89 +152,13 @@ struct ScanningTabView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
-}
-
-struct ResultsTabView: View {
-    @EnvironmentObject private var viewModel: AppViewModel
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
-                if viewModel.isBackgroundWorkActive && !viewModel.isScanning {
-                    BackgroundScanBanner()
-                }
-
-                if let volume = viewModel.selectedVolume,
-                   viewModel.showsStorageGraphAnalysis,
-                   let overview = viewModel.overview {
-                    resultsHeader(volume: volume, overview: overview)
-
-                    StorageResultsChartsSection(volume: volume, overview: overview)
-
-                    if viewModel.totalDuplicateSavings > 0 || viewModel.isFindingDuplicates {
-                        duplicatesCallToAction
-                    }
-
-                    if !viewModel.topConsumers.isEmpty {
-                        topConsumersSection
-                    }
-                } else if viewModel.isScanning {
-                    scanningPlaceholder
-                } else {
-                    emptyResultsPlaceholder
-                }
-            }
-            .padding(28)
-        }
-        .sheet(item: $viewModel.recommendationReview) { review in
-            RecommendationReviewSheet(state: review)
-                .environmentObject(viewModel)
-        }
-        .sheet(item: $viewModel.categoryCleanupPreview) { preview in
-            CleanupPreviewSheet(
-                preview: preview,
-                subject: "file\(preview.items.count == 1 ? "" : "s")"
-            ) { _ in
-                viewModel.dismissCategoryCleanupPreview()
-                viewModel.reload()
-            }
-            .environmentObject(viewModel)
-        }
-    }
-
-    private var scanningPlaceholder: some View {
-        ContentUnavailableView {
-            Label("Scan in progress", systemImage: "arrow.triangle.2.circlepath")
-        } description: {
-            Text("Switch to the Scanning tab to monitor progress, or wait here for results.")
-        } actions: {
-            Button("Go to Scanning") {
-                viewModel.selectedVolumeTab = .scanning
-            }
-        }
-    }
-
-    private var emptyResultsPlaceholder: some View {
-        ContentUnavailableView {
-            Label("No scan results yet", systemImage: "chart.pie")
-        } description: {
-            Text("Scan this drive to see storage breakdown and top space consumers.")
-        } actions: {
-            if let volume = viewModel.selectedVolume {
-                Button("Scan \(volume.name)") {
-                    viewModel.requestScan(for: volume)
-                }
-                .buttonStyle(.borderedProminent)
-            }
-        }
-    }
 
     @ViewBuilder
     private func resultsHeader(volume: MountedVolume, overview: StorageOverview) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(volume.name)
                 .font(.largeTitle.bold())
-            Text("Storage Results")
+            Text("Drive Overview")
                 .font(.title3)
                 .foregroundStyle(.secondary)
         }
@@ -257,6 +180,75 @@ struct ResultsTabView: View {
                 detail: "Available space",
                 accent: .green
             )
+        }
+    }
+}
+
+struct BreakdownTabView: View {
+    @EnvironmentObject private var viewModel: AppViewModel
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 28) {
+                if viewModel.isBackgroundWorkActive && !viewModel.isScanning {
+                    BackgroundScanBanner()
+                }
+
+                if let volume = viewModel.selectedVolume,
+                   viewModel.showsStorageGraphAnalysis,
+                   let overview = viewModel.overview {
+                    breakdownHeader(volume: volume)
+
+                    StorageResultsChartsSection(volume: volume, overview: overview)
+
+                    if viewModel.totalDuplicateSavings > 0 || viewModel.isFindingDuplicates {
+                        duplicatesCallToAction
+                    }
+                } else if viewModel.isScanning {
+                    scanningPlaceholder
+                } else {
+                    emptyBreakdownPlaceholder
+                }
+            }
+            .padding(28)
+        }
+    }
+
+    private var scanningPlaceholder: some View {
+        ContentUnavailableView {
+            Label("Scan in progress", systemImage: "arrow.triangle.2.circlepath")
+        } description: {
+            Text("Switch to Overview to monitor progress, or wait here for the breakdown.")
+        } actions: {
+            Button("Go to Overview") {
+                viewModel.selectedVolumeTab = .overview
+            }
+        }
+    }
+
+    private var emptyBreakdownPlaceholder: some View {
+        ContentUnavailableView {
+            Label("No breakdown yet", systemImage: "chart.pie")
+        } description: {
+            Text("Scan this drive to see category charts and storage distribution.")
+        } actions: {
+            if let volume = viewModel.selectedVolume {
+                Button("Scan \(volume.name)") {
+                    viewModel.requestScan(for: volume)
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func breakdownHeader(volume: MountedVolume) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(volume.name)
+                .font(.largeTitle.bold())
+            Text("Storage Breakdown")
+                .font(.title3)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -288,26 +280,9 @@ struct ResultsTabView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
-
-    private var topConsumersSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Top Space Consumers")
-                .font(.headline)
-            ForEach(viewModel.topConsumers) { consumer in
-                HStack {
-                    Text(consumer.name)
-                        .lineLimit(1)
-                    Spacer()
-                    Text(DiskWiseFormatters.bytes.string(fromByteCount: consumer.totalSize))
-                        .foregroundStyle(.secondary)
-                }
-                .font(.subheadline)
-            }
-        }
-    }
 }
 
-struct RecommendationsTabView: View {
+struct InsightsTabView: View {
     @EnvironmentObject private var viewModel: AppViewModel
 
     var body: some View {
@@ -317,6 +292,10 @@ struct RecommendationsTabView: View {
                     BackgroundScanBanner()
                 }
 
+                if !viewModel.topConsumers.isEmpty {
+                    topConsumersSection
+                }
+
                 if let report = viewModel.analysisReport {
                     storageIntelligenceSection(report: report)
                     recommendationsSection(report: report)
@@ -324,13 +303,13 @@ struct RecommendationsTabView: View {
                     ContentUnavailableView {
                         Label("Analysis in progress", systemImage: "lightbulb")
                     } description: {
-                        Text("Recommendations appear after the scan and storage analysis finish.")
+                        Text("Insights appear after the scan and storage analysis finish.")
                     }
-                } else {
+                } else if viewModel.topConsumers.isEmpty {
                     ContentUnavailableView {
-                        Label("No recommendations yet", systemImage: "lightbulb")
+                        Label("No insights yet", systemImage: "lightbulb")
                     } description: {
-                        Text("Scan this drive to generate cleanup recommendations.")
+                        Text("Scan this drive to generate cleanup recommendations and top space consumers.")
                     } actions: {
                         if let volume = viewModel.selectedVolume {
                             Button("Scan \(volume.name)") {
@@ -340,8 +319,47 @@ struct RecommendationsTabView: View {
                         }
                     }
                 }
+
+                GroupBox {
+                    AskDiskWiseView()
+                }
             }
             .padding(28)
+        }
+        .sheet(item: $viewModel.recommendationReview) { review in
+            RecommendationReviewSheet(state: review)
+                .environmentObject(viewModel)
+        }
+        .sheet(item: $viewModel.categoryCleanupPreview) { preview in
+            CleanupPreviewSheet(
+                preview: preview,
+                subject: "file\(preview.items.count == 1 ? "" : "s")"
+            ) { _ in
+                viewModel.dismissCategoryCleanupPreview()
+                viewModel.reload()
+            }
+            .environmentObject(viewModel)
+        }
+    }
+
+    private var topConsumersSection: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Top Space Consumers", systemImage: "list.bullet.rectangle")
+                    .font(.headline)
+
+                ForEach(viewModel.topConsumers) { consumer in
+                    HStack {
+                        Text(consumer.name)
+                            .lineLimit(1)
+                        Spacer()
+                        Text(DiskWiseFormatters.bytes.string(fromByteCount: consumer.totalSize))
+                            .foregroundStyle(.secondary)
+                    }
+                    .font(.subheadline)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -393,13 +411,5 @@ struct RecommendationsTabView: View {
                 }
             }
         }
-    }
-}
-
-struct AIAnalysisTabView: View {
-    @EnvironmentObject private var viewModel: AppViewModel
-
-    var body: some View {
-        AskDiskWiseView()
     }
 }

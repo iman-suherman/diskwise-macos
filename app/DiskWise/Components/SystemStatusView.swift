@@ -1,8 +1,15 @@
 import AppKit
 import SwiftUI
 
+enum SystemStatusDisplaySection {
+    case summary
+    case processUsage
+    case all
+}
+
 struct SystemStatusView: View {
     var embeddedInOptimization: Bool = false
+    var displaySection: SystemStatusDisplaySection = .all
 
     @EnvironmentObject private var viewModel: AppViewModel
     @ObservedObject private var monitor = SystemHealthMonitor.shared
@@ -79,19 +86,31 @@ struct SystemStatusView: View {
             }
 
             if let snapshot = monitor.snapshot {
-                scoreCard(snapshot)
-                metricsCard(snapshot)
-                SystemMemoryReliefControl(
-                    monitor: monitor,
-                    snapshot: snapshot,
-                    onStatusMessage: { viewModel.reportProcessAction($0) },
-                    trigger: $memoryReliefTrigger
-                )
-                systemDetailsCard(snapshot)
+                if showsSummarySection {
+                    scoreCard(snapshot)
+                    metricsCard(snapshot)
+                    SystemMemoryReliefControl(
+                        monitor: monitor,
+                        snapshot: snapshot,
+                        onStatusMessage: { viewModel.reportProcessAction($0) },
+                        trigger: $memoryReliefTrigger
+                    )
+                    systemDetailsCard(snapshot)
+                }
 
-                HStack(alignment: .top, spacing: 20) {
-                    cpuProcessCard(snapshot)
-                    memoryProcessCard(snapshot)
+                if showsProcessUsageSection {
+                    if displaySection == .processUsage {
+                        sectionHeading(
+                            "Process Usage",
+                            icon: "cpu",
+                            detail: "Top CPU and memory consumers on this Mac right now."
+                        )
+                    }
+
+                    HStack(alignment: .top, spacing: 20) {
+                        cpuProcessCard(snapshot)
+                        memoryProcessCard(snapshot)
+                    }
                 }
             } else {
                 ContentUnavailableView(
@@ -102,6 +121,14 @@ struct SystemStatusView: View {
                 .frame(maxWidth: .infinity, minHeight: 280)
             }
         }
+    }
+
+    private var showsSummarySection: Bool {
+        displaySection == .summary || displaySection == .all
+    }
+
+    private var showsProcessUsageSection: Bool {
+        displaySection == .processUsage || displaySection == .all
     }
 
     private func sectionHeading(_ title: String, icon: String, detail: String) -> some View {

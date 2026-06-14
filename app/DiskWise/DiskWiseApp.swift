@@ -411,7 +411,7 @@ struct ContentView: View {
             DuplicatesView()
         case .ai:
             VolumeDiskTabView()
-                .onAppear { viewModel.selectedVolumeTab = .aiAnalysis }
+                .onAppear { viewModel.selectedVolumeTab = .insights }
         case .activityLog:
             ActivityLogView(activityLog: viewModel.activityLog, embeddedInPanel: true)
                 .padding(28)

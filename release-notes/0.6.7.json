@@ -1,0 +1,16 @@
+{
+  "summary": "Menu bar disk popovers are per-drive with inline Fast and Deep scans, and System Optimization and Disk Analysis use clearer three-tab layouts with icons.",
+  "introduced": [
+    "Per-drive menu bar popovers — each disk icon opens its own panel with capacity stats, Fast Scan, and Deep Scan without opening the main window",
+    "Menu bar scan progress — live Fast or Deep scan progress appears in the popover for the drive being scanned",
+    "Unindexed drive prompt in menu bar — never-scanned drives show basic capacity info and scan buttons directly in the popover",
+    "System Optimization three-tab layout — System Status (summary + details), Memory Analyzer (middle), and Process Usage (Top CPU / Top Memory) with icons",
+    "Disk Analysis three-tab layout — Overview (scan + drive stats), Breakdown (charts, middle), and Insights (top consumers, recommendations, Ask DiskWise) with icons"
+  ],
+  "changed": [
+    "ScanActivityMonitor tracks the mounted volume path so menu bar progress matches the correct drive",
+    "Selecting a scanned drive opens the Breakdown tab; scanning switches to Overview",
+    "Ask DiskWise sidebar entry opens the Insights tab instead of a separate AI Analysis tab"
+  ],
+  "fixed": []
+}
