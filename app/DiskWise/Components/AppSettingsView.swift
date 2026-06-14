@@ -2,39 +2,118 @@ import SwiftUI
 import DiskScannerKit
 import AIKit
 
+enum AppSettingsTab: String, CaseIterable, Identifiable {
+    case scanning
+    case menuBar
+    case general
+    case memory
+    case ai
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .scanning: return "Scanning"
+        case .menuBar: return "Menu Bar"
+        case .general: return "General"
+        case .memory: return "Memory"
+        case .ai: return "AI"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .scanning: return "arrow.triangle.2.circlepath"
+        case .menuBar: return "menubar.rectangle"
+        case .general: return "gearshape"
+        case .memory: return "memorychip"
+        case .ai: return "sparkles"
+        }
+    }
+}
+
+extension AppSettingsTab: DiskWiseTabRepresentable {}
+
 struct AppSettingsView: View {
     @ObservedObject var settings: AppSettings
     var embeddedInPanel: Bool = false
 
+    @State private var selectedTab: AppSettingsTab = .scanning
+
     var body: some View {
         Group {
             if embeddedInPanel {
-                ScrollView {
-                    settingsForm
-                        .padding(28)
+                VStack(spacing: 0) {
+                    embeddedHeader
+                        .padding(.horizontal, 28)
+                        .padding(.top, 28)
+                        .padding(.bottom, 12)
+
+                    DiskWiseIconTabBar(selection: $selectedTab)
+                        .padding(.horizontal, 28)
+                        .padding(.bottom, 16)
+
+                    ScrollView {
+                        selectedTabForm
+                            .padding(.horizontal, 28)
+                            .padding(.bottom, 28)
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             } else {
-                settingsForm
+                VStack(spacing: 0) {
+                    DiskWiseIconTabBar(selection: $selectedTab)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
+                        .padding(.bottom, 8)
+
+                    ScrollView {
+                        selectedTabForm
+                            .padding(.horizontal, 4)
+                            .padding(.bottom, 12)
+                    }
+                    .frame(width: 560, height: 480)
+                }
+                .navigationTitle("Settings")
             }
         }
         .sheet(isPresented: $settings.showMenuBarMonitorInstructions) {
             MenuBarMonitorInstructionSheet()
         }
+        .onAppear {
+            SystemVolumeMonitor.shared.refresh()
+        }
     }
 
-    private var settingsForm: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            if embeddedInPanel {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Settings")
-                        .font(.largeTitle.bold())
-                    Text("Scan limits, AI provider, menu bar monitor, and preferences.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            }
+    private var embeddedHeader: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Settings")
+                .font(.largeTitle.bold())
+            Text("Scan limits, AI provider, menu bar monitor, and preferences.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 
-            Form {
+    @ViewBuilder
+    private var selectedTabForm: some View {
+        switch selectedTab {
+        case .scanning:
+            scanningForm
+        case .menuBar:
+            menuBarForm
+        case .general:
+            generalForm
+        case .memory:
+            memoryForm
+        case .ai:
+            aiForm
+        }
+    }
+
+    private var scanningForm: some View {
+        Form {
             Section {
                 Text(
                     "Step 1 always starts with Fast scan unless you choose Deep scan when indexing a drive. Adjust duplicate and analysis limits below for steps 2 and 3."
@@ -78,14 +157,20 @@ struct AppSettingsView: View {
                     help: "Samples the largest files when building cleanup recommendations and AI insights."
                 )
             }
+        }
+        .formStyle(.grouped)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 
+    private var menuBarForm: some View {
+        Form {
             Section("Menu bar monitor") {
                 HStack(alignment: .top, spacing: 24) {
                     MenuBarKeepAwakeSection(
                         settings: settings,
                         volumes: SystemVolumeMonitor.shared.volumes
                     )
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                     MenuBarVolumeToggleSection(
                         settings: settings,
@@ -130,7 +215,13 @@ struct AppSettingsView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        }
+        .formStyle(.grouped)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 
+    private var generalForm: some View {
+        Form {
             Section("Appearance") {
                 Toggle(
                     "Hide DiskWise from Dock",
@@ -167,6 +258,18 @@ struct AppSettingsView: View {
                 }
             }
 
+            Section {
+                Button("Restore defaults") {
+                    settings.resetToDefaults()
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var memoryForm: some View {
+        Form {
             Section("Memory Analyzer") {
                 Toggle("Monitor memory in the background", isOn: $settings.memoryAnalyzerEnabled)
 
@@ -181,7 +284,13 @@ struct AppSettingsView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        }
+        .formStyle(.grouped)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 
+    private var aiForm: some View {
+        Form {
             Section("AI assistant") {
                 Picker("Provider", selection: $settings.aiProviderPreference) {
                     Text("Automatic").tag(AIProviderKind.automatic)
@@ -203,21 +312,9 @@ struct AppSettingsView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-
-            Section {
-                Button("Restore defaults") {
-                    settings.resetToDefaults()
-                }
-            }
         }
         .formStyle(.grouped)
-        }
-        .frame(width: embeddedInPanel ? nil : 560, height: embeddedInPanel ? nil : 540)
-        .frame(maxWidth: embeddedInPanel ? 720 : nil, alignment: .leading)
-        .navigationTitle(embeddedInPanel ? "" : "Settings")
-        .onAppear {
-            SystemVolumeMonitor.shared.refresh()
-        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder

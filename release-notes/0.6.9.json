@@ -1,0 +1,16 @@
+{
+  "summary": "Apple Intelligence insights and memory chat render as structured sections, System Optimization and Settings gain icon tabs, and Disk Analysis tabs show icons too.",
+  "introduced": [
+    "Apple Intelligence tab — Optimization Analysis, insights, quick actions, and follow-up chat now live in their own System Optimization tab instead of inside Memory Analyzer",
+    "New Session button — reset the memory insight chatbot to start a fresh conversation without clearing your analysis",
+    "Settings icon tabs — Scanning, Menu Bar, General, Memory, and AI each have their own tab with a sticky Settings header and full-width layout",
+    "Icon tab bars — Disk Analysis (Overview, Breakdown, Insights) and System Optimization tabs show icon + label buttons instead of plain segmented text"
+  ],
+  "changed": [
+    "Apple Intelligence Insights — glued AI text is normalized and rendered as structured headings, metrics, bullets, and tips instead of one dense paragraph",
+    "Memory chatbot replies — assistant bubbles use the same structured formatter so app names, sizes, and recommendations appear on separate lines with Markdown styling",
+    "Memory Analyzer tab — focuses on gauges, trends, usual consumers, and suggested actions; AI content moved to the Apple Intelligence tab",
+    "Settings panel — uses the full detail column width with a fixed title and description while only the active tab scrolls"
+  ],
+  "fixed": []
+}

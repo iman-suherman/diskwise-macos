@@ -19,14 +19,14 @@ struct MemoryInsightChatView: View {
                 Label("Ask about memory", systemImage: "bubble.left.and.bubble.right")
                     .font(.subheadline.weight(.semibold))
                 Spacer()
-                if !monitor.memoryChatResponses.isEmpty {
-                    Button("Clear") {
-                        monitor.clearMemoryChat()
-                    }
-                    .buttonStyle(.borderless)
-                    .font(.caption)
-                    .disabled(isChatBusy)
+                Button {
+                    monitor.startNewMemoryChatSession()
+                } label: {
+                    Label("New Session", systemImage: "plus.bubble")
                 }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(isChatBusy)
             }
 
             if monitor.memoryChatResponses.isEmpty {
@@ -126,7 +126,7 @@ private struct MemoryChatBubble: View {
                                 .foregroundStyle(.secondary)
                         }
                     } else {
-                        DiskWiseMarkdownText(text: message.text, font: .callout)
+                        MemoryChatAssistantContent(text: message.text, isStreaming: message.isStreaming)
                     }
                 } else {
                     Text(message.text)
@@ -155,5 +155,21 @@ private struct MemoryChatBubble: View {
         message.role == .user
             ? Color.accentColor.opacity(0.16)
             : Color.primary.opacity(0.08)
+    }
+}
+
+private struct MemoryChatAssistantContent: View {
+    let text: String
+    let isStreaming: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if isStreaming {
+                DiskWiseMarkdownText(text: text, font: .callout, format: .memoryChat)
+                MemoryInsightStreamingCursor()
+            } else {
+                MemoryInsightRenderedView(text: text, kind: .chat, font: .callout)
+            }
+        }
     }
 }

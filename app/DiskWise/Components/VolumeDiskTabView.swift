@@ -54,14 +54,54 @@ struct VolumeDiskTabView: View {
     }
 
     private var volumeTabPicker: some View {
-        Picker("Disk section", selection: $viewModel.selectedVolumeTab) {
-            ForEach(VolumeDiskTab.allCases) { tab in
-                Label(tab.title, systemImage: tab.icon)
-                    .tag(tab)
+        DiskWiseIconTabBar(selection: $viewModel.selectedVolumeTab)
+    }
+}
+
+protocol DiskWiseTabRepresentable: Identifiable, CaseIterable, Hashable {
+    var title: String { get }
+    var icon: String { get }
+}
+
+extension VolumeDiskTab: DiskWiseTabRepresentable {}
+
+struct DiskWiseIconTabBar<Tab: DiskWiseTabRepresentable>: View {
+    @Binding var selection: Tab
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(Array(Tab.allCases), id: \.id) { tab in
+                tabButton(tab)
             }
         }
-        .pickerStyle(.segmented)
-        .frame(maxWidth: 720)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func tabButton(_ tab: Tab) -> some View {
+        let isSelected = selection == tab
+
+        return Button {
+            selection = tab
+        } label: {
+            Label(tab.title, systemImage: tab.icon)
+                .font(.subheadline.weight(isSelected ? .semibold : .regular))
+                .labelStyle(.titleAndIcon)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    isSelected ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.05),
+                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(
+                            isSelected ? Color.accentColor.opacity(0.35) : Color.primary.opacity(0.08),
+                            lineWidth: 1
+                        )
+                }
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 

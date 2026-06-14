@@ -4,6 +4,7 @@ import WebKit
 enum DiskWiseMarkdownFormat {
     case chat
     case memoryInsight
+    case memoryChat
 }
 
 struct DiskWiseMarkdownText: View {
@@ -18,6 +19,8 @@ struct DiskWiseMarkdownText: View {
             return ChatMessageFormatter.formatForDisplay(text)
         case .memoryInsight:
             return ChatMessageFormatter.formatMemoryInsightForDisplay(text)
+        case .memoryChat:
+            return ChatMessageFormatter.formatMemoryChatForDisplay(text)
         }
     }
 
@@ -27,11 +30,13 @@ struct DiskWiseMarkdownText: View {
             return [displayText]
         case .memoryInsight:
             return ChatMessageFormatter.memoryInsightBlocks(text)
+        case .memoryChat:
+            return ChatMessageFormatter.memoryChatBlocks(text)
         }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: format == .memoryInsight ? 14 : 0) {
+        VStack(alignment: .leading, spacing: format == .memoryInsight || format == .memoryChat ? 14 : 0) {
             ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
                 markdownBlock(block)
             }
@@ -67,7 +72,7 @@ struct DiskWiseMarkdownText: View {
 
     @ViewBuilder
     private func styledText(_ text: Text) -> some View {
-        let lineSpacing: CGFloat = format == .memoryInsight ? 6 : 4
+        let lineSpacing: CGFloat = format == .memoryInsight || format == .memoryChat ? 6 : 4
         if let foregroundStyle {
             text
                 .font(font)
@@ -115,6 +120,12 @@ struct DiskWiseHTMLMarkdownView: View {
             )
         case .chat:
             let markdown = ChatMessageFormatter.formatForDisplay(text)
+            return ChatMessageFormatter.memoryInsightHTMLDocument(
+                from: markdown,
+                isDark: colorScheme == .dark
+            )
+        case .memoryChat:
+            let markdown = ChatMessageFormatter.formatMemoryChatForDisplay(text)
             return ChatMessageFormatter.memoryInsightHTMLDocument(
                 from: markdown,
                 isDark: colorScheme == .dark

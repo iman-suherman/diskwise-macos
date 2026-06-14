@@ -108,13 +108,17 @@ final class MemoryAnalyzerMonitor: ObservableObject {
         MemoryChatEngine.defaultQuestions(for: report)
     }
 
-    func clearMemoryChat() {
+    func startNewMemoryChatSession() {
         memoryChatTask?.cancel()
         memoryChatTask = nil
         memoryChatSessionID = UUID()
         memoryChatResponses = []
         memoryChatQuestion = ""
         isMemoryChatTyping = false
+    }
+
+    func clearMemoryChat() {
+        startNewMemoryChatSession()
     }
 
     func askMemoryChat(question: String) {

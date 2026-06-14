@@ -28,6 +28,83 @@ enum ChatMessageFormatter {
         "macOS system services",
     ]
 
+    static func formatMemoryChatForDisplay(_ text: String) -> String {
+        var result = formatMemoryInsightForDisplay(text)
+        result = applyMemoryChatTextFixes(result)
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    static func memoryChatBlocks(_ text: String) -> [String] {
+        formatMemoryChatForDisplay(text)
+            .components(separatedBy: "\n\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+
+    static func parseMemoryChat(_ text: String) -> [MemoryInsightSection] {
+        parseMemoryInsightSections(from: normalizeMemoryChatText(text))
+    }
+
+    private static let chatSectionHeaders = [
+        "Right now",
+        "Top persistent consumers",
+        "Top consumers",
+        "Also notable",
+        "Based on your samples",
+        "Memory snapshot",
+        "Consider these steps",
+    ]
+
+    private static func applyGluedMemoryTextFixes(_ text: String) -> String {
+        var result = text
+
+        result = result.replacingOccurrences(
+            of: "(:)(?=[A-Z][A-Za-z])",
+            with: "$1\n\n",
+            options: .regularExpression
+        )
+
+        result = result.replacingOccurrences(
+            of: "(MB|GB|KB)([A-Z])",
+            with: "$1\n$2",
+            options: .regularExpression
+        )
+
+        result = result.replacingOccurrences(
+            of: "([0-9](?:\\.\\d+)?\\s*(?:MB|GB|KB))([A-Z])",
+            with: "$1\n$2",
+            options: .regularExpression
+        )
+
+        result = result.replacingOccurrences(
+            of: "([A-Za-z][A-Za-z0-9 ()+.-]{2,})(\\d+(?:\\.\\d+)?\\s*(?:MB|GB|KB))",
+            with: "- **$1:** $2",
+            options: .regularExpression
+        )
+
+        return result
+    }
+
+    private static func applyMemoryChatTextFixes(_ text: String) -> String {
+        var result = text
+
+        for header in chatSectionHeaders {
+            let escaped = NSRegularExpression.escapedPattern(for: header)
+            result = result.replacingOccurrences(
+                of: "(\(escaped))(?=[A-Za-z])",
+                with: "$1\n\n",
+                options: .regularExpression
+            )
+            result = result.replacingOccurrences(
+                of: "\\.(\(escaped))",
+                with: ".\n\n$1",
+                options: .regularExpression
+            )
+        }
+
+        return result
+    }
+
     static func formatForDisplay(_ text: String) -> String {
         var result = text
             .replacingOccurrences(of: "\r\n", with: "\n")
@@ -97,12 +174,53 @@ enum ChatMessageFormatter {
         )
 
         for header in sectionHeaders {
+            let escaped = NSRegularExpression.escapedPattern(for: header)
             result = result.replacingOccurrences(
-                of: "(?<!#)\\s*(\(NSRegularExpression.escapedPattern(for: header)))\\s*",
+                of: "(\(escaped))(?=[A-Za-z])",
+                with: "$1\n\n",
+                options: .regularExpression
+            )
+            result = result.replacingOccurrences(
+                of: "([a-z%0-9)])(\(escaped))",
+                with: "$1\n\n$2",
+                options: .regularExpression
+            )
+            result = result.replacingOccurrences(
+                of: "(?<!#)\\s*(\(escaped))\\s*",
                 with: "\n\n$1\n",
                 options: .regularExpression
             )
         }
+
+        for label in ["Current", "Average", "Peak", "Trend"] {
+            result = result.replacingOccurrences(
+                of: "(?<!\\n)\\s*\\*\\*\(label):\\*\\*",
+                with: "\n**\(label):**",
+                options: .regularExpression
+            )
+            result = result.replacingOccurrences(
+                of: "(?<!\\n)(?<![a-z])\(label):",
+                with: "\n\(label):",
+                options: .regularExpression
+            )
+            result = result.replacingOccurrences(
+                of: "(%)\\s+\(label):",
+                with: "%\n\(label):",
+                options: .regularExpression
+            )
+        }
+
+        result = result.replacingOccurrences(
+            of: "([%0-9)])(- \\*\\*)",
+            with: "$1\n$2",
+            options: .regularExpression
+        )
+
+        result = result.replacingOccurrences(
+            of: "([a-z])(- \\*\\*)",
+            with: "$1\n$2",
+            options: .regularExpression
+        )
 
         result = result.replacingOccurrences(
             of: "([.!?])\\s+(-|\\*|•)\\s+",
@@ -129,6 +247,7 @@ enum ChatMessageFormatter {
         )
 
         result = formatForDisplay(result)
+        result = applyGluedMemoryTextFixes(result)
 
         return result.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -159,35 +278,87 @@ enum ChatMessageFormatter {
     }
 
     static func memoryInsightHTMLDocument(from text: String, isDark: Bool) -> String {
-        let markdown = memoryInsightRenderableMarkdown(text)
+        let sections = parseMemoryInsight(text)
         let body: String
 
-        if let attributed = try? AttributedString(
-            markdown: markdown,
-            options: AttributedString.MarkdownParsingOptions(
-                interpretedSyntax: .full,
-                failurePolicy: .returnPartiallyParsedIfPossible
-            )
-        ) {
-            let nsAttributed = NSAttributedString(attributed)
-            if nsAttributed.length > 0,
-               let data = try? nsAttributed.data(
-                from: NSRange(location: 0, length: nsAttributed.length),
-                documentAttributes: [
-                    .documentType: NSAttributedString.DocumentType.html,
-                    .characterEncoding: String.Encoding.utf8.rawValue,
-                ]
-               ),
-               let fragment = String(data: data, encoding: .utf8) {
-                body = fragment
-            } else {
-                body = "<pre>\(escapeHTML(markdown))</pre>"
-            }
-        } else {
+        if sections.isEmpty {
+            let markdown = memoryInsightRenderableMarkdown(text)
             body = "<pre>\(escapeHTML(markdown))</pre>"
+        } else {
+            body = renderMemoryInsightSectionsHTML(sections)
         }
 
         return htmlPage(body: body, isDark: isDark)
+    }
+
+    private static func renderMemoryInsightSectionsHTML(_ sections: [MemoryInsightSection]) -> String {
+        var parts: [String] = []
+
+        for section in sections {
+            if let title = section.title, !title.isEmpty {
+                parts.append("<h2>\(escapeHTML(title))</h2>")
+            }
+
+            var listItems: [String] = []
+
+            func flushList() {
+                guard !listItems.isEmpty else { return }
+                parts.append("<ul>\(listItems.joined())</ul>")
+                listItems = []
+            }
+
+            for item in section.items {
+                switch item {
+                case .paragraph(let text):
+                    flushList()
+                    parts.append("<p>\(renderInlineHTML(text))</p>")
+                case .subheading(let text):
+                    flushList()
+                    parts.append("<h3>\(escapeHTML(text))</h3>")
+                case .bullet(let title, let body):
+                    if let title, !title.isEmpty {
+                        listItems.append(
+                            "<li><strong>\(escapeHTML(title)):</strong> \(renderInlineHTML(body))</li>"
+                        )
+                    } else {
+                        listItems.append("<li>\(renderInlineHTML(body))</li>")
+                    }
+                case .metric(let label, let value):
+                    flushList()
+                    parts.append(
+                        "<p class=\"metric\"><strong>\(escapeHTML(label)):</strong> \(escapeHTML(value))</p>"
+                    )
+                case .tip(let number, let title, let body):
+                    listItems.append(
+                        "<li><strong>Tip \(number): \(escapeHTML(title))</strong> — \(renderInlineHTML(body))</li>"
+                    )
+                }
+            }
+
+            flushList()
+        }
+
+        return parts.joined()
+    }
+
+    private static func renderInlineHTML(_ text: String) -> String {
+        var result = ""
+        var remaining = text
+
+        while let openRange = remaining.range(of: "**") {
+            result += escapeHTML(String(remaining[..<openRange.lowerBound]))
+            remaining = String(remaining[openRange.upperBound...])
+            guard let closeRange = remaining.range(of: "**") else {
+                result += escapeHTML("**" + remaining)
+                return result
+            }
+            let inner = String(remaining[..<closeRange.lowerBound])
+            result += "<strong>\(escapeHTML(inner))</strong>"
+            remaining = String(remaining[closeRange.upperBound...])
+        }
+
+        result += escapeHTML(remaining)
+        return result
     }
 
     private static func escapeHTML(_ text: String) -> String {
@@ -269,7 +440,10 @@ enum ChatMessageFormatter {
     }
 
     static func parseMemoryInsight(_ text: String) -> [MemoryInsightSection] {
-        let normalized = normalizeMemoryInsightText(text)
+        parseMemoryInsightSections(from: normalizeMemoryInsightText(text))
+    }
+
+    private static func parseMemoryInsightSections(from normalized: String) -> [MemoryInsightSection] {
         let rawBlocks = normalized
             .components(separatedBy: "\n\n")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -375,9 +549,19 @@ enum ChatMessageFormatter {
         return merged
     }
 
+    private static func normalizeMemoryChatText(_ text: String) -> String {
+        var result = formatMemoryChatForDisplay(text)
+        applySharedInsightNormalization(&result)
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private static func normalizeMemoryInsightText(_ text: String) -> String {
         var result = formatMemoryInsightForDisplay(text)
+        applySharedInsightNormalization(&result)
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 
+    private static func applySharedInsightNormalization(_ result: inout String) {
         result = result.replacingOccurrences(
             of: "UseCurrent:",
             with: "Current:",
@@ -440,8 +624,6 @@ enum ChatMessageFormatter {
             with: "\n\n",
             options: .regularExpression
         )
-
-        return result.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private static func parseHeading(_ block: String) -> String? {
@@ -469,7 +651,8 @@ enum ChatMessageFormatter {
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .trimmingCharacters(in: CharacterSet(charactersIn: ":"))
 
-        if sectionHeaders.contains(where: { $0.caseInsensitiveCompare(stripped) == .orderedSame }) {
+        if sectionHeaders.contains(where: { $0.caseInsensitiveCompare(stripped) == .orderedSame })
+            || chatSectionHeaders.contains(where: { $0.caseInsensitiveCompare(stripped) == .orderedSame }) {
             return stripped
         }
 

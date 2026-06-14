@@ -89,6 +89,15 @@ enum MemoryContextFormatter {
         Recommend quitting or restarting apps only when the data supports it.
         Do not recommend disabling macOS system services.
         When suggesting actions, reference specific app names and sizes from the data.
+
+        Format every reply in clean Markdown:
+        - Put each bullet on its own line starting with -
+        - Put section headings on their own line (use ## when helpful)
+        - Put a blank line between paragraphs and sections
+        - Use **bold** for app names and memory sizes
+        - Never concatenate headings, bullets, or sizes with the next sentence
+        - Separate each process/size entry onto its own line
+        - Use an em dash (—) between short titles and details when appropriate
         """
     }
 }

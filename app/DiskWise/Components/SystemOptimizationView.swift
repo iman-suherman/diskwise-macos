@@ -3,6 +3,7 @@ import SwiftUI
 enum SystemOptimizationTab: String, CaseIterable, Identifiable {
     case systemStatus
     case memoryAnalyzer
+    case appleIntelligence
     case processUsage
 
     var id: String { rawValue }
@@ -11,6 +12,7 @@ enum SystemOptimizationTab: String, CaseIterable, Identifiable {
         switch self {
         case .systemStatus: return "System Status"
         case .memoryAnalyzer: return "Memory Analyzer"
+        case .appleIntelligence: return "Apple Intelligence"
         case .processUsage: return "Process Usage"
         }
     }
@@ -19,10 +21,13 @@ enum SystemOptimizationTab: String, CaseIterable, Identifiable {
         switch self {
         case .systemStatus: return "heart.text.square"
         case .memoryAnalyzer: return "memorychip"
+        case .appleIntelligence: return "sparkles"
         case .processUsage: return "cpu"
         }
     }
 }
+
+extension SystemOptimizationTab: DiskWiseTabRepresentable {}
 
 struct SystemOptimizationView: View {
     @EnvironmentObject private var viewModel: AppViewModel
@@ -38,16 +43,9 @@ struct SystemOptimizationView: View {
                 .padding(.top, 28)
                 .padding(.bottom, 12)
 
-            Picker("System section", selection: $selectedTab) {
-                ForEach(SystemOptimizationTab.allCases) { tab in
-                    Label(tab.title, systemImage: tab.icon)
-                        .tag(tab)
-                }
-            }
-            .pickerStyle(.segmented)
-            .frame(maxWidth: 720)
-            .padding(.horizontal, 28)
-            .padding(.bottom, 16)
+            DiskWiseIconTabBar(selection: $selectedTab)
+                .padding(.horizontal, 28)
+                .padding(.bottom, 16)
 
             ScrollView {
                 Group {
@@ -58,10 +56,9 @@ struct SystemOptimizationView: View {
                             displaySection: .summary
                         )
                     case .memoryAnalyzer:
-                        MemoryAnalyzerView(
-                            embeddedInOptimization: true,
-                            insightsActive: true
-                        )
+                        MemoryAnalyzerView(embeddedInOptimization: true)
+                    case .appleIntelligence:
+                        AppleIntelligenceInsightsView()
                     case .processUsage:
                         SystemStatusView(
                             embeddedInOptimization: true,
@@ -81,7 +78,7 @@ struct SystemOptimizationView: View {
             }
         }
         .onChange(of: selectedTab) { _, tab in
-            if tab != .memoryAnalyzer {
+            if tab != .appleIntelligence {
                 memoryMonitor.releasePresentationMemory()
                 viewModel.releaseIdleOptimizationMemory()
             }

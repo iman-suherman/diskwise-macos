@@ -30,10 +30,121 @@ enum MemoryInsightItem: Identifiable {
     }
 }
 
+enum MemoryFormattedContentKind {
+    case insight
+    case chat
+}
+
+struct MemoryInsightRenderedView: View {
+    let text: String
+    var kind: MemoryFormattedContentKind = .insight
+    var font: Font = .subheadline
+
+    private var sections: [MemoryInsightSection] {
+        switch kind {
+        case .insight:
+            return ChatMessageFormatter.parseMemoryInsight(text)
+        case .chat:
+            return ChatMessageFormatter.parseMemoryChat(text)
+        }
+    }
+
+    var body: some View {
+        Group {
+            if sections.isEmpty {
+                DiskWiseMarkdownText(
+                    text: text,
+                    font: font,
+                    format: kind == .chat ? .memoryChat : .memoryInsight
+                )
+            } else {
+                VStack(alignment: .leading, spacing: kind == .chat ? 12 : 16) {
+                    ForEach(sections) { section in
+                        sectionView(section)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private func sectionView(_ section: MemoryInsightSection) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let title = section.title, !title.isEmpty {
+                Text(title)
+                    .font(font.weight(.semibold))
+            }
+
+            ForEach(section.items) { item in
+                itemView(item)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func itemView(_ item: MemoryInsightItem) -> some View {
+        switch item {
+        case .paragraph(let text):
+            insightMarkdown(text)
+        case .subheading(let text):
+            Text(text)
+                .font(font == .subheadline ? .caption.weight(.semibold) : font.weight(.semibold))
+                .foregroundStyle(.secondary)
+        case .bullet(let title, let body):
+            bulletRow(title: title, body: body)
+        case .metric(let label, let value):
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("\(label):")
+                    .fontWeight(.semibold)
+                Text(value)
+                    .foregroundStyle(.secondary)
+            }
+            .font(font)
+        case .tip(let number, let title, let body):
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Tip \(number): \(title)")
+                    .font(font.weight(.semibold))
+                Text(body)
+                    .font(font == .subheadline ? .caption : font)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func bulletRow(title: String?, body: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text("•")
+                .foregroundStyle(Color.accentColor)
+                .font(font.weight(.semibold))
+            VStack(alignment: .leading, spacing: 2) {
+                if let title, !title.isEmpty {
+                    Text(title)
+                        .font(font.weight(.semibold))
+                }
+                if !body.isEmpty {
+                    insightMarkdown(body)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func insightMarkdown(_ text: String) -> some View {
+        DiskWiseMarkdownText(
+            text: text,
+            font: font,
+            foregroundStyle: kind == .insight ? .secondary : nil,
+            format: kind == .chat ? .memoryChat : .chat
+        )
+    }
+}
+
 struct MemoryInsightStreamingView: View {
     let text: String
     let isStreaming: Bool
-    var insightsActive: Bool = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -55,7 +166,7 @@ struct MemoryInsightStreamingView: View {
 
                 MemoryInsightStreamingCursor()
             } else {
-                DiskWiseHTMLMarkdownView(text: text, format: .memoryInsight, isActive: insightsActive)
+                MemoryInsightRenderedView(text: text)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -65,7 +176,6 @@ struct MemoryInsightStreamingView: View {
 struct MemoryInsightContentView: View {
     let text: String
     var report: MemoryAnalysisReport?
-    var insightsActive: Bool = true
     var onPerformAction: ((MemoryActionRecommendation) -> Void)?
 
     private var sections: [MemoryInsightSection] {
@@ -85,7 +195,7 @@ struct MemoryInsightContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            DiskWiseHTMLMarkdownView(text: text, format: .memoryInsight, isActive: insightsActive)
+            MemoryInsightRenderedView(text: text)
 
             if !actionableItems.isEmpty, let onPerformAction {
                 VStack(alignment: .leading, spacing: 10) {
@@ -184,7 +294,7 @@ struct MemoryInsightContentView: View {
     }
 }
 
-private struct MemoryInsightStreamingCursor: View {
+struct MemoryInsightStreamingCursor: View {
     @State private var visible = true
 
     var body: some View {

@@ -3,7 +3,6 @@ import SwiftUI
 
 struct MemoryAnalyzerView: View {
     var embeddedInOptimization: Bool = false
-    var insightsActive: Bool = true
 
     @EnvironmentObject private var viewModel: AppViewModel
     @ObservedObject private var monitor = MemoryAnalyzerMonitor.shared
@@ -66,7 +65,8 @@ struct MemoryAnalyzerView: View {
                 memoryOverviewCard(report)
                 trendCard
                 persistentConsumersCard(report)
-                if monitor.isStreamingAISummary || report.aiSummary != nil {
+                if !embeddedInOptimization,
+                   monitor.isStreamingAISummary || report.aiSummary != nil {
                     let summaryText = monitor.isStreamingAISummary
                         ? monitor.streamingAISummary
                         : (report.aiSummary ?? "")
@@ -280,19 +280,17 @@ struct MemoryAnalyzerView: View {
                 if monitor.isStreamingAISummary {
                     MemoryInsightStreamingView(
                         text: monitor.streamingAISummary,
-                        isStreaming: monitor.isAnalyzing,
-                        insightsActive: insightsActive
+                        isStreaming: monitor.isAnalyzing
                     )
                 } else {
                     MemoryInsightContentView(
                         text: summary,
                         report: report,
-                        insightsActive: insightsActive,
                         onPerformAction: performInsightAction
                     )
                 }
 
-                if insightsActive && !monitor.isStreamingAISummary {
+                if !monitor.isStreamingAISummary {
                     Divider()
                     MemoryInsightChatView(report: report, monitor: monitor)
                 }
@@ -397,5 +395,146 @@ struct MemoryAnalyzerView: View {
         case 60..<80: return .orange
         default: return .red
         }
+    }
+}
+
+struct AppleIntelligenceInsightsView: View {
+    @ObservedObject private var monitor = MemoryAnalyzerMonitor.shared
+
+    @State private var actionMessage: String?
+    @State private var quitTargetName: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            sectionHeading
+
+            if let report = monitor.report {
+                if monitor.isStreamingAISummary || report.aiSummary != nil {
+                    let summaryText = monitor.isStreamingAISummary
+                        ? monitor.streamingAISummary
+                        : (report.aiSummary ?? "")
+                    optimizationAnalysisCard(summaryText, report: report)
+                } else {
+                    awaitingAnalysisState
+                }
+            } else {
+                collectingSamplesState
+            }
+        }
+        .alert("Memory Action", isPresented: Binding(
+            get: { actionMessage != nil },
+            set: { if !$0 { actionMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(actionMessage ?? "")
+        }
+        .alert(
+            "Quit App?",
+            isPresented: Binding(
+                get: { quitTargetName != nil },
+                set: { if !$0 { quitTargetName = nil } }
+            ),
+            presenting: quitTargetName
+        ) { name in
+            Button("Quit", role: .destructive) {
+                Task { await performQuit(named: name) }
+            }
+            Button("Cancel", role: .cancel) {
+                quitTargetName = nil
+            }
+        } message: { name in
+            Text("Quit \(name)? Unsaved work may be lost.")
+        }
+    }
+
+    private var sectionHeading: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("Apple Intelligence", systemImage: "sparkles")
+                .font(.title2.bold())
+            Text("Optimization analysis and follow-up questions powered by on-device AI.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var collectingSamplesState: some View {
+        ContentUnavailableView(
+            "Collecting memory samples",
+            systemImage: "sparkles",
+            description: Text("DiskWise needs a few memory samples before Apple Intelligence can analyze your usage patterns.")
+        )
+        .frame(maxWidth: .infinity, minHeight: 320)
+    }
+
+    private var awaitingAnalysisState: some View {
+        ContentUnavailableView(
+            "No analysis yet",
+            systemImage: "sparkles",
+            description: Text("Use Re-analyze in the header to generate your first Apple Intelligence insights.")
+        )
+        .frame(maxWidth: .infinity, minHeight: 240)
+    }
+
+    @ViewBuilder
+    private func optimizationAnalysisCard(_ summary: String, report: MemoryAnalysisReport) -> some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Image(systemName: "sparkles")
+                        .foregroundStyle(.purple)
+                    Text("Apple Intelligence Insights")
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    if monitor.isAnalyzing {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                    Text("via \(monitor.aiProviderLabel)")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+
+                if monitor.isStreamingAISummary {
+                    MemoryInsightStreamingView(
+                        text: monitor.streamingAISummary,
+                        isStreaming: monitor.isAnalyzing
+                    )
+                } else {
+                    MemoryInsightContentView(
+                        text: summary,
+                        report: report,
+                        onPerformAction: performInsightAction
+                    )
+                }
+
+                if !monitor.isStreamingAISummary {
+                    Divider()
+                    MemoryInsightChatView(report: report, monitor: monitor)
+                }
+            }
+        } label: {
+            Label("Optimization Analysis", systemImage: "brain.head.profile")
+        }
+    }
+
+    private func performInsightAction(_ recommendation: MemoryActionRecommendation) {
+        if recommendation.actionKind == .quitProcess {
+            quitTargetName = recommendation.targetProcessName
+            return
+        }
+        Task {
+            actionMessage = await MemoryActionExecutor.perform(recommendation)
+            monitor.captureNow()
+        }
+    }
+
+    private func performQuit(named name: String) async {
+        quitTargetName = nil
+        actionMessage = await MemoryActionExecutor.perform(
+            kind: .quitProcess,
+            targetProcessName: name
+        )
+        monitor.captureNow()
     }
 }
