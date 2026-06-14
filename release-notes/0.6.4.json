@@ -1,0 +1,19 @@
+{
+  "summary": "Apple Intelligence memory insights are now structured and readable, with clearer sections, separated tips, and a single Suggested Actions panel.",
+  "introduced": [
+    "Structured Apple Intelligence Insights — memory analysis is parsed into sections (Current memory state, Persistent consumers, Recommendations, Better computing habits) instead of one dense paragraph",
+    "Insight cards for tips — each computing habit renders as a numbered card with a bold title and separate description line",
+    "Metric rows for memory stats — Current, Average, Peak, and Trend display as labeled rows instead of run-on text like “UseCurrent: 51%”"
+  ],
+  "changed": [
+    "Apple Intelligence prompt template now requests strict Markdown with section headings, bullets on separate lines, and em-dash separated tips",
+    "Text normalization repairs glued AI output — fixes merged headings, concatenated titles/descriptions, and missing spaces before colons and trend values",
+    "Rule-based memory fallback uses the same structured format when Apple Intelligence is unavailable",
+    "Suggested Actions moved to one place — actionable Restart/Quit/Free Memory buttons appear only in the bottom panel, not duplicated inside the insights card",
+    "Sidebar Menu and Actions rows always show two lines — title on the first line and description on the second, with consistent icon alignment"
+  ],
+  "fixed": [
+    "Apple Intelligence Insights no longer render as a wall of text with merged labels such as “Fewer Background AppsMinimize background processes”",
+    "Removed duplicate “Restart Notes” (and similar) entries that previously appeared in both Recommended actions and Suggested Actions"
+  ]
+}
