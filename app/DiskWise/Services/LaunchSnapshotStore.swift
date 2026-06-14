@@ -3,7 +3,7 @@ import DatabaseKit
 import AIKit
 
 struct LaunchSnapshotPayload: Codable, Sendable {
-    static let currentFormatVersion = 1
+    static let currentFormatVersion = 2
 
     var formatVersion: Int
     let overview: StorageOverview

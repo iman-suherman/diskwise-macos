@@ -125,6 +125,7 @@ public final class PythonScanRunner: @unchecked Sendable {
         mountPath: URL,
         mode: ScanMode = .fast,
         tieredVolumeScan: Bool = false,
+        excludePathPrefixes: [String] = [],
         session: PythonScanSession,
         onProgress: (@Sendable (ScanProgress) -> Void)? = nil,
         onLogLine: (@Sendable (String) -> Void)? = nil,
@@ -145,6 +146,9 @@ public final class PythonScanRunner: @unchecked Sendable {
         ]
         if tieredVolumeScan {
             process.arguments?.append("--tiered")
+        }
+        for prefix in excludePathPrefixes where !prefix.isEmpty {
+            process.arguments?.append(contentsOf: ["--exclude-prefix", prefix])
         }
 
         let stdoutPipe = Pipe()

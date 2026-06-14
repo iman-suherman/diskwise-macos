@@ -202,12 +202,18 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         }
     }
 
-    public func files(forDiskID diskID: Int64, limit: Int = 500) throws -> [FileRecord] {
-        try dbQueue.read { db in
+    public func files(forDiskID diskID: Int64, limit: Int = 500, pathScope: PathScopeFilter? = nil) throws -> [FileRecord] {
+        let scoped = Self.scopedWhere(diskID: diskID, pathScope: pathScope)
+        return try dbQueue.read { db in
             try FileRecord.fetchAll(
                 db,
-                sql: "SELECT * FROM files WHERE disk_id = ? ORDER BY size DESC LIMIT ?",
-                arguments: [diskID, limit]
+                sql: """
+                SELECT * FROM files
+                WHERE \(scoped.sql)
+                ORDER BY size DESC
+                LIMIT ?
+                """,
+                arguments: scoped.arguments + [limit]
             )
         }
     }
@@ -416,8 +422,12 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         }
     }
 
-    public func topConsumers(forDiskID diskID: Int64, limit: Int = 10) throws -> [SpaceConsumer] {
-        let files = try self.files(forDiskID: diskID, limit: 10_000)
+    public func topConsumers(
+        forDiskID diskID: Int64,
+        limit: Int = 10,
+        pathScope: PathScopeFilter? = nil
+    ) throws -> [SpaceConsumer] {
+        let files = try self.files(forDiskID: diskID, limit: 10_000, pathScope: pathScope)
         var buckets: [String: (size: Int64, count: Int)] = [:]
 
         for file in files {
@@ -615,27 +625,35 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         }
     }
 
-    public func topFiles(inChartGroup groupName: String, diskID: Int64, limit: Int = 25) throws -> [FileRecord] {
+    public func topFiles(
+        inChartGroup groupName: String,
+        diskID: Int64,
+        limit: Int = 25,
+        pathScope: PathScopeFilter? = nil
+    ) throws -> [FileRecord] {
         let categoryValues = FileCategory.allCases
             .filter { $0.chartGroup == groupName }
             .map(\.rawValue)
         guard !categoryValues.isEmpty else { return [] }
 
         let placeholders = Array(repeating: "?", count: categoryValues.count).joined(separator: ", ")
-        var arguments: [DatabaseValueConvertible?] = [diskID]
-        arguments.append(contentsOf: categoryValues)
-        arguments.append(limit)
+        let scoped = Self.scopedWhere(
+            diskID: diskID,
+            pathScope: pathScope,
+            extraSQL: "category IN (\(placeholders))",
+            extraArguments: categoryValues
+        )
 
         return try dbQueue.read { db in
             try FileRecord.fetchAll(
                 db,
                 sql: """
                 SELECT * FROM files
-                WHERE disk_id = ? AND category IN (\(placeholders))
+                WHERE \(scoped.sql)
                 ORDER BY size DESC
                 LIMIT ?
                 """,
-                arguments: StatementArguments(arguments)
+                arguments: scoped.arguments + [limit]
             )
         }
     }
@@ -664,18 +682,23 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         }
     }
 
-    public func storageOverview(forDiskID diskID: Int64, oldFileThreshold: Date) throws -> StorageOverview {
-        try dbQueue.read { db in
+    public func storageOverview(
+        forDiskID diskID: Int64,
+        oldFileThreshold: Date,
+        pathScope: PathScopeFilter? = nil
+    ) throws -> StorageOverview {
+        let scoped = Self.scopedWhere(diskID: diskID, pathScope: pathScope)
+        return try dbQueue.read { db in
             let totalSize = try Int64.fetchOne(
                 db,
-                sql: "SELECT COALESCE(SUM(size), 0) FROM files WHERE disk_id = ?",
-                arguments: [diskID]
+                sql: "SELECT COALESCE(SUM(size), 0) FROM files WHERE \(scoped.sql)",
+                arguments: scoped.arguments
             ) ?? 0
 
             let fileCount = try Int.fetchOne(
                 db,
-                sql: "SELECT COUNT(*) FROM files WHERE disk_id = ?",
-                arguments: [diskID]
+                sql: "SELECT COUNT(*) FROM files WHERE \(scoped.sql)",
+                arguments: scoped.arguments
             ) ?? 0
 
             let rows = try Row.fetchAll(
@@ -683,11 +706,11 @@ public final class DiskWiseDatabase: @unchecked Sendable {
                 sql: """
                 SELECT category, COALESCE(SUM(size), 0) AS total_size, COUNT(*) AS file_count
                 FROM files
-                WHERE disk_id = ?
+                WHERE \(scoped.sql)
                 GROUP BY category
                 ORDER BY total_size DESC
                 """,
-                arguments: [diskID]
+                arguments: scoped.arguments
             )
 
             let summaries = rows.map { row in
@@ -698,6 +721,7 @@ public final class DiskWiseDatabase: @unchecked Sendable {
                 )
             }
 
+            let duplicateScoped = Self.scopedWhere(diskID: diskID, pathScope: pathScope, tableAlias: "f")
             let duplicateSavings = try Int64.fetchOne(
                 db,
                 sql: """
@@ -708,24 +732,25 @@ public final class DiskWiseDatabase: @unchecked Sendable {
                     SELECT DISTINCT dm.group_id
                     FROM duplicate_members dm
                     JOIN files f ON f.id = dm.file_id
-                    WHERE f.disk_id = ?
+                    WHERE \(duplicateScoped.sql)
                   )
                 """,
-                arguments: [diskID]
+                arguments: duplicateScoped.arguments
             ) ?? 0
 
+            let oldFileScoped = Self.scopedWhere(diskID: diskID, pathScope: pathScope)
             let oldFileSize = try Int64.fetchOne(
                 db,
                 sql: """
                 SELECT COALESCE(SUM(size), 0)
                 FROM files
-                WHERE disk_id = ?
+                WHERE \(oldFileScoped.sql)
                   AND (
                     (last_accessed IS NOT NULL AND last_accessed < ?)
                     OR (last_accessed IS NULL AND modified_at IS NOT NULL AND modified_at < ?)
                   )
                 """,
-                arguments: [diskID, oldFileThreshold, oldFileThreshold]
+                arguments: oldFileScoped.arguments + [oldFileThreshold, oldFileThreshold]
             ) ?? 0
 
             return StorageOverview(
@@ -778,6 +803,35 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         try dbQueue.write { db in
             try db.execute(sql: "DELETE FROM disk_launch_snapshots WHERE disk_id = ?", arguments: [diskID])
         }
+    }
+
+    private static func scopedWhere(
+        diskID: Int64,
+        pathScope: PathScopeFilter?,
+        tableAlias: String? = nil,
+        extraSQL: String = "",
+        extraArguments: [DatabaseValueConvertible] = []
+    ) -> (sql: String, arguments: StatementArguments) {
+        let diskColumn = tableAlias.map { "\($0).disk_id" } ?? "disk_id"
+        let pathColumn = tableAlias.map { "\($0).path" } ?? "path"
+
+        var clauses = ["\(diskColumn) = ?"]
+        var args: [DatabaseValueConvertible] = [diskID]
+
+        if let pathScope, !pathScope.isEmpty {
+            let filter = pathScope.sqlPathFilter(column: pathColumn)
+            if !filter.sql.isEmpty {
+                clauses.append(filter.sql)
+                args.append(contentsOf: filter.arguments)
+            }
+        }
+
+        if !extraSQL.isEmpty {
+            clauses.append(extraSQL)
+            args.append(contentsOf: extraArguments)
+        }
+
+        return (clauses.joined(separator: " AND "), StatementArguments(args))
     }
 }
 

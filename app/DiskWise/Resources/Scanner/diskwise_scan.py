@@ -315,15 +315,31 @@ def append_hidden_bulk(parent: str, ctx: ScanContext, results: list[ScannedEntry
         results.append(entry)
 
 
+def should_exclude_path(path: str, exclude_prefixes: list[str]) -> bool:
+    if not exclude_prefixes:
+        return False
+    normalized = os.path.realpath(path)
+    for prefix in exclude_prefixes:
+        trimmed = prefix.rstrip("/")
+        if normalized == trimmed or normalized.startswith(trimmed + os.sep):
+            return True
+    return False
+
+
 def walk_directory(
     scan_root: str,
     mode: str,
     ctx: ScanContext,
     *,
     is_cancelled: Callable[[], bool],
+    exclude_prefixes: Optional[list[str]] = None,
 ) -> list[ScannedEntry]:
     results: list[ScannedEntry] = []
     root_path = Path(scan_root)
+    excluded = exclude_prefixes or []
+
+    if should_exclude_path(scan_root, excluded):
+        return results
 
     if should_probe_hidden(scan_root, mode):
         ctx.progress(
@@ -338,7 +354,12 @@ def walk_directory(
         if is_cancelled():
             raise KeyboardInterrupt("cancelled")
 
-        dirnames[:] = [name for name in dirnames if not name.startswith(".")]
+        dirnames[:] = [
+            name
+            for name in dirnames
+            if not name.startswith(".")
+            and not should_exclude_path(os.path.join(dirpath, name), excluded)
+        ]
 
         current = os.path.join(dirpath, "" if dirpath.endswith(os.sep) else "")
         current = dirpath
@@ -416,8 +437,10 @@ def scan_tiered_volume(
     ctx: ScanContext,
     *,
     is_cancelled: Callable[[], bool],
+    exclude_prefixes: Optional[list[str]] = None,
 ) -> list[ScannedEntry]:
     summarize_names, drill_paths = tiered_directories(scan_root)
+    excluded = exclude_prefixes or []
     identified = summarize_names + [os.path.basename(path) or path for path in drill_paths]
     total = len(identified)
     completed: list[str] = []
@@ -437,6 +460,16 @@ def scan_tiered_volume(
         if is_cancelled():
             raise KeyboardInterrupt("cancelled")
         path = os.path.join(scan_root, name)
+        if name == "Volumes" and excluded:
+            ctx.log(f"Skipping mounted volumes folder during system scan: {path}")
+            processed += 1
+            completed.append(name)
+            continue
+        if should_exclude_path(path, excluded):
+            ctx.log(f"Skipping excluded scan path: {path}")
+            processed += 1
+            completed.append(name)
+            continue
         ctx.log(f"Sizing top-level folder: {path}")
         entry = summarize_directory(path, ctx)
         ctx.record(entry)
@@ -465,7 +498,13 @@ def scan_tiered_volume(
             directories_total=total,
             force=True,
         )
-        batch = walk_directory(drill_path, mode, ctx, is_cancelled=is_cancelled)
+        batch = walk_directory(
+            drill_path,
+            mode,
+            ctx,
+            is_cancelled=is_cancelled,
+            exclude_prefixes=excluded,
+        )
         results.extend(batch)
         processed += 1
         completed.append(label)
@@ -496,6 +535,7 @@ def run_scan(
     tiered: bool,
     ctx: ScanContext,
     is_cancelled: Callable[[], bool],
+    exclude_prefixes: Optional[list[str]] = None,
 ) -> list[ScannedEntry]:
     scan_root = effective_scan_root(root)
     if not os.path.exists(scan_root):
@@ -506,9 +546,21 @@ def run_scan(
 
     started = time.time()
     if tiered and mode == "fast":
-        results = scan_tiered_volume(scan_root, mode, ctx, is_cancelled=is_cancelled)
+        results = scan_tiered_volume(
+            scan_root,
+            mode,
+            ctx,
+            is_cancelled=is_cancelled,
+            exclude_prefixes=exclude_prefixes,
+        )
     else:
-        results = walk_directory(scan_root, mode, ctx, is_cancelled=is_cancelled)
+        results = walk_directory(
+            scan_root,
+            mode,
+            ctx,
+            is_cancelled=is_cancelled,
+            exclude_prefixes=exclude_prefixes,
+        )
 
     duration = time.time() - started
     file_count = sum(1 for entry in results if not entry.is_directory)
@@ -537,6 +589,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         action="store_true",
         help="Use tiered fast volume scan (top-level du + Users drill-down)",
     )
+    parser.add_argument(
+        "--exclude-prefix",
+        action="append",
+        default=[],
+        help="Skip paths under this prefix (repeatable)",
+    )
     parser.add_argument("--log-file", help="Verbose human-readable log output path")
     parser.add_argument("--verbose", action="store_true", default=True)
     return parser.parse_args(argv)
@@ -558,6 +616,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             tiered=args.tiered,
             ctx=ctx,
             is_cancelled=is_cancelled,
+            exclude_prefixes=args.exclude_prefix,
         )
         return 0
     except KeyboardInterrupt:

@@ -665,6 +665,7 @@ final class AppViewModel: ObservableObject {
         clearStorageCategorySelection()
         cachedResultsRefreshTask?.cancel()
         analysisRefreshTask?.cancel()
+        launchDataPrewarmed = false
     }
 
     func presentIndexRebuildPromptIfNeeded() {
@@ -777,6 +778,13 @@ final class AppViewModel: ObservableObject {
     var selectedVolume: MountedVolume? {
         guard let selectedVolumePath else { return nil }
         return mountedVolumes.first { $0.mountPath == selectedVolumePath }
+    }
+
+    func pathScopeForSelectedVolume() -> PathScopeFilter {
+        guard let volume = selectedVolume else {
+            return PathScopeFilter(includePathPrefixes: [], excludePathPrefixes: [])
+        }
+        return VolumeFileScope.forVolume(volume, allVolumes: mountedVolumes).pathScopeFilter
     }
 
     var internalVolumes: [MountedVolume] {
@@ -963,7 +971,12 @@ final class AppViewModel: ObservableObject {
             categoryDetailFiles = []
             return
         }
-        categoryDetailFiles = (try? database.topFiles(inChartGroup: name, diskID: diskID, limit: 25)) ?? []
+        categoryDetailFiles = (try? database.topFiles(
+            inChartGroup: name,
+            diskID: diskID,
+            limit: 25,
+            pathScope: pathScopeForSelectedVolume()
+        )) ?? []
     }
 
     func clearStorageCategorySelection() {
@@ -1252,6 +1265,12 @@ final class AppViewModel: ObservableObject {
 
         setStatus("Selected \(volume.name)", kind: .ready)
 
+        if volumeChanged, isIndexed(volume), isMainContentReady, !isStartingUp {
+            refreshCachedScanResultsInBackground()
+            refreshAnalysisReportInBackground()
+            return
+        }
+
         if volumeChanged, isIndexed(volume), isMainContentReady {
             showSavedScanPrompt = true
             return
@@ -1438,13 +1457,18 @@ final class AppViewModel: ObservableObject {
 
         let threshold = Calendar.current.date(byAdding: .year, value: -2, to: Date())!
         let fileLimit = appSettings.analysisFileLimit
+        let pathScope = pathScopeForSelectedVolume()
 
         startupMessage = "Building saved scan snapshot…"
         await Task.yield()
 
         let cachedSnapshot = await Task.detached(priority: .userInitiated) { [database] in
-            let overview = try? database.storageOverview(forDiskID: diskID, oldFileThreshold: threshold)
-            let topConsumers = (try? database.topConsumers(forDiskID: diskID, limit: 8)) ?? []
+            let overview = try? database.storageOverview(
+                forDiskID: diskID,
+                oldFileThreshold: threshold,
+                pathScope: pathScope
+            )
+            let topConsumers = (try? database.topConsumers(forDiskID: diskID, limit: 8, pathScope: pathScope)) ?? []
             return CachedScanSnapshot(
                 overview: overview,
                 topConsumers: topConsumers,
@@ -1533,8 +1557,13 @@ final class AppViewModel: ObservableObject {
         }
 
         let threshold = Calendar.current.date(byAdding: .year, value: -2, to: Date())!
-        overview = try? database.storageOverview(forDiskID: diskID, oldFileThreshold: threshold)
-        topConsumers = (try? database.topConsumers(forDiskID: diskID, limit: 8)) ?? []
+        let pathScope = pathScopeForSelectedVolume()
+        overview = try? database.storageOverview(
+            forDiskID: diskID,
+            oldFileThreshold: threshold,
+            pathScope: pathScope
+        )
+        topConsumers = (try? database.topConsumers(forDiskID: diskID, limit: 8, pathScope: pathScope)) ?? []
         duplicateGroups = (try? duplicateEngine.loadGroups(forDiskID: diskID)) ?? []
     }
 
@@ -1550,12 +1579,17 @@ final class AppViewModel: ObservableObject {
 
         cachedResultsRefreshTask?.cancel()
         let threshold = Calendar.current.date(byAdding: .year, value: -2, to: Date())!
+        let pathScope = pathScopeForSelectedVolume()
         guard let database, let duplicateEngine else { return }
 
         cachedResultsRefreshTask = Task { @MainActor in
             let snapshot = await Task.detached(priority: .utility) {
-                let overview = try? database.storageOverview(forDiskID: diskID, oldFileThreshold: threshold)
-                let topConsumers = (try? database.topConsumers(forDiskID: diskID, limit: 8)) ?? []
+                let overview = try? database.storageOverview(
+                    forDiskID: diskID,
+                    oldFileThreshold: threshold,
+                    pathScope: pathScope
+                )
+                let topConsumers = (try? database.topConsumers(forDiskID: diskID, limit: 8, pathScope: pathScope)) ?? []
                 let duplicateGroups = (try? duplicateEngine.loadGroups(forDiskID: diskID)) ?? []
                 return CachedScanSnapshot(
                     overview: overview,

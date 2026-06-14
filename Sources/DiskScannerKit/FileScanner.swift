@@ -670,6 +670,19 @@ public final class ScanEngine: @unchecked Sendable {
             throw DiskWiseDatabaseError.diskNotFound
         }
 
+        let scannedVolume = MountedVolume(
+            name: name,
+            mountPath: volumeRoot.path,
+            totalSize: Int64(resourceValues.volumeTotalCapacity ?? 0),
+            freeSize: Int64(resourceValues.volumeAvailableCapacity ?? 0),
+            isInternal: VolumeDiscovery.isSystemVolume(mountPath: volumeRoot.path),
+            isRemovable: false
+        )
+        let excludePathPrefixes = VolumeFileScope.nestedVolumeScanExclusions(
+            forScannedVolume: scannedVolume,
+            allVolumes: VolumeDiscovery.mountedVolumes()
+        )
+
         let incrementalContext = IncrementalScanContext.make(database: database, diskID: diskID)
 
         var scannedFiles: [ScannedFile]
@@ -680,6 +693,7 @@ public final class ScanEngine: @unchecked Sendable {
                 mountPath: root,
                 mode: mode,
                 tieredVolumeScan: tieredVolumeScan,
+                excludePathPrefixes: excludePathPrefixes,
                 session: session,
                 onProgress: onProgress,
                 onLogLine: onLogLine,

@@ -1,10 +1,14 @@
 {
-  "summary": "System Status explains health scores, filters to significant CPU and memory usage, and adds verbose process context.",
+  "summary": "Scan results are scoped to the selected drive, with clearer System Status explanations.",
   "introduced": [],
   "changed": [
-    "Health score card now explains Fair/Good/Poor ratings with CPU, memory, and disk breakdowns plus suggestions",
-    "Top CPU and Top Memory lists only show processes above significant thresholds; otherwise show an idle-state summary",
-    "Process detail sheet adds category, role explanation, parent process, command line, and app icon when available"
+    "Storage results, category file lists, and top consumers now filter to the selected sidebar drive only",
+    "Switching drives reloads that volume's indexed results automatically after startup",
+    "System-volume scans skip mounted external volumes so they are indexed on their own drive",
+    "Health score card explains Fair/Good/Poor ratings with CPU, memory, and disk breakdowns plus suggestions",
+    "Top CPU and Top Memory only show significant usage; process detail sheets add role explanations"
   ],
-  "fixed": []
+  "fixed": [
+    "Internal SSD scan results no longer mix in files from external volumes such as Media or External Storage"
+  ]
 }
