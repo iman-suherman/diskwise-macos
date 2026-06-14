@@ -290,7 +290,7 @@ final class MenuBarHealthItemController: NSObject {
 
     private let monitor = SystemHealthMonitor.shared
     private var healthSlot: MenuBarStatusSlot?
-    private var popover: NSPopover?
+    private let popoverSession = MenuBarPopoverSession()
 
     private struct MenuBarStatusSlot {
         let statusItem: NSStatusItem
@@ -307,8 +307,7 @@ final class MenuBarHealthItemController: NSObject {
                 healthSlot = makeSlot()
             }
         } else if let existing = healthSlot {
-            popover?.close()
-            popover = nil
+            popoverSession.close()
             NSStatusBar.system.removeStatusItem(existing.statusItem)
             healthSlot = nil
         }
@@ -338,25 +337,19 @@ final class MenuBarHealthItemController: NSObject {
     }
 
     private func togglePopover(anchoredTo anchorView: NSView) {
-        if let popover, popover.isShown {
-            popover.performClose(nil)
-            return
-        }
-
-        let popover = NSPopover()
-        popover.contentSize = NSSize(
-            width: MenuBarPopoverMetrics.width,
-            height: MenuBarPopoverMetrics.height
-        )
-        popover.behavior = .transient
-        popover.contentViewController = NSHostingController(
-            rootView: MenuBarHealthPopoverContent(
+        popoverSession.toggle(
+            anchoredTo: anchorView,
+            contentSize: NSSize(
+                width: MenuBarPopoverMetrics.width,
+                height: MenuBarPopoverMetrics.height
+            )
+        ) {
+            MenuBarHealthPopoverContent(
                 monitor: monitor,
                 settings: AppSettings.shared
             )
-        )
-        popover.show(relativeTo: anchorView.bounds, of: anchorView, preferredEdge: .minY)
-        self.popover = popover
-        monitor.refresh()
+        } onShow: { [monitor] in
+            monitor.refresh()
+        }
     }
 }

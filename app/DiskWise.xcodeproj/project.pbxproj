@@ -18,6 +18,7 @@
 		1CA32A8A8D3893436E0428B8 /* 0.1.3.json in Resources */ = {isa = PBXBuildFile; fileRef = 0B6D957A611AA96E50E10CBF /* 0.1.3.json */; };
 		1CD543F02D09EA6CAE866DED /* KeepAwakeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57AABB29DD65A9BDEEAF5208 /* KeepAwakeController.swift */; };
 		1F51D2B07CD65407C66DC665 /* ScanProgressPoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 831704D62E5020E6E4F2219B /* ScanProgressPoller.swift */; };
+		222F260B8FC6D208194F7475 /* MenuBarPopoverSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F2C213738FE643532C9DFFF /* MenuBarPopoverSession.swift */; };
 		2752BB73220B01CCD65C60E7 /* 0.2.1.json in Resources */ = {isa = PBXBuildFile; fileRef = 13B125BAFCD3CE178BEAA409 /* 0.2.1.json */; };
 		2791E28A3F889BE0CA5591A3 /* DiskWiseApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955E6302377D998824A2996E /* DiskWiseApp.swift */; };
 		29F7FAD0BF8867FD0F06AA1A /* 0.5.7.json in Resources */ = {isa = PBXBuildFile; fileRef = 12CCFACE9205DEE44CA8BD1F /* 0.5.7.json */; };
@@ -28,6 +29,7 @@
 		2F9870AD506728F8B45304FD /* 0.5.17.json in Resources */ = {isa = PBXBuildFile; fileRef = 83C02ED276CE351ADBF7F7BF /* 0.5.17.json */; };
 		324BEC4CE979C240EB2BA8CA /* 0.4.0.json in Resources */ = {isa = PBXBuildFile; fileRef = 704B5BBC0BE69143CC463ED9 /* 0.4.0.json */; };
 		32EF8883A6F64957984804C4 /* 0.5.12.json in Resources */ = {isa = PBXBuildFile; fileRef = 164178EA164A45740BA3F2D8 /* 0.5.12.json */; };
+		33F7D9A75E5AB5098551D85D /* 0.5.18.json in Resources */ = {isa = PBXBuildFile; fileRef = D55B4D8545269C44AB27D3D0 /* 0.5.18.json */; };
 		34F0C9D4060B76B5D020654C /* 0.5.9.json in Resources */ = {isa = PBXBuildFile; fileRef = E0B3FDCCC3CB35AAA33977EA /* 0.5.9.json */; };
 		36DBFBCADADF9C0C5B4BA080 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41738F52625CC6311842BB5E /* AppViewModel.swift */; };
 		3D64C6ECB71946C0F6021DE9 /* 0.5.8.json in Resources */ = {isa = PBXBuildFile; fileRef = A78CC063A378D25BAFE7A767 /* 0.5.8.json */; };
@@ -138,6 +140,7 @@
 		755D3336D602D3FBBB813589 /* 0.5.16.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.16.json; sourceTree = "<group>"; };
 		7606C2E2E0391264171C1F55 /* MainScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainScreens.swift; sourceTree = "<group>"; };
 		7A638EA06DBCE65A323623F3 /* 0.3.5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.3.5.json; sourceTree = "<group>"; };
+		7F2C213738FE643532C9DFFF /* MenuBarPopoverSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPopoverSession.swift; sourceTree = "<group>"; };
 		7F81B798B01741C082A6B559 /* diskwise-macos */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "diskwise-macos"; path = ..; sourceTree = SOURCE_ROOT; };
 		7F95E82B6008C61D7A885B07 /* SparkleUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleUpdater.swift; sourceTree = "<group>"; };
 		831704D62E5020E6E4F2219B /* ScanProgressPoller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanProgressPoller.swift; sourceTree = "<group>"; };
@@ -174,6 +177,7 @@
 		CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarExtensionPrompt.swift; sourceTree = "<group>"; };
 		D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessPrompt.swift; sourceTree = "<group>"; };
 		D4BCD4E96BC002C2E47A8E33 /* VolumeDiskTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeDiskTabView.swift; sourceTree = "<group>"; };
+		D55B4D8545269C44AB27D3D0 /* 0.5.18.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.18.json; sourceTree = "<group>"; };
 		D6BF3C996FCBAA4513AD9F9A /* 0.3.9.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.3.9.json; sourceTree = "<group>"; };
 		D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageBreakdownView.swift; sourceTree = "<group>"; };
 		D920979DEAE9BF18B35E7E3F /* 0.3.8.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.3.8.json; sourceTree = "<group>"; };
@@ -274,6 +278,7 @@
 				3044C9BB20E3915450F34DC3 /* 0.5.15.json */,
 				755D3336D602D3FBBB813589 /* 0.5.16.json */,
 				83C02ED276CE351ADBF7F7BF /* 0.5.17.json */,
+				D55B4D8545269C44AB27D3D0 /* 0.5.18.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -326,6 +331,7 @@
 				2D1F08103579C30093C9CA6F /* MenuBarDiskMonitor.swift */,
 				8DE0414EB1623E719F460CAE /* MenuBarHealthScore.swift */,
 				5691892A76E1A24CE7AAF729 /* MenuBarMonitorInstructionOverlay.swift */,
+				7F2C213738FE643532C9DFFF /* MenuBarPopoverSession.swift */,
 				A9F503999EF5B8D256503AAB /* PythonSetupPrompt.swift */,
 				8D515CF1494436D3A33BC32C /* RecommendationReviewSheet.swift */,
 				A6C028E81B0947C7D6A69EE9 /* SavedScanPromptOverlay.swift */,
@@ -483,6 +489,7 @@
 				883E50B24DA9FB8AC0EE2570 /* 0.5.15.json in Resources */,
 				CF5EA10F2F59A9990E2B461A /* 0.5.16.json in Resources */,
 				2F9870AD506728F8B45304FD /* 0.5.17.json in Resources */,
+				33F7D9A75E5AB5098551D85D /* 0.5.18.json in Resources */,
 				BA19BFD4653B3A6A79FD66E9 /* 0.5.2.json in Resources */,
 				90BAF4E7882287C932D8E9E6 /* 0.5.4.json in Resources */,
 				7D3DB7CE2ED58186491D8C35 /* 0.5.5.json in Resources */,
@@ -548,6 +555,7 @@
 				9384448034396B64ABBF3D19 /* MenuBarHealthScore.swift in Sources */,
 				DB063CAC7875E4DDC2FE2A9D /* MenuBarMonitorController.swift in Sources */,
 				B7284DB7D37A1021F42F9A6C /* MenuBarMonitorInstructionOverlay.swift in Sources */,
+				222F260B8FC6D208194F7475 /* MenuBarPopoverSession.swift in Sources */,
 				158813C796EA13AB146C66FC /* PythonSetupPrompt.swift in Sources */,
 				DD2F2233CFB17ABB37688ACD /* RecommendationReviewSheet.swift in Sources */,
 				DAB86108A2724D50A153E610 /* SavedScanPromptOverlay.swift in Sources */,

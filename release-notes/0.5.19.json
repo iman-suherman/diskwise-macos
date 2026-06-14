@@ -1,0 +1,8 @@
+{
+  "summary": "Menu bar popovers now close automatically when you click outside them.",
+  "introduced": [],
+  "changed": [
+    "Disk space and health score menu bar panels dismiss on outside clicks — desktop, other apps, or the main DiskWise window"
+  ],
+  "fixed": []
+}

@@ -552,7 +552,7 @@ final class MenuBarStatusItemController: NSObject {
 
     private let monitor = SystemVolumeMonitor.shared
     private var volumeSlots: [String: MenuBarStatusSlot] = [:]
-    private var popover: NSPopover?
+    private let popoverSession = MenuBarPopoverSession()
 
     private struct MenuBarStatusSlot {
         let statusItem: NSStatusItem
@@ -578,8 +578,7 @@ final class MenuBarStatusItemController: NSObject {
         }
 
         if enabledPaths.isEmpty {
-            popover?.close()
-            popover = nil
+            popoverSession.close()
         }
     }
 
@@ -607,25 +606,21 @@ final class MenuBarStatusItemController: NSObject {
     }
 
     private func togglePopover(anchoredTo anchorView: NSView) {
-        if let popover, popover.isShown {
-            popover.performClose(nil)
-            return
-        }
-
-        let popover = NSPopover()
-        popover.contentSize = NSSize(
-            width: MenuBarPopoverMetrics.width,
-            height: ScanActivityMonitor.shared.isScanning ? MenuBarPopoverMetrics.scanningHeight : MenuBarPopoverMetrics.height
-        )
-        popover.behavior = .transient
-        popover.contentViewController = NSHostingController(
-            rootView: MenuBarPopoverContent(
+        popoverSession.toggle(
+            anchoredTo: anchorView,
+            contentSize: NSSize(
+                width: MenuBarPopoverMetrics.width,
+                height: ScanActivityMonitor.shared.isScanning
+                    ? MenuBarPopoverMetrics.scanningHeight
+                    : MenuBarPopoverMetrics.height
+            )
+        ) {
+            MenuBarPopoverContent(
                 monitor: monitor,
                 settings: AppSettings.shared
             )
-        )
-        popover.show(relativeTo: anchorView.bounds, of: anchorView, preferredEdge: .minY)
-        self.popover = popover
-        monitor.refresh()
+        } onShow: { [monitor] in
+            monitor.refresh()
+        }
     }
 }
