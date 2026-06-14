@@ -5,7 +5,6 @@ struct MemoryAnalyzerView: View {
     @EnvironmentObject private var viewModel: AppViewModel
     @ObservedObject private var monitor = MemoryAnalyzerMonitor.shared
 
-    @State private var memoryReliefTrigger = 0
     @State private var actionMessage: String?
     @State private var quitTargetName: String?
 
@@ -19,7 +18,7 @@ struct MemoryAnalyzerView: View {
                     trendCard
                     persistentConsumersCard(report)
                     if let summary = report.aiSummary {
-                        aiInsightsCard(summary)
+                        aiInsightsCard(summary, report: report)
                     }
                     recommendationsCard(report)
                 } else {
@@ -29,7 +28,7 @@ struct MemoryAnalyzerView: View {
             .padding(28)
         }
         .onAppear {
-            monitor.refreshConfiguration(from: viewModel.appSettings)
+            monitor.applySettings(viewModel.appSettings)
             if monitor.report == nil {
                 monitor.captureNow()
             }
@@ -51,7 +50,7 @@ struct MemoryAnalyzerView: View {
             presenting: quitTargetName
         ) { name in
             Button("Quit", role: .destructive) {
-                quitApplication(named: name)
+                Task { await performQuit(named: name) }
             }
             Button("Cancel", role: .cancel) {
                 quitTargetName = nil
@@ -66,7 +65,7 @@ struct MemoryAnalyzerView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Memory Analyzer")
                     .font(.largeTitle.bold())
-                Text("Periodic memory monitoring with Apple Intelligence optimization tips.")
+                Text("Runs in the background with periodic Apple Intelligence analysis and actionable notifications.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -76,6 +75,12 @@ struct MemoryAnalyzerView: View {
             if monitor.isAnalyzing {
                 ProgressView()
                     .controlSize(.small)
+            }
+
+            if monitor.isRunning {
+                Label("Monitoring", systemImage: "dot.radiowaves.left.and.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.green)
             }
 
             Button {
@@ -132,6 +137,11 @@ struct MemoryAnalyzerView: View {
                         .foregroundStyle(.secondary)
                     if let lastSampleAt = monitor.lastSampleAt {
                         Text("Last sample \(lastSampleAt.formatted(date: .omitted, time: .shortened))")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                    if let lastAIAnalysisAt = monitor.lastAIAnalysisAt {
+                        Text("Last AI analysis \(lastAIAnalysisAt.formatted(date: .omitted, time: .shortened))")
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
                     }
@@ -223,9 +233,9 @@ struct MemoryAnalyzerView: View {
     }
 
     @ViewBuilder
-    private func aiInsightsCard(_ summary: String) -> some View {
+    private func aiInsightsCard(_ summary: String, report: MemoryAnalysisReport) -> some View {
         GroupBox {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     Image(systemName: "sparkles")
                         .foregroundStyle(.purple)
@@ -233,13 +243,44 @@ struct MemoryAnalyzerView: View {
                         .font(.subheadline.weight(.semibold))
                     Spacer()
                 }
-                Text(summary)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                DiskWiseMarkdownText(
+                    text: summary,
+                    font: .subheadline
+                )
+
+                if !monitor.actionableRecommendations.isEmpty {
+                    Divider()
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Recommended actions")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        ForEach(monitor.actionableRecommendations.prefix(3)) { recommendation in
+                            optimizationActionRow(recommendation)
+                        }
+                    }
+                }
             }
         } label: {
             Label("Optimization Analysis", systemImage: "brain.head.profile")
+        }
+    }
+
+    @ViewBuilder
+    private func optimizationActionRow(_ recommendation: MemoryActionRecommendation) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon(for: recommendation.actionKind))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(recommendation.title)
+                    .font(.subheadline.weight(.semibold))
+                Text(recommendation.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer()
+            actionButton(for: recommendation)
         }
     }
 
@@ -248,22 +289,8 @@ struct MemoryAnalyzerView: View {
         GroupBox {
             VStack(alignment: .leading, spacing: 12) {
                 ForEach(report.recommendations) { recommendation in
-                    HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: icon(for: recommendation.actionKind))
-                            .foregroundStyle(Color.accentColor)
-                            .frame(width: 24)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(recommendation.title)
-                                .font(.subheadline.weight(.semibold))
-                            Text(recommendation.detail)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        Spacer()
-                        actionButton(for: recommendation)
-                    }
-                    .padding(.vertical, 4)
+                    optimizationActionRow(recommendation)
+                        .padding(.vertical, 4)
                 }
             }
         } label: {
@@ -273,37 +300,41 @@ struct MemoryAnalyzerView: View {
 
     @ViewBuilder
     private func actionButton(for recommendation: MemoryActionRecommendation) -> some View {
-        switch recommendation.actionKind {
-        case .freeMemory:
-            Button("Free Memory") {
-                memoryReliefTrigger += 1
-                Task {
-                    let result = await SystemHealthMonitor.shared.freeUpMemory()
-                    actionMessage = resultMessage(for: result)
-                    monitor.captureNow()
+        if let title = MemoryActionExecutor.actionTitle(for: recommendation) {
+            if recommendation.actionKind == .freeMemory {
+                Button(title) {
+                    performRecommendation(recommendation)
                 }
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
-        case .quitProcess, .restartApp:
-            if let name = recommendation.targetProcessName {
-                Button(recommendation.actionKind == .restartApp ? "Restart" : "Quit") {
-                    quitTargetName = name
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+            } else {
+                Button(title) {
+                    performRecommendation(recommendation)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
             }
-        case .reduceTabs:
-            if let name = recommendation.targetProcessName {
-                Button("Focus App") {
-                    activateApplication(named: name)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-            }
-        case .informational:
-            EmptyView()
         }
+    }
+
+    private func performRecommendation(_ recommendation: MemoryActionRecommendation) {
+        if recommendation.actionKind == .quitProcess {
+            quitTargetName = recommendation.targetProcessName
+            return
+        }
+        Task {
+            actionMessage = await MemoryActionExecutor.perform(recommendation)
+            monitor.captureNow()
+        }
+    }
+
+    private func performQuit(named name: String) async {
+        quitTargetName = nil
+        actionMessage = await MemoryActionExecutor.perform(
+            kind: .quitProcess,
+            targetProcessName: name
+        )
+        monitor.captureNow()
     }
 
     private func icon(for kind: MemoryActionKind) -> String {
@@ -322,41 +353,5 @@ struct MemoryAnalyzerView: View {
         case 60..<80: return .orange
         default: return .red
         }
-    }
-
-    private func resultMessage(for result: MemoryReliefResult) -> String {
-        switch result {
-        case .relieved(_, let message): return message
-        case .improved(let message): return message
-        case .noMeasurableChange(let message): return message
-        case .requiresAdmin(let message): return message
-        case .failed(let message): return message
-        }
-    }
-
-    private func quitApplication(named name: String) {
-        quitTargetName = nil
-        let running = NSWorkspace.shared.runningApplications.first {
-            $0.localizedName?.caseInsensitiveCompare(name) == .orderedSame
-                || ($0.localizedName?.lowercased().contains(name.lowercased()) == true)
-        }
-        if let app = running {
-            let terminated = app.terminate()
-            actionMessage = terminated
-                ? "Sent quit signal to \(name)."
-                : "Could not quit \(name). It may ignore quit requests."
-            monitor.captureNow()
-        } else {
-            actionMessage = "\(name) is not running as a user application."
-        }
-    }
-
-    private func activateApplication(named name: String) {
-        let running = NSWorkspace.shared.runningApplications.first {
-            $0.localizedName?.caseInsensitiveCompare(name) == .orderedSame
-                || ($0.localizedName?.lowercased().contains(name.lowercased()) == true)
-        }
-        running?.activate()
-        actionMessage = "Brought \(name) to the front so you can close unused tabs."
     }
 }

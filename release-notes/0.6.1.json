@@ -1,0 +1,15 @@
+{
+  "summary": "Memory Analyzer runs by default with actionable optimization insights, periodic Apple Intelligence analysis, and notification actions.",
+  "introduced": [
+    "Action buttons on Optimization Analysis — perform Free Memory, Quit, Restart, or Focus App directly from AI insights",
+    "Periodic Apple Intelligence re-analysis every 5 minutes based on current memory usage and computing habits",
+    "Memory Analyzer enabled by default — background sampling starts when DiskWise launches",
+    "Insight notifications — alerts when Apple Intelligence finds a new recommendation, with a one-tap Perform Action button",
+    "Notification permission prompt on first launch when memory notifications are enabled"
+  ],
+  "changed": [
+    "Apple Intelligence memory prompts now include a Better computing habits section with practical Mac usage tips",
+    "Suggested Actions and Optimization Analysis share the same actionable recommendation rows"
+  ],
+  "fixed": []
+}

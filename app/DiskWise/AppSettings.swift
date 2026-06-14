@@ -86,6 +86,8 @@ final class AppSettings: ObservableObject {
         static let keepAwakeVolumePaths = "diskwise.settings.keepAwakeVolumePaths"
         static let hideFromDock = "diskwise.settings.hideFromDock"
         static let launchAtLogin = "diskwise.settings.launchAtLogin"
+        static let memoryAnalyzerEnabled = "diskwise.settings.memoryAnalyzerEnabled"
+        static let memoryAnalyzerNotificationsEnabled = "diskwise.settings.memoryAnalyzerNotificationsEnabled"
     }
 
     /// Bump when the storage index format or scan pipeline changes materially.
@@ -187,6 +189,24 @@ final class AppSettings: ObservableObject {
     @Published var launchAtLogin: Bool {
         didSet {
             UserDefaults.standard.set(launchAtLogin, forKey: Keys.launchAtLogin)
+        }
+    }
+
+    @Published var memoryAnalyzerEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(memoryAnalyzerEnabled, forKey: Keys.memoryAnalyzerEnabled)
+            MemoryAnalyzerMonitor.shared.applySettings(self)
+        }
+    }
+
+    @Published var memoryAnalyzerNotificationsEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(memoryAnalyzerNotificationsEnabled, forKey: Keys.memoryAnalyzerNotificationsEnabled)
+            if memoryAnalyzerNotificationsEnabled {
+                Task {
+                    await MemoryInsightNotificationService.shared.requestAuthorizationIfNeeded()
+                }
+            }
         }
     }
 
@@ -313,6 +333,16 @@ final class AppSettings: ObservableObject {
         } else {
             launchAtLogin = defaults.bool(forKey: Keys.launchAtLogin)
         }
+        if defaults.object(forKey: Keys.memoryAnalyzerEnabled) == nil {
+            memoryAnalyzerEnabled = true
+        } else {
+            memoryAnalyzerEnabled = defaults.bool(forKey: Keys.memoryAnalyzerEnabled)
+        }
+        if defaults.object(forKey: Keys.memoryAnalyzerNotificationsEnabled) == nil {
+            memoryAnalyzerNotificationsEnabled = true
+        } else {
+            memoryAnalyzerNotificationsEnabled = defaults.bool(forKey: Keys.memoryAnalyzerNotificationsEnabled)
+        }
         syncKeepAwakeState()
     }
 
@@ -372,6 +402,8 @@ final class AppSettings: ObservableObject {
         keepAwakeVolumePaths = []
         hideFromDock = false
         launchAtLogin = false
+        memoryAnalyzerEnabled = true
+        memoryAnalyzerNotificationsEnabled = true
         showMenuBarMonitorInstructions = false
         MenuBarHealthItemController.shared.syncVisibility(showHealthScore: false)
         DockVisibilityController.apply(hidden: false)

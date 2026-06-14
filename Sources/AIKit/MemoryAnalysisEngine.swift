@@ -194,13 +194,39 @@ public final class MemoryAnalysisEngine: @unchecked Sendable {
         }
 
         let top = report.persistentConsumers.prefix(3)
-            .map(\.name)
-            .joined(separator: ", ")
+            .map { "- **\($0.name)** — avg \(formattedMemory($0.averageMemoryBytes))" }
+            .joined(separator: "\n")
 
         if report.currentUsedPercent >= 80 {
-            return "Memory is under pressure at \(String(format: "%.0f", report.currentUsedPercent))%. The usual consumers are \(top). Consider freeing inactive memory or quitting apps you are not using."
+            return """
+            ## Memory under pressure
+
+            Memory is at **\(String(format: "%.0f", report.currentUsedPercent))%**. The usual consumers are:
+
+            \(top)
+
+            Consider freeing inactive memory or quitting apps you are not using.
+            """
         }
 
-        return "Based on \(report.sampleCount) samples, the apps that usually consume the most memory are \(top). Average use is \(String(format: "%.0f", report.averageUsedPercent))% with a peak of \(String(format: "%.0f", report.peakUsedPercent))%."
+        return """
+        ## Memory overview
+
+        Based on **\(report.sampleCount) samples**, average use is **\(String(format: "%.0f", report.averageUsedPercent))%** with a peak of **\(String(format: "%.0f", report.peakUsedPercent))%**.
+
+        ## Top consumers
+
+        \(top)
+
+        ## Better computing habits
+
+        - Close apps you are not actively using
+        - Keep browser tabs under control — each tab uses RAM
+        - Restart memory-heavy apps that have been open for days
+        """
+    }
+
+    private func formattedMemory(_ bytes: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .memory)
     }
 }

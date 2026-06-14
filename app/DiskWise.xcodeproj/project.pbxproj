@@ -51,15 +51,19 @@
 		75E2033E8389AC2CF2A55666 /* ActivityLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57BB2C32DA1EC6AD699DBDBD /* ActivityLog.swift */; };
 		7D3DB7CE2ED58186491D8C35 /* 0.5.5.json in Resources */ = {isa = PBXBuildFile; fileRef = EAC96980391A69DA322FA935 /* 0.5.5.json */; };
 		7F3FA96EA3B2337449CD40D0 /* diskwise_scan.py in Resources */ = {isa = PBXBuildFile; fileRef = C27E95DFD0F9841389B35E2F /* diskwise_scan.py */; };
+		8583AE0ED670AF78E5A92139 /* DiskWiseMarkdownText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21EBCE6D32125F4A901301F0 /* DiskWiseMarkdownText.swift */; };
 		883E50B24DA9FB8AC0EE2570 /* 0.5.15.json in Resources */ = {isa = PBXBuildFile; fileRef = 3044C9BB20E3915450F34DC3 /* 0.5.15.json */; };
 		896F6AD480A23BD1277843C2 /* AppSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAC0147A7FB6FEF4116785C /* AppSettingsView.swift */; };
 		8EA88D4A455BB6985DBB72A9 /* SystemHealthMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD1DBFAFBE898F19B3B507D5 /* SystemHealthMonitor.swift */; };
 		8F048F3CE1F6DDE014892441 /* MemoryAnalyzerMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16E12E0B51D60F2F32404DC0 /* MemoryAnalyzerMonitor.swift */; };
+		904D2F4452D1ED17A947CD64 /* MemoryInsightNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9040D8189C7D40E73615348C /* MemoryInsightNotificationService.swift */; };
 		90BAF4E7882287C932D8E9E6 /* 0.5.4.json in Resources */ = {isa = PBXBuildFile; fileRef = 5162987824989B2B14143DA5 /* 0.5.4.json */; };
 		9163047ADC6314366674E59B /* StorageBreakdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */; };
 		91E4D218C3A7026E8D8F22CA /* MetadataKit in Frameworks */ = {isa = PBXBuildFile; productRef = E118092959DEFDD022BB88EC /* MetadataKit */; };
 		9384448034396B64ABBF3D19 /* MenuBarHealthScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE0414EB1623E719F460CAE /* MenuBarHealthScore.swift */; };
 		A1E6344A43CABB46455859D5 /* DuplicateKit in Frameworks */ = {isa = PBXBuildFile; productRef = E44897D5C0C445D604A9F3CB /* DuplicateKit */; };
+		A95B375EB57B93CEB3A6A1CA /* 0.6.1.json in Resources */ = {isa = PBXBuildFile; fileRef = 2A6023015E9A7D986EB17D42 /* 0.6.1.json */; };
+		AAAAA899D7754707AAD2D90F /* MemoryActionExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F390C5E410CA72074E3A8BE7 /* MemoryActionExecutor.swift */; };
 		AD9B75BC6DC71E2F9CF51405 /* MemoryAnalyzerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9433A60D26963A1B26DA291 /* MemoryAnalyzerView.swift */; };
 		AE88D3565ADCC2F0E9101C95 /* 0.3.1.json in Resources */ = {isa = PBXBuildFile; fileRef = A747FB1CC7E32E59400CF819 /* 0.3.1.json */; };
 		B1CF70C5E32C91E0CB3E2E05 /* SystemStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E3813DA348AA12313FC982 /* SystemStatusView.swift */; };
@@ -122,9 +126,11 @@
 		16E12E0B51D60F2F32404DC0 /* MemoryAnalyzerMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryAnalyzerMonitor.swift; sourceTree = "<group>"; };
 		17073AD7FF404926E1B8C231 /* ScanLogMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanLogMonitor.swift; sourceTree = "<group>"; };
 		1824EBE404CDE19C9B86E756 /* 0.1.5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.5.json; sourceTree = "<group>"; };
+		21EBCE6D32125F4A901301F0 /* DiskWiseMarkdownText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskWiseMarkdownText.swift; sourceTree = "<group>"; };
 		238E83EDCC4C147C2BE4E4FB /* ScanningDockTileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanningDockTileView.swift; sourceTree = "<group>"; };
 		2993D6F3C7272135BAABB652 /* ChatMessageFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessageFormatter.swift; sourceTree = "<group>"; };
 		29ACCD97F5F5EACC612CD0DA /* 0.5.19.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.19.json; sourceTree = "<group>"; };
+		2A6023015E9A7D986EB17D42 /* 0.6.1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.6.1.json; sourceTree = "<group>"; };
 		2BF737B0AA3066062F3881A4 /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
 		2D1F08103579C30093C9CA6F /* MenuBarDiskMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarDiskMonitor.swift; sourceTree = "<group>"; };
 		3044C9BB20E3915450F34DC3 /* 0.5.15.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.15.json; sourceTree = "<group>"; };
@@ -163,6 +169,7 @@
 		894ADEF97DF74C5A2CC2FB56 /* ScanActivityMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanActivityMonitor.swift; sourceTree = "<group>"; };
 		8D515CF1494436D3A33BC32C /* RecommendationReviewSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendationReviewSheet.swift; sourceTree = "<group>"; };
 		8DE0414EB1623E719F460CAE /* MenuBarHealthScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarHealthScore.swift; sourceTree = "<group>"; };
+		9040D8189C7D40E73615348C /* MemoryInsightNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryInsightNotificationService.swift; sourceTree = "<group>"; };
 		950473F382728BB7A8C75C98 /* LaunchSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchSnapshotStore.swift; sourceTree = "<group>"; };
 		955E6302377D998824A2996E /* DiskWiseApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskWiseApp.swift; sourceTree = "<group>"; };
 		9604CB761CB34350EFF29978 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -205,6 +212,7 @@
 		EAC96980391A69DA322FA935 /* 0.5.5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.5.json; sourceTree = "<group>"; };
 		F1FC1DF0971CB5B4441676DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F2B0EC8C9101C78D4830FB22 /* 0.5.10.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.10.json; sourceTree = "<group>"; };
+		F390C5E410CA72074E3A8BE7 /* MemoryActionExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryActionExecutor.swift; sourceTree = "<group>"; };
 		F9360EC36C59D568DEE4B034 /* WhatsNewTourView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewTourView.swift; sourceTree = "<group>"; };
 		FD14405937526107CBD36994 /* 0.1.0.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.0.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -236,7 +244,9 @@
 				DCF61B84FF67A42557A15C53 /* DockVisibilityController.swift */,
 				57AABB29DD65A9BDEEAF5208 /* KeepAwakeController.swift */,
 				950473F382728BB7A8C75C98 /* LaunchSnapshotStore.swift */,
+				F390C5E410CA72074E3A8BE7 /* MemoryActionExecutor.swift */,
 				16E12E0B51D60F2F32404DC0 /* MemoryAnalyzerMonitor.swift */,
+				9040D8189C7D40E73615348C /* MemoryInsightNotificationService.swift */,
 				CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */,
 				971832F0D34371AD6D227919 /* MenuBarMonitorController.swift */,
 				894ADEF97DF74C5A2CC2FB56 /* ScanActivityMonitor.swift */,
@@ -299,6 +309,7 @@
 				59BE6D4E63982B3DA6147788 /* 0.5.21.json */,
 				678F267499B6726540D41724 /* 0.5.22.json */,
 				68DCBEA8FF30108E7C861517 /* 0.6.0.json */,
+				2A6023015E9A7D986EB17D42 /* 0.6.1.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -345,6 +356,7 @@
 				6F9652CCD6DFF89AC365DBCD /* ActivityLogSheet.swift */,
 				3EAC0147A7FB6FEF4116785C /* AppSettingsView.swift */,
 				61EB1B1E7AD0267851557FD9 /* DashboardView.swift */,
+				21EBCE6D32125F4A901301F0 /* DiskWiseMarkdownText.swift */,
 				D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */,
 				A82F3A2475D36769351F8CBC /* IndexRebuildOverlay.swift */,
 				39A19DABD6BC39CB4E077008 /* MaintenanceView.swift */,
@@ -524,6 +536,7 @@
 				3D64C6ECB71946C0F6021DE9 /* 0.5.8.json in Resources */,
 				34F0C9D4060B76B5D020654C /* 0.5.9.json in Resources */,
 				B3DC246BB66ED1E1451B986D /* 0.6.0.json in Resources */,
+				A95B375EB57B93CEB3A6A1CA /* 0.6.1.json in Resources */,
 				BAC56BC5D44D164A6D1651C3 /* Assets.xcassets in Resources */,
 				7F3FA96EA3B2337449CD40D0 /* diskwise_scan.py in Resources */,
 				E559D2BF705EE1AB7F9CA4EA /* entitlements.mac.plist in Resources */,
@@ -588,6 +601,7 @@
 				010C8B0BDC4104CD1535A722 /* ChatMessageFormatter.swift in Sources */,
 				F4D258718C504E7A6365ADB6 /* DashboardView.swift in Sources */,
 				2791E28A3F889BE0CA5591A3 /* DiskWiseApp.swift in Sources */,
+				8583AE0ED670AF78E5A92139 /* DiskWiseMarkdownText.swift in Sources */,
 				D46B15E076D4D79FAA61A9F1 /* DockScanAnimator.swift in Sources */,
 				BF36D88A5025F7EB71A8CEFA /* DockVisibilityController.swift in Sources */,
 				F07314D38ACD7FE6E5B9D233 /* FullDiskAccessPrompt.swift in Sources */,
@@ -596,8 +610,10 @@
 				00F1E36FDE8C30DA106DBCB3 /* LaunchSnapshotStore.swift in Sources */,
 				6364632C8485413073CA9BB3 /* MainScreens.swift in Sources */,
 				E8EBB3946721C85434EA08EB /* MaintenanceView.swift in Sources */,
+				AAAAA899D7754707AAD2D90F /* MemoryActionExecutor.swift in Sources */,
 				8F048F3CE1F6DDE014892441 /* MemoryAnalyzerMonitor.swift in Sources */,
 				AD9B75BC6DC71E2F9CF51405 /* MemoryAnalyzerView.swift in Sources */,
+				904D2F4452D1ED17A947CD64 /* MemoryInsightNotificationService.swift in Sources */,
 				03B0CC0B75C882455F238B4A /* MenuBarDiskMonitor.swift in Sources */,
 				FC6623E26E2D1FA21EC83507 /* MenuBarExtensionPrompt.swift in Sources */,
 				9384448034396B64ABBF3D19 /* MenuBarHealthScore.swift in Sources */,

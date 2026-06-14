@@ -137,6 +137,21 @@ struct AppSettingsView: View {
                 }
             }
 
+            Section("Memory Analyzer") {
+                Toggle("Monitor memory in the background", isOn: $settings.memoryAnalyzerEnabled)
+
+                Toggle(
+                    "Notify when new insights are available",
+                    isOn: $settings.memoryAnalyzerNotificationsEnabled
+                )
+                .disabled(!settings.memoryAnalyzerEnabled)
+
+                Text("DiskWise samples memory every 20–30 seconds, runs periodic Apple Intelligence analysis, and can notify you with a one-tap action when a new recommendation is ready.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             Section("AI assistant") {
                 Picker("Provider", selection: $settings.aiProviderPreference) {
                     Text("Automatic").tag(AIProviderKind.automatic)

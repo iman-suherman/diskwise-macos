@@ -31,6 +31,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         MenuBarMonitorController.syncMenuBarItems(settings: AppSettings.shared)
         DockVisibilityController.apply(hidden: AppSettings.shared.hideFromDock)
 
+        MemoryInsightNotificationService.shared.prepare()
+        MemoryAnalyzerMonitor.shared.startIfNeeded(settings: AppSettings.shared)
+
         NotificationCenter.default.addObserver(
             forName: NSWindow.didBecomeKeyNotification,
             object: nil,

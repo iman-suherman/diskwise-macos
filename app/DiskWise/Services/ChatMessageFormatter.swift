@@ -11,6 +11,12 @@ enum ChatMessageFormatter {
         "Next steps",
         "Safe to clean",
         "Review first",
+        "Memory overview",
+        "Memory under pressure",
+        "Top consumers",
+        "Optimization tips",
+        "Suggested actions",
+        "Better computing habits",
     ]
 
     static func formatForDisplay(_ text: String) -> String {
