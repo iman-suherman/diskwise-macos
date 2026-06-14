@@ -382,15 +382,16 @@ struct UnmappedStorageBanner: View {
                         }
 
                         Button {
-                            viewModel.scan(volume: volume)
+                            viewModel.scan(volume: volume, mode: .fast)
                         } label: {
                             Label("Rescan \(volume.name)", systemImage: "arrow.triangle.2.circlepath")
                         }
                         .buttonStyle(.bordered)
 
-                        Button(deepScanButtonTitle) {
-                            viewModel.appSettings.scanMode = .deep
-                            viewModel.scan(volume: volume)
+                        Button {
+                            viewModel.scan(volume: volume, mode: .deep)
+                        } label: {
+                            Label("Deep Scan", systemImage: "scope")
                         }
                         .buttonStyle(.bordered)
                         .tint(.orange)
@@ -402,14 +403,7 @@ struct UnmappedStorageBanner: View {
     }
 
     private var deepScanBullet: String {
-        if viewModel.appSettings.scanMode == .deep {
-            return "Rescan with Deep scan — indexes every file individually instead of estimating system folders."
-        }
-        return "Run a Deep scan — indexes every file individually instead of estimating system folders (10–25 min on large drives)."
-    }
-
-    private var deepScanButtonTitle: String {
-        viewModel.appSettings.scanMode == .deep ? "Rescan with Deep Scan" : "Use Deep Scan"
+        "Run a Deep scan — indexes every file individually instead of estimating system folders (10–25 min on large drives)."
     }
 
     private var deepScanCallout: some View {

@@ -82,6 +82,8 @@ struct ScanningTabView: View {
                     scanCompleteBanner
                 } else if viewModel.isBackgroundWorkActive {
                     BackgroundScanBanner()
+                } else if let volume = viewModel.selectedVolume, !viewModel.isIndexed(volume) {
+                    UnindexedVolumeScanPanel(volume: volume)
                 } else if let volume = viewModel.selectedVolume, viewModel.isIndexed(volume) {
                     idleScanPanel(volume: volume)
                 } else {
@@ -127,11 +129,19 @@ struct ScanningTabView: View {
 
                 HStack(spacing: 12) {
                     Button {
-                        viewModel.scanSelectedVolume()
+                        viewModel.scanSelectedVolume(mode: .fast)
                     } label: {
                         Label("Rescan \(volume.name)", systemImage: "arrow.triangle.2.circlepath")
                     }
                     .buttonStyle(.borderedProminent)
+
+                    Button {
+                        viewModel.scanSelectedVolume(mode: .deep)
+                    } label: {
+                        Label("Deep Scan", systemImage: "scope")
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.orange)
 
                     Button {
                         viewModel.scanFolderOnSelectedVolume()
@@ -213,7 +223,7 @@ struct ResultsTabView: View {
         } actions: {
             if let volume = viewModel.selectedVolume {
                 Button("Scan \(volume.name)") {
-                    viewModel.scan(volume: volume)
+                    viewModel.requestScan(for: volume)
                 }
                 .buttonStyle(.borderedProminent)
             }
@@ -324,7 +334,7 @@ struct RecommendationsTabView: View {
                     } actions: {
                         if let volume = viewModel.selectedVolume {
                             Button("Scan \(volume.name)") {
-                                viewModel.scan(volume: volume)
+                                viewModel.requestScan(for: volume)
                             }
                             .buttonStyle(.borderedProminent)
                         }

@@ -37,6 +37,12 @@ final class SystemVolumeMonitor: ObservableObject {
         pruneUnavailableMenuBarVolumes()
     }
 
+    /// Refreshes free-space stats and re-enumerates all mounted drives for menu bar toggles.
+    func refreshAllVolumes() {
+        refresh()
+        AppViewModel.current?.refreshMountedVolumes()
+    }
+
     private func pruneUnavailableMenuBarVolumes() {
         let settings = AppSettings.shared
         let availablePaths = Set(volumes.map(\.mountPath))
@@ -257,7 +263,7 @@ struct MenuBarKeepAwakeSection: View {
             Text("Keep Disks Awake")
                 .font(.subheadline.weight(.semibold))
 
-            Text("Keeps selected drives from sleeping or spinning down. Your Mac can still sleep.")
+            Text("Keeps selected drives from sleeping by writing a tiny temporary file on each drive every 20 seconds (Amphetamine-style). Your Mac can still sleep.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -357,6 +363,8 @@ struct MenuBarPopoverContent: View {
     var onOpenMainWindow: (() -> Void)? = nil
     var onClose: (() -> Void)? = nil
 
+    @State private var isRefreshingVolumes = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top) {
@@ -372,12 +380,13 @@ struct MenuBarPopoverContent: View {
 
                 if !scanActivity.isScanning {
                     Button {
-                        monitor.refresh()
+                        refreshVolumes()
                     } label: {
                         Label("Refresh", systemImage: "arrow.clockwise")
                     }
                     .buttonStyle(.borderless)
-                    .help("Refresh disk space now")
+                    .help("Refresh disk space and drive list")
+                    .disabled(isRefreshingVolumes)
                 }
 
                 if let onClose {
@@ -411,8 +420,21 @@ struct MenuBarPopoverContent: View {
 
             Divider()
 
-            Text("Menu bar display")
-                .font(.subheadline.weight(.semibold))
+            HStack {
+                Text("Menu bar display")
+                    .font(.subheadline.weight(.semibold))
+
+                Spacer()
+
+                Button {
+                    refreshVolumes()
+                } label: {
+                    Label("Refresh drives", systemImage: "arrow.clockwise")
+                }
+                .buttonStyle(.borderless)
+                .help("Re-scan for newly connected or ejected drives")
+                .disabled(isRefreshingVolumes)
+            }
 
             HStack(alignment: .top, spacing: 24) {
                 MenuBarKeepAwakeSection(
@@ -474,6 +496,16 @@ struct MenuBarPopoverContent: View {
     private func startMacintoshHDScan() {
         MenuBarMainWindowOpener.open(dismissingPopover: onOpenMainWindow)
         AppViewModel.current?.scanInternalDrive()
+    }
+
+    private func refreshVolumes() {
+        guard !isRefreshingVolumes else { return }
+        isRefreshingVolumes = true
+        monitor.refreshAllVolumes()
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(350))
+            isRefreshingVolumes = false
+        }
     }
 
     private var scanSubtitle: String {
@@ -668,7 +700,7 @@ final class MenuBarStatusItemController: NSObject {
                 onClose: { [weak self] in self?.popoverSession.close() }
             )
         } onShow: { [monitor] in
-            monitor.refresh()
+            monitor.refreshAllVolumes()
         }
     }
 }

@@ -23,17 +23,10 @@ enum ScanPerformancePreset: String, CaseIterable, Identifiable {
 
     var detail: String {
         switch self {
-        case .fast: return "Fast scan + lighter duplicate checks — usually under 5 minutes"
-        case .balanced: return "Fast scan with recommended duplicate coverage"
-        case .thorough: return "Deep scan with broader duplicate checks"
-        case .maximum: return "Deep scan — indexes every file, slowest option"
-        }
-    }
-
-    var scanMode: ScanMode {
-        switch self {
-        case .fast, .balanced: return .fast
-        case .thorough, .maximum: return .deep
+        case .fast: return "Lighter duplicate and analysis limits — usually under 5 minutes after scan"
+        case .balanced: return "Recommended duplicate and analysis limits for most Macs"
+        case .thorough: return "Broader duplicate checks and deeper analysis sampling"
+        case .maximum: return "Maximum duplicate and analysis coverage — slowest option"
         }
     }
 
@@ -62,13 +55,11 @@ final class AppSettings: ObservableObject {
 
     static let defaultDuplicateScanFileLimit = 100_000
     static let defaultAnalysisFileLimit = 10_000
-    static let defaultScanMode = ScanMode.fast
 
     static let duplicateScanFileLimitRange = 10_000...500_000
     static let analysisFileLimitRange = 1_000...100_000
 
     private enum Keys {
-        static let scanMode = "diskwise.settings.scanMode"
         static let duplicateScanFileLimit = "diskwise.settings.duplicateScanFileLimit"
         static let analysisFileLimit = "diskwise.settings.analysisFileLimit"
         static let lastSeenReleaseVersion = "diskwise.settings.lastSeenReleaseVersion"
@@ -88,16 +79,11 @@ final class AppSettings: ObservableObject {
         static let launchAtLogin = "diskwise.settings.launchAtLogin"
         static let memoryAnalyzerEnabled = "diskwise.settings.memoryAnalyzerEnabled"
         static let memoryAnalyzerNotificationsEnabled = "diskwise.settings.memoryAnalyzerNotificationsEnabled"
+        static let menuPaneOrder = "diskwise.settings.menuPaneOrder"
     }
 
     /// Bump when the storage index format or scan pipeline changes materially.
     static let currentIndexSchemaVersion = 2
-
-    @Published var scanMode: ScanMode {
-        didSet {
-            UserDefaults.standard.set(scanMode.rawValue, forKey: Keys.scanMode)
-        }
-    }
 
     @Published var duplicateScanFileLimit: Int {
         didSet {
@@ -210,6 +196,15 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    @Published var menuPaneOrder: [DetailPane] {
+        didSet {
+            UserDefaults.standard.set(
+                menuPaneOrder.map(\.rawValue),
+                forKey: Keys.menuPaneOrder
+            )
+        }
+    }
+
     @Published var showMenuBarMonitorInstructions = false
 
     var menuBarExtensionPromptDismissed: Bool {
@@ -288,11 +283,9 @@ final class AppSettings: ObservableObject {
 
     private init() {
         let defaults = UserDefaults.standard
-        if let rawMode = defaults.string(forKey: Keys.scanMode),
-           let storedMode = ScanMode(rawValue: rawMode) {
-            scanMode = storedMode
-        } else {
-            scanMode = Self.defaultScanMode
+        if let rawMode = defaults.string(forKey: "diskwise.settings.scanMode"),
+           ScanMode(rawValue: rawMode) != nil {
+            defaults.removeObject(forKey: "diskwise.settings.scanMode")
         }
         duplicateScanFileLimit = Self.clamp(
             defaults.object(forKey: Keys.duplicateScanFileLimit) as? Int ?? Self.defaultDuplicateScanFileLimit,
@@ -343,7 +336,23 @@ final class AppSettings: ObservableObject {
         } else {
             memoryAnalyzerNotificationsEnabled = defaults.bool(forKey: Keys.memoryAnalyzerNotificationsEnabled)
         }
+        menuPaneOrder = Self.resolvedMenuPaneOrder(
+            stored: defaults.stringArray(forKey: Keys.menuPaneOrder)
+        )
         syncKeepAwakeState()
+    }
+
+    static func resolvedMenuPaneOrder(stored: [String]?) -> [DetailPane] {
+        let validPanes = Set(DetailPane.defaultMenuPaneOrder)
+        guard let stored, !stored.isEmpty else {
+            return DetailPane.defaultMenuPaneOrder
+        }
+
+        var ordered = stored.compactMap { DetailPane(rawValue: $0) }.filter { validPanes.contains($0) }
+        for pane in DetailPane.defaultMenuPaneOrder where !ordered.contains(pane) {
+            ordered.append(pane)
+        }
+        return ordered
     }
 
     static var currentAppVersion: String {
@@ -377,20 +386,17 @@ final class AppSettings: ObservableObject {
 
     var activePreset: ScanPerformancePreset? {
         ScanPerformancePreset.allCases.first { preset in
-            preset.scanMode == scanMode
-                && preset.duplicateScanFileLimit == duplicateScanFileLimit
+            preset.duplicateScanFileLimit == duplicateScanFileLimit
                 && preset.analysisFileLimit == analysisFileLimit
         }
     }
 
     func applyPreset(_ preset: ScanPerformancePreset) {
-        scanMode = preset.scanMode
         duplicateScanFileLimit = preset.duplicateScanFileLimit
         analysisFileLimit = preset.analysisFileLimit
     }
 
     func resetToDefaults() {
-        scanMode = Self.defaultScanMode
         duplicateScanFileLimit = Self.defaultDuplicateScanFileLimit
         analysisFileLimit = Self.defaultAnalysisFileLimit
         aiProviderPreference = .automatic

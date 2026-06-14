@@ -128,7 +128,6 @@ struct ContentView: View {
     @Environment(\.openSettings) private var openSettings
     @ObservedObject private var volumeMonitor = SystemVolumeMonitor.shared
     @ObservedObject private var healthMonitor = SystemHealthMonitor.shared
-    @ObservedObject private var memoryMonitor = MemoryAnalyzerMonitor.shared
 
     var body: some View {
         ZStack {
@@ -149,8 +148,8 @@ struct ContentView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .blur(radius: viewModel.isStartingUp || viewModel.isRebuildingIndex || viewModel.showPythonSetupPrompt || viewModel.showFullDiskAccessPrompt || viewModel.showWhatsNewTour || viewModel.showIndexRebuildPrompt || viewModel.showSavedScanPrompt ? 8 : 0)
-            .allowsHitTesting(!viewModel.isStartingUp && !viewModel.isRebuildingIndex && !viewModel.showPythonSetupPrompt && !viewModel.showFullDiskAccessPrompt && !viewModel.showWhatsNewTour && !viewModel.showIndexRebuildPrompt && !viewModel.showSavedScanPrompt)
+            .blur(radius: viewModel.isStartingUp || viewModel.isRebuildingIndex || viewModel.showPythonSetupPrompt || viewModel.showFullDiskAccessPrompt || viewModel.showWhatsNewTour || viewModel.showIndexRebuildPrompt || viewModel.showSavedScanPrompt || viewModel.showScanModePrompt ? 8 : 0)
+            .allowsHitTesting(!viewModel.isStartingUp && !viewModel.isRebuildingIndex && !viewModel.showPythonSetupPrompt && !viewModel.showFullDiskAccessPrompt && !viewModel.showWhatsNewTour && !viewModel.showIndexRebuildPrompt && !viewModel.showSavedScanPrompt && !viewModel.showScanModePrompt)
 
             if viewModel.isStartingUp {
                 StartupSplashOverlay(
@@ -194,6 +193,15 @@ struct ContentView: View {
                     onLoadSaved: { viewModel.dismissSavedScanPrompt(loadSaved: true, rebuild: false) },
                     onRebuild: { viewModel.dismissSavedScanPrompt(loadSaved: false, rebuild: true) },
                     onSkip: { viewModel.dismissSavedScanPrompt(loadSaved: false, rebuild: false) }
+                )
+            }
+
+            if viewModel.showScanModePrompt, let volume = viewModel.selectedVolume {
+                ScanModePromptOverlay(
+                    volumeName: volume.name,
+                    onFastScan: { viewModel.startScan(with: .fast) },
+                    onDeepScan: { viewModel.startScan(with: .deep) },
+                    onCancel: { viewModel.dismissScanModePrompt() }
                 )
             }
 
@@ -243,6 +251,7 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.22), value: viewModel.showFullDiskAccessPrompt)
         .animation(.easeInOut(duration: 0.22), value: viewModel.showIndexRebuildPrompt)
         .animation(.easeInOut(duration: 0.22), value: viewModel.showSavedScanPrompt)
+        .animation(.easeInOut(duration: 0.22), value: viewModel.showScanModePrompt)
         .onChange(of: viewModel.showPythonSetupPrompt) { _, isShowing in
             if !isShowing {
                 viewModel.stopPythonPollingIfNeeded()
@@ -296,17 +305,36 @@ struct ContentView: View {
 
         if viewModel.selectedPane == .overview, let volume = viewModel.selectedVolume {
             ToolbarItemGroup(placement: .primaryAction) {
-                Button {
-                    viewModel.scanSelectedVolume()
-                } label: {
-                    Label(
-                        viewModel.isScanning
-                            ? "Identifying…"
-                            : (viewModel.isAnalyzing ? "Analyzing…" : viewModel.scanActionTitle(for: volume)),
-                        systemImage: "arrow.triangle.2.circlepath"
-                    )
+                if viewModel.isIndexed(volume) {
+                    Button {
+                        viewModel.scanSelectedVolume(mode: .fast)
+                    } label: {
+                        Label(
+                            viewModel.isScanning
+                                ? "Identifying…"
+                                : (viewModel.isAnalyzing ? "Analyzing…" : "Rescan \(volume.name)"),
+                            systemImage: "arrow.triangle.2.circlepath"
+                        )
+                    }
+                    .disabled(viewModel.isVolumeBusy(volume))
+
+                    Button {
+                        viewModel.scanSelectedVolume(mode: .deep)
+                    } label: {
+                        Label("Deep Scan", systemImage: "scope")
+                    }
+                    .disabled(viewModel.isVolumeBusy(volume))
+                } else {
+                    Button {
+                        viewModel.presentScanModePrompt(for: volume)
+                    } label: {
+                        Label(
+                            viewModel.isScanning ? "Identifying…" : "Scan \(volume.name)",
+                            systemImage: "arrow.triangle.2.circlepath"
+                        )
+                    }
+                    .disabled(viewModel.isVolumeBusy(volume))
                 }
-                .disabled(viewModel.isVolumeBusy(volume))
 
                 Button {
                     viewModel.scanFolderOnSelectedVolume()
@@ -415,21 +443,11 @@ struct ContentView: View {
                     SidebarDiskFreeSpaceBadge(volume: volume)
                 }
             case .systemOptimization:
-                HStack(spacing: 8) {
-                    if let score = healthMonitor.snapshot?.healthScore {
-                        SidebarLabelScoreBadge(
-                            label: "Health",
-                            score: "\(score)",
-                            color: healthScoreBadgeColor(score)
-                        )
-                    }
-                    if let report = memoryMonitor.report {
-                        SidebarLabelScoreBadge(
-                            label: "Mem",
-                            score: "\(Int(report.currentUsedPercent.rounded()))%",
-                            color: memoryPressureColor(report.currentUsedPercent)
-                        )
-                    }
+                if let score = healthMonitor.snapshot?.healthScore {
+                    SidebarStackedScoreBadges(
+                        healthScore: score,
+                        healthColor: healthScoreBadgeColor
+                    )
                 }
             case .duplicates:
                 if viewModel.duplicateGroups.count > 0 {
@@ -446,11 +464,28 @@ struct ContentView: View {
         }
     }
 
-    private func memoryPressureColor(_ percent: Double) -> Color {
-        switch percent {
-        case ..<60: return .green
-        case 60..<80: return .orange
-        default: return .red
+
+    @ViewBuilder
+    private func sidebarMenuRow<Trailing: View>(
+        title: String,
+        subtitle: String,
+        icon: String,
+        @ViewBuilder trailing: () -> Trailing = { EmptyView() }
+    ) -> some View {
+        HStack {
+            Label {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                    Text(subtitle)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            } icon: {
+                Image(systemName: icon)
+            }
+            Spacer(minLength: 4)
+            trailing()
         }
     }
 
@@ -476,24 +511,16 @@ struct ContentView: View {
             }
 
             Section {
-                ForEach(DetailPane.navigationCases) { pane in
-                    HStack {
-                        Label {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(pane.title)
-                                Text(pane.subtitle)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(2)
-                            }
-                        } icon: {
-                            Image(systemName: pane.icon)
-                        }
-                        Spacer(minLength: 4)
-                        menuBadge(for: pane)
-                    }
+                ForEach(viewModel.orderedMenuPanes) { pane in
+                    sidebarMenuRow(
+                        title: pane.title,
+                        subtitle: pane.subtitle,
+                        icon: pane.icon,
+                        trailing: { menuBadge(for: pane) }
+                    )
                     .tag(pane)
                 }
+                .onMove(perform: viewModel.moveMenuPane)
             } header: {
                 Text("Menu")
             }
@@ -502,7 +529,11 @@ struct ContentView: View {
                 Button {
                     viewModel.showActivityLog = true
                 } label: {
-                    Label("Activity Log", systemImage: "list.bullet.rectangle")
+                    sidebarMenuRow(
+                        title: "Activity Log",
+                        subtitle: "Scan, cleanup, and system events",
+                        icon: "list.bullet.rectangle"
+                    )
                 }
                 .buttonStyle(.borderless)
 
@@ -513,17 +544,15 @@ struct ContentView: View {
                             viewModel.scanForDuplicates()
                         }
                     } label: {
-                        Label {
-                            if viewModel.isFindingDuplicates {
-                                Text("Finding duplicates…")
-                            } else if viewModel.totalDuplicateSavings > 0 {
-                                Text("Find Duplicates · \(DiskWiseFormatters.bytes.string(fromByteCount: viewModel.totalDuplicateSavings))")
-                            } else {
-                                Text("Find Duplicates")
-                            }
-                        } icon: {
-                            Image(systemName: "doc.on.doc")
-                        }
+                        sidebarMenuRow(
+                            title: viewModel.isFindingDuplicates
+                                ? "Finding Duplicates…"
+                                : "Find Duplicates",
+                            subtitle: viewModel.totalDuplicateSavings > 0
+                                ? "\(DiskWiseFormatters.bytes.string(fromByteCount: viewModel.totalDuplicateSavings)) reclaimable"
+                                : "Scan indexed files for duplicate copies",
+                            icon: "doc.on.doc"
+                        )
                     }
                     .buttonStyle(.borderless)
                 }
@@ -532,7 +561,11 @@ struct ContentView: View {
                     Button {
                         viewModel.ejectSelectedVolume()
                     } label: {
-                        Label("Eject \(volume.name)", systemImage: "eject.fill")
+                        sidebarMenuRow(
+                            title: "Eject \(volume.name)",
+                            subtitle: "Safely disconnect this external drive",
+                            icon: "eject.fill"
+                        )
                     }
                     .disabled(viewModel.isVolumeBusy(volume))
                     .buttonStyle(.borderless)
@@ -541,7 +574,11 @@ struct ContentView: View {
                 Button {
                     openSettings()
                 } label: {
-                    Label("Settings", systemImage: "gearshape")
+                    sidebarMenuRow(
+                        title: "Settings",
+                        subtitle: "Scan limits, AI provider, and preferences",
+                        icon: "gearshape"
+                    )
                 }
                 .buttonStyle(.borderless)
             } header: {

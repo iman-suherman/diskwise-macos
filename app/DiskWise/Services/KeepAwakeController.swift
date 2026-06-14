@@ -26,7 +26,7 @@ final class KeepAwakeController: ObservableObject {
         activateDiskIdleAssertion()
         startKeepAliveTask(for: volumePaths)
         activeVolumePaths = volumePaths
-        isActive = diskIdleAssertionID != 0 || keepAliveTask != nil
+        isActive = true
     }
 
     private func activateDiskIdleAssertion() {
@@ -47,22 +47,17 @@ final class KeepAwakeController: ObservableObject {
 
     private func startKeepAliveTask(for paths: Set<String>) {
         keepAliveTask?.cancel()
-        keepAliveTask = Task { [weak self] in
+        let volumePaths = paths
+        keepAliveTask = Task.detached(priority: .utility) {
             let fileManager = FileManager.default
             while !Task.isCancelled {
-                for path in paths {
-                    guard fileManager.fileExists(atPath: path) else { continue }
-                    _ = try? fileManager.contentsOfDirectory(atPath: path)
+                for path in volumePaths {
+                    guard !Task.isCancelled else { return }
+                    VolumeKeepAwakePulse.pulse(mountPath: path, fileManager: fileManager)
                 }
-                try? await Task.sleep(for: .seconds(45))
-                guard !Task.isCancelled else { return }
-                await self?.refreshActiveState()
+                try? await Task.sleep(for: VolumeKeepAwakePulse.interval)
             }
         }
-    }
-
-    private func refreshActiveState() {
-        isActive = diskIdleAssertionID != 0 && !activeVolumePaths.isEmpty
     }
 
     private func deactivate() {

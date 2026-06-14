@@ -62,16 +62,16 @@ enum DetailPane: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    static var navigationCases: [DetailPane] {
-        [.overview, .systemOptimization, .maintenance, .duplicates]
-    }
+    static let defaultMenuPaneOrder: [DetailPane] = [
+        .overview, .duplicates, .systemOptimization, .maintenance,
+    ]
 
     var title: String {
         switch self {
-        case .overview: return "Disk"
+        case .overview: return "Disk Analysis"
         case .systemOptimization: return "System Optimization"
-        case .maintenance: return "Maintenance"
-        case .duplicates: return "Duplicates"
+        case .maintenance: return "System Maintenance"
+        case .duplicates: return "Duplicates Finder"
         case .ai: return "Ask DiskWise"
         }
     }
@@ -89,9 +89,9 @@ enum DetailPane: String, CaseIterable, Identifiable {
     var subtitle: String {
         switch self {
         case .overview: return "Scan and analyze storage"
-        case .systemOptimization: return "Health, memory, and AI insights"
+        case .systemOptimization: return "Health score, metrics, and AI insights"
         case .maintenance: return "Caches, snapshots, cleanup"
-        case .duplicates: return "Find duplicate files"
+        case .duplicates: return "Find and remove duplicate files"
         case .ai: return "Ask about your storage"
         }
     }
@@ -172,6 +172,8 @@ final class AppViewModel: ObservableObject {
     @Published var indexRebuildCompletedSteps: Set<IndexRebuildStep> = []
     @Published var indexRebuildActiveStep: IndexRebuildStep?
     @Published var showSavedScanPrompt = false
+    @Published var showScanModePrompt = false
+    @Published private(set) var activeScanMode: ScanMode = .fast
     @Published var selectedMaintenanceKind: MaintenanceKind = .appCaches
     @Published var maintenanceScanResult: MaintenanceScanResult?
     @Published var maintenanceSelectedEntryIDs: Set<String> = []
@@ -232,7 +234,7 @@ final class AppViewModel: ObservableObject {
     }
 
     var isBlockingLaunchFlow: Bool {
-        isStartingUp || showPythonSetupPrompt || showFullDiskAccessPrompt || showWhatsNewTour || showIndexRebuildPrompt || showSavedScanPrompt
+        isStartingUp || showPythonSetupPrompt || showFullDiskAccessPrompt || showWhatsNewTour || showIndexRebuildPrompt || showSavedScanPrompt || showScanModePrompt
     }
 
     var shouldShowPythonSetupBanner: Bool {
@@ -651,7 +653,11 @@ final class AppViewModel: ObservableObject {
 
         if rebuild {
             isMainContentReady = true
-            scan(volume: volume)
+            if isIndexed(volume) {
+                scan(volume: volume, mode: .fast)
+            } else {
+                presentScanModePrompt(for: volume)
+            }
             return
         }
 
@@ -741,7 +747,7 @@ final class AppViewModel: ObservableObject {
         if rescan, let volume = selectedVolume ?? mountedVolumes.first {
             beginIndexRebuildStep(.identifying, message: "Identifying disk usage on \(volume.name)…")
             setStatus("Storage index cleared — rescanning \(volume.name)…", kind: .working)
-            scan(volume: volume)
+            scan(volume: volume, mode: .fast)
         } else {
             finishIndexRebuild(
                 success: true,
@@ -1071,10 +1077,7 @@ final class AppViewModel: ObservableObject {
             return "Only \(coverage)% of used space is mapped. Grant Full Disk Access and run a Deep scan to index protected paths individually."
         }
         if coverage < 90 {
-            if appSettings.scanMode == .fast {
-                return "Only \(coverage)% mapped. Fast scan estimates system folders — a Deep scan indexes every file and often improves coverage."
-            }
-            return "Only \(coverage)% mapped. Rescan with Deep scan to re-index protected paths; some gap may still be APFS snapshots or purgeable space."
+            return "Only \(coverage)% mapped. Fast scan estimates system folders — use Deep Scan to index every file and often improve coverage."
         }
         return "Only \(coverage)% mapped. The remainder may be APFS snapshots, purgeable space, or paths macOS does not expose to apps."
     }
@@ -1146,7 +1149,7 @@ final class AppViewModel: ObservableObject {
         }
 
         selectedVolumePath = volume.mountPath
-        scan(volume: volume)
+        scan(volume: volume, mode: .fast)
     }
 
     func refreshMountedVolumes() {
@@ -1377,16 +1380,59 @@ final class AppViewModel: ObservableObject {
         }
 
         if autoScan && !isIndexed(volume) && !isScanning {
-            scan(volume: volume)
+            presentScanModePrompt(for: volume)
         }
     }
 
-    func scanSelectedVolume() {
+    func presentScanModePrompt(for volume: MountedVolume? = nil) {
+        if let volume {
+            selectedVolumePath = volume.mountPath
+            if let disk = diskRecord(for: volume) {
+                selectedDiskID = disk.id
+            }
+        }
+        guard selectedVolume != nil else {
+            setStatus("Select a drive first", kind: .error)
+            return
+        }
+        showScanModePrompt = true
+    }
+
+    func dismissScanModePrompt() {
+        showScanModePrompt = false
+    }
+
+    func startScan(with mode: ScanMode, volume: MountedVolume? = nil) {
+        showScanModePrompt = false
+        if let volume {
+            scan(volume: volume, mode: mode)
+            return
+        }
+        guard let selectedVolume else {
+            setStatus("Select a drive from the sidebar first", kind: .error)
+            return
+        }
+        scan(volume: selectedVolume, mode: mode)
+    }
+
+    func scanSelectedVolume(mode: ScanMode = .fast) {
         guard let volume = selectedVolume else {
             setStatus("Select a drive from the sidebar first", kind: .error)
             return
         }
-        scan(volume: volume)
+        if !isIndexed(volume) {
+            presentScanModePrompt(for: volume)
+            return
+        }
+        scan(volume: volume, mode: mode)
+    }
+
+    func requestScan(for volume: MountedVolume) {
+        if isIndexed(volume) {
+            scan(volume: volume, mode: .fast)
+        } else {
+            presentScanModePrompt(for: volume)
+        }
     }
 
     func scanFolderOnSelectedVolume() {
@@ -1422,16 +1468,24 @@ final class AppViewModel: ObservableObject {
             return
         }
 
-        scan(volume: volume, folder: folderURL)
+        scan(volume: volume, folder: folderURL, mode: .fast)
     }
 
-    func scanInternalDrive() {
+    func scanInternalDrive(mode: ScanMode = .fast) {
         if let internalVolume = internalVolumes.first {
             selectedVolumePath = internalVolume.mountPath
-            scan(volume: internalVolume)
+            if isIndexed(internalVolume) {
+                scan(volume: internalVolume, mode: mode)
+            } else {
+                presentScanModePrompt(for: internalVolume)
+            }
         } else if let first = mountedVolumes.first {
             selectedVolumePath = first.mountPath
-            scan(volume: first)
+            if isIndexed(first) {
+                scan(volume: first, mode: mode)
+            } else {
+                presentScanModePrompt(for: first)
+            }
         }
     }
 
@@ -1822,7 +1876,7 @@ final class AppViewModel: ObservableObject {
         refreshAnalysisReportInBackground()
     }
 
-    func scan(volume: MountedVolume, folder: URL? = nil) {
+    func scan(volume: MountedVolume, folder: URL? = nil, mode: ScanMode = .fast) {
         if usesPythonScanner, !isPythonAvailable {
             presentPythonSetupOverlay()
             setStatus("Python 3 is required for scanning", kind: .error)
@@ -1854,13 +1908,14 @@ final class AppViewModel: ObservableObject {
         } else {
             selectedDiskID = nil
         }
-        setStatus("Phase 1 of 3 · \(appSettings.scanMode.title) identify · \(scanLabel)…", kind: .working)
+        activeScanMode = mode
+        setStatus("Phase 1 of 3 · \(mode.title) identify · \(scanLabel)…", kind: .working)
         logActivity(
             .scan,
             isFolderScan ? "Started folder scan" : "Started filesystem scan",
-            detail: "\(appSettings.scanMode.title) · \(isFolderScan ? "\(scanLabel) on \(volume.name)" : volume.name)"
+            detail: "\(mode.title) · \(isFolderScan ? "\(scanLabel) on \(volume.name)" : volume.name)"
         )
-        ScanActivityMonitor.shared.beginScan(volumeName: scanLabel, mode: appSettings.scanMode)
+        ScanActivityMonitor.shared.beginScan(volumeName: scanLabel, mode: mode)
         ScanLogMonitor.shared.reset()
         ScanProgressSnapshot.shared.reset()
         if !usesPythonScanner, let progressURL = try? Self.makeProgressStatusURL() {
@@ -1868,7 +1923,7 @@ final class AppViewModel: ObservableObject {
         }
         startScanProgressPolling()
 
-        let scanMode = appSettings.scanMode
+        let scanMode = mode
         guard let scanEngine = self.scanEngine else { return }
         scanTask = Task.detached { [weak self, scanEngine, scanMode] in
             guard let self else { return }
@@ -2425,6 +2480,16 @@ final class AppViewModel: ObservableObject {
         }
         guard !items.isEmpty else { return nil }
         return CleanupPreview(items: items, totalBytes: totalBytes)
+    }
+
+    var orderedMenuPanes: [DetailPane] {
+        appSettings.menuPaneOrder
+    }
+
+    func moveMenuPane(from source: IndexSet, to destination: Int) {
+        var order = appSettings.menuPaneOrder
+        order.move(fromOffsets: source, toOffset: destination)
+        appSettings.menuPaneOrder = order
     }
 
     func openDuplicatesPane() {

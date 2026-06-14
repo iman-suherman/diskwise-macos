@@ -59,8 +59,6 @@ struct MemoryAnalyzerView: View {
         VStack(alignment: .leading, spacing: 24) {
             if !embeddedInOptimization {
                 header
-            } else {
-                sectionHeading("Memory Analyzer", icon: "memorychip", detail: "Periodic RAM monitoring with Apple Intelligence analysis.")
             }
 
             if let report = monitor.report {

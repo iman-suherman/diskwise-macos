@@ -76,8 +76,6 @@ struct SystemStatusView: View {
         VStack(alignment: .leading, spacing: 24) {
             if !embeddedInOptimization {
                 header
-            } else {
-                sectionHeading("System Status", icon: "heart.text.square", detail: "Live CPU, memory, and process metrics for this Mac.")
             }
 
             if let snapshot = monitor.snapshot {

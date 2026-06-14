@@ -13,7 +13,7 @@ struct MaintenanceView: View {
             maintenanceDetail
                 .frame(minWidth: 520)
         }
-        .navigationTitle("Maintenance")
+        .navigationTitle("System Maintenance")
         .onAppear {
             if viewModel.systemSnapshot == nil {
                 viewModel.refreshSystemSnapshot()

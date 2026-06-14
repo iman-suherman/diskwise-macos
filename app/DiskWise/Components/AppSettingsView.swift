@@ -9,24 +9,11 @@ struct AppSettingsView: View {
         Form {
             Section {
                 Text(
-                    "Step 1 can run in Fast mode (sizes dependency folders like node_modules in one step) or Deep mode (indexes every file). Steps 2 and 3 limits apply after the filesystem scan."
+                    "Step 1 always starts with Fast scan unless you choose Deep scan when indexing a drive. Adjust duplicate and analysis limits below for steps 2 and 3."
                 )
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Section("Filesystem scan (Step 1)") {
-                Picker("Scan mode", selection: $settings.scanMode) {
-                    ForEach(ScanMode.allCases) { mode in
-                        Text(mode.title).tag(mode)
-                    }
-                }
-
-                Text(settings.scanMode.detail)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Section("Performance preset") {

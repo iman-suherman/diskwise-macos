@@ -20,7 +20,7 @@ struct ScanProgressPanel: View {
     @EnvironmentObject private var viewModel: AppViewModel
 
     private var theme: ScanTheme {
-        ScanTheme.current(viewModel.appSettings.scanMode)
+        ScanTheme.current(viewModel.activeScanMode)
     }
 
     var body: some View {
@@ -92,7 +92,7 @@ struct ScanProgressPanel: View {
                 }
             }
 
-            ScanVerboseLogPanel(scanMode: viewModel.appSettings.scanMode)
+            ScanVerboseLogPanel(scanMode: viewModel.isScanning ? viewModel.activeScanMode : .fast)
         }
         .scanPanelStyle(theme: theme)
     }
@@ -184,7 +184,7 @@ struct BackgroundScanBanner: View {
     @EnvironmentObject private var viewModel: AppViewModel
 
     private var theme: ScanTheme {
-        ScanTheme.current(viewModel.appSettings.scanMode)
+        ScanTheme.current(viewModel.activeScanMode)
     }
 
     var body: some View {
@@ -510,9 +510,10 @@ struct WelcomeView: View {
 
                 if let external = viewModel.externalVolumes.first {
                     Button {
-                        viewModel.selectVolume(external, autoScan: true)
+                        viewModel.selectVolume(external)
+                        viewModel.presentScanModePrompt(for: external)
                     } label: {
-                        Label("Choose External Drive", systemImage: "externaldrive.fill")
+                        Label("Scan External Drive", systemImage: "externaldrive.fill")
                             .frame(minWidth: 200)
                     }
                     .buttonStyle(.bordered)
@@ -738,7 +739,7 @@ struct DashboardView: View {
         } actions: {
             if let volume = viewModel.selectedVolume {
                 Button("Scan \(volume.name)") {
-                    viewModel.scan(volume: volume)
+                    viewModel.requestScan(for: volume)
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(viewModel.isVolumeBusy(volume))
