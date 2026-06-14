@@ -72,6 +72,7 @@
 		A95B375EB57B93CEB3A6A1CA /* 0.6.1.json in Resources */ = {isa = PBXBuildFile; fileRef = 2A6023015E9A7D986EB17D42 /* 0.6.1.json */; };
 		AAAAA899D7754707AAD2D90F /* MemoryActionExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F390C5E410CA72074E3A8BE7 /* MemoryActionExecutor.swift */; };
 		AD9B75BC6DC71E2F9CF51405 /* MemoryAnalyzerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9433A60D26963A1B26DA291 /* MemoryAnalyzerView.swift */; };
+		ADEEBB229E346E98CFE73C02 /* 0.7.0.json in Resources */ = {isa = PBXBuildFile; fileRef = 2C08A11A1D6AA65C6E5C7144 /* 0.7.0.json */; };
 		AE88D3565ADCC2F0E9101C95 /* 0.3.1.json in Resources */ = {isa = PBXBuildFile; fileRef = A747FB1CC7E32E59400CF819 /* 0.3.1.json */; };
 		B1CF70C5E32C91E0CB3E2E05 /* SystemStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E3813DA348AA12313FC982 /* SystemStatusView.swift */; };
 		B3DC246BB66ED1E1451B986D /* 0.6.0.json in Resources */ = {isa = PBXBuildFile; fileRef = 68DCBEA8FF30108E7C861517 /* 0.6.0.json */; };
@@ -149,6 +150,7 @@
 		29ACCD97F5F5EACC612CD0DA /* 0.5.19.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.19.json; sourceTree = "<group>"; };
 		2A6023015E9A7D986EB17D42 /* 0.6.1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.6.1.json; sourceTree = "<group>"; };
 		2BF737B0AA3066062F3881A4 /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
+		2C08A11A1D6AA65C6E5C7144 /* 0.7.0.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.0.json; sourceTree = "<group>"; };
 		2D1F08103579C30093C9CA6F /* MenuBarDiskMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarDiskMonitor.swift; sourceTree = "<group>"; };
 		3044C9BB20E3915450F34DC3 /* 0.5.15.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.15.json; sourceTree = "<group>"; };
 		39A19DABD6BC39CB4E077008 /* MaintenanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaintenanceView.swift; sourceTree = "<group>"; };
@@ -351,6 +353,7 @@
 				48D63726017BAD71010C8039 /* 0.6.7.json */,
 				D77923302EECBDB096A59C78 /* 0.6.8.json */,
 				8D2B40F26DC40B81DD755E3F /* 0.6.9.json */,
+				2C08A11A1D6AA65C6E5C7144 /* 0.7.0.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -589,6 +592,7 @@
 				C3431BB2FF1AC970B0753F56 /* 0.6.7.json in Resources */,
 				46FA2B8AEE922909C9904741 /* 0.6.8.json in Resources */,
 				4CB29676DDA65858C1FE9E47 /* 0.6.9.json in Resources */,
+				ADEEBB229E346E98CFE73C02 /* 0.7.0.json in Resources */,
 				BAC56BC5D44D164A6D1651C3 /* Assets.xcassets in Resources */,
 				7F3FA96EA3B2337449CD40D0 /* diskwise_scan.py in Resources */,
 				E559D2BF705EE1AB7F9CA4EA /* entitlements.mac.plist in Resources */,

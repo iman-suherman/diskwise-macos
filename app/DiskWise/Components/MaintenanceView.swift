@@ -2,9 +2,20 @@ import SwiftUI
 import AppKit
 import MaintenanceKit
 
-struct MaintenanceDetailView: View {
-    let kind: MaintenanceKind
+struct MaintenanceSectionView: View {
+    let section: MaintenanceSection
     @EnvironmentObject private var viewModel: AppViewModel
+
+    private var kinds: [MaintenanceKind] {
+        section.sidebarKinds
+    }
+
+    private var selectedKind: Binding<MaintenanceKind> {
+        Binding(
+            get: { viewModel.selectedMaintenanceKind },
+            set: { viewModel.selectedMaintenanceKind = $0 }
+        )
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -13,11 +24,18 @@ struct MaintenanceDetailView: View {
                 .padding(.top, 28)
                 .padding(.bottom, 12)
 
-            maintenanceDetail
+            MaintenanceSectionTabBar(kinds: kinds, selection: selectedKind)
+                .padding(.horizontal, 28)
+                .padding(.bottom, 16)
+
+            MaintenanceKindPanel(kind: viewModel.selectedMaintenanceKind)
+                .id(viewModel.selectedMaintenanceKind)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .onAppear {
-            viewModel.selectedMaintenanceKind = kind
+            ensureSelectedKindMatchesSection()
+        }
+        .onChange(of: viewModel.selectedMaintenanceKind) { _, kind in
             if kind == .systemStatus {
                 viewModel.refreshSystemSnapshot()
             }
@@ -25,23 +43,84 @@ struct MaintenanceDetailView: View {
     }
 
     private var sectionHeader: some View {
-        HStack(alignment: .top, spacing: 16) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(kind.section.title)
-                    .font(.largeTitle.bold())
-                Text(kind.section.description)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 12)
-
-            Label(kind.title, systemImage: kind.icon)
-                .font(.caption.weight(.semibold))
+        VStack(alignment: .leading, spacing: 6) {
+            Text(section.title)
+                .font(.largeTitle.bold())
+            Text(section.description)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func ensureSelectedKindMatchesSection() {
+        guard kinds.contains(viewModel.selectedMaintenanceKind) else {
+            viewModel.selectedMaintenanceKind = kinds.first ?? viewModel.selectedMaintenanceKind
+            return
+        }
+        if viewModel.selectedMaintenanceKind.section != section,
+           let first = kinds.first {
+            viewModel.selectedMaintenanceKind = first
+        }
+    }
+}
+
+private struct MaintenanceSectionTabBar: View {
+    let kinds: [MaintenanceKind]
+    @Binding var selection: MaintenanceKind
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(kinds) { kind in
+                    tabButton(kind)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func tabButton(_ kind: MaintenanceKind) -> some View {
+        let isSelected = selection == kind
+
+        return Button {
+            selection = kind
+        } label: {
+            Label(kind.title, systemImage: kind.icon)
+                .font(.subheadline.weight(isSelected ? .semibold : .regular))
+                .labelStyle(.titleAndIcon)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    isSelected ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.05),
+                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(
+                            isSelected ? Color.accentColor.opacity(0.35) : Color.primary.opacity(0.08),
+                            lineWidth: 1
+                        )
+                }
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+struct MaintenanceKindPanel: View {
+    let kind: MaintenanceKind
+    @EnvironmentObject private var viewModel: AppViewModel
+
+    var body: some View {
+        maintenanceDetail
+            .onAppear {
+                viewModel.selectedMaintenanceKind = kind
+                if kind == .systemStatus {
+                    viewModel.refreshSystemSnapshot()
+                }
+            }
     }
 
     @ViewBuilder

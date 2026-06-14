@@ -3,6 +3,29 @@ import DuplicateKit
 import CleanupKit
 import DatabaseKit
 
+enum DuplicatesTab: String, CaseIterable, Identifiable {
+    case find
+    case review
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .find: return "Find Duplicates"
+        case .review: return "Review Duplicates"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .find: return "magnifyingglass"
+        case .review: return "doc.on.doc"
+        }
+    }
+}
+
+extension DuplicatesTab: DiskWiseTabRepresentable {}
+
 struct DuplicatesView: View {
     @EnvironmentObject private var viewModel: AppViewModel
     @State private var selectedPreview: CleanupPreview?
@@ -18,28 +41,14 @@ struct DuplicatesView: View {
                 .padding(.top, 28)
                 .padding(.bottom, 12)
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    if !viewModel.duplicateGroups.isEmpty {
-                        cleanupActionBar
-                    }
-
-                    if viewModel.isFindingDuplicates {
-                        duplicateScanInProgress
-                    } else if viewModel.duplicateGroups.isEmpty {
-                        duplicatesEmptyState
-                    } else {
-                        howToCleanHint
-
-                        ForEach(viewModel.duplicateGroups) { group in
-                            DuplicateGroupCard(group: group) {
-                                selectedPreview = viewModel.previewCleanup(for: group)
-                            }
-                        }
-                    }
-                }
+            DiskWiseIconTabBar(selection: $viewModel.selectedDuplicatesTab)
                 .padding(.horizontal, 28)
-                .padding(.bottom, 28)
+                .padding(.bottom, 16)
+
+            ScrollView {
+                tabContent
+                    .padding(.horizontal, 28)
+                    .padding(.bottom, 28)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -49,6 +58,127 @@ struct DuplicatesView: View {
                     selectedPreview = nil
                 }
             }
+        }
+        .onChange(of: viewModel.duplicateGroups.count) { _, count in
+            if count > 0, viewModel.selectedDuplicatesTab == .find, !viewModel.isFindingDuplicates {
+                viewModel.selectedDuplicatesTab = .review
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var tabContent: some View {
+        switch viewModel.selectedDuplicatesTab {
+        case .find:
+            findTabContent
+        case .review:
+            reviewTabContent
+        }
+    }
+
+    @ViewBuilder
+    private var findTabContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            if viewModel.isFindingDuplicates {
+                duplicateScanInProgress
+            } else {
+                findDuplicatesPanel
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var reviewTabContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            if viewModel.isFindingDuplicates {
+                duplicateScanInProgress
+            } else if viewModel.duplicateGroups.isEmpty {
+                reviewEmptyState
+            } else {
+                if !viewModel.duplicateGroups.isEmpty {
+                    cleanupActionBar
+                }
+                howToCleanHint
+
+                ForEach(viewModel.duplicateGroups) { group in
+                    DuplicateGroupCard(group: group) {
+                        selectedPreview = viewModel.previewCleanup(for: group)
+                    }
+                }
+            }
+        }
+    }
+
+    private var findDuplicatesPanel: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            GroupBox {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("Scan indexed files", systemImage: "doc.on.doc")
+                        .font(.headline)
+                    Text("DiskWise compares the largest indexed files on the selected drive to find extra copies you can move to Trash.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text("Limit: \(viewModel.appSettings.duplicateScanFileLimit.formatted()) files · adjust in Settings (⌘,)")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+
+                    if viewModel.hasScanData {
+                        Button {
+                            viewModel.scanForDuplicates()
+                        } label: {
+                            Label(
+                                viewModel.duplicateGroups.isEmpty ? "Find Duplicates" : "Scan Again",
+                                systemImage: "magnifyingglass"
+                            )
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.orange)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if !viewModel.hasScanData {
+                ContentUnavailableView(
+                    "Identify disk usage first",
+                    systemImage: "externaldrive",
+                    description: Text("Select a drive and run a scan from Disk Analysis. Then return here to find duplicates.")
+                )
+                .frame(maxWidth: .infinity, minHeight: 260)
+            } else if !viewModel.duplicateGroups.isEmpty {
+                Label(
+                    "\(viewModel.duplicateGroups.count) groups ready to review in the Review Duplicates tab.",
+                    systemImage: "checkmark.circle"
+                )
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var reviewEmptyState: some View {
+        if viewModel.hasScanData {
+            ContentUnavailableView {
+                Label("No duplicates found yet", systemImage: "doc.on.doc")
+            } description: {
+                Text("Run a scan from the Find Duplicates tab to check indexed files for extra copies on the selected drive.")
+            } actions: {
+                Button("Find Duplicates") {
+                    viewModel.selectedDuplicatesTab = .find
+                    viewModel.scanForDuplicates()
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+            }
+            .frame(maxWidth: .infinity, minHeight: 300)
+        } else {
+            ContentUnavailableView(
+                "Identify disk usage first",
+                systemImage: "externaldrive",
+                description: Text("Select a drive and run a scan from Disk Analysis. Then return here to find duplicates.")
+            )
+            .frame(maxWidth: .infinity, minHeight: 300)
         }
     }
 
@@ -68,27 +198,34 @@ struct DuplicatesView: View {
             VStack(alignment: .trailing, spacing: 16) {
                 headerBadges
 
-                HStack(spacing: 8) {
-                    if viewModel.isFindingDuplicates {
-                        Button {
-                            viewModel.cancelDuplicateDetection()
-                        } label: {
-                            Label("Cancel", systemImage: "xmark.circle")
-                        }
-                        .buttonStyle(.bordered)
-                    } else if viewModel.hasScanData {
-                        Button {
-                            viewModel.scanForDuplicates()
-                        } label: {
-                            Label(
-                                viewModel.duplicateGroups.isEmpty ? "Find Duplicates" : "Scan Again",
-                                systemImage: "doc.on.doc"
-                            )
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.orange)
-                    }
+                if viewModel.selectedDuplicatesTab == .find {
+                    findHeaderActions
                 }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var findHeaderActions: some View {
+        HStack(spacing: 8) {
+            if viewModel.isFindingDuplicates {
+                Button {
+                    viewModel.cancelDuplicateDetection()
+                } label: {
+                    Label("Cancel", systemImage: "xmark.circle")
+                }
+                .buttonStyle(.bordered)
+            } else if viewModel.hasScanData {
+                Button {
+                    viewModel.scanForDuplicates()
+                } label: {
+                    Label(
+                        viewModel.duplicateGroups.isEmpty ? "Find Duplicates" : "Scan Again",
+                        systemImage: "magnifyingglass"
+                    )
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
             }
         }
     }
@@ -97,13 +234,18 @@ struct DuplicatesView: View {
         if viewModel.isFindingDuplicates {
             return "Checking indexed files for duplicate copies. This can take several minutes on large drives."
         }
-        if totalReclaimable > 0 {
-            return "\(DiskWiseFormatters.bytes.string(fromByteCount: totalReclaimable)) reclaimable across \(viewModel.duplicateGroups.count) groups."
+        switch viewModel.selectedDuplicatesTab {
+        case .find:
+            if viewModel.hasScanData {
+                return "Scan indexed files on the selected drive to find extra copies you can move to Trash."
+            }
+            return "Identify disk usage first, then scan here for duplicate files."
+        case .review:
+            if totalReclaimable > 0 {
+                return "\(DiskWiseFormatters.bytes.string(fromByteCount: totalReclaimable)) reclaimable across \(viewModel.duplicateGroups.count) groups."
+            }
+            return "Review duplicate groups and move extra copies to Trash safely."
         }
-        if viewModel.hasScanData {
-            return "Scan indexed files on the selected drive to find extra copies you can move to Trash."
-        }
-        return "Identify disk usage first, then scan here for duplicate files."
     }
 
     @ViewBuilder
@@ -152,30 +294,6 @@ struct DuplicatesView: View {
             .foregroundStyle(.secondary)
     }
 
-    @ViewBuilder
-    private var duplicatesEmptyState: some View {
-        if viewModel.hasScanData {
-            ContentUnavailableView {
-                Label("No duplicates found yet", systemImage: "doc.on.doc")
-            } description: {
-                Text("Use Find Duplicates in the header to scan indexed files for extra copies on the selected drive.")
-            } actions: {
-                Button("Find Duplicates") {
-                    viewModel.scanForDuplicates()
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.orange)
-            }
-            .frame(maxWidth: .infinity, minHeight: 300)
-        } else {
-            ContentUnavailableView(
-                "Identify disk usage first",
-                systemImage: "externaldrive",
-                description: Text("Select a drive and run a scan from Disk Analysis. Then return here to find duplicates.")
-            )
-            .frame(maxWidth: .infinity, minHeight: 300)
-        }
-    }
 
     private var duplicateScanInProgress: some View {
         VStack(alignment: .leading, spacing: 16) {

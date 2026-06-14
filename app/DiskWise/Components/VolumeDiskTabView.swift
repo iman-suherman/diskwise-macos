@@ -450,7 +450,7 @@ struct BreakdownTabView: View {
                 Spacer()
 
                 Button {
-                    viewModel.openDuplicatesPane()
+                    viewModel.openDuplicatesPane(review: true)
                 } label: {
                     Label("Review Duplicates", systemImage: "doc.on.doc")
                 }

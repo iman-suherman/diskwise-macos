@@ -57,6 +57,9 @@ enum DetailPane: String, CaseIterable, Identifiable {
     case overview
     case systemOptimization
     case duplicates
+    case cleanMyMac
+    case developerProjects
+    case systemCleanup
     case ai
     case activityLog
     case settings
@@ -64,11 +67,35 @@ enum DetailPane: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     static let defaultMenuPaneOrder: [DetailPane] = [
-        .overview, .duplicates, .systemOptimization,
+        .overview,
+        .duplicates,
+        .cleanMyMac,
+        .developerProjects,
+        .systemCleanup,
+        .systemOptimization,
+        .activityLog,
+        .settings,
     ]
 
     var isReorderableMenuItem: Bool {
         Self.defaultMenuPaneOrder.contains(self)
+    }
+
+    var maintenanceSection: MaintenanceSection? {
+        switch self {
+        case .cleanMyMac: return .clean
+        case .developerProjects: return .projects
+        case .systemCleanup: return .system
+        default: return nil
+        }
+    }
+
+    static func pane(for section: MaintenanceSection) -> DetailPane {
+        switch section {
+        case .clean: return .cleanMyMac
+        case .projects: return .developerProjects
+        case .system: return .systemCleanup
+        }
     }
 
     var title: String {
@@ -76,6 +103,9 @@ enum DetailPane: String, CaseIterable, Identifiable {
         case .overview: return "Disk Analysis"
         case .systemOptimization: return "System Optimization"
         case .duplicates: return "Duplicates Finder"
+        case .cleanMyMac: return MaintenanceSection.clean.title
+        case .developerProjects: return MaintenanceSection.projects.title
+        case .systemCleanup: return MaintenanceSection.system.title
         case .ai: return "Ask DiskWise"
         case .activityLog: return "Activity Log"
         case .settings: return "Settings"
@@ -87,6 +117,9 @@ enum DetailPane: String, CaseIterable, Identifiable {
         case .overview: return "internaldrive"
         case .systemOptimization: return "gauge.with.dots.needle.67percent"
         case .duplicates: return "doc.on.doc"
+        case .cleanMyMac: return "sparkles.rectangle.stack"
+        case .developerProjects: return "chevron.left.forwardslash.chevron.right"
+        case .systemCleanup: return "gearshape.2"
         case .ai: return "sparkles"
         case .activityLog: return "list.bullet.rectangle"
         case .settings: return "gearshape"
@@ -98,6 +131,9 @@ enum DetailPane: String, CaseIterable, Identifiable {
         case .overview: return "Scan and analyze storage"
         case .systemOptimization: return "Health score, metrics, and AI insights"
         case .duplicates: return "Find and remove duplicate files"
+        case .cleanMyMac: return MaintenanceSection.clean.description
+        case .developerProjects: return MaintenanceSection.projects.description
+        case .systemCleanup: return MaintenanceSection.system.description
         case .ai: return "Ask about your storage"
         case .activityLog: return "Scan, cleanup, and system events"
         case .settings: return "Scan limits, AI provider, and preferences"
@@ -107,7 +143,6 @@ enum DetailPane: String, CaseIterable, Identifiable {
 
 enum SidebarSelection: Hashable {
     case pane(DetailPane)
-    case maintenance(MaintenanceKind)
 }
 
 enum AppStatusKind {
@@ -187,6 +222,7 @@ final class AppViewModel: ObservableObject {
     @Published var showScanModePrompt = false
     @Published private(set) var activeScanMode: ScanMode = .fast
     @Published var selectedMaintenanceKind: MaintenanceKind = .appCaches
+    @Published var selectedDuplicatesTab: DuplicatesTab = .find
     @Published var maintenanceScanResult: MaintenanceScanResult?
     @Published var maintenanceSelectedEntryIDs: Set<String> = []
     @Published var installedApps: [InstalledApp] = []
@@ -2167,6 +2203,7 @@ final class AppViewModel: ObservableObject {
                     self.scanStartTime = nil
                     self.refreshInsights()
                     if duplicateSummary.groupsFound > 0 {
+                        self.selectedDuplicatesTab = .review
                         self.logActivity(
                             .duplicate,
                             "Duplicate detection complete",
@@ -2526,13 +2563,16 @@ final class AppViewModel: ObservableObject {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    func openDuplicatesPane() {
+    func openDuplicatesPane(review: Bool = false) {
+        if review || !duplicateGroups.isEmpty {
+            selectedDuplicatesTab = .review
+        }
         sidebarSelection = .pane(.duplicates)
     }
 
     func openMaintenanceKind(_ kind: MaintenanceKind) {
         selectedMaintenanceKind = kind
-        sidebarSelection = .maintenance(kind)
+        sidebarSelection = .pane(DetailPane.pane(for: kind.section))
     }
 
     @discardableResult
@@ -2625,7 +2665,7 @@ final class AppViewModel: ObservableObject {
 
     func scanMaintenance(_ kind: MaintenanceKind) {
         selectedMaintenanceKind = kind
-        sidebarSelection = .maintenance(kind)
+        sidebarSelection = .pane(DetailPane.pane(for: kind.section))
         isMaintenanceScanning = true
         maintenanceStatusMessage = "Scanning \(kind.title.lowercased())…"
         setStatus(maintenanceStatusMessage, kind: .working)

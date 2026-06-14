@@ -1,0 +1,14 @@
+{
+  "summary": "Sidebar navigation is unified into one reorderable Menu: maintenance sections are single entries with internal tab bars, Duplicates Finder splits Find and Review into tabs, and Activity Log and Settings join the main menu.",
+  "introduced": [
+    "Unified Menu sidebar — Disk Analysis, Duplicates Finder, Clean My Mac, Developer Projects, System Cleanup, System Optimization, Activity Log, and Settings share one drag-to-reorder list",
+    "Maintenance tab menus — Clean My Mac, Developer Projects, and System Cleanup each open as a menu item with a description and icon tab bar for their tools (caches, node_modules, APFS snapshots, and more)",
+    "Duplicates Finder tabs — Find Duplicates and Review Duplicates are separate tabs inside Duplicates Finder instead of a sidebar shortcut"
+  ],
+  "changed": [
+    "Review Duplicates moved into Duplicates Finder — scan from Find Duplicates; results and cleanup actions live under Review Duplicates",
+    "Activity Log and Settings moved from the Actions section into the main Menu alongside other destinations",
+    "Maintenance sidebar — individual cleanup tools are no longer listed separately; pick a section from Menu, then switch tools via tabs"
+  ],
+  "fixed": []
+}

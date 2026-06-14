@@ -655,7 +655,7 @@ struct DashboardView: View {
                 Spacer()
 
                 Button {
-                    viewModel.openDuplicatesPane()
+                    viewModel.openDuplicatesPane(review: true)
                 } label: {
                     Label("Review & Delete Duplicates", systemImage: "trash.fill")
                         .frame(minWidth: 220)

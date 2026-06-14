@@ -272,11 +272,6 @@ struct ContentView: View {
                 Label(pane.title, systemImage: pane.icon)
                     .font(.headline)
             }
-        } else if case .maintenance(let kind) = viewModel.sidebarSelection {
-            ToolbarItem(placement: .principal) {
-                Label(kind.title, systemImage: kind.icon)
-                    .font(.headline)
-            }
         }
 
         ToolbarItem(placement: .status) {
@@ -309,6 +304,12 @@ struct ContentView: View {
             SystemOptimizationView()
         case .pane(.duplicates):
             DuplicatesView()
+        case .pane(.cleanMyMac):
+            MaintenanceSectionView(section: .clean)
+        case .pane(.developerProjects):
+            MaintenanceSectionView(section: .projects)
+        case .pane(.systemCleanup):
+            MaintenanceSectionView(section: .system)
         case .pane(.ai):
             VolumeDiskTabView()
                 .onAppear { viewModel.selectedVolumeTab = .insights }
@@ -330,8 +331,6 @@ struct ContentView: View {
                 .onChange(of: appSettings.ollamaModel) { _, _ in
                     viewModel.refreshAIConfiguration()
                 }
-        case .maintenance(let kind):
-            MaintenanceDetailView(kind: kind)
         }
     }
 
@@ -433,47 +432,8 @@ struct ContentView: View {
                 Text("Menu")
             }
 
-            ForEach(MaintenanceSection.allCases, id: \.self) { section in
+            if viewModel.canEjectSelectedVolume, let volume = viewModel.selectedVolume {
                 Section {
-                    ForEach(section.sidebarKinds) { kind in
-                        sidebarMenuRow(
-                            title: kind.title,
-                            subtitle: kind.subtitle,
-                            icon: kind.icon
-                        )
-                        .tag(SidebarSelection.maintenance(kind))
-                    }
-                } header: {
-                    Text(section.title)
-                } footer: {
-                    Text(section.description)
-                }
-            }
-
-            Section {
-                sidebarMenuRow(
-                    title: DetailPane.activityLog.title,
-                    subtitle: DetailPane.activityLog.subtitle,
-                    icon: DetailPane.activityLog.icon
-                )
-                .tag(SidebarSelection.pane(.activityLog))
-
-                if viewModel.hasScanData {
-                    Button {
-                        viewModel.openDuplicatesPane()
-                    } label: {
-                        sidebarMenuRow(
-                            title: "Review Duplicates",
-                            subtitle: viewModel.totalDuplicateSavings > 0
-                                ? "\(DiskWiseFormatters.bytes.string(fromByteCount: viewModel.totalDuplicateSavings)) reclaimable"
-                                : "Open Duplicates Finder to scan indexed files",
-                            icon: "doc.on.doc"
-                        )
-                    }
-                    .buttonStyle(.borderless)
-                }
-
-                if viewModel.canEjectSelectedVolume, let volume = viewModel.selectedVolume {
                     Button {
                         viewModel.ejectSelectedVolume()
                     } label: {
@@ -486,22 +446,8 @@ struct ContentView: View {
                     .disabled(viewModel.isVolumeBusy(volume))
                     .buttonStyle(.borderless)
                 }
-
-                sidebarMenuRow(
-                    title: DetailPane.settings.title,
-                    subtitle: DetailPane.settings.subtitle,
-                    icon: DetailPane.settings.icon
-                )
-                .tag(SidebarSelection.pane(.settings))
-            } header: {
-                Text("Actions")
             }
         }
         .listStyle(.sidebar)
-        .onChange(of: viewModel.sidebarSelection) { _, selection in
-            if case .maintenance(let kind) = selection {
-                viewModel.selectedMaintenanceKind = kind
-            }
-        }
     }
 }
