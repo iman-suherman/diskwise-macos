@@ -9,6 +9,13 @@ final class ScanningDockTileView: NSView {
     var progressFraction: Double = 0
     var progressLabel = ""
 
+    var statusDescription = "" {
+        didSet {
+            toolTip = statusDescription.isEmpty ? nil : statusDescription
+            setAccessibilityLabel(statusDescription)
+        }
+    }
+
     init(image: NSImage) {
         scanningImage = image
         let size = NSApp.dockTile.size

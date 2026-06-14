@@ -1,4 +1,5 @@
 import AppKit
+import DiskScannerKit
 
 @MainActor
 final class DockScanAnimator {
@@ -14,17 +15,16 @@ final class DockScanAnimator {
         guard let image = scanningImage else { return }
 
         let scanView = ScanningDockTileView(image: image)
-        applyProgress(from: ScanActivityMonitor.shared, to: scanView)
+        applyScanState(from: ScanActivityMonitor.shared, to: scanView)
         view = scanView
         NSApp.dockTile.contentView = scanView
         NSApp.dockTile.display()
         scanView.startAnimating()
     }
 
-    func updateProgress(fraction: Double, label: String) {
+    func update(from monitor: ScanActivityMonitor) {
         guard let view else { return }
-        view.progressFraction = fraction
-        view.progressLabel = label
+        applyScanState(from: monitor, to: view)
         view.needsDisplay = true
         NSApp.dockTile.display()
     }
@@ -47,8 +47,18 @@ final class DockScanAnimator {
         return nil
     }
 
-    private func applyProgress(from monitor: ScanActivityMonitor, to view: ScanningDockTileView) {
+    private func applyScanState(from monitor: ScanActivityMonitor, to view: ScanningDockTileView) {
         view.progressFraction = monitor.progressFraction
         view.progressLabel = monitor.progressPercentLabel
+        view.statusDescription = Self.statusDescription(from: monitor)
+    }
+
+    static func statusDescription(from monitor: ScanActivityMonitor) -> String {
+        var parts = ["\(monitor.scanMode.title) scan"]
+        if let operationLabel = monitor.operationLabel, !operationLabel.isEmpty {
+            parts.append(operationLabel)
+        }
+        parts.append(monitor.progressPercentLabel)
+        return parts.joined(separator: " · ")
     }
 }

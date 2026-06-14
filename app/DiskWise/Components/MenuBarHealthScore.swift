@@ -30,6 +30,7 @@ struct MenuBarHealthScoreLabelView: View {
 struct MenuBarHealthPopoverContent: View {
     @ObservedObject var monitor: SystemHealthMonitor
     @ObservedObject var settings: AppSettings
+    var onOpenMainWindow: (() -> Void)? = nil
 
     var body: some View {
         ScrollView {
@@ -61,8 +62,7 @@ struct MenuBarHealthPopoverContent: View {
                 Divider()
 
                 Button("Open DiskWise") {
-                    NSApp.activate(ignoringOtherApps: true)
-                    NSApp.windows.first { $0.canBecomeMain }?.makeKeyAndOrderFront(nil)
+                    MenuBarMainWindowOpener.open(dismissingPopover: onOpenMainWindow)
                 }
                 .buttonStyle(.borderedProminent)
                 .frame(maxWidth: .infinity)
@@ -346,7 +346,8 @@ final class MenuBarHealthItemController: NSObject {
         ) {
             MenuBarHealthPopoverContent(
                 monitor: monitor,
-                settings: AppSettings.shared
+                settings: AppSettings.shared,
+                onOpenMainWindow: { [weak self] in self?.popoverSession.close() }
             )
         } onShow: { [monitor] in
             monitor.refresh()

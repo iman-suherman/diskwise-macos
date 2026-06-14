@@ -767,9 +767,11 @@ enum SystemHealthMonitorCore {
     private static func runSortedPS(sortFlag: String, lineCount: Int) -> String {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        // -A is required on macOS; without it ps only reports the current terminal session
+        // and Top CPU / Top Memory miss system-wide heavy hitters (Python scans, WindowServer, etc.).
         process.arguments = [
             "-c",
-            "/bin/ps -\(sortFlag)c -o pid=,pcpu=,rss=,comm= 2>/dev/null | /usr/bin/head -n \(lineCount)",
+            "/bin/ps -A\(sortFlag)c -o pid=,pcpu=,rss=,comm= 2>/dev/null | /usr/bin/head -n \(lineCount)",
         ]
 
         let pipe = Pipe()

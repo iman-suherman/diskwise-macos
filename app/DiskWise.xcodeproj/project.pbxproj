@@ -36,6 +36,7 @@
 		41B06DBBD44FA17F718F4F6E /* 0.5.1.json in Resources */ = {isa = PBXBuildFile; fileRef = 4C07B13D67D2C06220DF1B9E /* 0.5.1.json */; };
 		43175AB60FC4909B189B5A13 /* 0.3.9.json in Resources */ = {isa = PBXBuildFile; fileRef = D6BF3C996FCBAA4513AD9F9A /* 0.3.9.json */; };
 		4709F41AF9D9E5ED27E3018D /* AIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 268149F6EA534326414CF175 /* AIKit */; };
+		47AE898E15A7382D1290A848 /* 0.5.20.json in Resources */ = {isa = PBXBuildFile; fileRef = CA4A5662A24D793ACEF0B235 /* 0.5.20.json */; };
 		4C976DB4F4092E15A26DB267 /* MaintenanceKit in Frameworks */ = {isa = PBXBuildFile; productRef = 9FEE827C95850FDD3406ADA0 /* MaintenanceKit */; };
 		4CD3FB8029E9565FDA7FDFD9 /* 0.1.7.json in Resources */ = {isa = PBXBuildFile; fileRef = 869D81BAA63D3ECC1CF31B7E /* 0.1.7.json */; };
 		4D4F0979A3B39E9EC8CE29B7 /* 0.3.5.json in Resources */ = {isa = PBXBuildFile; fileRef = 7A638EA06DBCE65A323623F3 /* 0.3.5.json */; };
@@ -176,6 +177,7 @@
 		BE77E6EAC751129191A39F6D /* DockScanAnimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockScanAnimator.swift; sourceTree = "<group>"; };
 		C27E95DFD0F9841389B35E2F /* diskwise_scan.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = diskwise_scan.py; sourceTree = "<group>"; };
 		C91D0D7194E3DC4018956A4D /* 0.1.8.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.8.json; sourceTree = "<group>"; };
+		CA4A5662A24D793ACEF0B235 /* 0.5.20.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.20.json; sourceTree = "<group>"; };
 		CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarExtensionPrompt.swift; sourceTree = "<group>"; };
 		D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessPrompt.swift; sourceTree = "<group>"; };
 		D4BCD4E96BC002C2E47A8E33 /* VolumeDiskTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeDiskTabView.swift; sourceTree = "<group>"; };
@@ -282,6 +284,7 @@
 				83C02ED276CE351ADBF7F7BF /* 0.5.17.json */,
 				D55B4D8545269C44AB27D3D0 /* 0.5.18.json */,
 				29ACCD97F5F5EACC612CD0DA /* 0.5.19.json */,
+				CA4A5662A24D793ACEF0B235 /* 0.5.20.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -496,6 +499,7 @@
 				33F7D9A75E5AB5098551D85D /* 0.5.18.json in Resources */,
 				B7B1E3914BEC481C3C31919E /* 0.5.19.json in Resources */,
 				BA19BFD4653B3A6A79FD66E9 /* 0.5.2.json in Resources */,
+				47AE898E15A7382D1290A848 /* 0.5.20.json in Resources */,
 				90BAF4E7882287C932D8E9E6 /* 0.5.4.json in Resources */,
 				7D3DB7CE2ED58186491D8C35 /* 0.5.5.json in Resources */,
 				C84FBDE95F4E69048130E448 /* 0.5.6.json in Resources */,

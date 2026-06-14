@@ -1,0 +1,11 @@
+{
+  "summary": "System Status now shows real top processes, menu bar popovers dismiss reliably, and the Dock icon reports scan progress on hover.",
+  "introduced": [
+    "Dock hover label during scans — shows scan mode, current operation, and progress percentage"
+  ],
+  "changed": [],
+  "fixed": [
+    "Top CPU and Top Memory now list system-wide heavy processes instead of showing no significant usage during scans",
+    "Menu bar popovers close when opening DiskWise and no longer get stuck open"
+  ]
+}

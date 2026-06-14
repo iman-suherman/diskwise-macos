@@ -312,6 +312,7 @@ struct MenuBarPopoverContent: View {
     @ObservedObject var monitor: SystemVolumeMonitor
     @ObservedObject var settings: AppSettings
     @ObservedObject var scanActivity = ScanActivityMonitor.shared
+    var onOpenMainWindow: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -405,8 +406,7 @@ struct MenuBarPopoverContent: View {
             Divider()
 
             Button("Open DiskWise") {
-                NSApp.activate(ignoringOtherApps: true)
-                NSApp.windows.first { $0.canBecomeMain }?.makeKeyAndOrderFront(nil)
+                MenuBarMainWindowOpener.open(dismissingPopover: onOpenMainWindow)
             }
             .buttonStyle(.borderedProminent)
             .frame(maxWidth: .infinity)
@@ -425,8 +425,7 @@ struct MenuBarPopoverContent: View {
     }
 
     private func startMacintoshHDScan() {
-        NSApp.activate(ignoringOtherApps: true)
-        NSApp.windows.first { $0.canBecomeMain }?.makeKeyAndOrderFront(nil)
+        MenuBarMainWindowOpener.open(dismissingPopover: onOpenMainWindow)
         AppViewModel.current?.scanInternalDrive()
     }
 
@@ -617,7 +616,8 @@ final class MenuBarStatusItemController: NSObject {
         ) {
             MenuBarPopoverContent(
                 monitor: monitor,
-                settings: AppSettings.shared
+                settings: AppSettings.shared,
+                onOpenMainWindow: { [weak self] in self?.popoverSession.close() }
             )
         } onShow: { [monitor] in
             monitor.refresh()
