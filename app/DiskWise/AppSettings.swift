@@ -160,13 +160,6 @@ final class AppSettings: ObservableObject {
         }
     }
 
-    @Published var keepAwakeEnabled: Bool {
-        didSet {
-            UserDefaults.standard.set(keepAwakeEnabled, forKey: Keys.keepAwakeEnabled)
-            syncKeepAwakeState()
-        }
-    }
-
     @Published var keepAwakeVolumePaths: Set<String> {
         didSet {
             UserDefaults.standard.set(
@@ -219,19 +212,20 @@ final class AppSettings: ObservableObject {
         MenuBarMonitorController.syncMenuBarItems(settings: self)
     }
 
-    func setKeepAwakeEnabled(_ enabled: Bool) {
-        keepAwakeEnabled = enabled
-    }
-
     func isKeepAwakeVolumeEnabled(for mountPath: String) -> Bool {
         if VolumeDiscovery.isSystemVolume(mountPath: mountPath) {
-            return keepAwakeEnabled
+            return true
         }
         return keepAwakeVolumePaths.contains(mountPath)
     }
 
     func setKeepAwakeVolumeEnabled(for mountPath: String, enabled: Bool) {
-        guard !VolumeDiscovery.isSystemVolume(mountPath: mountPath) else { return }
+        if VolumeDiscovery.isSystemVolume(mountPath: mountPath) {
+            if enabled {
+                keepAwakeVolumePaths.insert(mountPath)
+            }
+            return
+        }
         if enabled {
             keepAwakeVolumePaths.insert(mountPath)
         } else {
@@ -239,18 +233,14 @@ final class AppSettings: ObservableObject {
         }
     }
 
-    func effectiveKeepAwakeVolumePaths() -> Set<String> {
-        guard keepAwakeEnabled else { return [] }
+    private func resolvedKeepAwakeVolumePaths() -> Set<String> {
         var paths = keepAwakeVolumePaths
         paths.insert("/")
         return paths
     }
 
     private func syncKeepAwakeState() {
-        KeepAwakeController.shared.apply(
-            enabled: keepAwakeEnabled,
-            volumePaths: effectiveKeepAwakeVolumePaths()
-        )
+        KeepAwakeController.shared.apply(volumePaths: resolvedKeepAwakeVolumePaths())
     }
 
     func setHideFromDock(_ hidden: Bool) {
@@ -313,9 +303,8 @@ final class AppSettings: ObservableObject {
             showMenuBarHealthScore = false
         }
         hideFromDock = defaults.bool(forKey: Keys.hideFromDock)
-        keepAwakeEnabled = defaults.bool(forKey: Keys.keepAwakeEnabled)
         if let storedKeepAwakePaths = defaults.stringArray(forKey: Keys.keepAwakeVolumePaths) {
-            keepAwakeVolumePaths = Set(storedKeepAwakePaths)
+            keepAwakeVolumePaths = Set(storedKeepAwakePaths.filter { $0 != "/" })
         } else {
             keepAwakeVolumePaths = []
         }
@@ -380,7 +369,6 @@ final class AppSettings: ObservableObject {
         enableOllamaDevMode = false
         menuBarFreeSpaceVolumePaths = []
         showMenuBarHealthScore = false
-        keepAwakeEnabled = false
         keepAwakeVolumePaths = []
         hideFromDock = false
         launchAtLogin = false

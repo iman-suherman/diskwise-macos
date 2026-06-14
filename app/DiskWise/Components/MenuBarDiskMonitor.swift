@@ -210,84 +210,57 @@ struct MenuBarKeepAwakeSection: View {
     let volumes: [MountedVolume]
     var compact: Bool = false
 
-    private var systemVolume: MountedVolume? {
-        volumes.first { VolumeDiscovery.isSystemVolume(mountPath: $0.mountPath) }
-    }
-
-    private var optionalVolumes: [MountedVolume] {
-        volumes.filter { !VolumeDiscovery.isSystemVolume(mountPath: $0.mountPath) }
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: compact ? 8 : 10) {
-            Text("Keep Awake")
+            Text("Keep Disks Awake")
                 .font(.subheadline.weight(.semibold))
 
-            Toggle(
-                "Always on",
-                isOn: Binding(
-                    get: { settings.keepAwakeEnabled },
-                    set: { settings.setKeepAwakeEnabled($0) }
-                )
-            )
+            Text("Keeps selected drives from sleeping or spinning down. Your Mac can still sleep.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
 
-            if settings.keepAwakeEnabled {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Drives to keep awake")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
-                    if let systemVolume {
-                        Toggle(
-                            keepAwakeVolumeLabel(systemVolume),
-                            isOn: .constant(true)
-                        )
-                        .disabled(true)
-
-                        Text(
-                            "The system drive is always included while Keep Awake is on. DiskWise and macOS need \(systemVolume.name) mounted — it cannot be excluded."
-                        )
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    }
-
-                    ForEach(optionalVolumes) { volume in
-                        Toggle(
-                            keepAwakeVolumeLabel(volume),
-                            isOn: Binding(
-                                get: { settings.isKeepAwakeVolumeEnabled(for: volume.mountPath) },
-                                set: {
-                                    settings.setKeepAwakeVolumeEnabled(for: volume.mountPath, enabled: $0)
-                                }
-                            )
-                        )
-                    }
-
-                    if optionalVolumes.isEmpty {
-                        Text("Connect external drives to add them to Keep Awake.")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
+            if volumes.isEmpty {
+                Text("No drives detected")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(volumes) { volume in
+                    keepAwakeToggle(for: volume)
                 }
+            }
+
+            if let systemVolume = volumes.first(where: { VolumeDiscovery.isSystemVolume(mountPath: $0.mountPath) }) {
+                Text("\(systemVolume.name) is always kept awake — DiskWise and macOS require the system drive to stay mounted.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             if keepAwake.isActive {
                 let awakeCount = keepAwake.activeVolumePaths.count
                 Label(
-                    "Keeping \(awakeCount) drive\(awakeCount == 1 ? "" : "s") awake — Mac will not sleep",
-                    systemImage: "bolt.fill"
+                    "Keeping \(awakeCount) drive\(awakeCount == 1 ? "" : "s") from sleeping",
+                    systemImage: "internaldrive"
                 )
                 .font(.caption)
                 .foregroundStyle(.orange)
                 .fixedSize(horizontal: false, vertical: true)
-            } else {
-                Text("Prevents system and display sleep while DiskWise is running — useful during long scans or drive activity.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    @ViewBuilder
+    private func keepAwakeToggle(for volume: MountedVolume) -> some View {
+        let isSystem = VolumeDiscovery.isSystemVolume(mountPath: volume.mountPath)
+        Toggle(
+            keepAwakeVolumeLabel(volume),
+            isOn: Binding(
+                get: { settings.isKeepAwakeVolumeEnabled(for: volume.mountPath) },
+                set: { settings.setKeepAwakeVolumeEnabled(for: volume.mountPath, enabled: $0) }
+            )
+        )
+        .disabled(isSystem)
     }
 
     private func keepAwakeVolumeLabel(_ volume: MountedVolume) -> String {

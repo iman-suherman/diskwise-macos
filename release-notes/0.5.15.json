@@ -1,0 +1,10 @@
+{
+  "summary": "Keep Awake targets disks not Mac sleep, and unmapped space appears above the Results pie chart.",
+  "introduced": [],
+  "changed": [
+    "Keep Disks Awake uses per-drive toggles instead of a single Always on switch — your Mac can sleep while selected drives stay active",
+    "Macintosh HD is always kept awake and cannot be turned off; external drives toggle individually",
+    "Unmapped used space notice now appears above Storage by Type in Results"
+  ],
+  "fixed": []
+}

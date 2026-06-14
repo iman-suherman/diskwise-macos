@@ -12,6 +12,8 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
+        case "0.5.15":
+            return v0515Pages
         case "0.5.14":
             return v0514Pages
         case "0.5.13":
@@ -64,6 +66,26 @@ enum WhatsNewContent {
             return genericPages(version: version)
         }
     }
+
+    private static let v0515Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "keep-disks-awake",
+            icon: "internaldrive",
+            title: "Keep disks awake, not your Mac",
+            message: "Keep Disks Awake now has a toggle for each drive. Your Mac can sleep while selected volumes stay from spinning down.",
+            bullets: [
+                "Macintosh HD is always included and cannot be turned off",
+                "Enable external drives individually from the disk menu bar or Settings",
+            ]
+        ),
+        WhatsNewPage(
+            id: "unmapped-above-pie",
+            icon: "questionmark.folder",
+            title: "Unmapped space above the pie chart",
+            message: "The not fully mapped notice now appears above Storage by Type so you see coverage gaps before the breakdown.",
+            bullets: [],
+        ),
+    ]
 
     private static let v0514Pages: [WhatsNewPage] = [
         WhatsNewPage(

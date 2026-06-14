@@ -698,6 +698,10 @@ struct StorageResultsChartsSection: View {
         let grouped = viewModel.groupedCategorySummaries(from: overview.categorySummaries)
 
         VStack(alignment: .leading, spacing: 24) {
+            if let volume {
+                UnmappedStorageBanner(volume: volume, overview: overview)
+            }
+
             GroupBox("Storage by Type") {
                 if grouped.isEmpty {
                     Text("No category data yet")
@@ -719,10 +723,6 @@ struct StorageResultsChartsSection: View {
                 }
             }
             .frame(maxWidth: .infinity)
-
-            if let volume {
-                UnmappedStorageBanner(volume: volume, overview: overview)
-            }
 
             GroupBox("Storage Breakdown") {
                 if grouped.isEmpty {
