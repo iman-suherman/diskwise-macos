@@ -40,9 +40,15 @@ final class SystemVolumeMonitor: ObservableObject {
     private func pruneUnavailableMenuBarVolumes() {
         let settings = AppSettings.shared
         let availablePaths = Set(volumes.map(\.mountPath))
-        let stalePaths = settings.menuBarFreeSpaceVolumePaths.subtracting(availablePaths)
-        guard !stalePaths.isEmpty else { return }
-        settings.menuBarFreeSpaceVolumePaths.subtract(stalePaths)
+        let staleMenuBarPaths = settings.menuBarFreeSpaceVolumePaths.subtracting(availablePaths)
+        if !staleMenuBarPaths.isEmpty {
+            settings.menuBarFreeSpaceVolumePaths.subtract(staleMenuBarPaths)
+        }
+
+        let staleKeepAwakePaths = settings.keepAwakeVolumePaths.subtracting(availablePaths)
+        if !staleKeepAwakePaths.isEmpty {
+            settings.keepAwakeVolumePaths.subtract(staleKeepAwakePaths)
+        }
     }
 
     private func refreshInterval(for volume: MountedVolume?) -> Duration {
@@ -192,14 +198,25 @@ struct MenuBarVolumeFreeSpaceLabelView: View {
     }
 }
 
-private enum MenuBarPopoverMetrics {
+enum MenuBarPopoverMetrics {
     static let width: CGFloat = 520
+    static let height: CGFloat = 500
+    static let scanningHeight: CGFloat = 320
 }
 
 struct MenuBarKeepAwakeSection: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject private var keepAwake = KeepAwakeController.shared
+    let volumes: [MountedVolume]
     var compact: Bool = false
+
+    private var systemVolume: MountedVolume? {
+        volumes.first { VolumeDiscovery.isSystemVolume(mountPath: $0.mountPath) }
+    }
+
+    private var optionalVolumes: [MountedVolume] {
+        volumes.filter { !VolumeDiscovery.isSystemVolume(mountPath: $0.mountPath) }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: compact ? 8 : 10) {
@@ -214,10 +231,56 @@ struct MenuBarKeepAwakeSection: View {
                 )
             )
 
+            if settings.keepAwakeEnabled {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Drives to keep awake")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    if let systemVolume {
+                        Toggle(
+                            keepAwakeVolumeLabel(systemVolume),
+                            isOn: .constant(true)
+                        )
+                        .disabled(true)
+
+                        Text(
+                            "The system drive is always included while Keep Awake is on. DiskWise and macOS need \(systemVolume.name) mounted — it cannot be excluded."
+                        )
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    ForEach(optionalVolumes) { volume in
+                        Toggle(
+                            keepAwakeVolumeLabel(volume),
+                            isOn: Binding(
+                                get: { settings.isKeepAwakeVolumeEnabled(for: volume.mountPath) },
+                                set: {
+                                    settings.setKeepAwakeVolumeEnabled(for: volume.mountPath, enabled: $0)
+                                }
+                            )
+                        )
+                    }
+
+                    if optionalVolumes.isEmpty {
+                        Text("Connect external drives to add them to Keep Awake.")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            }
+
             if keepAwake.isActive {
-                Label("Mac will not sleep while enabled", systemImage: "bolt.fill")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
+                let awakeCount = keepAwake.activeVolumePaths.count
+                Label(
+                    "Keeping \(awakeCount) drive\(awakeCount == 1 ? "" : "s") awake — Mac will not sleep",
+                    systemImage: "bolt.fill"
+                )
+                .font(.caption)
+                .foregroundStyle(.orange)
+                .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("Prevents system and display sleep while DiskWise is running — useful during long scans or drive activity.")
                     .font(.caption)
@@ -225,6 +288,11 @@ struct MenuBarKeepAwakeSection: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    private func keepAwakeVolumeLabel(_ volume: MountedVolume) -> String {
+        let kind = volume.isInternal ? "Internal" : "External"
+        return "\(volume.name) (\(kind))"
     }
 }
 
@@ -326,7 +394,11 @@ struct MenuBarPopoverContent: View {
                 .font(.subheadline.weight(.semibold))
 
             HStack(alignment: .top, spacing: 24) {
-                MenuBarKeepAwakeSection(settings: settings, compact: true)
+                MenuBarKeepAwakeSection(
+                    settings: settings,
+                    volumes: monitor.volumes,
+                    compact: true
+                )
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 MenuBarVolumeToggleSection(
@@ -551,7 +623,7 @@ final class MenuBarStatusItemController: NSObject {
         let popover = NSPopover()
         popover.contentSize = NSSize(
             width: MenuBarPopoverMetrics.width,
-            height: ScanActivityMonitor.shared.isScanning ? 320 : 440
+            height: ScanActivityMonitor.shared.isScanning ? MenuBarPopoverMetrics.scanningHeight : MenuBarPopoverMetrics.height
         )
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(

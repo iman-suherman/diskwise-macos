@@ -83,6 +83,7 @@ final class AppSettings: ObservableObject {
         static let menuBarFreeSpaceVolumes = "diskwise.settings.menuBarFreeSpaceVolumes"
         static let showMenuBarHealthScore = "diskwise.settings.showMenuBarHealthScore"
         static let keepAwakeEnabled = "diskwise.settings.keepAwakeEnabled"
+        static let keepAwakeVolumePaths = "diskwise.settings.keepAwakeVolumePaths"
         static let hideFromDock = "diskwise.settings.hideFromDock"
         static let launchAtLogin = "diskwise.settings.launchAtLogin"
     }
@@ -162,7 +163,17 @@ final class AppSettings: ObservableObject {
     @Published var keepAwakeEnabled: Bool {
         didSet {
             UserDefaults.standard.set(keepAwakeEnabled, forKey: Keys.keepAwakeEnabled)
-            KeepAwakeController.shared.apply(enabled: keepAwakeEnabled)
+            syncKeepAwakeState()
+        }
+    }
+
+    @Published var keepAwakeVolumePaths: Set<String> {
+        didSet {
+            UserDefaults.standard.set(
+                Array(keepAwakeVolumePaths).sorted(),
+                forKey: Keys.keepAwakeVolumePaths
+            )
+            syncKeepAwakeState()
         }
     }
 
@@ -210,6 +221,36 @@ final class AppSettings: ObservableObject {
 
     func setKeepAwakeEnabled(_ enabled: Bool) {
         keepAwakeEnabled = enabled
+    }
+
+    func isKeepAwakeVolumeEnabled(for mountPath: String) -> Bool {
+        if VolumeDiscovery.isSystemVolume(mountPath: mountPath) {
+            return keepAwakeEnabled
+        }
+        return keepAwakeVolumePaths.contains(mountPath)
+    }
+
+    func setKeepAwakeVolumeEnabled(for mountPath: String, enabled: Bool) {
+        guard !VolumeDiscovery.isSystemVolume(mountPath: mountPath) else { return }
+        if enabled {
+            keepAwakeVolumePaths.insert(mountPath)
+        } else {
+            keepAwakeVolumePaths.remove(mountPath)
+        }
+    }
+
+    func effectiveKeepAwakeVolumePaths() -> Set<String> {
+        guard keepAwakeEnabled else { return [] }
+        var paths = keepAwakeVolumePaths
+        paths.insert("/")
+        return paths
+    }
+
+    private func syncKeepAwakeState() {
+        KeepAwakeController.shared.apply(
+            enabled: keepAwakeEnabled,
+            volumePaths: effectiveKeepAwakeVolumePaths()
+        )
     }
 
     func setHideFromDock(_ hidden: Bool) {
@@ -273,12 +314,17 @@ final class AppSettings: ObservableObject {
         }
         hideFromDock = defaults.bool(forKey: Keys.hideFromDock)
         keepAwakeEnabled = defaults.bool(forKey: Keys.keepAwakeEnabled)
+        if let storedKeepAwakePaths = defaults.stringArray(forKey: Keys.keepAwakeVolumePaths) {
+            keepAwakeVolumePaths = Set(storedKeepAwakePaths)
+        } else {
+            keepAwakeVolumePaths = []
+        }
         if defaults.object(forKey: Keys.launchAtLogin) == nil {
             launchAtLogin = MenuBarMonitorController.launchAtLoginEnabled
         } else {
             launchAtLogin = defaults.bool(forKey: Keys.launchAtLogin)
         }
-        KeepAwakeController.shared.apply(enabled: keepAwakeEnabled)
+        syncKeepAwakeState()
     }
 
     static var currentAppVersion: String {
@@ -335,6 +381,7 @@ final class AppSettings: ObservableObject {
         menuBarFreeSpaceVolumePaths = []
         showMenuBarHealthScore = false
         keepAwakeEnabled = false
+        keepAwakeVolumePaths = []
         hideFromDock = false
         launchAtLogin = false
         showMenuBarMonitorInstructions = false

@@ -69,7 +69,7 @@ struct MenuBarHealthPopoverContent: View {
             }
             .padding(16)
         }
-        .frame(width: 340, height: 560)
+        .frame(width: MenuBarPopoverMetrics.width, height: MenuBarPopoverMetrics.height)
     }
 
     private var header: some View {
@@ -167,9 +167,12 @@ struct MenuBarHealthPopoverContent: View {
 
     @ViewBuilder
     private func topProcessesSection(_ snapshot: SystemHealthSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        HStack(alignment: .top, spacing: 24) {
             processList(title: "Top CPU", processes: snapshot.topCPUProcesses, showCPU: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
             processList(title: "Top Memory", processes: snapshot.topMemoryProcesses, showCPU: false)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -341,7 +344,10 @@ final class MenuBarHealthItemController: NSObject {
         }
 
         let popover = NSPopover()
-        popover.contentSize = NSSize(width: 340, height: 520)
+        popover.contentSize = NSSize(
+            width: MenuBarPopoverMetrics.width,
+            height: MenuBarPopoverMetrics.height
+        )
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(
             rootView: MenuBarHealthPopoverContent(

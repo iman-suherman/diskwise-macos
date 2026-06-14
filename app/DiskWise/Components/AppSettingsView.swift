@@ -66,7 +66,10 @@ struct AppSettingsView: View {
 
             Section("Menu bar monitor") {
                 HStack(alignment: .top, spacing: 24) {
-                    MenuBarKeepAwakeSection(settings: settings)
+                    MenuBarKeepAwakeSection(
+                        settings: settings,
+                        volumes: SystemVolumeMonitor.shared.volumes
+                    )
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     MenuBarVolumeToggleSection(

@@ -12,6 +12,8 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
+        case "0.5.14":
+            return v0514Pages
         case "0.5.13":
             return v0513Pages
         case "0.5.12":
@@ -62,6 +64,37 @@ enum WhatsNewContent {
             return genericPages(version: version)
         }
     }
+
+    private static let v0514Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "keep-awake-drives",
+            icon: "bolt.fill",
+            title: "Choose drives for Keep Awake",
+            message: "Keep Awake now lists your drives. Macintosh HD is always included; pick external volumes to keep them from sleeping too.",
+            bullets: [
+                "System drive cannot be excluded — required for DiskWise and macOS",
+                "Toggle from Settings or the disk menu bar popover",
+            ]
+        ),
+        WhatsNewPage(
+            id: "pie-5050",
+            icon: "chart.pie",
+            title: "Balanced Results pie chart",
+            message: "The storage pie and category details now share space evenly — the chart scales to half the section width.",
+            bullets: [
+                "Hover or click slices for details on the right",
+            ]
+        ),
+        WhatsNewPage(
+            id: "health-popover",
+            icon: "heart.text.square",
+            title: "Wider System Status popover",
+            message: "The health score menu bar panel matches the disk space popover size, with Top CPU and Top Memory shown side by side.",
+            bullets: [
+                "520px wide for consistent menu bar panels",
+            ]
+        ),
+    ]
 
     private static let v0513Pages: [WhatsNewPage] = [
         WhatsNewPage(

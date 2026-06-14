@@ -47,8 +47,6 @@ struct StorageTypePieChart: View {
     let onShowInFinder: (String) -> Void
     let onDelete: (String) -> Void
 
-    private let maxPieSize: CGFloat = 240
-
     @State private var angleSelection: String?
 
     private var highlightedName: String? {
@@ -56,12 +54,18 @@ struct StorageTypePieChart: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 28) {
-            pieChartRing
-                .frame(width: maxPieSize, height: maxPieSize)
+        HStack(alignment: .top, spacing: 24) {
+            GeometryReader { geometry in
+                let side = min(geometry.size.width, geometry.size.height)
+                pieChartRing(side: side)
+                    .frame(width: side, height: side)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .aspectRatio(1, contentMode: .fit)
+            .frame(maxWidth: .infinity)
 
             detailPanel
-                .frame(maxWidth: .infinity, minHeight: maxPieSize, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity)
         .animation(.easeInOut(duration: 0.2), value: hoveredName)
@@ -73,7 +77,7 @@ struct StorageTypePieChart: View {
         }
     }
 
-    private var pieChartRing: some View {
+    private func pieChartRing(side: CGFloat) -> some View {
         ZStack {
             Chart(items, id: \.name) { item in
                 SectorMark(
@@ -91,10 +95,12 @@ struct StorageTypePieChart: View {
             )
             .chartAngleSelection(value: $angleSelection)
             .chartLegend(.hidden)
+            .frame(width: side, height: side)
 
-            centerLabel
-                .frame(width: maxPieSize * 0.44)
+            centerLabel(side: side)
+                .frame(width: side * 0.44)
         }
+        .frame(width: side, height: side)
         .contentShape(Rectangle())
         .contextMenu {
             if let name = contextMenuCategory {
@@ -112,12 +118,13 @@ struct StorageTypePieChart: View {
             }
         }
         .onContinuousHover { phase in
+            let chartSize = CGSize(width: side, height: side)
             switch phase {
             case .active(let location):
                 onHover(
                     PieChartHitTester.category(
                         at: location,
-                        in: CGSize(width: maxPieSize, height: maxPieSize),
+                        in: chartSize,
                         items: items,
                         totalSize: totalSize
                     )
@@ -129,7 +136,7 @@ struct StorageTypePieChart: View {
         .onTapGesture { location in
             if let name = PieChartHitTester.category(
                 at: location,
-                in: CGSize(width: maxPieSize, height: maxPieSize),
+                in: CGSize(width: side, height: side),
                 items: items,
                 totalSize: totalSize
             ) {
@@ -284,13 +291,14 @@ struct StorageTypePieChart: View {
     }
 
     @ViewBuilder
-    private var centerLabel: some View {
+    private func centerLabel(side: CGFloat) -> some View {
+        let valueSize = max(22, min(34, side * 0.11))
         VStack(spacing: 4) {
             Text("Indexed")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Text(DiskWiseFormatters.bytes.string(fromByteCount: totalSize))
-                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .font(.system(size: valueSize, weight: .bold, design: .rounded))
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
             Text("\(items.count) types")

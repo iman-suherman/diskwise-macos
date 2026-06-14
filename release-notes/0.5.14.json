@@ -1,0 +1,11 @@
+{
+  "summary": "Per-drive Keep Awake, balanced Results pie chart, and a wider System Status menu bar panel.",
+  "introduced": [
+    "Keep Awake shows a drive list — Macintosh HD is always included; external drives can be toggled individually"
+  ],
+  "changed": [
+    "Results pie chart and category details use a 50/50 side-by-side layout",
+    "System Status menu bar popover matches disk space size (520px) with Top CPU and Top Memory columns side by side"
+  ],
+  "fixed": []
+}
