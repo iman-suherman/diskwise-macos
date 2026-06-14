@@ -19,8 +19,8 @@ export function Hero() {
   const highlights = flattenReleaseNotes(latest?.releaseNotes).slice(0, 3);
 
   return (
-    <section id="home" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 md:py-14 lg:py-20">
-      <div className="grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-10">
+    <section id="home" className="relative mx-auto max-w-7xl overflow-visible px-4 py-10 sm:px-6 md:py-14 lg:py-20">
+      <div className="relative grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-10">
         <div>
           <span className="inline-flex rounded-full bg-brand-blue/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-blue sm:px-4 sm:py-1.5 sm:text-sm">
             {BRAND_TAGLINE}
@@ -69,7 +69,11 @@ export function Hero() {
         <div className="relative mx-auto flex w-full max-w-md items-center justify-center overflow-visible lg:mx-0 lg:max-w-lg">
           <div
             aria-hidden
-            className="absolute inset-0 scale-90 rounded-full bg-gradient-to-br from-brand-blue/35 via-brand-purple/20 to-brand-green/15 blur-3xl"
+            className="pointer-events-none absolute left-1/2 top-1/2 h-[130%] w-[130%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(0,122,255,0.2)_0%,rgba(88,86,214,0.12)_38%,transparent_72%)] blur-3xl"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 top-1/2 h-[95%] w-[95%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-brand-blue/25 via-brand-purple/15 to-brand-green/10 blur-[72px]"
           />
           <ScanningHeroIcon priority className="relative w-full" />
         </div>

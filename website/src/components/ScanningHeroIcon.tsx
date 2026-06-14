@@ -20,7 +20,7 @@ export function ScanningHeroIcon({ className = "", priority = false }: ScanningH
         priority={priority}
         unoptimized
         sizes="(max-width: 1024px) 90vw, 32rem"
-        className="scanning-hero-image relative z-10 h-auto w-full object-contain drop-shadow-[0_20px_50px_rgba(0,122,255,0.45)]"
+        className="scanning-hero-image relative z-10 h-auto w-full object-contain drop-shadow-[0_16px_40px_rgba(0,122,255,0.35)]"
       />
     </div>
   );

@@ -13,9 +13,10 @@ final class MemoryAnalyzerMonitor: ObservableObject {
     @Published private(set) var aiProviderLabel = "Rule-based"
     @Published private(set) var isRunning = false
 
-    private let maxSamples = 48
+    private let maxSamples = 24
     private let notificationCooldown: TimeInterval = 20 * 60
-    private let periodicAIInterval: Duration = .seconds(300)
+    private let periodicAIInterval: Duration = .seconds(600)
+    private let sampleProcessLimit = 5
 
     private var sampleTask: Task<Void, Never>?
     private var analysisTask: Task<Void, Never>?
@@ -131,7 +132,7 @@ final class MemoryAnalyzerMonitor: ObservableObject {
     }
 
     private func appendSample() {
-        let snapshot = SystemHealthMonitorCore.capture(volume: nil, processLimit: 12)
+        let snapshot = SystemHealthMonitorCore.capture(volume: nil, processLimit: sampleProcessLimit)
         let record = MemorySampleRecord(
             timestamp: Date(),
             usedPercent: snapshot.memoryUsedPercent,

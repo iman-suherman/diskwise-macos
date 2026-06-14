@@ -55,8 +55,7 @@ enum ScanPhase: String, Sendable {
 
 enum DetailPane: String, CaseIterable, Identifiable {
     case overview
-    case memoryAnalyzer
-    case systemStatus
+    case systemOptimization
     case maintenance
     case duplicates
     case ai
@@ -64,14 +63,13 @@ enum DetailPane: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     static var navigationCases: [DetailPane] {
-        [.overview, .memoryAnalyzer, .systemStatus, .maintenance, .duplicates]
+        [.overview, .systemOptimization, .maintenance, .duplicates]
     }
 
     var title: String {
         switch self {
         case .overview: return "Disk"
-        case .memoryAnalyzer: return "Memory Analyzer"
-        case .systemStatus: return "System Status"
+        case .systemOptimization: return "System Optimization"
         case .maintenance: return "Maintenance"
         case .duplicates: return "Duplicates"
         case .ai: return "Ask DiskWise"
@@ -81,8 +79,7 @@ enum DetailPane: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .overview: return "internaldrive"
-        case .memoryAnalyzer: return "memorychip"
-        case .systemStatus: return "heart.text.square"
+        case .systemOptimization: return "gauge.with.dots.needle.67percent"
         case .maintenance: return "wrench.and.screwdriver.fill"
         case .duplicates: return "doc.on.doc"
         case .ai: return "sparkles"
@@ -92,8 +89,7 @@ enum DetailPane: String, CaseIterable, Identifiable {
     var subtitle: String {
         switch self {
         case .overview: return "Scan and analyze storage"
-        case .memoryAnalyzer: return "Periodic RAM monitoring"
-        case .systemStatus: return "Live CPU and memory metrics"
+        case .systemOptimization: return "Health, memory, and AI insights"
         case .maintenance: return "Caches, snapshots, cleanup"
         case .duplicates: return "Find duplicate files"
         case .ai: return "Ask about your storage"
@@ -217,7 +213,6 @@ final class AppViewModel: ObservableObject {
     private var aiChatTask: Task<Void, Never>?
     private var aiChatSessionID = UUID()
     private var scanStartTime: Date?
-    private var lastDuplicateGroupsRefreshCount = 0
     private var prewarmTask: Task<Void, Never>?
     private var prewarmSkipTimerTask: Task<Void, Never>?
     private var launchDataPrewarmed = false
@@ -685,6 +680,7 @@ final class AppViewModel: ObservableObject {
         cachedResultsRefreshTask?.cancel()
         analysisRefreshTask?.cancel()
         launchDataPrewarmed = false
+        releaseCachedMemory()
     }
 
     func presentIndexRebuildPromptIfNeeded() {
@@ -1841,7 +1837,6 @@ final class AppViewModel: ObservableObject {
         isScanning = true
         scanPhase = .identifying
         scanStartTime = Date()
-        lastDuplicateGroupsRefreshCount = 0
         clearStorageCategorySelection()
 
         let volumeURL = URL(fileURLWithPath: volume.mountPath)
@@ -2017,6 +2012,7 @@ final class AppViewModel: ObservableObject {
                     } else {
                         self.setStatus(statusMessage, kind: .success)
                     }
+                    self.releaseCachedMemory()
                 }
             } catch {
                 await MainActor.run {
@@ -2036,6 +2032,7 @@ final class AppViewModel: ObservableObject {
                     } else {
                         self.setStatus(statusMessage, kind: .error)
                     }
+                    self.releaseCachedMemory()
                 }
             }
         }
@@ -2056,7 +2053,6 @@ final class AppViewModel: ObservableObject {
         duplicateTask?.cancel()
         isFindingDuplicates = true
         scanStartTime = Date()
-        lastDuplicateGroupsRefreshCount = 0
         let duplicateFileLimit = appSettings.duplicateScanFileLimit
         logActivity(
             .duplicate,
@@ -2074,7 +2070,6 @@ final class AppViewModel: ObservableObject {
                     onProgress: { progress in
                         Task { @MainActor in
                             self.duplicateScanProgress = progress
-                            self.maybeRefreshDuplicateGroupsDuringScan(progress, diskID: diskID)
                             if let detail = self.duplicateProgressDetail {
                                 self.setStatus("Finding duplicates · \(detail)", kind: .working)
                             } else {
@@ -2106,6 +2101,7 @@ final class AppViewModel: ObservableObject {
                         self.logActivity(.duplicate, "Duplicate detection complete", detail: "No groups found")
                         self.setStatus("No duplicate groups found", kind: .success)
                     }
+                    self.releaseCachedMemory()
                 }
             } catch {
                 await MainActor.run {
@@ -2122,16 +2118,16 @@ final class AppViewModel: ObservableObject {
                             kind: .error
                         )
                     }
+                    self.releaseCachedMemory()
                 }
             }
         }
     }
 
-    private func maybeRefreshDuplicateGroupsDuringScan(_ progress: DuplicateScanProgress, diskID: Int64) {
-        guard isFindingDuplicates else { return }
-        guard progress.processedCount - lastDuplicateGroupsRefreshCount >= 250 else { return }
-        lastDuplicateGroupsRefreshCount = progress.processedCount
-        duplicateGroups = (try? duplicateEngine.loadGroups(forDiskID: diskID)) ?? duplicateGroups
+    func releaseCachedMemory() {
+        categoryDetailFiles = []
+        llmReport = ""
+        database?.releaseMemory()
     }
 
     func generateLLMReport() {
@@ -2412,7 +2408,8 @@ final class AppViewModel: ObservableObject {
     }
 
     func previewCleanup(for group: DuplicateGroup) -> CleanupPreview {
-        cleanupEngine.preview(files: group.files, keepFirstInEachGroup: true)
+        let files = (try? database.members(forGroupID: group.id)) ?? group.files
+        return cleanupEngine.preview(files: files, keepFirstInEachGroup: true)
     }
 
     func previewAllDuplicatesCleanup() -> CleanupPreview? {
@@ -2421,7 +2418,8 @@ final class AppViewModel: ObservableObject {
         var items: [CleanupItem] = []
         var totalBytes: Int64 = 0
         for group in duplicateGroups {
-            let preview = cleanupEngine.preview(files: group.files, keepFirstInEachGroup: true)
+            let files = (try? database.members(forGroupID: group.id)) ?? group.files
+            let preview = cleanupEngine.preview(files: files, keepFirstInEachGroup: true)
             items.append(contentsOf: preview.items)
             totalBytes += preview.totalBytes
         }

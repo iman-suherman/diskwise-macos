@@ -51,7 +51,7 @@ public final class AIAnalysisEngine: @unchecked Sendable {
         let oldThreshold = Calendar.current.date(byAdding: .year, value: -2, to: Date())!
         let overview = try database.storageOverview(forDiskID: diskID, oldFileThreshold: oldThreshold)
         let duplicateGroups = try database.duplicateGroups(forDiskID: diskID, limit: 50)
-        let cappedLimit = max(500, min(fileLimit, 500_000))
+        let cappedLimit = max(500, min(fileLimit, 25_000))
         let allFiles = try database.files(forDiskID: diskID, limit: cappedLimit)
 
         let previewLikeFiles = allFiles.filter { file in

@@ -183,6 +183,34 @@ struct MenuBarVolumeFreeSpaceLabel: View {
     }
 }
 
+/// Sidebar badge matching menu bar `HD (256GB)` free-space label and color thresholds.
+struct SidebarDiskFreeSpaceBadge: View {
+    let volume: MountedVolume
+
+    var body: some View {
+        Text(MenuBarFormatters.menuBarFreeSpaceLabel(for: volume))
+            .font(.caption.weight(.semibold))
+            .monospacedDigit()
+            .foregroundStyle(statusColor)
+            .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var freeFraction: Double {
+        max(0, min(1, 1 - volume.usageFraction))
+    }
+
+    private var statusColor: Color {
+        MenuBarDiskThresholds.statusColor(
+            freeSize: volume.freeSize,
+            freeFraction: freeFraction
+        )
+    }
+
+    private var accessibilityLabel: String {
+        "\(volume.name), \(MenuBarFormatters.compactFreeSpace(volume.freeSize)) remaining"
+    }
+}
+
 struct MenuBarVolumeFreeSpaceLabelView: View {
     @ObservedObject var monitor: SystemVolumeMonitor
     let mountPath: String

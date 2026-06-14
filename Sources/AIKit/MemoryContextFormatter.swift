@@ -46,9 +46,10 @@ enum MemoryContextFormatter {
         Recommend quitting or restarting specific apps only when the sample data supports it.
         Do not recommend disabling macOS system services.
         Format replies with Markdown.
-        Use blank lines between paragraphs and sections.
-        Put each bullet or numbered step on its own line.
-        Use ## headings when covering multiple topics.
+        Use blank lines between paragraphs and sections — put a carriage return between each paragraph.
+        Put each bullet or numbered step on its own line with a blank line before each list.
+        Use ## headings when covering multiple topics, each on its own line with a blank line above.
+        Never run multiple sections together in one paragraph.
         Include a short ## Better computing habits section with 2-4 concrete tips for this Mac.
         """
     }

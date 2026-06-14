@@ -2,6 +2,8 @@ import AppKit
 import SwiftUI
 
 struct SystemStatusView: View {
+    var embeddedInOptimization: Bool = false
+
     @EnvironmentObject private var viewModel: AppViewModel
     @ObservedObject private var monitor = SystemHealthMonitor.shared
 
@@ -11,40 +13,22 @@ struct SystemStatusView: View {
     @State private var memoryReliefTrigger = 0
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                header
-
-                if let snapshot = monitor.snapshot {
-                    scoreCard(snapshot)
-                    metricsCard(snapshot)
-                    SystemMemoryReliefControl(
-                        monitor: monitor,
-                        snapshot: snapshot,
-                        onStatusMessage: { viewModel.reportProcessAction($0) },
-                        trigger: $memoryReliefTrigger
-                    )
-                    systemDetailsCard(snapshot)
-
-                    HStack(alignment: .top, spacing: 20) {
-                        cpuProcessCard(snapshot)
-                        memoryProcessCard(snapshot)
-                    }
-                } else {
-                    ContentUnavailableView(
-                        "System status unavailable",
-                        systemImage: "heart.text.square",
-                        description: Text("Could not read CPU, memory, or process metrics.")
-                    )
-                    .frame(maxWidth: .infinity, minHeight: 280)
+        Group {
+            if embeddedInOptimization {
+                embeddedContent
+            } else {
+                ScrollView {
+                    embeddedContent
+                        .padding(28)
                 }
             }
-            .padding(28)
         }
         .onAppear {
+            guard !embeddedInOptimization else { return }
             monitor.refreshDetailed()
         }
         .onDisappear {
+            guard !embeddedInOptimization else { return }
             monitor.refresh(processLimit: 5)
         }
         .sheet(item: $selectedProcess) { process in
@@ -85,6 +69,50 @@ struct SystemStatusView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(terminateResultMessage ?? "")
+        }
+    }
+
+    private var embeddedContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            if !embeddedInOptimization {
+                header
+            } else {
+                sectionHeading("System Status", icon: "heart.text.square", detail: "Live CPU, memory, and process metrics for this Mac.")
+            }
+
+            if let snapshot = monitor.snapshot {
+                scoreCard(snapshot)
+                metricsCard(snapshot)
+                SystemMemoryReliefControl(
+                    monitor: monitor,
+                    snapshot: snapshot,
+                    onStatusMessage: { viewModel.reportProcessAction($0) },
+                    trigger: $memoryReliefTrigger
+                )
+                systemDetailsCard(snapshot)
+
+                HStack(alignment: .top, spacing: 20) {
+                    cpuProcessCard(snapshot)
+                    memoryProcessCard(snapshot)
+                }
+            } else {
+                ContentUnavailableView(
+                    "System status unavailable",
+                    systemImage: "heart.text.square",
+                    description: Text("Could not read CPU, memory, or process metrics.")
+                )
+                .frame(maxWidth: .infinity, minHeight: 280)
+            }
+        }
+    }
+
+    private func sectionHeading(_ title: String, icon: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(title, systemImage: icon)
+                .font(.title2.bold())
+            Text(detail)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
     }
 

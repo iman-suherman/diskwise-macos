@@ -1,0 +1,17 @@
+{
+  "summary": "Lower memory footprint during scans, unified System Optimization hub, and live disk free-space badges in the sidebar.",
+  "introduced": [
+    "System Optimization — Memory Analyzer and System Status combined into one hub for health, memory, and AI recommendations",
+    "Sidebar score badges — Disk shows HD (free space) and System Optimization shows Health (score) and Mem (percent) with color thresholds"
+  ],
+  "changed": [
+    "Duplicate groups load preview paths only; full member lists load when you preview cleanup",
+    "Scan index writes stream in batches and release SQLite cache after heavy work",
+    "AI storage analysis caps in-memory file samples at 25,000 instead of 500,000",
+    "Memory Analyzer retains fewer background samples and runs periodic AI every 10 minutes",
+    "Apple Intelligence memory insights use formatted markdown with clearer paragraph spacing"
+  ],
+  "fixed": [
+    "Reduced idle RAM after scans by clearing cached category files and duplicate reloads mid-scan"
+  ]
+}

@@ -189,7 +189,7 @@ struct DuplicateGroupCard: View {
     }
 
     private var extraCopyCount: Int {
-        max(0, group.files.count - 1)
+        max(0, group.fileCount - 1)
     }
 
     var body: some View {
@@ -203,7 +203,7 @@ struct DuplicateGroupCard: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(displayName)
                             .font(.headline)
-                        Text("\(group.files.count) copies · keep 1 · remove \(extraCopyCount)")
+                        Text("\(group.fileCount) copies · keep 1 · remove \(extraCopyCount)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Text("\(DiskWiseFormatters.bytes.string(fromByteCount: group.reclaimableSize)) reclaimable")
@@ -225,8 +225,8 @@ struct DuplicateGroupCard: View {
                                 .truncationMode(.middle)
                         }
                     }
-                    if group.files.count > 4 {
-                        Text("+ \(group.files.count - 4) more")
+                    if group.fileCount > 4 {
+                        Text("+ \(group.fileCount - 4) more")
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
                     }

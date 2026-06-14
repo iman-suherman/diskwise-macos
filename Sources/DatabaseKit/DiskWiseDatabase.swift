@@ -99,6 +99,24 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         folderPathPrefix: String?,
         scannedAt: Date
     ) throws {
+        try replaceIndexedFiles(
+            forDiskID: diskID,
+            folderPathPrefix: folderPathPrefix,
+            scannedAt: scannedAt
+        ) { db in
+            for file in files {
+                try file.insert(db, onConflict: .replace)
+            }
+        }
+    }
+
+    /// Streams file inserts inside a single replace transaction to avoid holding all records in memory.
+    public func replaceIndexedFiles(
+        forDiskID diskID: Int64,
+        folderPathPrefix: String?,
+        scannedAt: Date,
+        insertFiles: (Database) throws -> Void
+    ) throws {
         try dbQueue.write { db in
             if let folderPathPrefix {
                 let normalized = folderPathPrefix.hasSuffix("/")
@@ -112,14 +130,19 @@ public final class DiskWiseDatabase: @unchecked Sendable {
                 try db.execute(sql: "DELETE FROM files WHERE disk_id = ?", arguments: [diskID])
             }
 
-            for file in files {
-                try file.insert(db, onConflict: .replace)
-            }
+            try insertFiles(db)
 
             try db.execute(
                 sql: "UPDATE disks SET scanned_at = ? WHERE id = ?",
                 arguments: [scannedAt, diskID]
             )
+        }
+    }
+
+    /// Hint SQLite to return cached pages after heavy scan or analysis work.
+    public func releaseMemory() {
+        try? dbQueue.write { db in
+            try db.execute(sql: "PRAGMA shrink_memory")
         }
     }
 
@@ -386,19 +409,19 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         }
     }
 
-    public func members(forGroupID groupID: Int64) throws -> [FileRecord] {
+    public func members(forGroupID groupID: Int64, limit: Int? = nil) throws -> [FileRecord] {
         try dbQueue.read { db in
-            try FileRecord.fetchAll(
-                db,
-                sql: """
+            var sql = """
                 SELECT files.*
                 FROM files
                 JOIN duplicate_members ON duplicate_members.file_id = files.id
                 WHERE duplicate_members.group_id = ?
                 ORDER BY files.path ASC
-                """,
-                arguments: [groupID]
-            )
+                """
+            if let limit {
+                sql += " LIMIT \(max(1, limit))"
+            }
+            return try FileRecord.fetchAll(db, sql: sql, arguments: [groupID])
         }
     }
 
@@ -427,7 +450,7 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         limit: Int = 10,
         pathScope: PathScopeFilter? = nil
     ) throws -> [SpaceConsumer] {
-        let files = try self.files(forDiskID: diskID, limit: 10_000, pathScope: pathScope)
+        let files = try filePathsAndSizes(forDiskID: diskID, limit: 3_000, pathScope: pathScope)
         var buckets: [String: (size: Int64, count: Int)] = [:]
 
         for file in files {
@@ -443,6 +466,31 @@ public final class DiskWiseDatabase: @unchecked Sendable {
             .sorted { $0.totalSize > $1.totalSize }
             .prefix(limit)
             .map { $0 }
+    }
+
+    private struct PathAndSize: FetchableRecord, Decodable {
+        let path: String
+        let size: Int64
+    }
+
+    private func filePathsAndSizes(
+        forDiskID diskID: Int64,
+        limit: Int,
+        pathScope: PathScopeFilter?
+    ) throws -> [PathAndSize] {
+        let scoped = Self.scopedWhere(diskID: diskID, pathScope: pathScope)
+        return try dbQueue.read { db in
+            try PathAndSize.fetchAll(
+                db,
+                sql: """
+                SELECT path, size FROM files
+                WHERE \(scoped.sql)
+                ORDER BY size DESC
+                LIMIT ?
+                """,
+                arguments: scoped.arguments + [limit]
+            )
+        }
     }
 
     private static func consumerName(for path: String) -> String {

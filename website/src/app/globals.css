@@ -66,6 +66,9 @@ body {
 .scanning-hero {
   position: relative;
   aspect-ratio: 1;
+  /* Clip scanning.png square corners; background stays transparent so page glow shows through */
+  border-radius: 22%;
+  overflow: hidden;
 }
 
 .scanning-hero-glow {

@@ -74,6 +74,7 @@ public struct DuplicateGroup: Identifiable, Sendable {
     public let fingerprint: String
     public let totalSize: Int64
     public let reclaimableSize: Int64
+    public let fileCount: Int
     public let files: [FileRecord]
 
     public init(
@@ -82,6 +83,7 @@ public struct DuplicateGroup: Identifiable, Sendable {
         fingerprint: String,
         totalSize: Int64,
         reclaimableSize: Int64,
+        fileCount: Int? = nil,
         files: [FileRecord]
     ) {
         self.id = id
@@ -89,6 +91,7 @@ public struct DuplicateGroup: Identifiable, Sendable {
         self.fingerprint = fingerprint
         self.totalSize = totalSize
         self.reclaimableSize = reclaimableSize
+        self.fileCount = fileCount ?? files.count
         self.files = files
     }
 }
@@ -578,15 +581,16 @@ public final class DuplicateEngine: @unchecked Sendable {
         let records = try database.duplicateGroups(forDiskID: diskID, limit: limit)
         return try records.compactMap { record in
             guard let groupID = record.id else { return nil }
-            let files = try database.members(forGroupID: groupID)
-            let reclaimable = record.totalSize - (files.first?.size ?? 0)
+            let previewFiles = try database.members(forGroupID: groupID, limit: 4)
+            let reclaimable = record.totalSize - (previewFiles.first?.size ?? 0)
             return DuplicateGroup(
                 id: groupID,
                 level: DuplicateDetectionLevel(rawValue: record.detectionLevel) ?? .hash,
                 fingerprint: record.fingerprint,
                 totalSize: record.totalSize,
                 reclaimableSize: reclaimable,
-                files: files
+                fileCount: record.fileCount,
+                files: previewFiles
             )
         }
     }
@@ -594,15 +598,17 @@ public final class DuplicateEngine: @unchecked Sendable {
     public func loadGroups(limit: Int = 100) throws -> [DuplicateGroup] {
         let records = try database.duplicateGroups(limit: limit)
         return try records.map { record in
-            let files = try database.members(forGroupID: record.id ?? 0)
-            let reclaimable = record.totalSize - (files.first?.size ?? 0)
+            let groupID = record.id ?? 0
+            let previewFiles = try database.members(forGroupID: groupID, limit: 4)
+            let reclaimable = record.totalSize - (previewFiles.first?.size ?? 0)
             return DuplicateGroup(
-                id: record.id ?? 0,
+                id: groupID,
                 level: DuplicateDetectionLevel(rawValue: record.detectionLevel) ?? .hash,
                 fingerprint: record.fingerprint,
                 totalSize: record.totalSize,
                 reclaimableSize: reclaimable,
-                files: files
+                fileCount: record.fileCount,
+                files: previewFiles
             )
         }
     }

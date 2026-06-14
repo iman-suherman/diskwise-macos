@@ -126,6 +126,9 @@ struct ContentView: View {
     @EnvironmentObject private var viewModel: AppViewModel
     @EnvironmentObject private var appSettings: AppSettings
     @Environment(\.openSettings) private var openSettings
+    @ObservedObject private var volumeMonitor = SystemVolumeMonitor.shared
+    @ObservedObject private var healthMonitor = SystemHealthMonitor.shared
+    @ObservedObject private var memoryMonitor = MemoryAnalyzerMonitor.shared
 
     var body: some View {
         ZStack {
@@ -387,10 +390,8 @@ struct ContentView: View {
         switch viewModel.selectedPane {
         case .overview:
             VolumeDiskTabView()
-        case .memoryAnalyzer:
-            MemoryAnalyzerView()
-        case .systemStatus:
-            SystemStatusView()
+        case .systemOptimization:
+            SystemOptimizationView()
         case .maintenance:
             MaintenanceView()
         case .duplicates:
@@ -409,14 +410,26 @@ struct ContentView: View {
     private func menuBadge(for pane: DetailPane) -> some View {
         Group {
             switch pane {
-            case .systemStatus:
-                if let score = SystemHealthMonitor.shared.snapshot?.healthScore {
-                    Text("\(score)")
-                        .font(.caption2.weight(.bold))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(healthScoreBadgeColor(score).opacity(0.18), in: Capsule())
-                        .foregroundStyle(healthScoreBadgeColor(score))
+            case .overview:
+                if let volume = volumeMonitor.systemVolume {
+                    SidebarDiskFreeSpaceBadge(volume: volume)
+                }
+            case .systemOptimization:
+                HStack(spacing: 8) {
+                    if let score = healthMonitor.snapshot?.healthScore {
+                        SidebarLabelScoreBadge(
+                            label: "Health",
+                            score: "\(score)",
+                            color: healthScoreBadgeColor(score)
+                        )
+                    }
+                    if let report = memoryMonitor.report {
+                        SidebarLabelScoreBadge(
+                            label: "Mem",
+                            score: "\(Int(report.currentUsedPercent.rounded()))%",
+                            color: memoryPressureColor(report.currentUsedPercent)
+                        )
+                    }
                 }
             case .duplicates:
                 if viewModel.duplicateGroups.count > 0 {
@@ -427,18 +440,17 @@ struct ContentView: View {
                         .background(Color.orange.opacity(0.9), in: Capsule())
                         .foregroundStyle(.white)
                 }
-            case .memoryAnalyzer:
-                if let report = MemoryAnalyzerMonitor.shared.report, report.currentUsedPercent >= 80 {
-                    Text("!")
-                        .font(.caption2.weight(.bold))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.red.opacity(0.85), in: Capsule())
-                        .foregroundStyle(.white)
-                }
             default:
                 EmptyView()
             }
+        }
+    }
+
+    private func memoryPressureColor(_ percent: Double) -> Color {
+        switch percent {
+        case ..<60: return .green
+        case 60..<80: return .orange
+        default: return .red
         }
     }
 

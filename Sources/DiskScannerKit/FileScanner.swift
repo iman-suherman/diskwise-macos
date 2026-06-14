@@ -749,37 +749,52 @@ public final class ScanEngine: @unchecked Sendable {
             throw FileScannerError.cancelled
         }
 
-        var fileRecords: [FileRecord] = []
-        fileRecords.reserveCapacity(scannedFiles.count)
         var indexedBytes: Int64 = 0
         var fileCount = 0
-
-        for scanned in scannedFiles where !scanned.isDirectory {
-            let url = URL(fileURLWithPath: scanned.path)
-            fileRecords.append(
-                FileRecord(
-                    diskID: diskID,
-                    path: scanned.path,
-                    size: scanned.size,
-                    mimeType: FileClassifier.mimeType(for: url),
-                    category: FileClassifier.category(for: url, isDirectory: false),
-                    createdAt: scanned.createdAt,
-                    modifiedAt: scanned.modifiedAt,
-                    lastAccessed: scanned.lastAccessed,
-                    extensionName: scanned.extensionName
-                )
-            )
-            indexedBytes += scanned.size
-            fileCount += 1
-        }
+        let batchSize = 2_500
 
         let scannedAt = Date()
         try database.replaceIndexedFiles(
             forDiskID: diskID,
-            files: fileRecords,
             folderPathPrefix: isFolderScan ? root.path : nil,
             scannedAt: scannedAt
-        )
+        ) { db in
+            var batch: [FileRecord] = []
+            batch.reserveCapacity(batchSize)
+
+            for scanned in scannedFiles where !scanned.isDirectory {
+                let url = URL(fileURLWithPath: scanned.path)
+                batch.append(
+                    FileRecord(
+                        diskID: diskID,
+                        path: scanned.path,
+                        size: scanned.size,
+                        mimeType: FileClassifier.mimeType(for: url),
+                        category: FileClassifier.category(for: url, isDirectory: false),
+                        createdAt: scanned.createdAt,
+                        modifiedAt: scanned.modifiedAt,
+                        lastAccessed: scanned.lastAccessed,
+                        extensionName: scanned.extensionName
+                    )
+                )
+                indexedBytes += scanned.size
+                fileCount += 1
+
+                if batch.count >= batchSize {
+                    for file in batch {
+                        try file.insert(db, onConflict: .replace)
+                    }
+                    batch.removeAll(keepingCapacity: true)
+                }
+            }
+
+            for file in batch {
+                try file.insert(db, onConflict: .replace)
+            }
+        }
+
+        scannedFiles.removeAll(keepingCapacity: false)
+        database.releaseMemory()
 
         return ScanSummary(
             diskID: diskID,

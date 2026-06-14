@@ -2,6 +2,8 @@ import AIKit
 import SwiftUI
 
 struct MemoryAnalyzerView: View {
+    var embeddedInOptimization: Bool = false
+
     @EnvironmentObject private var viewModel: AppViewModel
     @ObservedObject private var monitor = MemoryAnalyzerMonitor.shared
 
@@ -9,25 +11,18 @@ struct MemoryAnalyzerView: View {
     @State private var quitTargetName: String?
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                header
-
-                if let report = monitor.report {
-                    memoryOverviewCard(report)
-                    trendCard
-                    persistentConsumersCard(report)
-                    if let summary = report.aiSummary {
-                        aiInsightsCard(summary, report: report)
-                    }
-                    recommendationsCard(report)
-                } else {
-                    loadingState
+        Group {
+            if embeddedInOptimization {
+                embeddedContent
+            } else {
+                ScrollView {
+                    embeddedContent
+                        .padding(28)
                 }
             }
-            .padding(28)
         }
         .onAppear {
+            guard !embeddedInOptimization else { return }
             monitor.applySettings(viewModel.appSettings)
             if monitor.report == nil {
                 monitor.captureNow()
@@ -57,6 +52,38 @@ struct MemoryAnalyzerView: View {
             }
         } message: { name in
             Text("Quit \(name)? Unsaved work may be lost.")
+        }
+    }
+
+    private var embeddedContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            if !embeddedInOptimization {
+                header
+            } else {
+                sectionHeading("Memory Analyzer", icon: "memorychip", detail: "Periodic RAM monitoring with Apple Intelligence analysis.")
+            }
+
+            if let report = monitor.report {
+                memoryOverviewCard(report)
+                trendCard
+                persistentConsumersCard(report)
+                if let summary = report.aiSummary {
+                    aiInsightsCard(summary, report: report)
+                }
+                recommendationsCard(report)
+            } else {
+                loadingState
+            }
+        }
+    }
+
+    private func sectionHeading(_ title: String, icon: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(title, systemImage: icon)
+                .font(.title2.bold())
+            Text(detail)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -245,7 +272,8 @@ struct MemoryAnalyzerView: View {
                 }
                 DiskWiseMarkdownText(
                     text: summary,
-                    font: .subheadline
+                    font: .subheadline,
+                    format: .memoryInsight
                 )
 
                 if !monitor.actionableRecommendations.isEmpty {
