@@ -577,6 +577,7 @@ private struct StreamingCursor: View {
 
 struct CleanupPreviewSheet: View {
     let preview: CleanupPreview
+    var subject: String = "duplicate file(s)"
     let onConfirm: (CleanupResult) -> Void
     @EnvironmentObject private var viewModel: AppViewModel
     @Environment(\.dismiss) private var dismiss
@@ -590,7 +591,7 @@ struct CleanupPreviewSheet: View {
                 .foregroundStyle(.orange)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("\(preview.items.count) duplicate file\(preview.items.count == 1 ? "" : "s") will move to Trash")
+                Text("\(preview.items.count) \(subject) will move to Trash")
                     .font(.headline)
                 Text("Frees \(DiskWiseFormatters.bytes.string(fromByteCount: preview.totalBytes)). Nothing is deleted permanently — empty Trash later when you're sure.")
                     .font(.subheadline)

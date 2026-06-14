@@ -148,6 +148,7 @@ final class AppViewModel: ObservableObject {
     @Published var categoryDetailFiles: [FileRecord] = []
     @Published var hoveredStorageCategory: String?
     @Published var recommendationReview: RecommendationReviewState?
+    @Published var categoryCleanupPreview: CleanupPreview?
     @Published var showActivityLog = false
     @Published var showAbout = false
     @Published var showWhatsNewTour = false
@@ -996,6 +997,69 @@ final class AppViewModel: ObservableObject {
     func clearStorageCategorySelection() {
         selectedStorageCategory = nil
         categoryDetailFiles = []
+    }
+
+    func revealStorageCategoryInFinder(_ name: String) {
+        guard let diskID = selectedDiskID else { return }
+        let files = (try? database.topFiles(
+            inChartGroup: name,
+            diskID: diskID,
+            limit: 12,
+            pathScope: pathScopeForSelectedVolume()
+        )) ?? []
+        guard !files.isEmpty else {
+            setStatus("No indexed files to reveal for \(name)", kind: .ready)
+            return
+        }
+        let urls = files.map { URL(fileURLWithPath: $0.path) }
+        NSWorkspace.shared.activateFileViewerSelecting(urls)
+        logActivity(.system, "Revealed \(name) in Finder", detail: "\(files.count) files")
+    }
+
+    func prepareCategoryCleanup(_ name: String) {
+        guard let diskID = selectedDiskID else { return }
+        let files = (try? database.topFiles(
+            inChartGroup: name,
+            diskID: diskID,
+            limit: 100,
+            pathScope: pathScopeForSelectedVolume()
+        )) ?? []
+        let removable = files.filter { CleanupEngine.canTrashFile(atPath: $0.path).allowed }
+        let preview = cleanupEngine.preview(files: removable, keepFirstInEachGroup: false)
+        if preview.items.isEmpty {
+            setStatus("No removable files found in \(name)", kind: .ready)
+            categoryCleanupPreview = nil
+            return
+        }
+        categoryCleanupPreview = preview
+        logActivity(.cleanup, "Reviewing cleanup for \(name)", detail: "\(preview.items.count) files")
+    }
+
+    func dismissCategoryCleanupPreview() {
+        categoryCleanupPreview = nil
+    }
+
+    func unaccountedStorageBytes(volume: MountedVolume, overview: StorageOverview) -> Int64 {
+        max(0, volume.usedSize - overview.totalSize)
+    }
+
+    func unaccountedStorageCoverage(volume: MountedVolume, overview: StorageOverview) -> Int {
+        guard volume.usedSize > 0 else { return 0 }
+        return Int((Double(overview.totalSize) / Double(volume.usedSize) * 100).rounded())
+    }
+
+    func unaccountedStorageDetail(volume: MountedVolume, overview: StorageOverview) -> String {
+        let coverage = unaccountedStorageCoverage(volume: volume, overview: overview)
+        if !hasFullDiskAccess {
+            return "Only \(coverage)% of used space is mapped. macOS hides protected folders until DiskWise has Full Disk Access."
+        }
+        if coverage < 50 {
+            return "Only \(coverage)% of used space is mapped. A rescan after granting Full Disk Access usually improves coverage."
+        }
+        if appSettings.scanMode == .fast {
+            return "Only \(coverage)% mapped. A Deep scan indexes more paths; some gap may still be APFS snapshots or purgeable space."
+        }
+        return "Only \(coverage)% mapped. The remainder may be APFS snapshots, purgeable space, or paths macOS does not expose to apps."
     }
 
     func openResultsTab() {

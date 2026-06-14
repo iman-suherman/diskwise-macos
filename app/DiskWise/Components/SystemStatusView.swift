@@ -8,8 +8,7 @@ struct SystemStatusView: View {
     @State private var selectedProcess: ProcessDetail?
     @State private var terminateRequest: ProcessTerminateRequest?
     @State private var terminateResultMessage: String?
-    @State private var isFreeingMemory = false
-    @State private var memoryReliefMessage: String?
+    @State private var memoryReliefTrigger = 0
 
     var body: some View {
         ScrollView {
@@ -19,7 +18,12 @@ struct SystemStatusView: View {
                 if let snapshot = monitor.snapshot {
                     scoreCard(snapshot)
                     metricsCard(snapshot)
-                    memoryReliefCard(snapshot)
+                    SystemMemoryReliefControl(
+                        monitor: monitor,
+                        snapshot: snapshot,
+                        onStatusMessage: { viewModel.reportProcessAction($0) },
+                        trigger: $memoryReliefTrigger
+                    )
                     systemDetailsCard(snapshot)
 
                     HStack(alignment: .top, spacing: 20) {
@@ -72,17 +76,6 @@ struct SystemStatusView: View {
             }
         }
         .alert(
-            "Memory Relief",
-            isPresented: Binding(
-                get: { memoryReliefMessage != nil },
-                set: { if !$0 { memoryReliefMessage = nil } }
-            )
-        ) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(memoryReliefMessage ?? "")
-        }
-        .alert(
             "Process Action",
             isPresented: Binding(
                 get: { terminateResultMessage != nil },
@@ -93,108 +86,6 @@ struct SystemStatusView: View {
         } message: {
             Text(terminateResultMessage ?? "")
         }
-    }
-
-    @ViewBuilder
-    private func memoryReliefCard(_ snapshot: SystemHealthSnapshot) -> some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "memorychip")
-                        .font(.title2)
-                        .foregroundStyle(Color.accentColor)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Free Up Memory")
-                            .font(.headline)
-                        Text("Purge inactive RAM and disk caches to improve your memory headroom score. macOS may ask for your password to run purge.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-
-                    Spacer()
-                }
-
-                HStack(spacing: 12) {
-                    Label(
-                        "\(String(format: "%.1f", snapshot.memoryUsedPercent))% used · \(MenuBarFormatters.gigabytes(snapshot.memoryUsedBytes)) active",
-                        systemImage: "gauge.with.dots.needle.67percent"
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                    Spacer()
-
-                    Button {
-                        Task { await freeUpMemory() }
-                    } label: {
-                        if isFreeingMemory {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Label("Free Up Memory", systemImage: "arrow.up.circle.fill")
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(isFreeingMemory)
-                }
-
-                if snapshot.memoryUsedPercent >= 50 {
-                    Text("Quitting apps under Top Memory can also raise your score when purge alone is not enough.")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    private func freeUpMemory() async {
-        isFreeingMemory = true
-        defer { isFreeingMemory = false }
-
-        let beforeScore = monitor.snapshot?.healthScore
-        let result = await monitor.freeUpMemory()
-        let afterScore = monitor.snapshot?.healthScore
-
-        switch result {
-        case .relieved(_, let message):
-            viewModel.reportProcessAction("Memory freed — \(message)")
-            memoryReliefMessage = scoreChangeMessage(
-                base: message,
-                beforeScore: beforeScore,
-                afterScore: afterScore
-            )
-        case .improved(let message):
-            viewModel.reportProcessAction("Memory pressure improved")
-            memoryReliefMessage = scoreChangeMessage(
-                base: message,
-                beforeScore: beforeScore,
-                afterScore: afterScore
-            )
-        case .noMeasurableChange(let message):
-            memoryReliefMessage = scoreChangeMessage(
-                base: message,
-                beforeScore: beforeScore,
-                afterScore: afterScore
-            )
-        case .requiresAdmin(let message):
-            memoryReliefMessage = message
-        case .failed(let message):
-            memoryReliefMessage = message
-        }
-    }
-
-    private func scoreChangeMessage(base: String, beforeScore: Int?, afterScore: Int?) -> String {
-        guard let beforeScore, let afterScore else { return base }
-        if afterScore > beforeScore {
-            return "\(base)\n\nHealth score improved from \(beforeScore) to \(afterScore)."
-        }
-        if afterScore < beforeScore {
-            return "\(base)\n\nHealth score is now \(afterScore) (was \(beforeScore))."
-        }
-        return "\(base)\n\nHealth score remains \(afterScore)."
     }
 
     private var header: some View {
@@ -208,6 +99,15 @@ struct SystemStatusView: View {
             }
 
             Spacer()
+
+            if monitor.snapshot != nil {
+                Button {
+                    memoryReliefTrigger += 1
+                } label: {
+                    Label("Free Up Memory", systemImage: "arrow.up.circle.fill")
+                }
+                .buttonStyle(.borderedProminent)
+            }
 
             Button {
                 monitor.refreshDetailed()

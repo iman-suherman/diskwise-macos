@@ -39,6 +39,11 @@ struct MenuBarHealthPopoverContent: View {
                 if let snapshot = monitor.snapshot {
                     scoreSection(snapshot)
                     metricsGrid(snapshot)
+                    SystemMemoryReliefControl(
+                        monitor: monitor,
+                        snapshot: snapshot,
+                        compact: true
+                    )
                     detailsSection(snapshot)
                     topProcessesSection(snapshot)
                 } else {
@@ -64,7 +69,7 @@ struct MenuBarHealthPopoverContent: View {
             }
             .padding(16)
         }
-        .frame(width: 340, height: 520)
+        .frame(width: 340, height: 560)
     }
 
     private var header: some View {

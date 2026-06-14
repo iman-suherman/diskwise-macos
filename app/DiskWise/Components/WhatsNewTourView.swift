@@ -12,6 +12,8 @@ struct WhatsNewPage: Identifiable {
 enum WhatsNewContent {
     static func pages(for version: String) -> [WhatsNewPage] {
         switch version {
+        case "0.5.12":
+            return v0512Pages
         case "0.5.11":
             return v0511Pages
         case "0.5.10":
@@ -58,6 +60,39 @@ enum WhatsNewContent {
             return genericPages(version: version)
         }
     }
+
+    private static let v0512Pages: [WhatsNewPage] = [
+        WhatsNewPage(
+            id: "interactive-pie",
+            icon: "chart.pie.fill",
+            title: "Interactive storage pie chart",
+            message: "The Results pie chart is now full width — click a slice to open that category, or right-click for Show in Finder and Move to Trash.",
+            bullets: [
+                "Pie and breakdown rows stay in sync when you hover",
+                "Two-column Storage Breakdown sits underneath the chart",
+            ]
+        ),
+        WhatsNewPage(
+            id: "unmapped-space",
+            icon: "questionmark.folder",
+            title: "Understand unmapped used space",
+            message: "When indexed totals do not match drive usage, Results explains why and offers Grant Full Disk Access, Rescan, and Deep scan actions.",
+            bullets: [
+                "Covers protected folders, containers, and APFS snapshots",
+                "Step-by-step guidance to map more of your used space",
+            ]
+        ),
+        WhatsNewPage(
+            id: "menu-memory",
+            icon: "memorychip",
+            title: "Free Up Memory in more places",
+            message: "The menu bar health popover and System Status header now include Free Up Memory alongside the main System Status card.",
+            bullets: [
+                "Runs purge and shows how much was reclaimed",
+                "Health score before/after summary in the alert",
+            ]
+        ),
+    ]
 
     private static let v0511Pages: [WhatsNewPage] = [
         WhatsNewPage(

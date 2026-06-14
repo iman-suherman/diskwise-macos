@@ -1,0 +1,13 @@
+{
+  "summary": "Interactive full-width storage pie chart, two-column breakdown, and unmapped space guidance in Results.",
+  "introduced": [
+    "Click pie chart slices to select a storage category; right-click for Show in Finder or Move to Trash",
+    "Unmapped used space banner explains gaps and offers Full Disk Access, Rescan, and Deep scan actions",
+    "Free Up Memory in the menu bar health popover and System Status header"
+  ],
+  "changed": [
+    "Results layout stacks a full-width pie chart above a two-column Storage Breakdown",
+    "Pie chart and breakdown rows highlight together on hover"
+  ],
+  "fixed": []
+}

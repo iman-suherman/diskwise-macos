@@ -159,12 +159,8 @@ struct ResultsTabView: View {
                    viewModel.showsStorageGraphAnalysis,
                    let overview = viewModel.overview {
                     resultsHeader(volume: volume, overview: overview)
-                    unaccountedSpaceBanner(volume: volume, overview: overview)
 
-                    HStack(alignment: .top, spacing: 28) {
-                        storageTypePieSection(overview: overview)
-                        categorySection(overview: overview)
-                    }
+                    StorageResultsChartsSection(volume: volume, overview: overview)
 
                     if viewModel.totalDuplicateSavings > 0 || viewModel.isFindingDuplicates {
                         duplicatesCallToAction
@@ -184,6 +180,16 @@ struct ResultsTabView: View {
         .sheet(item: $viewModel.recommendationReview) { review in
             RecommendationReviewSheet(state: review)
                 .environmentObject(viewModel)
+        }
+        .sheet(item: $viewModel.categoryCleanupPreview) { preview in
+            CleanupPreviewSheet(
+                preview: preview,
+                subject: "file\(preview.items.count == 1 ? "" : "s")"
+            ) { _ in
+                viewModel.dismissCategoryCleanupPreview()
+                viewModel.reload()
+            }
+            .environmentObject(viewModel)
         }
     }
 
@@ -242,83 +248,6 @@ struct ResultsTabView: View {
                 accent: .green
             )
         }
-    }
-
-    @ViewBuilder
-    private func unaccountedSpaceBanner(volume: MountedVolume, overview: StorageOverview) -> some View {
-        let unaccounted = max(0, volume.usedSize - overview.totalSize)
-        if unaccounted > 1_073_741_824 {
-            GroupBox {
-                Label {
-                    Text("\(DiskWiseFormatters.bytes.string(fromByteCount: unaccounted)) of used space is not fully mapped in the index.")
-                        .font(.subheadline)
-                } icon: {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func storageTypePieSection(overview: StorageOverview) -> some View {
-        let grouped = viewModel.groupedCategorySummaries(from: overview.categorySummaries)
-
-        GroupBox("Storage by Type") {
-            StorageTypePieChart(
-                items: grouped,
-                totalSize: overview.totalSize,
-                hoveredName: viewModel.hoveredStorageCategory
-            )
-        }
-        .frame(minWidth: 360, idealWidth: 400, maxWidth: 440)
-    }
-
-    @ViewBuilder
-    private func categorySection(overview: StorageOverview) -> some View {
-        let grouped = viewModel.groupedCategorySummaries(from: overview.categorySummaries)
-
-        GroupBox("Storage Breakdown") {
-            if grouped.isEmpty {
-                Text("No category data yet")
-                    .foregroundStyle(.secondary)
-            } else if let selected = viewModel.selectedStorageCategory {
-                StorageCategoryDetailPanel(
-                    groupName: selected,
-                    subSummaries: viewModel.subSummaries(forChartGroup: selected),
-                    files: viewModel.categoryDetailFiles,
-                    totalSize: grouped.first(where: { $0.name == selected })?.totalSize ?? overview.totalSize,
-                    onBack: { viewModel.clearStorageCategorySelection() }
-                )
-            } else {
-                StorageCategoryBarChart(
-                    items: grouped,
-                    totalSize: overview.totalSize,
-                    selectedName: viewModel.selectedStorageCategory,
-                    hoveredName: viewModel.hoveredStorageCategory,
-                    onSelect: { viewModel.selectStorageCategory($0) },
-                    onHover: { viewModel.hoveredStorageCategory = $0 }
-                )
-            }
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private var storageTypePiePlaceholder: some View {
-        RoundedRectangle(cornerRadius: 12)
-            .fill(Color.secondary.opacity(0.08))
-            .frame(width: 300, height: 300)
-    }
-
-    private var categorySectionPlaceholder: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(0..<6, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.secondary.opacity(0.08))
-                    .frame(height: 28)
-            }
-        }
-        .frame(maxWidth: .infinity)
     }
 
     private var duplicatesCallToAction: some View {

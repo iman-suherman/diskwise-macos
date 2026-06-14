@@ -50,6 +50,7 @@
 		ED5041858F6D1AF22DCE4587 /* DiskScannerKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6953D9217C07B48CB1CA73C9 /* DiskScannerKit */; };
 		F07314D38ACD7FE6E5B9D233 /* FullDiskAccessPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */; };
 		F4D258718C504E7A6365ADB6 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61EB1B1E7AD0267851557FD9 /* DashboardView.swift */; };
+		F5CDF3E090F86A36D4708FE1 /* SystemMemoryReliefView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F4C97E4FF375B02034BE88 /* SystemMemoryReliefView.swift */; };
 		FAB2B6356F46985804A0B25C /* StartupSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9632663F581782670036F59C /* StartupSplashView.swift */; };
 		FC6623E26E2D1FA21EC83507 /* MenuBarExtensionPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */; };
 		FCE4BBDDC79F3B9E5D5C20E0 /* install_python.sh in Resources */ = {isa = PBXBuildFile; fileRef = B9CA49BFF86E2DE13A0B87F6 /* install_python.sh */; };
@@ -83,6 +84,7 @@
 		9632663F581782670036F59C /* StartupSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupSplashView.swift; sourceTree = "<group>"; };
 		971832F0D34371AD6D227919 /* MenuBarMonitorController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarMonitorController.swift; sourceTree = "<group>"; };
 		98EFAE1062F153FAFA7B0D8A /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		A3F4C97E4FF375B02034BE88 /* SystemMemoryReliefView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMemoryReliefView.swift; sourceTree = "<group>"; };
 		A6C028E81B0947C7D6A69EE9 /* SavedScanPromptOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedScanPromptOverlay.swift; sourceTree = "<group>"; };
 		A82F3A2475D36769351F8CBC /* IndexRebuildOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexRebuildOverlay.swift; sourceTree = "<group>"; };
 		A9F503999EF5B8D256503AAB /* PythonSetupPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PythonSetupPrompt.swift; sourceTree = "<group>"; };
@@ -187,6 +189,7 @@
 				9632663F581782670036F59C /* StartupSplashView.swift */,
 				2BF737B0AA3066062F3881A4 /* StatusBadge.swift */,
 				D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */,
+				A3F4C97E4FF375B02034BE88 /* SystemMemoryReliefView.swift */,
 				64E3813DA348AA12313FC982 /* SystemStatusView.swift */,
 				D4BCD4E96BC002C2E47A8E33 /* VolumeDiskTabView.swift */,
 				F9360EC36C59D568DEE4B034 /* WhatsNewTourView.swift */,
@@ -346,6 +349,7 @@
 				C61435492234EF4EFEB45B5C /* StatusBadge.swift in Sources */,
 				9163047ADC6314366674E59B /* StorageBreakdownView.swift in Sources */,
 				8EA88D4A455BB6985DBB72A9 /* SystemHealthMonitor.swift in Sources */,
+				F5CDF3E090F86A36D4708FE1 /* SystemMemoryReliefView.swift in Sources */,
 				B1CF70C5E32C91E0CB3E2E05 /* SystemStatusView.swift in Sources */,
 				E1A2ACAD991ED07FA794BD6A /* VolumeDiskTabView.swift in Sources */,
 				2E9B3F7F506A3D4BE5D8085A /* WhatsNewTourView.swift in Sources */,

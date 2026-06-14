@@ -5,65 +5,6 @@ import DatabaseKit
 import AIKit
 import DiskScannerKit
 
-struct StorageTypePieChart: View {
-    let items: [(name: String, totalSize: Int64, fileCount: Int)]
-    let totalSize: Int64
-    let hoveredName: String?
-
-    var body: some View {
-        ZStack {
-            Chart(items, id: \.name) { item in
-                SectorMark(
-                    angle: .value("Size", item.totalSize),
-                    innerRadius: .ratio(0.58),
-                    angularInset: 2
-                )
-                .foregroundStyle(CategoryPalette.color(for: item.name).gradient)
-                .opacity(segmentOpacity(for: item.name))
-            }
-            .frame(width: 300, height: 300)
-
-            VStack(spacing: 4) {
-                if let hoveredName,
-                   let item = items.first(where: { $0.name == hoveredName }) {
-                    Image(systemName: CategoryPalette.icon(for: hoveredName))
-                        .font(.title3)
-                        .foregroundStyle(CategoryPalette.color(for: hoveredName))
-                    Text(hoveredName)
-                        .font(.headline)
-                    Text("\(Int(fraction(for: item.totalSize) * 100))%")
-                        .font(.system(size: 34, weight: .bold, design: .rounded))
-                    Text(DiskWiseFormatters.bytes.string(fromByteCount: item.totalSize))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("Indexed")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text(DiskWiseFormatters.bytes.string(fromByteCount: totalSize))
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                    Text("\(items.count) types")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .multilineTextAlignment(.center)
-            .frame(width: 140)
-        }
-        .animation(.easeInOut(duration: 0.2), value: hoveredName)
-    }
-
-    private func fraction(for size: Int64) -> Double {
-        guard totalSize > 0 else { return 0 }
-        return Double(size) / Double(totalSize)
-    }
-
-    private func segmentOpacity(for name: String) -> Double {
-        guard let hoveredName else { return 1 }
-        return hoveredName == name ? 1 : 0.22
-    }
-}
-
 struct ScanProgressPanel: View {
     @EnvironmentObject private var viewModel: AppViewModel
 
@@ -543,12 +484,8 @@ struct DashboardView: View {
                    viewModel.showsStorageGraphAnalysis,
                    let overview = viewModel.overview {
                     storageHeader(volume: volume, overview: overview)
-                    unaccountedSpaceBanner(volume: volume, overview: overview)
 
-                    HStack(alignment: .top, spacing: 28) {
-                        storageTypePieSection(overview: overview)
-                        categorySection(overview: overview)
-                    }
+                    StorageResultsChartsSection(volume: volume, overview: overview)
 
                     if viewModel.totalDuplicateSavings > 0 || viewModel.isFindingDuplicates {
                         duplicatesCallToAction
@@ -580,6 +517,16 @@ struct DashboardView: View {
         .sheet(item: $viewModel.recommendationReview) { review in
             RecommendationReviewSheet(state: review)
                 .environmentObject(viewModel)
+        }
+        .sheet(item: $viewModel.categoryCleanupPreview) { preview in
+            CleanupPreviewSheet(
+                preview: preview,
+                subject: "file\(preview.items.count == 1 ? "" : "s")"
+            ) { _ in
+                viewModel.dismissCategoryCleanupPreview()
+                viewModel.reload()
+            }
+            .environmentObject(viewModel)
         }
     }
 
@@ -655,125 +602,9 @@ struct DashboardView: View {
                 InsightCard(
                     title: "Not Indexed",
                     value: DiskWiseFormatters.bytes.string(fromByteCount: unaccounted),
-                    detail: unaccountedDetail(for: volume, overview: overview),
+                    detail: viewModel.unaccountedStorageDetail(volume: volume, overview: overview),
                     accent: .red
                 )
-            }
-        }
-    }
-
-    private func unaccountedDetail(for volume: MountedVolume, overview: StorageOverview) -> String {
-        let coverage = volume.usedSize > 0
-            ? Int((Double(overview.totalSize) / Double(volume.usedSize) * 100).rounded())
-            : 0
-        if !viewModel.hasFullDiskAccess {
-            return "Only \(coverage)% mapped — grant Full Disk Access, then rescan"
-        }
-        if coverage < 50 {
-            return "Only \(coverage)% mapped — rescan after granting Full Disk Access"
-        }
-        if viewModel.appSettings.scanMode == .fast {
-            return "Only \(coverage)% mapped — try Deep scan or rescan"
-        }
-        return "Only \(coverage)% mapped — may include APFS snapshots or purgeable space"
-    }
-
-    @ViewBuilder
-    private func unaccountedSpaceBanner(volume: MountedVolume, overview: StorageOverview) -> some View {
-        let unaccounted = max(0, volume.usedSize - overview.totalSize)
-        let fraction = volume.usedSize > 0 ? Double(unaccounted) / Double(volume.usedSize) : 0
-        if unaccounted > 1_073_741_824, fraction > 0.1 {
-            GroupBox {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("About \(DiskWiseFormatters.bytes.string(fromByteCount: unaccounted)) is not mapped yet", systemImage: "questionmark.folder")
-                        .font(.headline)
-                        .foregroundStyle(.orange)
-                    Text(unaccountedDetail(for: volume, overview: overview) + ". Rescan after granting Full Disk Access if needed.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    HStack(spacing: 12) {
-                        if !viewModel.hasFullDiskAccess {
-                            Button("Grant Full Disk Access") {
-                                viewModel.presentFullDiskAccessOverlay()
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                        if let volume = viewModel.selectedVolume {
-                            Button("Rescan \(volume.name)") {
-                                viewModel.scan(volume: volume)
-                            }
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func storageTypePieSection(overview: StorageOverview) -> some View {
-        let grouped = viewModel.groupedCategorySummaries(from: overview.categorySummaries)
-
-        GroupBox("Storage by Type") {
-            VStack(spacing: 18) {
-                StorageTypePieChart(
-                    items: grouped,
-                    totalSize: overview.totalSize,
-                    hoveredName: viewModel.hoveredStorageCategory
-                )
-
-                if !grouped.isEmpty {
-                    Divider()
-                    pieLegend(items: grouped, totalSize: overview.totalSize)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-        }
-        .frame(minWidth: 360, idealWidth: 400, maxWidth: 440)
-    }
-
-    private var storageTypePiePlaceholder: some View {
-        GroupBox("Storage by Type") {
-            VStack(spacing: 12) {
-                ProgressView()
-                Text("Pie chart appears as files are indexed.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 48)
-        }
-        .frame(minWidth: 360, idealWidth: 400, maxWidth: 440)
-    }
-
-    private func pieLegend(
-        items: [(name: String, totalSize: Int64, fileCount: Int)],
-        totalSize: Int64
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(items.prefix(6), id: \.name) { item in
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(CategoryPalette.color(for: item.name))
-                        .frame(width: 8, height: 8)
-                    Text(item.name)
-                        .font(.caption)
-                    Spacer()
-                    Text("\(Int(totalSize > 0 ? Double(item.totalSize) / Double(totalSize) * 100 : 0))%")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
-                .opacity(
-                    viewModel.hoveredStorageCategory == nil || viewModel.hoveredStorageCategory == item.name
-                        ? 1
-                        : 0.35
-                )
-                .onHover { hovering in
-                    viewModel.hoveredStorageCategory = hovering ? item.name : nil
-                }
             }
         }
     }
@@ -808,53 +639,6 @@ struct DashboardView: View {
             }
         }
         .frame(maxWidth: .infinity, minHeight: 320)
-    }
-
-    private var categorySectionPlaceholder: some View {
-        GroupBox("Storage Breakdown") {
-            VStack(spacing: 12) {
-                ProgressView()
-                Text("Category breakdown appears as files are indexed.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 24)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    @ViewBuilder
-    private func categorySection(overview: StorageOverview) -> some View {
-        let grouped = viewModel.groupedCategorySummaries(from: overview.categorySummaries)
-
-        GroupBox("Storage Breakdown") {
-            if grouped.isEmpty {
-                Text("No category data yet")
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 8)
-            } else if let selected = viewModel.selectedStorageCategory {
-                StorageCategoryDetailPanel(
-                    groupName: selected,
-                    subSummaries: viewModel.subSummaries(forChartGroup: selected),
-                    files: viewModel.categoryDetailFiles,
-                    totalSize: grouped.first(where: { $0.name == selected })?.totalSize ?? overview.totalSize,
-                    onBack: { viewModel.clearStorageCategorySelection() }
-                )
-            } else {
-                StorageCategoryBarChart(
-                    items: grouped,
-                    totalSize: overview.totalSize,
-                    selectedName: viewModel.selectedStorageCategory,
-                    hoveredName: viewModel.hoveredStorageCategory,
-                    onSelect: { viewModel.selectStorageCategory($0) },
-                    onHover: { viewModel.hoveredStorageCategory = $0 }
-                )
-            }
-        }
-        .frame(maxWidth: .infinity)
     }
 
     private var topConsumersSection: some View {
