@@ -1,0 +1,15 @@
+{
+  "summary": "Configure when disk and memory alerts fire — by percentage or free space amount — with per-drive controls in a new Notifications settings tab.",
+  "introduced": [
+    "Notifications settings — new Settings tab to enable alerts and set disk and memory thresholds",
+    "Per-drive thresholds — customize or disable low-space alerts for each mounted storage volume individually"
+  ],
+  "changed": [
+    "Disk space alerts — fire at your chosen free-space percentage or GB amount instead of a fixed 10% / 100 GB rule",
+    "Memory usage alerts — fire when memory used or free RAM crosses your threshold instead of a generic poor health score"
+  ],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

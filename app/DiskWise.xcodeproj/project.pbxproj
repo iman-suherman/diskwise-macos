@@ -28,6 +28,7 @@
 		2D23DBFB109A6E21E12E47B1 /* 0.1.8.json in Resources */ = {isa = PBXBuildFile; fileRef = C91D0D7194E3DC4018956A4D /* 0.1.8.json */; };
 		2E51EA5FD30ECF1DA75CE384 /* SparkleUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F95E82B6008C61D7A885B07 /* SparkleUpdater.swift */; };
 		2E9B3F7F506A3D4BE5D8085A /* WhatsNewTourView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9360EC36C59D568DEE4B034 /* WhatsNewTourView.swift */; };
+		2F8E0615B44E65399BB15C38 /* NotificationThresholdSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830171A9EC86B8C250DC27EF /* NotificationThresholdSettings.swift */; };
 		2F9870AD506728F8B45304FD /* 0.5.17.json in Resources */ = {isa = PBXBuildFile; fileRef = 83C02ED276CE351ADBF7F7BF /* 0.5.17.json */; };
 		324BEC4CE979C240EB2BA8CA /* 0.4.0.json in Resources */ = {isa = PBXBuildFile; fileRef = 704B5BBC0BE69143CC463ED9 /* 0.4.0.json */; };
 		32EF8883A6F64957984804C4 /* 0.5.12.json in Resources */ = {isa = PBXBuildFile; fileRef = 164178EA164A45740BA3F2D8 /* 0.5.12.json */; };
@@ -70,6 +71,7 @@
 		8F048F3CE1F6DDE014892441 /* MemoryAnalyzerMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16E12E0B51D60F2F32404DC0 /* MemoryAnalyzerMonitor.swift */; };
 		904D2F4452D1ED17A947CD64 /* MemoryInsightNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9040D8189C7D40E73615348C /* MemoryInsightNotificationService.swift */; };
 		90BAF4E7882287C932D8E9E6 /* 0.5.4.json in Resources */ = {isa = PBXBuildFile; fileRef = 5162987824989B2B14143DA5 /* 0.5.4.json */; };
+		90BF69F8C6C7DE991377F87E /* NotificationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9C379B2C9182ADB1BEAB44 /* NotificationSettingsView.swift */; };
 		9163047ADC6314366674E59B /* StorageBreakdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */; };
 		91890FA22A9952873A08995C /* 0.7.6.json in Resources */ = {isa = PBXBuildFile; fileRef = ECB3AB7371053E74D93E160B /* 0.7.6.json */; };
 		91E4D218C3A7026E8D8F22CA /* MetadataKit in Frameworks */ = {isa = PBXBuildFile; productRef = E118092959DEFDD022BB88EC /* MetadataKit */; };
@@ -151,6 +153,7 @@
 		049FE94153CD8C506C36E4B6 /* MemoryIssueHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryIssueHistoryStore.swift; sourceTree = "<group>"; };
 		0B6D957A611AA96E50E10CBF /* 0.1.3.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.3.json; sourceTree = "<group>"; };
 		0B913AECBCDED431CB20AFD2 /* 0.5.11.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.11.json; sourceTree = "<group>"; };
+		0C9C379B2C9182ADB1BEAB44 /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
 		0FF3D9E21CD3A7F219755FE8 /* 0.5.13.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.13.json; sourceTree = "<group>"; };
 		113502CA74BB9433B18AF27C /* 0.5.2.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.2.json; sourceTree = "<group>"; };
 		12CCFACE9205DEE44CA8BD1F /* 0.5.7.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.7.json; sourceTree = "<group>"; };
@@ -206,6 +209,7 @@
 		7F2C213738FE643532C9DFFF /* MenuBarPopoverSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPopoverSession.swift; sourceTree = "<group>"; };
 		7F81B798B01741C082A6B559 /* diskwise-macos */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "diskwise-macos"; path = ..; sourceTree = SOURCE_ROOT; };
 		7F95E82B6008C61D7A885B07 /* SparkleUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleUpdater.swift; sourceTree = "<group>"; };
+		830171A9EC86B8C250DC27EF /* NotificationThresholdSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationThresholdSettings.swift; sourceTree = "<group>"; };
 		831704D62E5020E6E4F2219B /* ScanProgressPoller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanProgressPoller.swift; sourceTree = "<group>"; };
 		83C02ED276CE351ADBF7F7BF /* 0.5.17.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.17.json; sourceTree = "<group>"; };
 		85535EC62055DC25880DE6E7 /* 0.2.2.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.2.2.json; sourceTree = "<group>"; };
@@ -459,6 +463,7 @@
 				8DE0414EB1623E719F460CAE /* MenuBarHealthScore.swift */,
 				5691892A76E1A24CE7AAF729 /* MenuBarMonitorInstructionOverlay.swift */,
 				7F2C213738FE643532C9DFFF /* MenuBarPopoverSession.swift */,
+				0C9C379B2C9182ADB1BEAB44 /* NotificationSettingsView.swift */,
 				A9F503999EF5B8D256503AAB /* PythonSetupPrompt.swift */,
 				8D515CF1494436D3A33BC32C /* RecommendationReviewSheet.swift */,
 				A6C028E81B0947C7D6A69EE9 /* SavedScanPromptOverlay.swift */,
@@ -488,6 +493,7 @@
 				955E6302377D998824A2996E /* DiskWiseApp.swift */,
 				15BE9BA6642050B89F9552F0 /* entitlements.mac.plist */,
 				F1FC1DF0971CB5B4441676DB /* Info.plist */,
+				830171A9EC86B8C250DC27EF /* NotificationThresholdSettings.swift */,
 				7F95E82B6008C61D7A885B07 /* SparkleUpdater.swift */,
 				C9453DAD43B73221B0F7A838 /* Components */,
 				C3F7346C874B2199BE15D7F5 /* Resources */,
@@ -743,6 +749,8 @@
 				DB063CAC7875E4DDC2FE2A9D /* MenuBarMonitorController.swift in Sources */,
 				B7284DB7D37A1021F42F9A6C /* MenuBarMonitorInstructionOverlay.swift in Sources */,
 				222F260B8FC6D208194F7475 /* MenuBarPopoverSession.swift in Sources */,
+				90BF69F8C6C7DE991377F87E /* NotificationSettingsView.swift in Sources */,
+				2F8E0615B44E65399BB15C38 /* NotificationThresholdSettings.swift in Sources */,
 				158813C796EA13AB146C66FC /* PythonSetupPrompt.swift in Sources */,
 				DD2F2233CFB17ABB37688ACD /* RecommendationReviewSheet.swift in Sources */,
 				DAB86108A2724D50A153E610 /* SavedScanPromptOverlay.swift in Sources */,

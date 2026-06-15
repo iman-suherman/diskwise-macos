@@ -5,6 +5,7 @@ import AIKit
 enum AppSettingsTab: String, CaseIterable, Identifiable {
     case scanning
     case menuBar
+    case notifications
     case general
     case memory
     case ai
@@ -15,6 +16,7 @@ enum AppSettingsTab: String, CaseIterable, Identifiable {
         switch self {
         case .scanning: return "Scanning"
         case .menuBar: return "Menu Bar"
+        case .notifications: return "Notifications"
         case .general: return "General"
         case .memory: return "Memory"
         case .ai: return "AI"
@@ -25,6 +27,7 @@ enum AppSettingsTab: String, CaseIterable, Identifiable {
         switch self {
         case .scanning: return "arrow.triangle.2.circlepath"
         case .menuBar: return "menubar.rectangle"
+        case .notifications: return "bell.badge"
         case .general: return "gearshape"
         case .memory: return "memorychip"
         case .ai: return "sparkles"
@@ -89,7 +92,7 @@ struct AppSettingsView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Settings")
                 .font(.largeTitle.bold())
-            Text("Scan limits, AI provider, menu bar monitor, and preferences.")
+            Text("Scan limits, AI provider, notifications, menu bar monitor, and preferences.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -103,6 +106,8 @@ struct AppSettingsView: View {
             scanningForm
         case .menuBar:
             menuBarForm
+        case .notifications:
+            notificationsForm
         case .general:
             generalForm
         case .memory:
@@ -199,25 +204,17 @@ struct AppSettingsView: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-
-                Toggle(
-                    "Alert when disk space is low",
-                    isOn: $settings.diskSpaceNotificationsEnabled
-                )
-
-                Toggle(
-                    "Alert when system health is poor",
-                    isOn: $settings.systemHealthNotificationsEnabled
-                )
-
-                Text("Notifies when any mounted drive (except tiny app disk images) drops below 10% free or below 100 GB free — whichever threshold is lower for that drive.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .formStyle(.grouped)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var notificationsForm: some View {
+        NotificationSettingsForm(
+            settings: settings,
+            volumes: SystemVolumeMonitor.shared.volumes
+        )
     }
 
     private var generalForm: some View {
@@ -271,15 +268,12 @@ struct AppSettingsView: View {
     private var memoryForm: some View {
         Form {
             Section("Memory Analyzer") {
-                Toggle("Monitor memory in the background", isOn: $settings.memoryAnalyzerEnabled)
+                Text("DiskWise samples memory every 20–30 seconds, runs periodic Apple Intelligence analysis, and can surface recommendations in System Optimization.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                Toggle(
-                    "Notify when new insights are available",
-                    isOn: $settings.memoryAnalyzerNotificationsEnabled
-                )
-                .disabled(!settings.memoryAnalyzerEnabled)
-
-                Text("DiskWise samples memory every 20–30 seconds, runs periodic Apple Intelligence analysis, and can notify you with a one-tap action when a new recommendation is ready.")
+                Text("Configure background monitoring and insight notifications in the Notifications settings tab.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

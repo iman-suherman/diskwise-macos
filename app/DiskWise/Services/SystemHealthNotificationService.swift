@@ -14,7 +14,7 @@ final class SystemHealthNotificationService {
     private let center = UNUserNotificationCenter.current()
     private let cooldown: TimeInterval = 20 * 60
     private var lastNotifiedAt: Date?
-    private var lastNotifiedScore: Int?
+    private var lastNotifiedMemoryUsedPercent: Double?
 
     private init() {}
 
@@ -60,25 +60,34 @@ final class SystemHealthNotificationService {
         }
     }
 
-    func checkSnapshot(_ snapshot: SystemHealthSnapshot?, notificationsEnabled: Bool) async {
+    func checkSnapshot(
+        _ snapshot: SystemHealthSnapshot?,
+        notificationsEnabled: Bool,
+        settings: AppSettings = .shared
+    ) async {
         guard notificationsEnabled, let snapshot else {
-            if snapshot == nil || (snapshot?.healthScore ?? 100) >= SystemHealthMonitorCore.poorHealthScoreThreshold {
-                lastNotifiedAt = nil
-                lastNotifiedScore = nil
-            }
+            lastNotifiedAt = nil
+            lastNotifiedMemoryUsedPercent = nil
             return
         }
 
-        if snapshot.healthScore >= SystemHealthMonitorCore.poorHealthScoreThreshold {
+        let thresholdExceeded = NotificationThresholdLogic.isMemoryThresholdExceeded(
+            snapshot: snapshot,
+            mode: settings.memoryNotificationThresholdMode,
+            usedPercent: settings.memoryNotificationUsedPercent,
+            freeGigabytes: settings.memoryNotificationFreeGigabytes
+        )
+
+        guard thresholdExceeded else {
             lastNotifiedAt = nil
-            lastNotifiedScore = nil
+            lastNotifiedMemoryUsedPercent = nil
             return
         }
 
         let now = Date()
-        if let lastNotifiedAt, let lastNotifiedScore {
+        if let lastNotifiedAt, let lastNotifiedMemoryUsedPercent {
             let elapsed = now.timeIntervalSince(lastNotifiedAt)
-            let worsened = snapshot.healthScore <= lastNotifiedScore - 10
+            let worsened = snapshot.memoryUsedPercent >= lastNotifiedMemoryUsedPercent + 5
             if !worsened, elapsed < cooldown {
                 return
             }
@@ -89,18 +98,17 @@ final class SystemHealthNotificationService {
 
         let suggestions = resolvedSuggestions(for: snapshot)
         let content = UNMutableNotificationContent()
-        content.title = "System health is Poor (\(snapshot.healthScore))"
+        content.title = notificationTitle(for: snapshot, settings: settings)
         content.subtitle = "DiskWise · \(Int(snapshot.memoryUsedPercent.rounded()))% memory in use"
         content.body = suggestions.joined(separator: " ")
         content.interruptionLevel = .active
         content.categoryIdentifier = Self.categoryIdentifier
         content.userInfo = [
-            "healthScore": snapshot.healthScore,
             "memoryUsedPercent": snapshot.memoryUsedPercent,
         ]
 
         let request = UNNotificationRequest(
-            identifier: "system-health-poor-\(snapshot.healthScore)",
+            identifier: "system-health-memory-\(Int(snapshot.memoryUsedPercent.rounded()))",
             content: content,
             trigger: nil
         )
@@ -108,7 +116,7 @@ final class SystemHealthNotificationService {
         do {
             try await center.add(request)
             lastNotifiedAt = now
-            lastNotifiedScore = snapshot.healthScore
+            lastNotifiedMemoryUsedPercent = snapshot.memoryUsedPercent
         } catch {
             return
         }
@@ -140,5 +148,16 @@ final class SystemHealthNotificationService {
             return [recommendation.detail]
         }
         return SystemHealthMonitorCore.poorHealthMemoryCleanupSuggestions(for: snapshot)
+    }
+
+    private func notificationTitle(for snapshot: SystemHealthSnapshot, settings: AppSettings) -> String {
+        switch settings.memoryNotificationThresholdMode {
+        case .percentage:
+            return "Memory usage is high (\(Int(snapshot.memoryUsedPercent.rounded()))%)"
+        case .absolute:
+            let freeBytes = NotificationThresholdLogic.memoryFreeBytes(from: snapshot)
+            let freeLabel = MenuBarFormatters.readableFreeSpace(freeBytes)
+            return "Free memory is low (\(freeLabel) remaining)"
+        }
     }
 }

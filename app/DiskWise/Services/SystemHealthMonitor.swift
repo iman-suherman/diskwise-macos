@@ -1239,11 +1239,12 @@ final class SystemHealthMonitor: ObservableObject {
         systemVolume = volumes.first(where: { VolumeDiscovery.isSystemVolume(mountPath: $0.mountPath) })
             ?? volumes.first(where: \.isInternal)
         snapshot = SystemHealthMonitorCore.capture(volume: systemVolume, processLimit: processLimit)
-        let notificationsEnabled = AppSettings.shared.systemHealthNotificationsEnabled
+        let settings = AppSettings.shared
         Task {
             await SystemHealthNotificationService.shared.checkSnapshot(
                 snapshot,
-                notificationsEnabled: notificationsEnabled
+                notificationsEnabled: settings.systemHealthNotificationsEnabled,
+                settings: settings
             )
         }
     }

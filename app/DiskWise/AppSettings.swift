@@ -81,6 +81,13 @@ final class AppSettings: ObservableObject {
         static let memoryAnalyzerNotificationsEnabled = "diskwise.settings.memoryAnalyzerNotificationsEnabled"
         static let diskSpaceNotificationsEnabled = "diskwise.settings.diskSpaceNotificationsEnabled"
         static let systemHealthNotificationsEnabled = "diskwise.settings.systemHealthNotificationsEnabled"
+        static let diskNotificationThresholdMode = "diskwise.settings.diskNotificationThresholdMode"
+        static let diskNotificationFreePercent = "diskwise.settings.diskNotificationFreePercent"
+        static let diskNotificationFreeGigabytes = "diskwise.settings.diskNotificationFreeGigabytes"
+        static let memoryNotificationThresholdMode = "diskwise.settings.memoryNotificationThresholdMode"
+        static let memoryNotificationUsedPercent = "diskwise.settings.memoryNotificationUsedPercent"
+        static let memoryNotificationFreeGigabytes = "diskwise.settings.memoryNotificationFreeGigabytes"
+        static let diskNotificationVolumeOverrides = "diskwise.settings.diskNotificationVolumeOverrides"
         static let menuPaneOrder = "diskwise.settings.menuPaneOrder"
     }
 
@@ -205,14 +212,8 @@ final class AppSettings: ObservableObject {
                 Task {
                     await DiskSpaceNotificationService.shared.requestAuthorizationIfNeeded()
                 }
-            } else {
-                Task {
-                    await DiskSpaceNotificationService.shared.checkVolumes(
-                        SystemVolumeMonitor.shared.volumes,
-                        notificationsEnabled: false
-                    )
-                }
             }
+            refreshDiskSpaceNotifications()
         }
     }
 
@@ -223,14 +224,89 @@ final class AppSettings: ObservableObject {
                 Task {
                     await SystemHealthNotificationService.shared.requestAuthorizationIfNeeded()
                 }
-            } else {
-                Task {
-                    await SystemHealthNotificationService.shared.checkSnapshot(
-                        nil,
-                        notificationsEnabled: false
-                    )
-                }
             }
+            refreshMemoryUsageNotifications()
+        }
+    }
+
+    @Published var diskNotificationThresholdMode: NotificationThresholdMode {
+        didSet {
+            UserDefaults.standard.set(diskNotificationThresholdMode.rawValue, forKey: Keys.diskNotificationThresholdMode)
+            refreshDiskSpaceNotifications()
+        }
+    }
+
+    @Published var diskNotificationFreePercent: Int {
+        didSet {
+            let clamped = NotificationThresholdLogic.clamp(
+                diskNotificationFreePercent,
+                to: NotificationThresholdDefaults.diskFreePercentRange
+            )
+            if clamped != diskNotificationFreePercent {
+                diskNotificationFreePercent = clamped
+                return
+            }
+            UserDefaults.standard.set(clamped, forKey: Keys.diskNotificationFreePercent)
+            refreshDiskSpaceNotifications()
+        }
+    }
+
+    @Published var diskNotificationFreeGigabytes: Double {
+        didSet {
+            let clamped = NotificationThresholdLogic.clamp(
+                diskNotificationFreeGigabytes,
+                to: NotificationThresholdDefaults.diskFreeGigabytesRange
+            )
+            if clamped != diskNotificationFreeGigabytes {
+                diskNotificationFreeGigabytes = clamped
+                return
+            }
+            UserDefaults.standard.set(clamped, forKey: Keys.diskNotificationFreeGigabytes)
+            refreshDiskSpaceNotifications()
+        }
+    }
+
+    @Published var memoryNotificationThresholdMode: NotificationThresholdMode {
+        didSet {
+            UserDefaults.standard.set(memoryNotificationThresholdMode.rawValue, forKey: Keys.memoryNotificationThresholdMode)
+            refreshMemoryUsageNotifications()
+        }
+    }
+
+    @Published var memoryNotificationUsedPercent: Int {
+        didSet {
+            let clamped = NotificationThresholdLogic.clamp(
+                memoryNotificationUsedPercent,
+                to: NotificationThresholdDefaults.memoryUsedPercentRange
+            )
+            if clamped != memoryNotificationUsedPercent {
+                memoryNotificationUsedPercent = clamped
+                return
+            }
+            UserDefaults.standard.set(clamped, forKey: Keys.memoryNotificationUsedPercent)
+            refreshMemoryUsageNotifications()
+        }
+    }
+
+    @Published var memoryNotificationFreeGigabytes: Double {
+        didSet {
+            let clamped = NotificationThresholdLogic.clamp(
+                memoryNotificationFreeGigabytes,
+                to: NotificationThresholdDefaults.memoryFreeGigabytesRange
+            )
+            if clamped != memoryNotificationFreeGigabytes {
+                memoryNotificationFreeGigabytes = clamped
+                return
+            }
+            UserDefaults.standard.set(clamped, forKey: Keys.memoryNotificationFreeGigabytes)
+            refreshMemoryUsageNotifications()
+        }
+    }
+
+    @Published var diskNotificationVolumeOverrides: [String: DiskNotificationVolumeOverride] {
+        didSet {
+            saveDiskNotificationVolumeOverrides()
+            refreshDiskSpaceNotifications()
         }
     }
 
@@ -310,6 +386,69 @@ final class AppSettings: ObservableObject {
         MenuBarMonitorController.syncMenuBarItems(settings: self)
     }
 
+    func diskNotificationOverride(for mountPath: String) -> DiskNotificationVolumeOverride {
+        diskNotificationVolumeOverrides[mountPath] ?? DiskNotificationVolumeOverride()
+    }
+
+    func setDiskNotificationOverride(for mountPath: String, override: DiskNotificationVolumeOverride) {
+        diskNotificationVolumeOverrides[mountPath] = override
+    }
+
+    func resolvedDiskNotificationSettings(for volume: MountedVolume) -> DiskNotificationResolvedSettings? {
+        NotificationThresholdLogic.resolvedDiskSettings(
+            for: volume,
+            globalMode: diskNotificationThresholdMode,
+            globalFreePercent: diskNotificationFreePercent,
+            globalFreeGigabytes: diskNotificationFreeGigabytes,
+            override: diskNotificationVolumeOverrides[volume.mountPath]
+        )
+    }
+
+    func refreshDiskSpaceNotifications() {
+        Task {
+            await DiskSpaceNotificationService.shared.checkVolumes(
+                SystemVolumeMonitor.shared.volumes,
+                notificationsEnabled: diskSpaceNotificationsEnabled,
+                settings: self
+            )
+        }
+    }
+
+    func refreshMemoryUsageNotifications() {
+        Task {
+            await SystemHealthNotificationService.shared.checkSnapshot(
+                SystemHealthMonitor.shared.snapshot,
+                notificationsEnabled: systemHealthNotificationsEnabled,
+                settings: self
+            )
+        }
+    }
+
+    private func saveDiskNotificationVolumeOverrides() {
+        guard let data = try? JSONEncoder().encode(diskNotificationVolumeOverrides) else { return }
+        UserDefaults.standard.set(data, forKey: Keys.diskNotificationVolumeOverrides)
+    }
+
+    private static func loadDiskNotificationVolumeOverrides(from defaults: UserDefaults) -> [String: DiskNotificationVolumeOverride] {
+        guard let data = defaults.data(forKey: Keys.diskNotificationVolumeOverrides),
+              let decoded = try? JSONDecoder().decode([String: DiskNotificationVolumeOverride].self, from: data) else {
+            return [:]
+        }
+        return decoded
+    }
+
+    private static func loadThresholdMode(
+        from defaults: UserDefaults,
+        key: String,
+        default defaultMode: NotificationThresholdMode
+    ) -> NotificationThresholdMode {
+        guard let rawValue = defaults.string(forKey: key),
+              let mode = NotificationThresholdMode(rawValue: rawValue) else {
+            return defaultMode
+        }
+        return mode
+    }
+
     private func syncMenuBarMonitorState() {
         UserDefaults.standard.set(showMenuBarDiskMonitor, forKey: Keys.showMenuBarDiskMonitor)
         MenuBarMonitorController.syncMenuBarItems(settings: self)
@@ -384,6 +523,37 @@ final class AppSettings: ObservableObject {
         } else {
             systemHealthNotificationsEnabled = defaults.bool(forKey: Keys.systemHealthNotificationsEnabled)
         }
+        diskNotificationThresholdMode = Self.loadThresholdMode(
+            from: defaults,
+            key: Keys.diskNotificationThresholdMode,
+            default: .percentage
+        )
+        diskNotificationFreePercent = NotificationThresholdLogic.clamp(
+            defaults.object(forKey: Keys.diskNotificationFreePercent) as? Int
+                ?? NotificationThresholdDefaults.diskFreePercent,
+            to: NotificationThresholdDefaults.diskFreePercentRange
+        )
+        diskNotificationFreeGigabytes = NotificationThresholdLogic.clamp(
+            defaults.object(forKey: Keys.diskNotificationFreeGigabytes) as? Double
+                ?? NotificationThresholdDefaults.diskFreeGigabytes,
+            to: NotificationThresholdDefaults.diskFreeGigabytesRange
+        )
+        memoryNotificationThresholdMode = Self.loadThresholdMode(
+            from: defaults,
+            key: Keys.memoryNotificationThresholdMode,
+            default: .percentage
+        )
+        memoryNotificationUsedPercent = NotificationThresholdLogic.clamp(
+            defaults.object(forKey: Keys.memoryNotificationUsedPercent) as? Int
+                ?? NotificationThresholdDefaults.memoryUsedPercent,
+            to: NotificationThresholdDefaults.memoryUsedPercentRange
+        )
+        memoryNotificationFreeGigabytes = NotificationThresholdLogic.clamp(
+            defaults.object(forKey: Keys.memoryNotificationFreeGigabytes) as? Double
+                ?? NotificationThresholdDefaults.defaultMemoryFreeGigabytes(),
+            to: NotificationThresholdDefaults.memoryFreeGigabytesRange
+        )
+        diskNotificationVolumeOverrides = Self.loadDiskNotificationVolumeOverrides(from: defaults)
         menuPaneOrder = Self.resolvedMenuPaneOrder(
             stored: defaults.stringArray(forKey: Keys.menuPaneOrder)
         )
@@ -460,6 +630,13 @@ final class AppSettings: ObservableObject {
         memoryAnalyzerNotificationsEnabled = true
         diskSpaceNotificationsEnabled = true
         systemHealthNotificationsEnabled = true
+        diskNotificationThresholdMode = .percentage
+        diskNotificationFreePercent = NotificationThresholdDefaults.diskFreePercent
+        diskNotificationFreeGigabytes = NotificationThresholdDefaults.diskFreeGigabytes
+        memoryNotificationThresholdMode = .percentage
+        memoryNotificationUsedPercent = NotificationThresholdDefaults.memoryUsedPercent
+        memoryNotificationFreeGigabytes = NotificationThresholdDefaults.defaultMemoryFreeGigabytes()
+        diskNotificationVolumeOverrides = [:]
         showMenuBarMonitorInstructions = false
         MenuBarHealthItemController.shared.syncVisibility(showHealthScore: false)
         DockVisibilityController.apply(hidden: false)

@@ -13,26 +13,21 @@ enum DiskSpaceAlertLevel: Int, Comparable {
 
     /// Ignore tiny mounts (e.g. app DMGs) that are not meaningful storage targets.
     static let minimumNotifiableTotalBytes: Int64 = 512 * 1024 * 1024
-    static let lowSpaceFractionThreshold = 0.10
-    static let lowSpaceBytesCap: Int64 = 100 * 1_000_000_000
 
     static func shouldNotify(for volume: MountedVolume) -> Bool {
         volume.totalSize >= minimumNotifiableTotalBytes
     }
 
-    /// Free-space floor for alerts: the lower of 10% of capacity or 100 GB.
-    static func lowSpaceFreeBytesThreshold(for totalSize: Int64) -> Int64 {
-        let percentThreshold = Int64(Double(totalSize) * lowSpaceFractionThreshold)
-        return min(percentThreshold, lowSpaceBytesCap)
-    }
-
-    static func isLowOnSpace(freeSize: Int64, totalSize: Int64) -> Bool {
-        freeSize < lowSpaceFreeBytesThreshold(for: totalSize)
-    }
-
-    static func level(for volume: MountedVolume) -> DiskSpaceAlertLevel? {
+    static func level(
+        for volume: MountedVolume,
+        settings: DiskNotificationResolvedSettings
+    ) -> DiskSpaceAlertLevel? {
         guard shouldNotify(for: volume) else { return nil }
-        guard isLowOnSpace(freeSize: volume.freeSize, totalSize: volume.totalSize) else { return nil }
+        guard NotificationThresholdLogic.isDiskLowOnSpace(
+            freeSize: volume.freeSize,
+            totalSize: volume.totalSize,
+            settings: settings
+        ) else { return nil }
         return .low
     }
 }
@@ -88,7 +83,11 @@ final class DiskSpaceNotificationService {
         }
     }
 
-    func checkVolumes(_ volumes: [MountedVolume], notificationsEnabled: Bool) async {
+    func checkVolumes(
+        _ volumes: [MountedVolume],
+        notificationsEnabled: Bool,
+        settings: AppSettings = .shared
+    ) async {
         guard notificationsEnabled else {
             lastNotifiedLevel.removeAll()
             lastNotifiedAt.removeAll()
@@ -100,7 +99,7 @@ final class DiskSpaceNotificationService {
         lastNotifiedAt = lastNotifiedAt.filter { availablePaths.contains($0.key) }
 
         for volume in volumes {
-            await checkVolume(volume)
+            await checkVolume(volume, settings: settings)
         }
     }
 
@@ -119,8 +118,9 @@ final class DiskSpaceNotificationService {
         }
     }
 
-    private func checkVolume(_ volume: MountedVolume) async {
-        guard let level = DiskSpaceAlertLevel.level(for: volume) else {
+    private func checkVolume(_ volume: MountedVolume, settings: AppSettings) async {
+        guard let resolvedSettings = settings.resolvedDiskNotificationSettings(for: volume),
+              let level = DiskSpaceAlertLevel.level(for: volume, settings: resolvedSettings) else {
             lastNotifiedLevel.removeValue(forKey: volume.mountPath)
             lastNotifiedAt.removeValue(forKey: volume.mountPath)
             return

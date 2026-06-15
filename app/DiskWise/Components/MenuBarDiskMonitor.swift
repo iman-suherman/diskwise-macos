@@ -35,11 +35,12 @@ final class SystemVolumeMonitor: ObservableObject {
     func refresh() {
         volumes = VolumeDiscovery.mountedVolumes()
         pruneUnavailableMenuBarVolumes()
-        let notificationsEnabled = AppSettings.shared.diskSpaceNotificationsEnabled
+        let settings = AppSettings.shared
         Task {
             await DiskSpaceNotificationService.shared.checkVolumes(
                 volumes,
-                notificationsEnabled: notificationsEnabled
+                notificationsEnabled: settings.diskSpaceNotificationsEnabled,
+                settings: settings
             )
         }
     }
