@@ -79,7 +79,7 @@ final class DiskSpaceNotificationService {
             return false
         case .notDetermined:
             do {
-                return try await center.requestAuthorization(options: [.alert, .sound, .badge])
+                return try await center.requestAuthorization(options: [.alert, .badge])
             } catch {
                 return false
             }
@@ -144,7 +144,7 @@ final class DiskSpaceNotificationService {
         content.title = notificationTitle(for: volume)
         content.subtitle = "DiskWise · \(volume.name)"
         content.body = notificationBody(for: volume)
-        content.sound = .default
+        content.interruptionLevel = .active
         content.categoryIdentifier = Self.categoryIdentifier
         content.userInfo = [
             "mountPath": volume.mountPath,

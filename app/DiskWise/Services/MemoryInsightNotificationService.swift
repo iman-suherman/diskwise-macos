@@ -34,7 +34,7 @@ final class MemoryInsightNotificationService: NSObject, UNUserNotificationCenter
             return false
         case .notDetermined:
             do {
-                return try await center.requestAuthorization(options: [.alert, .sound, .badge])
+                return try await center.requestAuthorization(options: [.alert, .badge])
             } catch {
                 return false
             }
@@ -58,7 +58,7 @@ final class MemoryInsightNotificationService: NSObject, UNUserNotificationCenter
         content.title = recommendation.title
         content.subtitle = "Memory Analyzer · \(Int(report.currentUsedPercent.rounded()))% in use"
         content.body = notificationBody(for: report, recommendation: recommendation)
-        content.sound = .default
+        content.interruptionLevel = .active
         content.categoryIdentifier = categoryIdentifier(for: recommendation.actionKind)
         content.userInfo = [
             "recommendationID": recommendation.id.uuidString,
@@ -113,7 +113,7 @@ final class MemoryInsightNotificationService: NSObject, UNUserNotificationCenter
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
-        [.banner, .sound]
+        [.banner, .list]
     }
 
     nonisolated func userNotificationCenter(

@@ -1,0 +1,12 @@
+{
+  "summary": "Disk and memory alerts show immediately without playing a sound, and the toolbar update control is easier to spot.",
+  "introduced": [],
+  "changed": [
+    "Notifications — low disk, poor health, and memory insight alerts appear as banners right away but stay silent",
+    "Check for Updates — toolbar button shows the download icon with Check for Updates… label in a wider bordered control"
+  ],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

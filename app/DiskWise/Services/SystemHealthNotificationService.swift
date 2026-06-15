@@ -51,7 +51,7 @@ final class SystemHealthNotificationService {
             return false
         case .notDetermined:
             do {
-                return try await center.requestAuthorization(options: [.alert, .sound, .badge])
+                return try await center.requestAuthorization(options: [.alert, .badge])
             } catch {
                 return false
             }
@@ -92,7 +92,7 @@ final class SystemHealthNotificationService {
         content.title = "System health is Poor (\(snapshot.healthScore))"
         content.subtitle = "DiskWise · \(Int(snapshot.memoryUsedPercent.rounded()))% memory in use"
         content.body = suggestions.joined(separator: " ")
-        content.sound = .default
+        content.interruptionLevel = .active
         content.categoryIdentifier = Self.categoryIdentifier
         content.userInfo = [
             "healthScore": snapshot.healthScore,

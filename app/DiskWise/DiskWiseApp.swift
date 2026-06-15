@@ -299,10 +299,10 @@ struct ContentView: View {
             Button {
                 SparkleUpdaterController.shared.checkForUpdates()
             } label: {
-                Image(systemName: "arrow.down.circle")
+                Label("Check for Updates…", systemImage: "arrow.down.circle")
+                    .labelStyle(.titleAndIcon)
             }
-            .buttonStyle(.borderless)
-            .help("Check for Updates…")
+            .buttonStyle(.bordered)
         }
     }
 
