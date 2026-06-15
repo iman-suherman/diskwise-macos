@@ -13,7 +13,7 @@ public enum StartupAppSource: String, Sendable, CaseIterable, Codable, Identifia
         case .loginItem: return "Open at Login"
         case .dockPinned: return "Dock"
         case .launchAgent: return "Launch Agent"
-        case .backgroundItem: return "Background Item"
+        case .backgroundItem: return "App Background Activity"
         }
     }
 
@@ -56,6 +56,7 @@ public struct StartupAppItem: Identifiable, Sendable, Hashable, Codable {
     public let bundleIdentifier: String?
     public let source: StartupAppSource
     public let isHidden: Bool
+    public let isEnabled: Bool?
     public let detail: String
     public let alsoInDock: Bool
     public let alsoLoginItem: Bool
@@ -67,6 +68,7 @@ public struct StartupAppItem: Identifiable, Sendable, Hashable, Codable {
         bundleIdentifier: String? = nil,
         source: StartupAppSource,
         isHidden: Bool = false,
+        isEnabled: Bool? = nil,
         detail: String = "",
         alsoInDock: Bool = false,
         alsoLoginItem: Bool = false
@@ -77,6 +79,7 @@ public struct StartupAppItem: Identifiable, Sendable, Hashable, Codable {
         self.bundleIdentifier = bundleIdentifier
         self.source = source
         self.isHidden = isHidden
+        self.isEnabled = isEnabled
         self.detail = detail
         self.alsoInDock = alsoInDock
         self.alsoLoginItem = alsoLoginItem
@@ -102,13 +105,43 @@ public struct StartupAppAnalysis: Identifiable, Sendable, Hashable, Codable {
     }
 }
 
+public struct StartupAppsScanDiagnostics: Sendable {
+    public let backgroundTaskManagerAccessible: Bool
+    public let automationPermissionGranted: Bool
+    public let needsAdminPassword: Bool
+
+    public init(
+        backgroundTaskManagerAccessible: Bool,
+        automationPermissionGranted: Bool,
+        needsAdminPassword: Bool
+    ) {
+        self.backgroundTaskManagerAccessible = backgroundTaskManagerAccessible
+        self.automationPermissionGranted = automationPermissionGranted
+        self.needsAdminPassword = needsAdminPassword
+    }
+
+    public var needsPermissionSetup: Bool {
+        !backgroundTaskManagerAccessible || !automationPermissionGranted
+    }
+}
+
 public struct StartupAppsScanResult: Sendable {
     public let scannedAt: Date
     public let items: [StartupAppItem]
+    public let diagnostics: StartupAppsScanDiagnostics
 
-    public init(scannedAt: Date = Date(), items: [StartupAppItem]) {
+    public init(
+        scannedAt: Date = Date(),
+        items: [StartupAppItem],
+        diagnostics: StartupAppsScanDiagnostics = StartupAppsScanDiagnostics(
+            backgroundTaskManagerAccessible: true,
+            automationPermissionGranted: true,
+            needsAdminPassword: false
+        )
+    ) {
         self.scannedAt = scannedAt
         self.items = items
+        self.diagnostics = diagnostics
     }
 
     public var loginItemCount: Int {

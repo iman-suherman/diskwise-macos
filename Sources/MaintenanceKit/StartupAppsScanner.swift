@@ -22,18 +22,24 @@ public final class StartupAppsScanner: @unchecked Sendable {
     }
 
     public func scan() -> StartupAppsScanResult {
-        let loginItems = scanLoginItems()
+        let btmResult = scanBackgroundTaskManager()
+        let appleScriptResult = scanLoginItemsViaAppleScript()
         let dockApps = scanDockApps()
         let launchAgents = scanLaunchAgents()
-        let backgroundItems = scanBackgroundItems()
 
         let dockPaths = Set(dockApps.compactMap(\.path))
-        let loginNames = Set(loginItems.map { normalizedName($0.name) })
+        let btmLoginItems = btmResult.loginItems
+        let loginNames = Set(
+            (btmLoginItems + appleScriptResult.items).map { normalizedName($0.name) }
+        )
 
         var merged: [StartupAppItem] = []
+        var seenLoginKeys = Set<String>()
 
-        for item in loginItems {
+        for item in btmLoginItems {
             let path = item.path
+            let key = loginKey(name: item.name, path: path, bundleID: item.bundleIdentifier)
+            guard seenLoginKeys.insert(key).inserted else { continue }
             merged.append(
                 StartupAppItem(
                     name: item.name,
@@ -41,6 +47,26 @@ public final class StartupAppsScanner: @unchecked Sendable {
                     bundleIdentifier: item.bundleIdentifier,
                     source: .loginItem,
                     isHidden: item.isHidden,
+                    isEnabled: item.isEnabled,
+                    detail: item.detail,
+                    alsoInDock: path.map { dockPaths.contains($0) } ?? false,
+                    alsoLoginItem: true
+                )
+            )
+        }
+
+        for item in appleScriptResult.items {
+            let path = item.path
+            let key = loginKey(name: item.name, path: path, bundleID: item.bundleIdentifier)
+            guard seenLoginKeys.insert(key).inserted else { continue }
+            merged.append(
+                StartupAppItem(
+                    name: item.name,
+                    path: path,
+                    bundleIdentifier: item.bundleIdentifier,
+                    source: .loginItem,
+                    isHidden: item.isHidden,
+                    isEnabled: item.isEnabled,
                     detail: item.detail,
                     alsoInDock: path.map { dockPaths.contains($0) } ?? false,
                     alsoLoginItem: true
@@ -50,7 +76,7 @@ public final class StartupAppsScanner: @unchecked Sendable {
 
         for item in dockApps {
             let isLogin = loginNames.contains(normalizedName(item.name))
-                || (item.path.flatMap { path in loginItems.contains { $0.path == path } } ?? false)
+                || (item.path.flatMap { path in merged.contains { $0.path == path && $0.source == .loginItem } } ?? false)
             guard !isLogin else { continue }
             merged.append(
                 StartupAppItem(
@@ -58,7 +84,7 @@ public final class StartupAppsScanner: @unchecked Sendable {
                     path: item.path,
                     bundleIdentifier: item.bundleIdentifier,
                     source: .dockPinned,
-                    detail: "Pinned in the Dock",
+                    detail: "Pinned in Dock",
                     alsoInDock: true,
                     alsoLoginItem: false
                 )
@@ -66,9 +92,23 @@ public final class StartupAppsScanner: @unchecked Sendable {
         }
 
         merged.append(contentsOf: launchAgents)
-        merged.append(contentsOf: backgroundItems.filter { background in
-            !merged.contains(where: { $0.name.caseInsensitiveCompare(background.name) == .orderedSame && $0.source == background.source })
-        })
+
+        for item in btmResult.backgroundApps {
+            guard !merged.contains(where: {
+                $0.source == item.source
+                    && $0.name.caseInsensitiveCompare(item.name) == .orderedSame
+                    && ($0.bundleIdentifier == item.bundleIdentifier || $0.path == item.path)
+            }) else { continue }
+            merged.append(item)
+        }
+
+        for item in btmResult.legacyAgents {
+            guard !merged.contains(where: {
+                $0.name.caseInsensitiveCompare(item.name) == .orderedSame
+                    && ($0.source == .launchAgent || $0.source == .backgroundItem)
+            }) else { continue }
+            merged.append(item)
+        }
 
         let sorted = merged.sorted { lhs, rhs in
             if lhs.source.sortOrder != rhs.source.sortOrder {
@@ -77,18 +117,256 @@ public final class StartupAppsScanner: @unchecked Sendable {
             return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
         }
 
-        return StartupAppsScanResult(items: sorted)
+        let diagnostics = StartupAppsScanDiagnostics(
+            backgroundTaskManagerAccessible: btmResult.accessible,
+            automationPermissionGranted: appleScriptResult.accessGranted,
+            needsAdminPassword: btmResult.needsAdminPassword
+        )
+
+        return StartupAppsScanResult(items: sorted, diagnostics: diagnostics)
     }
 
-    private struct RawItem {
+    internal struct RawItem {
         let name: String
         let path: String?
         let bundleIdentifier: String?
         let isHidden: Bool
+        let isEnabled: Bool?
         let detail: String
     }
 
-    private func scanLoginItems() -> [RawItem] {
+    private struct BTMScanResult {
+        let accessible: Bool
+        let needsAdminPassword: Bool
+        let loginItems: [RawItem]
+        let backgroundApps: [StartupAppItem]
+        let legacyAgents: [StartupAppItem]
+    }
+
+    private struct BTMRecord {
+        var name: String?
+        var type: String?
+        var disposition: String?
+        var identifier: String?
+        var url: String?
+        var bundleIdentifier: String?
+        var executablePath: String?
+        var parentIdentifier: String?
+    }
+
+    private func scanBackgroundTaskManager() -> BTMScanResult {
+        let commandResult = runCommandWithStatus(path: sfltoolPath, arguments: ["dumpbtm"])
+        guard let output = commandResult.output, !output.isEmpty else {
+            let needsAdmin = commandResult.terminationStatus != 0
+            return BTMScanResult(
+                accessible: false,
+                needsAdminPassword: needsAdmin,
+                loginItems: [],
+                backgroundApps: [],
+                legacyAgents: []
+            )
+        }
+
+        let parsed = parseBackgroundTaskManagerDump(output)
+        return BTMScanResult(
+            accessible: true,
+            needsAdminPassword: false,
+            loginItems: parsed.loginItems,
+            backgroundApps: parsed.backgroundApps,
+            legacyAgents: parsed.legacyAgents
+        )
+    }
+
+    private func parseBackgroundTaskManagerDump(_ output: String) -> (
+        loginItems: [RawItem],
+        backgroundApps: [StartupAppItem],
+        legacyAgents: [StartupAppItem]
+    ) {
+        let records = parseBTMRecords(from: output)
+        let parentNames = parentAppNames(from: records)
+
+        var loginItems: [RawItem] = []
+        var backgroundApps: [StartupAppItem] = []
+        var legacyAgents: [StartupAppItem] = []
+
+        for record in records {
+            let type = record.type ?? ""
+            let disposition = record.disposition ?? ""
+            let isEnabled = disposition.contains("enabled")
+            let path = sanitizedPath(record.url ?? record.executablePath)
+            let bundleID = record.bundleIdentifier
+
+            if type.contains("login item") {
+                let displayName = loginItemDisplayName(record: record, parentNames: parentNames)
+                loginItems.append(
+                    RawItem(
+                        name: displayName,
+                        path: path,
+                        bundleIdentifier: bundleID,
+                        isHidden: false,
+                        isEnabled: isEnabled,
+                        detail: isEnabled ? "Open at Login" : "Open at Login (disabled)"
+                    )
+                )
+                continue
+            }
+
+            if type.contains("app") {
+                guard !isImporterOrExtension(record) else { continue }
+                let displayName = appDisplayName(record: record)
+                backgroundApps.append(
+                    StartupAppItem(
+                        name: displayName,
+                        path: path,
+                        bundleIdentifier: bundleID,
+                        source: .backgroundItem,
+                        isEnabled: isEnabled,
+                        detail: isEnabled
+                            ? "App Background Activity (allowed to run in background)"
+                            : "App Background Activity (disabled)",
+                        alsoInDock: false,
+                        alsoLoginItem: false
+                    )
+                )
+                continue
+            }
+
+            if type.contains("legacy agent") || type.contains("legacy daemon") {
+                let displayName = record.name ?? bundleID ?? "Background Service"
+                legacyAgents.append(
+                    StartupAppItem(
+                        name: displayName.replacingOccurrences(of: ".app", with: ""),
+                        path: path,
+                        bundleIdentifier: bundleID,
+                        source: .backgroundItem,
+                        isEnabled: isEnabled,
+                        detail: "Background service (\(typeLabel(type)))",
+                        alsoInDock: false,
+                        alsoLoginItem: false
+                    )
+                )
+            }
+        }
+
+        return (deduplicatedLoginItems(loginItems), deduplicatedBackgroundApps(backgroundApps), legacyAgents)
+    }
+
+    private func parseBTMRecords(from output: String) -> [BTMRecord] {
+        var records: [BTMRecord] = []
+        var current = BTMRecord()
+
+        func flush() {
+            if current.type != nil || current.name != nil || current.bundleIdentifier != nil {
+                records.append(current)
+            }
+            current = BTMRecord()
+        }
+
+        for line in output.split(separator: "\n", omittingEmptySubsequences: false) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("#") && trimmed.contains(":") {
+                flush()
+                continue
+            }
+            if trimmed.hasPrefix("Name:") {
+                current.name = trimmed.replacingOccurrences(of: "Name:", with: "").trimmingCharacters(in: .whitespaces)
+            } else if trimmed.hasPrefix("Type:") {
+                current.type = trimmed.replacingOccurrences(of: "Type:", with: "").trimmingCharacters(in: .whitespaces)
+            } else if trimmed.hasPrefix("Disposition:") {
+                current.disposition = trimmed.replacingOccurrences(of: "Disposition:", with: "").trimmingCharacters(in: .whitespaces)
+            } else if trimmed.hasPrefix("Identifier:") {
+                current.identifier = trimmed.replacingOccurrences(of: "Identifier:", with: "").trimmingCharacters(in: .whitespaces)
+            } else if trimmed.hasPrefix("URL:") {
+                current.url = trimmed.replacingOccurrences(of: "URL:", with: "").trimmingCharacters(in: .whitespaces)
+            } else if trimmed.hasPrefix("Bundle Identifier:") {
+                current.bundleIdentifier = trimmed.replacingOccurrences(of: "Bundle Identifier:", with: "").trimmingCharacters(in: .whitespaces)
+            } else if trimmed.hasPrefix("Executable Path:") {
+                current.executablePath = trimmed.replacingOccurrences(of: "Executable Path:", with: "").trimmingCharacters(in: .whitespaces)
+            } else if trimmed.hasPrefix("Parent Identifier:") {
+                current.parentIdentifier = trimmed.replacingOccurrences(of: "Parent Identifier:", with: "").trimmingCharacters(in: .whitespaces)
+            }
+        }
+        flush()
+        return records
+    }
+
+    private func parentAppNames(from records: [BTMRecord]) -> [String: String] {
+        var names: [String: String] = [:]
+        for record in records {
+            guard let identifier = record.identifier,
+                  let name = record.name,
+                  !name.isEmpty,
+                  name != "(null)",
+                  record.type?.contains("app") == true
+            else { continue }
+            names[identifier] = name.replacingOccurrences(of: ".app", with: "")
+        }
+        return names
+    }
+
+    private func loginItemDisplayName(record: BTMRecord, parentNames: [String: String]) -> String {
+        if let parentID = record.parentIdentifier, let parentName = parentNames[parentID] {
+            return parentName
+        }
+        if let name = record.name, !name.isEmpty, name != "(null)" {
+            return name.replacingOccurrences(of: ".app", with: "")
+        }
+        if let path = sanitizedPath(record.url ?? record.executablePath) {
+            return fileManager.displayName(atPath: path).replacingOccurrences(of: ".app", with: "")
+        }
+        if let bundleID = record.bundleIdentifier {
+            return bundleID.split(separator: ".").last.map(String.init) ?? bundleID
+        }
+        return "Login Item"
+    }
+
+    private func appDisplayName(record: BTMRecord) -> String {
+        if let name = record.name, !name.isEmpty, name != "(null)" {
+            return name.replacingOccurrences(of: ".app", with: "")
+        }
+        if let path = sanitizedPath(record.url) {
+            return fileManager.displayName(atPath: path).replacingOccurrences(of: ".app", with: "")
+        }
+        if let bundleID = record.bundleIdentifier {
+            return bundleID.split(separator: ".").last.map(String.init) ?? bundleID
+        }
+        return "Background App"
+    }
+
+    private func isImporterOrExtension(_ record: BTMRecord) -> Bool {
+        let name = (record.name ?? "").lowercased()
+        let bundleID = (record.bundleIdentifier ?? "").lowercased()
+        return name.contains("spotlight")
+            || name.contains("quick look")
+            || name.contains(".appex")
+            || name.contains(".mdimporter")
+            || name.contains("importer")
+            || bundleID.contains("quicklook")
+            || bundleID.contains("spotlight")
+    }
+
+    private func deduplicatedLoginItems(_ items: [RawItem]) -> [RawItem] {
+        var seen = Set<String>()
+        return items.filter { item in
+            let key = loginKey(name: item.name, path: item.path, bundleID: item.bundleIdentifier)
+            return seen.insert(key).inserted
+        }
+    }
+
+    private func deduplicatedBackgroundApps(_ items: [StartupAppItem]) -> [StartupAppItem] {
+        var seen = Set<String>()
+        return items.filter { item in
+            let key = "\(item.bundleIdentifier ?? item.name)|\(item.path ?? "")"
+            return seen.insert(key).inserted
+        }
+    }
+
+    private struct AppleScriptLoginResult {
+        let items: [RawItem]
+        let accessGranted: Bool
+    }
+
+    private func scanLoginItemsViaAppleScript() -> AppleScriptLoginResult {
         let script = """
         tell application "System Events"
             set output to ""
@@ -105,13 +383,14 @@ public final class StartupAppsScanner: @unchecked Sendable {
         end tell
         """
 
-        guard let output = runCommand(path: osascriptPath, arguments: ["-e", script]) else {
-            return []
+        let commandResult = runCommandWithStatus(path: osascriptPath, arguments: ["-e", script])
+        guard let output = commandResult.output else {
+            return AppleScriptLoginResult(items: [], accessGranted: false)
         }
 
-        return output
+        let items = output
             .split(separator: "\n", omittingEmptySubsequences: true)
-            .compactMap { line in
+            .compactMap { line -> RawItem? in
                 let parts = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
                 guard let name = parts.first, !name.isEmpty else { return nil }
                 let path = parts.count > 1 ? sanitizedPath(parts[1]) : nil
@@ -121,9 +400,12 @@ public final class StartupAppsScanner: @unchecked Sendable {
                     path: path,
                     bundleIdentifier: bundleIdentifier(for: path),
                     isHidden: hidden,
+                    isEnabled: true,
                     detail: hidden ? "Hidden login item" : "Registered in Login Items"
                 )
             }
+
+        return AppleScriptLoginResult(items: items, accessGranted: commandResult.terminationStatus == 0)
     }
 
     private func scanDockApps() -> [RawItem] {
@@ -141,6 +423,7 @@ public final class StartupAppsScanner: @unchecked Sendable {
                 path: path,
                 bundleIdentifier: bundleIdentifier(for: path),
                 isHidden: false,
+                isEnabled: nil,
                 detail: "Pinned in Dock"
             )
         }
@@ -178,95 +461,14 @@ public final class StartupAppsScanner: @unchecked Sendable {
             }
     }
 
-    private func scanBackgroundItems() -> [StartupAppItem] {
-        guard let output = runCommand(path: sfltoolPath, arguments: ["dumpbtm"]) else { return [] }
-        return parseBackgroundItems(from: output)
-    }
-
-    private func parseBackgroundItems(from output: String) -> [StartupAppItem] {
-        var items: [StartupAppItem] = []
-        var currentName: String?
-        var currentType: String?
-        var currentDisposition: String?
-        var currentURL: String?
-        var currentBundleID: String?
-        var currentExecutable: String?
-
-        func flush() {
-            guard let name = currentName, !name.isEmpty else {
-                resetCurrent()
-                return
-            }
-
-            let disposition = currentDisposition ?? ""
-            let isEnabled = disposition.contains("enabled")
-            let type = currentType ?? ""
-
-            let isStartupType = type.contains("legacy agent")
-                || (type.contains("app") && !type.contains("spotlight") && !type.contains("quicklook"))
-            guard isStartupType, isEnabled else {
-                resetCurrent()
-                return
-            }
-
-            if type.contains("spotlight") || type.contains("quicklook") || type.contains("dock tile") {
-                resetCurrent()
-                return
-            }
-
-            let path = sanitizedPath(currentURL ?? currentExecutable)
-            items.append(
-                StartupAppItem(
-                    name: name.replacingOccurrences(of: ".app", with: ""),
-                    path: path,
-                    bundleIdentifier: currentBundleID,
-                    source: .backgroundItem,
-                    detail: "Background startup item (\(typeLabel(type)))",
-                    alsoInDock: false,
-                    alsoLoginItem: false
-                )
-            )
-            resetCurrent()
+    private func loginKey(name: String, path: String?, bundleID: String?) -> String {
+        if let bundleID, !bundleID.isEmpty {
+            return "bundle|\(bundleID.lowercased())"
         }
-
-        func resetCurrent() {
-            currentName = nil
-            currentType = nil
-            currentDisposition = nil
-            currentURL = nil
-            currentBundleID = nil
-            currentExecutable = nil
+        if let path, !path.isEmpty {
+            return "path|\(path.lowercased())"
         }
-
-        for line in output.split(separator: "\n", omittingEmptySubsequences: false) {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            if trimmed.hasPrefix("#") && trimmed.contains(":") {
-                flush()
-                continue
-            }
-            if trimmed.hasPrefix("Name:") {
-                currentName = trimmed.replacingOccurrences(of: "Name:", with: "").trimmingCharacters(in: .whitespaces)
-            } else if trimmed.hasPrefix("Type:") {
-                currentType = trimmed.replacingOccurrences(of: "Type:", with: "").trimmingCharacters(in: .whitespaces)
-            } else if trimmed.hasPrefix("Disposition:") {
-                currentDisposition = trimmed.replacingOccurrences(of: "Disposition:", with: "").trimmingCharacters(in: .whitespaces)
-            } else if trimmed.hasPrefix("URL:") {
-                currentURL = trimmed.replacingOccurrences(of: "URL:", with: "").trimmingCharacters(in: .whitespaces)
-            } else if trimmed.hasPrefix("Bundle Identifier:") {
-                currentBundleID = trimmed.replacingOccurrences(of: "Bundle Identifier:", with: "").trimmingCharacters(in: .whitespaces)
-            } else if trimmed.hasPrefix("Executable Path:") {
-                currentExecutable = trimmed.replacingOccurrences(of: "Executable Path:", with: "").trimmingCharacters(in: .whitespaces)
-            }
-        }
-        flush()
-
-        var seen = Set<String>()
-        return items.filter { item in
-            let key = item.id
-            guard !seen.contains(key) else { return false }
-            seen.insert(key)
-            return true
-        }
+        return "name|\(normalizedName(name))"
     }
 
     private func extractDockURLs(from output: String) -> [String] {
@@ -329,6 +531,9 @@ public final class StartupAppsScanner: @unchecked Sendable {
         if trimmed.hasPrefix("file://"), let url = URL(string: trimmed) {
             return url.path
         }
+        if trimmed.hasPrefix("Contents/") {
+            return nil
+        }
         return trimmed
     }
 
@@ -343,7 +548,16 @@ public final class StartupAppsScanner: @unchecked Sendable {
         return "Background"
     }
 
+    private struct CommandResult {
+        let output: String?
+        let terminationStatus: Int32
+    }
+
     private func runCommand(path: String, arguments: [String], timeout: TimeInterval = 15) -> String? {
+        runCommandWithStatus(path: path, arguments: arguments, timeout: timeout).output
+    }
+
+    private func runCommandWithStatus(path: String, arguments: [String], timeout: TimeInterval = 15) -> CommandResult {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: path)
         process.arguments = arguments
@@ -353,7 +567,6 @@ public final class StartupAppsScanner: @unchecked Sendable {
 
         let group = DispatchGroup()
         group.enter()
-        var result: String?
         var terminationStatus: Int32 = -1
 
         process.terminationHandler = { process in
@@ -364,20 +577,29 @@ public final class StartupAppsScanner: @unchecked Sendable {
         do {
             try process.run()
         } catch {
-            return nil
+            return CommandResult(output: nil, terminationStatus: -1)
         }
 
         let completed = group.wait(timeout: .now() + timeout) == .success
         if !completed {
             process.terminate()
-            return nil
+            return CommandResult(output: nil, terminationStatus: -1)
         }
 
-        guard terminationStatus == 0 else { return nil }
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        result = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return result
+        let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return CommandResult(output: output, terminationStatus: terminationStatus)
     }
+
+    #if DEBUG
+    internal func parseBackgroundTaskManagerDumpForTesting(_ output: String) -> (
+        loginItems: [RawItem],
+        backgroundApps: [StartupAppItem],
+        legacyAgents: [StartupAppItem]
+    ) {
+        parseBackgroundTaskManagerDump(output)
+    }
+    #endif
 }
 
 private extension StartupAppSource {

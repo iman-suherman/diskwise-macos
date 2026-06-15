@@ -15,6 +15,7 @@ final class StartupAppsMonitor: ObservableObject {
     @Published private(set) var isStreamingAnalysis = false
     @Published private(set) var lastScannedAt: Date?
     @Published private(set) var aiProviderLabel = "Rule-based"
+    @Published private(set) var scanDiagnostics: StartupAppsScanDiagnostics?
     @Published var errorMessage: String?
 
     private let scanner = StartupAppsScanner()
@@ -51,6 +52,7 @@ final class StartupAppsMonitor: ObservableObject {
 
             guard !Task.isCancelled else { return }
             scanResult = result
+            scanDiagnostics = result.diagnostics
             lastScannedAt = result.scannedAt
 
             if result.items.isEmpty {
@@ -58,7 +60,7 @@ final class StartupAppsMonitor: ObservableObject {
                     scannedAt: result.scannedAt,
                     items: [],
                     analyses: [],
-                    summary: "No startup apps were found on this Mac."
+                    summary: emptyScanSummary(diagnostics: result.diagnostics)
                 )
                 return
             }
@@ -115,5 +117,24 @@ final class StartupAppsMonitor: ObservableObject {
 
     func openLoginItemsSettings() {
         MenuBarMonitorController.openLoginItemsSettingsForApproval()
+    }
+
+    func openAutomationSettings() {
+        let urls = [
+            "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Automation",
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation",
+        ]
+        for link in urls {
+            if let url = URL(string: link), NSWorkspace.shared.open(url) {
+                return
+            }
+        }
+    }
+
+    private func emptyScanSummary(diagnostics: StartupAppsScanDiagnostics) -> String {
+        if diagnostics.needsPermissionSetup {
+            return "Grant the permissions described on the right, then refresh to list Open at Login and App Background Activity items."
+        }
+        return "No startup apps were found on this Mac."
     }
 }

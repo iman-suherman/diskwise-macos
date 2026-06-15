@@ -10,6 +10,30 @@ struct StartupAppsView: View {
     @State private var filterSource: StartupAppSource?
 
     var body: some View {
+        HStack(alignment: .top, spacing: 0) {
+            mainContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            Divider()
+
+            StartupAppsPermissionPanel(
+                diagnostics: monitor.scanDiagnostics,
+                onOpenLoginItems: { monitor.openLoginItemsSettings() },
+                onOpenAutomation: { monitor.openAutomationSettings() },
+                onRefresh: { monitor.scanAndAnalyze(force: true) },
+                isRefreshing: monitor.isScanning
+            )
+            .frame(width: 300)
+            .frame(maxHeight: .infinity)
+            .background(Color.primary.opacity(0.03))
+        }
+        .onAppear {
+            monitor.refreshConfiguration(from: viewModel.appSettings)
+            monitor.scanAndAnalyze()
+        }
+    }
+
+    private var mainContent: some View {
         VStack(spacing: 0) {
             header
                 .padding(.horizontal, 28)
@@ -23,7 +47,11 @@ struct StartupAppsView: View {
                     } else if let report = monitor.report {
                         summarySection(report)
                         filterBar(report)
-                        itemList(report)
+                        if report.items.isEmpty {
+                            emptyResultsState
+                        } else {
+                            itemList(report)
+                        }
                     } else {
                         emptyState
                     }
@@ -32,10 +60,6 @@ struct StartupAppsView: View {
                 .padding(.bottom, 28)
             }
         }
-        .onAppear {
-            monitor.refreshConfiguration(from: viewModel.appSettings)
-            monitor.scanAndAnalyze()
-        }
     }
 
     private var header: some View {
@@ -43,7 +67,7 @@ struct StartupAppsView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Startup Apps")
                     .font(.largeTitle.bold())
-                Text("Login items, Dock apps, and launch agents with Apple Intelligence guidance.")
+                Text("Open at Login, App Background Activity, Dock apps, and launch agents with Apple Intelligence guidance.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -94,11 +118,29 @@ struct StartupAppsView: View {
 
     private var emptyState: some View {
         ContentUnavailableView(
-            "No startup apps found",
+            "Preparing startup scan",
             systemImage: "power.circle",
-            description: Text("DiskWise did not detect login items, Dock startup apps, or launch agents.")
+            description: Text("DiskWise is gathering login items and background activity apps.")
         )
         .frame(maxWidth: .infinity, minHeight: 360)
+    }
+
+    private var emptyResultsState: some View {
+        ContentUnavailableView(
+            monitor.scanDiagnostics?.needsPermissionSetup == true
+                ? "Permissions required"
+                : "No startup apps found",
+            systemImage: monitor.scanDiagnostics?.needsPermissionSetup == true ? "lock.shield" : "power.circle",
+            description: Text(emptyResultsDescription)
+        )
+        .frame(maxWidth: .infinity, minHeight: 280)
+    }
+
+    private var emptyResultsDescription: String {
+        if monitor.scanDiagnostics?.needsPermissionSetup == true {
+            return "Grant the permissions listed in the panel on the right, then click Refresh. macOS protects login items and background activity lists."
+        }
+        return "DiskWise did not detect Open at Login apps, App Background Activity, Dock startup apps, or launch agents."
     }
 
     @ViewBuilder
@@ -121,13 +163,13 @@ struct StartupAppsView: View {
                         icon: "power.circle"
                     )
                     summaryBadge(
-                        count: report.items.filter { $0.source == .dockPinned }.count,
-                        label: "Dock",
-                        icon: "dock.rectangle"
+                        count: report.items.filter { $0.source == .backgroundItem }.count,
+                        label: "Background Activity",
+                        icon: "arrow.triangle.2.circlepath"
                     )
                     summaryBadge(
-                        count: report.items.filter { $0.source == .launchAgent || $0.source == .backgroundItem }.count,
-                        label: "Background",
+                        count: report.items.filter { $0.source == .dockPinned || $0.source == .launchAgent }.count,
+                        label: "Dock & Agents",
                         icon: "gearshape.2"
                     )
                 }
@@ -204,6 +246,153 @@ struct StartupAppsView: View {
     }
 }
 
+private struct StartupAppsPermissionPanel: View {
+    let diagnostics: StartupAppsScanDiagnostics?
+    let onOpenLoginItems: () -> Void
+    let onOpenAutomation: () -> Void
+    let onRefresh: () -> Void
+    let isRefreshing: Bool
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                header
+
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Why DiskWise needs access")
+                            .font(.subheadline.weight(.semibold))
+
+                        Text("macOS keeps startup and background app lists private. DiskWise reads them locally on your Mac so you can review what launches at login and what keeps running after you quit an app.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                permissionSection(
+                    title: "Open at Login",
+                    icon: "power.circle",
+                    isGranted: diagnostics?.automationPermissionGranted ?? false,
+                    explanation: "DiskWise asks System Events for the classic Login Items list. This can reveal hidden entries that do not appear in the Background Task database.",
+                    actionTitle: "Open Automation Settings",
+                    action: onOpenAutomation
+                )
+
+                permissionSection(
+                    title: "App Background Activity",
+                    icon: "arrow.triangle.2.circlepath",
+                    isGranted: diagnostics?.backgroundTaskManagerAccessible ?? false,
+                    explanation: "Apps that check for updates or sync after you close them are stored in macOS Background Task Management. Reading that database may prompt for your administrator password because it is system-protected.",
+                    actionTitle: "Open Login Items Settings",
+                    action: onOpenLoginItems
+                )
+
+                if diagnostics?.needsAdminPassword == true {
+                    GroupBox {
+                        Label {
+                            Text("When you click Refresh, macOS may ask for your admin password. This is normal — DiskWise uses it only to read the protected startup database, not to change anything.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        } icon: {
+                            Image(systemName: "key.fill")
+                                .foregroundStyle(.orange)
+                        }
+                    }
+                }
+
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("What you will see")
+                            .font(.subheadline.weight(.semibold))
+
+                        bullet("Open at Login — apps that launch when you sign in")
+                        bullet("App Background Activity — apps allowed to run after you close them")
+                        bullet("Launch Agents — background services in ~/Library/LaunchAgents")
+                        bullet("Dock — pinned apps that are not already login items")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                Button {
+                    onRefresh()
+                } label: {
+                    Label("Refresh after granting access", systemImage: "arrow.clockwise")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isRefreshing)
+            }
+            .padding(20)
+        }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("Permissions", systemImage: "lock.shield")
+                .font(.headline)
+            Text("Grant access so DiskWise can list every startup item.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func permissionSection(
+        title: String,
+        icon: String,
+        isGranted: Bool,
+        explanation: String,
+        actionTitle: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 8) {
+                    Image(systemName: icon)
+                        .foregroundStyle(isGranted ? .green : .orange)
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    statusBadge(granted: isGranted)
+                }
+
+                Text(explanation)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button(actionTitle, action: action)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func statusBadge(granted: Bool) -> some View {
+        Text(granted ? "Granted" : "Needed")
+            .font(.caption2.weight(.semibold))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background((granted ? Color.green : Color.orange).opacity(0.15), in: Capsule())
+            .foregroundStyle(granted ? .green : .orange)
+    }
+
+    private func bullet(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text("•")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(text)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
 private struct StartupAppRow: View {
     let item: StartupAppItem
     let analysis: StartupAppAnalysis?
@@ -225,6 +414,13 @@ private struct StartupAppRow: View {
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 2)
                                     .background(Color.orange.opacity(0.15), in: Capsule())
+                            }
+                            if item.isEnabled == false {
+                                Text("Disabled")
+                                    .font(.caption2.weight(.semibold))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.secondary.opacity(0.15), in: Capsule())
                             }
                         }
 

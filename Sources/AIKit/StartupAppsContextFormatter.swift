@@ -22,6 +22,9 @@ enum StartupAppsContextFormatter {
             if item.isHidden {
                 parts.append("Hidden: yes")
             }
+            if let isEnabled = item.isEnabled {
+                parts.append("Enabled: \(isEnabled ? "yes" : "no")")
+            }
             if item.alsoInDock {
                 parts.append("Also in Dock: yes")
             }

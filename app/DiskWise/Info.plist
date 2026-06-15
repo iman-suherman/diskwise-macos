@@ -15,9 +15,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.7.12</string>
+    <string>0.7.13</string>
     <key>CFBundleVersion</key>
-    <string>7012</string>
+    <string>7013</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>CFBundleIconName</key>
@@ -26,6 +26,8 @@
     <string>AppIcon</string>
     <key>NSHumanReadableCopyright</key>
     <string>Copyright © 2026 Iman Suherman</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>DiskWise reads your Open at Login items so it can show startup apps and recommend what to keep enabled at boot.</string>
     <key>SUFeedURL</key>
     <string>$(SPARKLE_FEED_URL)</string>
     <key>SUPublicEDKey</key>
