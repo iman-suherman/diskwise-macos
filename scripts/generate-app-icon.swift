@@ -445,7 +445,12 @@ func squareCanvas(from source: NSImage) -> NSImage {
     return image(from: rep)
 }
 
-func resizedIcon(from source: NSImage, pixels: Int, clipIconShape: Bool = true) -> NSBitmapImageRep {
+func resizedIcon(
+    from source: NSImage,
+    pixels: Int,
+    clipIconShape: Bool = true,
+    contentScale: CGFloat? = nil
+) -> NSBitmapImageRep {
     guard let rep = NSBitmapImageRep(
         bitmapDataPlanes: nil,
         pixelsWide: pixels,
@@ -475,11 +480,11 @@ func resizedIcon(from source: NSImage, pixels: Int, clipIconShape: Bool = true) 
     }
 
     let sourceSize = source.size
-    let contentScale = clipIconShape ? iconContentScale : 0.94
+    let drawScale = contentScale ?? (clipIconShape ? iconContentScale : 0.94)
     let scale = max(
         CGFloat(pixels) / sourceSize.width,
         CGFloat(pixels) / sourceSize.height
-    ) * contentScale
+    ) * drawScale
     let drawnSize = NSSize(
         width: sourceSize.width * scale,
         height: sourceSize.height * scale
@@ -532,8 +537,15 @@ print("Using source icon: \(sourceImagePath)")
 let directoryURL = URL(fileURLWithPath: outputDirectory, isDirectory: true)
 try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
 
+let appIconContentScale: CGFloat = usesCuratedMaster ? 1.0 : iconContentScale
+
 for entry in sizes {
-    let rep = resizedIcon(from: normalizedSource, pixels: entry.size, clipIconShape: !usesCuratedMaster)
+    let rep = resizedIcon(
+        from: normalizedSource,
+        pixels: entry.size,
+        clipIconShape: true,
+        contentScale: appIconContentScale
+    )
     try savePNG(rep, to: directoryURL.appendingPathComponent(entry.name))
     print("Generated \(entry.name) (\(entry.size)x\(entry.size))")
 }

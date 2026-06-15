@@ -1,0 +1,12 @@
+{
+  "summary": "App and installer icons now use proper macOS squircle rounding — no more square black matte inside the DMG drag-and-drop icon.",
+  "introduced": [],
+  "changed": [],
+  "fixed": [
+    "DMG installer icon — app icon assets clip to the macOS squircle at full bleed so Finder no longer shows a sharp black square inside the rounded frame",
+    "Dock and sidebar brand icon — regenerated with the same squircle clip for consistent rounded corners"
+  ],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}
