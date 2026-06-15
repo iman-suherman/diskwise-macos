@@ -197,6 +197,58 @@ public actor AIProviderResolver {
         }
     }
 
+    public func analyzeStartupApps(context: StartupAppsAnalysisContext) async -> String? {
+        if await foundationModelsProvider.isAvailable() {
+            if let summary = try? await foundationModelsProvider.analyzeStartupApps(context: context) {
+                return summary
+            }
+        }
+        if await mlxProvider.isAvailable() {
+            if let summary = try? await mlxProvider.analyzeStartupApps(context: context) {
+                return summary
+            }
+        }
+        if configuration.enableOllamaDevMode, await ollamaProvider().isAvailable() {
+            if let summary = try? await ollamaProvider().analyzeStartupApps(context: context) {
+                return summary
+            }
+        }
+        return nil
+    }
+
+    public func streamAnalyzeStartupApps(
+        context: StartupAppsAnalysisContext,
+        fallback: String
+    ) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                if await foundationModelsProvider.isAvailable() {
+                    let stream = foundationModelsProvider.streamAnalyzeStartupApps(context: context)
+                    if await streamMemory(stream, to: continuation) {
+                        return
+                    }
+                }
+                if configuration.enableOllamaDevMode, await ollamaProvider().isAvailable() {
+                    let stream = ollamaProvider().streamAnalyzeStartupApps(context: context)
+                    if await streamMemory(stream, to: continuation) {
+                        return
+                    }
+                }
+                if let summary = await analyzeStartupApps(context: context) {
+                    for try await partial in StreamingText.simulatedReveal(summary) {
+                        continuation.yield(partial)
+                    }
+                    continuation.finish()
+                    return
+                }
+                for try await partial in StreamingText.simulatedReveal(fallback) {
+                    continuation.yield(partial)
+                }
+                continuation.finish()
+            }
+        }
+    }
+
     public func streamRespondMemory(
         to question: String,
         context: MemoryAnalysisContext

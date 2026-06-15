@@ -103,6 +103,25 @@ public struct OllamaProvider: GenerativeAIProvider, Sendable {
         return streamGenerate(prompt: prompt, liveStream: true)
     }
 
+    public func analyzeStartupApps(context: StartupAppsAnalysisContext) async throws -> String? {
+        let prompt = """
+        \(StartupAppsContextFormatter.analysisInstructions())
+
+        \(StartupAppsContextFormatter.format(context))
+        """
+        let response = try await generate(prompt: prompt, stream: false)
+        return response.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : response
+    }
+
+    public func streamAnalyzeStartupApps(context: StartupAppsAnalysisContext) -> AsyncThrowingStream<String, Error> {
+        let prompt = """
+        \(StartupAppsContextFormatter.analysisInstructions())
+
+        \(StartupAppsContextFormatter.format(context))
+        """
+        return streamGenerate(prompt: prompt, liveStream: true)
+    }
+
     public func streamRespondMemory(to question: String, context: MemoryAnalysisContext) -> AsyncThrowingStream<String, Error> {
         let prompt = """
         \(MemoryContextFormatter.chatInstructions())

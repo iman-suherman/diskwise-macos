@@ -80,6 +80,29 @@ public final class AIConsultantService: @unchecked Sendable {
         }
     }
 
+    public func analyzeStartupApps(context: StartupAppsAnalysisContext) async -> String? {
+        await resolver.analyzeStartupApps(context: context)
+    }
+
+    public func streamAnalyzeStartupApps(
+        context: StartupAppsAnalysisContext,
+        fallback: String
+    ) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                let stream = await resolver.streamAnalyzeStartupApps(context: context, fallback: fallback)
+                do {
+                    for try await partial in stream {
+                        continuation.yield(partial)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
+
     public func streamRespondMemory(
         to question: String,
         context: MemoryAnalysisContext

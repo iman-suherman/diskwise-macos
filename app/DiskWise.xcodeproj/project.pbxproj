@@ -69,6 +69,8 @@
 		896F6AD480A23BD1277843C2 /* AppSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAC0147A7FB6FEF4116785C /* AppSettingsView.swift */; };
 		8EA88D4A455BB6985DBB72A9 /* SystemHealthMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD1DBFAFBE898F19B3B507D5 /* SystemHealthMonitor.swift */; };
 		8F048F3CE1F6DDE014892441 /* MemoryAnalyzerMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16E12E0B51D60F2F32404DC0 /* MemoryAnalyzerMonitor.swift */; };
+		A7C3E91F4D2B8A6E1F9053C /* StartupAppsMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8D4F02A5E3C9B7F2A0164D /* StartupAppsMonitor.swift */; };
+		C9E513B6F4D0C8A3B1275E /* StartupAppsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0F624C7A5E1D9B4C2386F /* StartupAppsView.swift */; };
 		904D2F4452D1ED17A947CD64 /* MemoryInsightNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9040D8189C7D40E73615348C /* MemoryInsightNotificationService.swift */; };
 		90BAF4E7882287C932D8E9E6 /* 0.5.4.json in Resources */ = {isa = PBXBuildFile; fileRef = 5162987824989B2B14143DA5 /* 0.5.4.json */; };
 		90BF69F8C6C7DE991377F87E /* NotificationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9C379B2C9182ADB1BEAB44 /* NotificationSettingsView.swift */; };
@@ -161,6 +163,8 @@
 		15BE9BA6642050B89F9552F0 /* entitlements.mac.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = entitlements.mac.plist; sourceTree = "<group>"; };
 		164178EA164A45740BA3F2D8 /* 0.5.12.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.12.json; sourceTree = "<group>"; };
 		16E12E0B51D60F2F32404DC0 /* MemoryAnalyzerMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryAnalyzerMonitor.swift; sourceTree = "<group>"; };
+		B8D4F02A5E3C9B7F2A0164D /* StartupAppsMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupAppsMonitor.swift; sourceTree = "<group>"; };
+		D0F624C7A5E1D9B4C2386F /* StartupAppsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupAppsView.swift; sourceTree = "<group>"; };
 		16E23BB557336EA8EE0B3D6F /* 0.7.5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.5.json; sourceTree = "<group>"; };
 		17073AD7FF404926E1B8C231 /* ScanLogMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanLogMonitor.swift; sourceTree = "<group>"; };
 		1824EBE404CDE19C9B86E756 /* 0.1.5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.5.json; sourceTree = "<group>"; };
@@ -317,6 +321,7 @@
 				950473F382728BB7A8C75C98 /* LaunchSnapshotStore.swift */,
 				F390C5E410CA72074E3A8BE7 /* MemoryActionExecutor.swift */,
 				16E12E0B51D60F2F32404DC0 /* MemoryAnalyzerMonitor.swift */,
+				B8D4F02A5E3C9B7F2A0164D /* StartupAppsMonitor.swift */,
 				FB4C021EC521213A445B557D /* MemoryInsightActionMatcher.swift */,
 				9040D8189C7D40E73615348C /* MemoryInsightNotificationService.swift */,
 				049FE94153CD8C506C36E4B6 /* MemoryIssueHistoryStore.swift */,
@@ -476,6 +481,7 @@
 				FF84008C7D0F508E5B8F5851 /* StorageCleanupInsightsSection.swift */,
 				A3F4C97E4FF375B02034BE88 /* SystemMemoryReliefView.swift */,
 				BBB2B6BB069E423D075EDFE3 /* SystemOptimizationView.swift */,
+				D0F624C7A5E1D9B4C2386F /* StartupAppsView.swift */,
 				64E3813DA348AA12313FC982 /* SystemStatusView.swift */,
 				D4BCD4E96BC002C2E47A8E33 /* VolumeDiskTabView.swift */,
 				F9360EC36C59D568DEE4B034 /* WhatsNewTourView.swift */,
@@ -736,6 +742,7 @@
 				E8EBB3946721C85434EA08EB /* MaintenanceView.swift in Sources */,
 				AAAAA899D7754707AAD2D90F /* MemoryActionExecutor.swift in Sources */,
 				8F048F3CE1F6DDE014892441 /* MemoryAnalyzerMonitor.swift in Sources */,
+				A7C3E91F4D2B8A6E1F9053C /* StartupAppsMonitor.swift in Sources */,
 				AD9B75BC6DC71E2F9CF51405 /* MemoryAnalyzerView.swift in Sources */,
 				A00A29FB7A9AB8CF36925A53 /* MemoryInsightActionMatcher.swift in Sources */,
 				C0AAFDD1A73DEA203B988C30 /* MemoryInsightChatView.swift in Sources */,
@@ -771,6 +778,7 @@
 				3DCDE49CEF1302917C0BF7DB /* SystemHealthNotificationService.swift in Sources */,
 				F5CDF3E090F86A36D4708FE1 /* SystemMemoryReliefView.swift in Sources */,
 				FA5575535E0F00F7409EB33C /* SystemOptimizationView.swift in Sources */,
+				C9E513B6F4D0C8A3B1275E /* StartupAppsView.swift in Sources */,
 				B1CF70C5E32C91E0CB3E2E05 /* SystemStatusView.swift in Sources */,
 				E1A2ACAD991ED07FA794BD6A /* VolumeDiskTabView.swift in Sources */,
 				C23802B4AAF74663F4B08133 /* VolumeKeepAwakePulse.swift in Sources */,

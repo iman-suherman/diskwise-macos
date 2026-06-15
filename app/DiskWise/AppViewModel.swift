@@ -56,6 +56,7 @@ enum ScanPhase: String, Sendable {
 enum DetailPane: String, CaseIterable, Identifiable {
     case overview
     case systemOptimization
+    case startupApps
     case duplicates
     case cleanMyMac
     case systemCleanup
@@ -71,6 +72,7 @@ enum DetailPane: String, CaseIterable, Identifiable {
         .cleanMyMac,
         .systemCleanup,
         .systemOptimization,
+        .startupApps,
     ]
 
     static let utilityMenuPanes: [DetailPane] = [
@@ -103,6 +105,7 @@ enum DetailPane: String, CaseIterable, Identifiable {
         switch self {
         case .overview: return "Disk Analysis"
         case .systemOptimization: return "System Optimization"
+        case .startupApps: return "Startup Apps"
         case .duplicates: return "Duplicates Finder"
         case .cleanMyMac: return MaintenanceSection.clean.title
         case .systemCleanup: return MaintenanceSection.system.title
@@ -116,6 +119,7 @@ enum DetailPane: String, CaseIterable, Identifiable {
         switch self {
         case .overview: return "internaldrive"
         case .systemOptimization: return "gauge.with.dots.needle.67percent"
+        case .startupApps: return "power.circle"
         case .duplicates: return "doc.on.doc"
         case .cleanMyMac: return "sparkles.rectangle.stack"
         case .systemCleanup: return "gearshape.2"
@@ -129,6 +133,7 @@ enum DetailPane: String, CaseIterable, Identifiable {
         switch self {
         case .overview: return "Scan and analyze storage"
         case .systemOptimization: return "Health score, metrics, and AI insights"
+        case .startupApps: return "Login items and boot-time app analysis"
         case .duplicates: return "Find and remove duplicate files"
         case .cleanMyMac: return MaintenanceSection.clean.description
         case .systemCleanup: return MaintenanceSection.system.description

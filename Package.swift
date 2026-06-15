@@ -55,14 +55,14 @@ let package = Package(
         ),
         .target(
             name: "AIKit",
-            dependencies: ["DatabaseKit"],
+            dependencies: ["DatabaseKit", "MaintenanceKit"],
             linkerSettings: [
                 .linkedFramework("FoundationModels", .when(platforms: [.macOS])),
             ]
         ),
         .testTarget(
             name: "AIKitTests",
-            dependencies: ["AIKit"]
+            dependencies: ["AIKit", "MaintenanceKit"]
         ),
         .target(
             name: "MaintenanceKit",

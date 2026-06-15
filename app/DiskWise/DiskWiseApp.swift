@@ -313,6 +313,8 @@ struct ContentView: View {
             VolumeDiskTabView()
         case .pane(.systemOptimization):
             SystemOptimizationView()
+        case .pane(.startupApps):
+            StartupAppsView()
         case .pane(.duplicates):
             DuplicatesView()
         case .pane(.cleanMyMac):
