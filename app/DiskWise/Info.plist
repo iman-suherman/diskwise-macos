@@ -15,9 +15,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.7.15</string>
+    <string>0.7.16</string>
     <key>CFBundleVersion</key>
-    <string>7015</string>
+    <string>7016</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>CFBundleIconName</key>
