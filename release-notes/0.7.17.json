@@ -1,0 +1,14 @@
+{
+  "summary": "Transparent app icons no longer show a white square on the Dock or installer, and the Uninstall Apps list shows every scanned application.",
+  "introduced": [],
+  "changed": [
+    "App icons — remove inner white circle matte so only the blue logo shows on dark Dock and DMG backgrounds"
+  ],
+  "fixed": [
+    "Uninstall Apps — application list now renders after scan (139 apps visible instead of an empty panel)",
+    "Dock and installer icons — white background behind the logo removed in regenerated icon assets"
+  ],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

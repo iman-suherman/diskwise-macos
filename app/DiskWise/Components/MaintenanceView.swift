@@ -434,13 +434,17 @@ private struct AppUninstallPanel: View {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(viewModel.installedApps) { app in
-                    AppUninstallRow(app: app) {
-                        appPendingUninstall = app
-                        showUninstallConfirm = true
+                LazyVStack(spacing: 0) {
+                    ForEach(viewModel.installedApps) { app in
+                        AppUninstallRow(app: app) {
+                            appPendingUninstall = app
+                            showUninstallConfirm = true
+                        }
+                        if app.id != viewModel.installedApps.last?.id {
+                            Divider()
+                        }
                     }
                 }
-                .listStyle(.inset(alternatesRowBackgrounds: true))
             }
         }
         .padding(.horizontal, 28)

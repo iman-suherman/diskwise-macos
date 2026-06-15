@@ -18,6 +18,7 @@ let ringImagesetDir = repoRoot.appendingPathComponent(
 let rawArchivePath = repoRoot.appendingPathComponent("app/DiskWise/Assets/DockScanning.raw.png").path
 
 let blackThreshold = 28
+let blackMatteThreshold = 42
 let whiteThreshold = 238
 let lightFloodThreshold = 228
 let feather = 24
@@ -172,6 +173,72 @@ func removeBackground(rep: NSBitmapImageRep, width: Int, height: Int, mode: Back
     }
 }
 
+func isLightMattePixel(red: Int, green: Int, blue: Int) -> Bool {
+    min(red, green, blue) >= lightFloodThreshold
+}
+
+func isDarkMattePixel(red: Int, green: Int, blue: Int) -> Bool {
+    luminance(red: red, green: green, blue: blue) <= blackMatteThreshold
+}
+
+func removeExposedMatte(
+    rep: NSBitmapImageRep,
+    width: Int,
+    height: Int,
+    isMattePixel: (Int, Int, Int) -> Bool
+) {
+    guard let data = rep.bitmapData else { return }
+    let bytesPerRow = rep.bytesPerRow
+    let pixelCount = width * height
+    var remove = [Bool](repeating: false, count: pixelCount)
+    var queue: [(Int, Int)] = []
+
+    func enqueueIfMatte(x: Int, y: Int) {
+        guard x >= 0, x < width, y >= 0, y < height else { return }
+        let index = y * width + x
+        if remove[index] { return }
+        let offset = y * bytesPerRow + x * 4
+        if data[offset + 3] < 20 { return }
+        let red = Int(data[offset])
+        let green = Int(data[offset + 1])
+        let blue = Int(data[offset + 2])
+        guard isMattePixel(red, green, blue) else { return }
+        remove[index] = true
+        queue.append((x, y))
+    }
+
+    for y in 0..<height {
+        for x in 0..<width {
+            let offset = y * bytesPerRow + x * 4
+            if data[offset + 3] >= 20 { continue }
+            enqueueIfMatte(x: x - 1, y: y)
+            enqueueIfMatte(x: x + 1, y: y)
+            enqueueIfMatte(x: x, y: y - 1)
+            enqueueIfMatte(x: x, y: y + 1)
+        }
+    }
+
+    while !queue.isEmpty {
+        let (x, y) = queue.removeFirst()
+        enqueueIfMatte(x: x - 1, y: y)
+        enqueueIfMatte(x: x + 1, y: y)
+        enqueueIfMatte(x: x, y: y - 1)
+        enqueueIfMatte(x: x, y: y + 1)
+    }
+
+    for y in 0..<height {
+        for x in 0..<width {
+            let index = y * width + x
+            guard remove[index] else { continue }
+            let offset = y * bytesPerRow + x * 4
+            data[offset] = 0
+            data[offset + 1] = 0
+            data[offset + 2] = 0
+            data[offset + 3] = 0
+        }
+    }
+}
+
 func removeDarkMatte(rep: NSBitmapImageRep, width: Int, height: Int) {
     guard let data = rep.bitmapData else { return }
     let bytesPerRow = rep.bytesPerRow
@@ -201,7 +268,9 @@ func removeDarkMatte(rep: NSBitmapImageRep, width: Int, height: Int) {
 
 func finalizeTransparentBitmap(rep: NSBitmapImageRep, width: Int, height: Int, mode: BackgroundMode) {
     if mode == .light {
+        removeExposedMatte(rep: rep, width: width, height: height, isMattePixel: isDarkMattePixel)
         removeDarkMatte(rep: rep, width: width, height: height)
+        removeExposedMatte(rep: rep, width: width, height: height, isMattePixel: isLightMattePixel)
     }
 }
 
