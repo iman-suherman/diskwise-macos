@@ -23,6 +23,17 @@ let feather = 24
 let ringInner = 0.355
 let ringOuter = 0.495
 let outputSize = 1024
+let iconCornerRadiusFraction = 0.2237
+
+func clipToIconShape(side: CGFloat) {
+    let radius = side * iconCornerRadiusFraction
+    let path = NSBezierPath(
+        roundedRect: NSRect(x: 0, y: 0, width: side, height: side),
+        xRadius: radius,
+        yRadius: radius
+    )
+    path.addClip()
+}
 
 enum BackgroundMode {
     case dark
@@ -255,6 +266,7 @@ func resized(_ rep: NSBitmapImageRep, pixels: Int) -> NSBitmapImageRep {
 
     NSColor.clear.setFill()
     NSRect(x: 0, y: 0, width: pixels, height: pixels).fill()
+    clipToIconShape(side: CGFloat(pixels))
 
     let source = NSImage(size: rep.size)
     source.addRepresentation(rep)

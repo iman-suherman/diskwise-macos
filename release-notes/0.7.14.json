@@ -1,0 +1,13 @@
+{
+  "summary": "App, Dock, and website icons now use consistent macOS-style rounded corners across every surface.",
+  "introduced": [],
+  "changed": [
+    "App icon — all icon sizes export with squircle-style rounded corners baked into the PNG assets",
+    "Dock scanning tile — startup splash and in-scan Dock animation clip to the same rounded icon shape",
+    "Website header — favicon and header logo use matching squircle clipping on diskwise.suherman.net"
+  ],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

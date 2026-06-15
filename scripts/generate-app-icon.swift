@@ -29,6 +29,17 @@ let sizes: [(name: String, size: Int)] = [
 let blackThreshold = 28
 let whiteThreshold = 238
 let feather = 24
+let iconCornerRadiusFraction = 0.2237
+
+func clipToIconShape(side: CGFloat) {
+    let radius = side * iconCornerRadiusFraction
+    let path = NSBezierPath(
+        roundedRect: NSRect(x: 0, y: 0, width: side, height: side),
+        xRadius: radius,
+        yRadius: radius
+    )
+    path.addClip()
+}
 
 enum BackgroundMode {
     case dark
@@ -291,6 +302,7 @@ func squareCanvas(from source: NSImage) -> NSImage {
 
     NSColor.clear.setFill()
     NSRect(x: 0, y: 0, width: side, height: side).fill()
+    clipToIconShape(side: side)
 
     let origin = NSPoint(
         x: (side - sourceSize.width) / 2,
@@ -333,6 +345,7 @@ func resizedIcon(from source: NSImage, pixels: Int) -> NSBitmapImageRep {
 
     NSColor.clear.setFill()
     NSRect(x: 0, y: 0, width: pixels, height: pixels).fill()
+    clipToIconShape(side: CGFloat(pixels))
 
     let sourceSize = source.size
     let scale = max(

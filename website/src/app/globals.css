@@ -68,6 +68,11 @@ body {
   box-shadow: none;
 }
 
+.icon-squircle {
+  border-radius: 22.37%;
+  overflow: hidden;
+}
+
 .scanning-hero {
   position: relative;
   aspect-ratio: 1;

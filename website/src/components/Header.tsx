@@ -24,10 +24,10 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[var(--background)]/85 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
         <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <span className="relative flex h-10 w-10 shrink-0 items-center justify-center sm:h-12 sm:w-12">
+          <span className="relative flex h-10 w-10 shrink-0 items-center justify-center icon-squircle sm:h-12 sm:w-12">
             <span
               aria-hidden
-              className="absolute inset-0 rounded-xl bg-gradient-to-br from-brand-blue/30 via-brand-blueDark/20 to-brand-charcoal/25 blur-md"
+              className="absolute inset-0 bg-gradient-to-br from-brand-blue/30 via-brand-blueDark/20 to-brand-charcoal/25 blur-md"
             />
             <Image
               src="/app-icon.png"
@@ -36,7 +36,7 @@ export function Header() {
               height={890}
               priority
               sizes="48px"
-              className="app-icon-mark relative h-10 w-10 rounded-lg object-contain drop-shadow-[0_4px_12px_rgba(37,89,180,0.45)] sm:h-12 sm:w-12"
+              className="app-icon-mark relative h-full w-full object-cover drop-shadow-[0_4px_12px_rgba(37,89,180,0.45)]"
             />
           </span>
           <span className="hidden truncate text-sm font-bold leading-snug tracking-tight text-slate-50 min-[420px]:block sm:max-w-xs sm:text-base lg:max-w-md lg:text-lg">

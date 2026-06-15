@@ -96,7 +96,12 @@ final class ScanningDockTileView: NSView {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
 
         let cornerRadius = bounds.width * 0.2237
-        NSBezierPath(roundedRect: bounds, xRadius: cornerRadius, yRadius: cornerRadius).addClip()
+        let clipPath = NSBezierPath(
+            roundedRect: bounds,
+            xRadius: cornerRadius,
+            yRadius: cornerRadius
+        )
+        clipPath.addClip()
 
         let inset = bounds.width * imageInsetFraction
         let imageRect = bounds.insetBy(dx: inset, dy: inset)
