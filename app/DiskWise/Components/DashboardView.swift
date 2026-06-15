@@ -544,8 +544,9 @@ private struct FeatureRow: View {
     }
 }
 
-private struct AppBrandIcon: View {
+struct AppBrandIcon: View {
     var size: CGFloat = 96
+    var showsShadow: Bool = true
 
     var body: some View {
         Group {
@@ -563,10 +564,14 @@ private struct AppBrandIcon: View {
         }
         .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
-        .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
+        .shadow(
+            color: showsShadow ? .black.opacity(0.18) : .clear,
+            radius: showsShadow ? 10 : 0,
+            y: showsShadow ? 4 : 0
+        )
     }
 
-    private static func loadImage() -> NSImage? {
+    static func loadImage() -> NSImage? {
         if let url = Bundle.main.url(forResource: "AppIconSource", withExtension: "png"),
            let image = NSImage(contentsOf: url) {
             return image

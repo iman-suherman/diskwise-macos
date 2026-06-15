@@ -12,6 +12,8 @@ let sourceImagePath = CommandLine.arguments.dropFirst().dropFirst().first
 let appIconSourcePath = repoRoot.appendingPathComponent("app/DiskWise/Assets/AppIconSource.png").path
 let appIconRawPath = repoRoot.appendingPathComponent("app/DiskWise/Assets/AppIconSource.raw.png").path
 let websiteIconPath = repoRoot.appendingPathComponent("website/public/app-icon.png").path
+let heroLogoPath = repoRoot.appendingPathComponent("website/public/hero-logo.png").path
+let heroLogoRawPath = repoRoot.appendingPathComponent("website/public/hero-logo.raw.png").path
 
 let sizes: [(name: String, size: Int)] = [
     ("icon_16x16.png", 16),
@@ -28,8 +30,10 @@ let sizes: [(name: String, size: Int)] = [
 
 let blackThreshold = 28
 let whiteThreshold = 238
+let lightFloodThreshold = 228
 let feather = 24
 let iconCornerRadiusFraction = 0.2237
+let iconContentScale = 0.9
 
 func clipToIconShape(side: CGFloat) {
     let radius = side * iconCornerRadiusFraction
@@ -102,12 +106,13 @@ func detectBackgroundMode(rep: NSBitmapImageRep, width: Int, height: Int) -> Bac
     return totalLuminance / samplePoints.count >= 128 ? .light : .dark
 }
 
-func isBackgroundPixel(red: Int, green: Int, blue: Int, mode: BackgroundMode) -> Bool {
+func isBackgroundPixel(red: Int, green: Int, blue: Int, mode: BackgroundMode, forFloodFill: Bool = false) -> Bool {
     switch mode {
     case .dark:
         return luminance(red: red, green: green, blue: blue) <= blackThreshold
     case .light:
-        return min(red, green, blue) >= whiteThreshold
+        let threshold = forFloodFill ? lightFloodThreshold : whiteThreshold
+        return min(red, green, blue) >= threshold
     }
 }
 
@@ -138,7 +143,7 @@ func removeBackground(rep: NSBitmapImageRep, width: Int, height: Int, mode: Back
         let green = Int(data[offset + 1])
         let blue = Int(data[offset + 2])
 
-        guard isBackgroundPixel(red: red, green: green, blue: blue, mode: mode) else { continue }
+        guard isBackgroundPixel(red: red, green: green, blue: blue, mode: mode, forFloodFill: true) else { continue }
 
         data[offset + 3] = 0
 
@@ -194,10 +199,15 @@ func removeBackground(rep: NSBitmapImageRep, width: Int, height: Int, mode: Back
     }
 }
 
+func finalizeTransparentBitmap(rep: NSBitmapImageRep, width: Int, height: Int, mode: BackgroundMode) {
+    // Background removal is handled by edge-connected flood fill in removeBackground.
+}
+
 func makeTransparentBitmap(from path: String) -> (rep: NSBitmapImageRep, width: Int, height: Int)? {
     guard let initial = loadBitmap(from: path) else { return nil }
     let mode = detectBackgroundMode(rep: initial.rep, width: initial.width, height: initial.height)
     removeBackground(rep: initial.rep, width: initial.width, height: initial.height, mode: mode)
+    finalizeTransparentBitmap(rep: initial.rep, width: initial.width, height: initial.height, mode: mode)
     return initial
 }
 
@@ -320,7 +330,7 @@ func squareCanvas(from source: NSImage) -> NSImage {
     return image(from: rep)
 }
 
-func resizedIcon(from source: NSImage, pixels: Int) -> NSBitmapImageRep {
+func resizedIcon(from source: NSImage, pixels: Int, clipIconShape: Bool = true) -> NSBitmapImageRep {
     guard let rep = NSBitmapImageRep(
         bitmapDataPlanes: nil,
         pixelsWide: pixels,
@@ -345,13 +355,16 @@ func resizedIcon(from source: NSImage, pixels: Int) -> NSBitmapImageRep {
 
     NSColor.clear.setFill()
     NSRect(x: 0, y: 0, width: pixels, height: pixels).fill()
-    clipToIconShape(side: CGFloat(pixels))
+    if clipIconShape {
+        clipToIconShape(side: CGFloat(pixels))
+    }
 
     let sourceSize = source.size
+    let contentScale = clipIconShape ? iconContentScale : 0.94
     let scale = max(
         CGFloat(pixels) / sourceSize.width,
         CGFloat(pixels) / sourceSize.height
-    )
+    ) * contentScale
     let drawnSize = NSSize(
         width: sourceSize.width * scale,
         height: sourceSize.height * scale
@@ -450,4 +463,27 @@ if process.terminationStatus == 0 {
 } else {
     fputs("error: iconutil failed to build AppIcon.icns\n", stderr)
     exit(1)
+}
+
+if FileManager.default.fileExists(atPath: heroLogoPath) {
+    let heroSourcePath: String
+    if FileManager.default.fileExists(atPath: heroLogoRawPath) {
+        heroSourcePath = heroLogoRawPath
+    } else {
+        let rawURL = URL(fileURLWithPath: heroLogoRawPath)
+        let heroURL = URL(fileURLWithPath: heroLogoPath)
+        try FileManager.default.copyItem(at: heroURL, to: rawURL)
+        heroSourcePath = heroLogoRawPath
+        print("Archived website/public/hero-logo.raw.png")
+    }
+
+    if let initial = makeTransparentBitmap(from: heroSourcePath) {
+        let cropped = cropToOpaqueBounds(initial.rep, width: initial.width, height: initial.height, padding: 12)
+        let normalized = squareCanvas(from: image(from: cropped))
+        let heroRep = resizedIcon(from: normalized, pixels: 1024, clipIconShape: false)
+        try savePNG(heroRep, to: URL(fileURLWithPath: heroLogoPath))
+        print("Synced transparent website/public/hero-logo.png")
+    } else {
+        fputs("warning: unable to process hero logo at \(heroLogoPath)\n", stderr)
+    }
 }

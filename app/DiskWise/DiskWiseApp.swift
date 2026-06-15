@@ -13,7 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             _ = SparkleUpdaterController.shared
         }
 
-        let icon: NSImage? = {
+        let icon: NSImage? = AppBrandIcon.loadImage() ?? {
             if let icnsURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
                let image = NSImage(contentsOf: icnsURL) {
                 return image
@@ -126,12 +126,15 @@ struct ContentView: View {
                 if viewModel.isMainContentReady {
                     NavigationSplitView {
                         VStack(spacing: 0) {
-                            Text("DiskWise")
-                                .font(.title2.bold())
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 16)
-                                .padding(.top, 10)
-                                .padding(.bottom, 6)
+                            HStack(spacing: 10) {
+                                AppBrandIcon(size: 28, showsShadow: false)
+                                Text("DiskWise")
+                                    .font(.title2.bold())
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.top, 10)
+                            .padding(.bottom, 6)
 
                             sidebar
                         }

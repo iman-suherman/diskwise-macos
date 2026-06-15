@@ -76,7 +76,7 @@ body {
 .scanning-hero {
   position: relative;
   aspect-ratio: 1;
-  /* Rounded hero logo card; white logo background reads as a clean tile on the dark hero */
+  /* Hero logo is transparent; glow effects sit behind the artwork */
   border-radius: 22%;
   overflow: hidden;
 }

@@ -19,6 +19,7 @@ let rawArchivePath = repoRoot.appendingPathComponent("app/DiskWise/Assets/DockSc
 
 let blackThreshold = 28
 let whiteThreshold = 238
+let lightFloodThreshold = 228
 let feather = 24
 let ringInner = 0.355
 let ringOuter = 0.495
@@ -89,12 +90,13 @@ func detectBackgroundMode(rep: NSBitmapImageRep, width: Int, height: Int) -> Bac
     return totalLuminance / samplePoints.count >= 128 ? .light : .dark
 }
 
-func isBackgroundPixel(red: Int, green: Int, blue: Int, mode: BackgroundMode) -> Bool {
+func isBackgroundPixel(red: Int, green: Int, blue: Int, mode: BackgroundMode, forFloodFill: Bool = false) -> Bool {
     switch mode {
     case .dark:
         return luminance(red: red, green: green, blue: blue) <= blackThreshold
     case .light:
-        return min(red, green, blue) >= whiteThreshold
+        let threshold = forFloodFill ? lightFloodThreshold : whiteThreshold
+        return min(red, green, blue) >= threshold
     }
 }
 
@@ -124,7 +126,7 @@ func removeBackground(rep: NSBitmapImageRep, width: Int, height: Int, mode: Back
         let red = Int(data[offset])
         let green = Int(data[offset + 1])
         let blue = Int(data[offset + 2])
-        guard isBackgroundPixel(red: red, green: green, blue: blue, mode: mode) else { continue }
+        guard isBackgroundPixel(red: red, green: green, blue: blue, mode: mode, forFloodFill: true) else { continue }
 
         data[offset + 3] = 0
         if x > 0 { queue.append((x - 1, y)) }
@@ -168,6 +170,10 @@ func removeBackground(rep: NSBitmapImageRep, width: Int, height: Int, mode: Back
             }
         }
     }
+}
+
+func finalizeTransparentBitmap(rep: NSBitmapImageRep, width: Int, height: Int, mode: BackgroundMode) {
+    // Background removal is handled by edge-connected flood fill in removeBackground.
 }
 
 func splitLayers(from rep: NSBitmapImageRep, width: Int, height: Int) -> (NSBitmapImageRep, NSBitmapImageRep) {
@@ -317,6 +323,7 @@ guard let initial = loadBitmap(from: sourcePath) else {
 
 let mode = detectBackgroundMode(rep: initial.rep, width: initial.width, height: initial.height)
 removeBackground(rep: initial.rep, width: initial.width, height: initial.height, mode: mode)
+finalizeTransparentBitmap(rep: initial.rep, width: initial.width, height: initial.height, mode: mode)
 
 let (baseRep, ringRep) = splitLayers(from: initial.rep, width: initial.width, height: initial.height)
 let fullRep = resized(initial.rep, pixels: outputSize)

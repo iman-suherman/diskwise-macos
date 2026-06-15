@@ -1,0 +1,16 @@
+{
+  "summary": "Brand icons now use transparent backgrounds on the Dock, sidebar, and website so the logo blends cleanly on dark UI instead of showing a white box.",
+  "introduced": [
+    "Sidebar brand mark — the DiskWise title in the left panel now shows the app icon beside the name"
+  ],
+  "changed": [
+    "Dock icon — the normal (non-scanning) Dock tile uses the transparent AppIconSource artwork",
+    "App and website icons — regenerated PNGs drop white matting while keeping logo details like the checkmark",
+    "Website header — hero and header logos blend on the dark marketing site without a white backdrop",
+    "Icon pipeline — edge flood-fill transparency processing for app, dock scanning, and hero assets"
+  ],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}
