@@ -1,0 +1,12 @@
+{
+  "summary": "Startup Apps scans login items, Dock apps, and launch agents, then uses Apple Intelligence to recommend what should stay enabled at boot.",
+  "introduced": [
+    "Startup Apps — new sidebar menu item that lists Open at Login apps, Dock-pinned apps, user Launch Agents, and background startup items when opened",
+    "Boot-time AI analysis — each startup app gets a Keep at login, Disable at login, or Optional verdict with a short explanation from Apple Intelligence (rule-based fallback when AI is unavailable)"
+  ],
+  "changed": [],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

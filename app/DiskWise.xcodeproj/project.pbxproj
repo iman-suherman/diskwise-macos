@@ -37,6 +37,9 @@
 		35C2FBD43AA45854D7095316 /* ScanHistoryTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB541EF7FCA4D4A09F925A52 /* ScanHistoryTabView.swift */; };
 		36DBFBCADADF9C0C5B4BA080 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41738F52625CC6311842BB5E /* AppViewModel.swift */; };
 		37E65E16FE154CA128660458 /* 0.7.1.json in Resources */ = {isa = PBXBuildFile; fileRef = FFD8556ADA315BC4BD73911B /* 0.7.1.json */; };
+		3938F8DCE93E1F9DE02528D5 /* StartupAppsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D54BBDE3B8DB29184E8266D /* StartupAppsView.swift */; };
+		39D358830B3310F80D7E34BC /* StartupAppsMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEA7510719FC9D71F899D3F2 /* StartupAppsMonitor.swift */; };
+		3A6E008A15320E0977327789 /* 0.7.11.json in Resources */ = {isa = PBXBuildFile; fileRef = 8B18F7DD741E9D3F3B88945B /* 0.7.11.json */; };
 		3C7DED24BCCE52F43DA8E8C6 /* DiskSpaceNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19CD2D60FCE100FAE2A0E44D /* DiskSpaceNotificationService.swift */; };
 		3C9391E32950657414DC1824 /* ScanScheduleService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47192B19910D5284C7458EAB /* ScanScheduleService.swift */; };
 		3D64C6ECB71946C0F6021DE9 /* 0.5.8.json in Resources */ = {isa = PBXBuildFile; fileRef = A78CC063A378D25BAFE7A767 /* 0.5.8.json */; };
@@ -69,8 +72,6 @@
 		896F6AD480A23BD1277843C2 /* AppSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAC0147A7FB6FEF4116785C /* AppSettingsView.swift */; };
 		8EA88D4A455BB6985DBB72A9 /* SystemHealthMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD1DBFAFBE898F19B3B507D5 /* SystemHealthMonitor.swift */; };
 		8F048F3CE1F6DDE014892441 /* MemoryAnalyzerMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16E12E0B51D60F2F32404DC0 /* MemoryAnalyzerMonitor.swift */; };
-		A7C3E91F4D2B8A6E1F9053C /* StartupAppsMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8D4F02A5E3C9B7F2A0164D /* StartupAppsMonitor.swift */; };
-		C9E513B6F4D0C8A3B1275E /* StartupAppsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0F624C7A5E1D9B4C2386F /* StartupAppsView.swift */; };
 		904D2F4452D1ED17A947CD64 /* MemoryInsightNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9040D8189C7D40E73615348C /* MemoryInsightNotificationService.swift */; };
 		90BAF4E7882287C932D8E9E6 /* 0.5.4.json in Resources */ = {isa = PBXBuildFile; fileRef = 5162987824989B2B14143DA5 /* 0.5.4.json */; };
 		90BF69F8C6C7DE991377F87E /* NotificationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9C379B2C9182ADB1BEAB44 /* NotificationSettingsView.swift */; };
@@ -163,8 +164,6 @@
 		15BE9BA6642050B89F9552F0 /* entitlements.mac.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = entitlements.mac.plist; sourceTree = "<group>"; };
 		164178EA164A45740BA3F2D8 /* 0.5.12.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.12.json; sourceTree = "<group>"; };
 		16E12E0B51D60F2F32404DC0 /* MemoryAnalyzerMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryAnalyzerMonitor.swift; sourceTree = "<group>"; };
-		B8D4F02A5E3C9B7F2A0164D /* StartupAppsMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupAppsMonitor.swift; sourceTree = "<group>"; };
-		D0F624C7A5E1D9B4C2386F /* StartupAppsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupAppsView.swift; sourceTree = "<group>"; };
 		16E23BB557336EA8EE0B3D6F /* 0.7.5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.5.json; sourceTree = "<group>"; };
 		17073AD7FF404926E1B8C231 /* ScanLogMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanLogMonitor.swift; sourceTree = "<group>"; };
 		1824EBE404CDE19C9B86E756 /* 0.1.5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.5.json; sourceTree = "<group>"; };
@@ -189,6 +188,7 @@
 		48D63726017BAD71010C8039 /* 0.6.7.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.6.7.json; sourceTree = "<group>"; };
 		49A525C2BC72235A53027DEB /* 0.7.3.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.3.json; sourceTree = "<group>"; };
 		4C07B13D67D2C06220DF1B9E /* 0.5.1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.1.json; sourceTree = "<group>"; };
+		4D54BBDE3B8DB29184E8266D /* StartupAppsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupAppsView.swift; sourceTree = "<group>"; };
 		5162987824989B2B14143DA5 /* 0.5.4.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.4.json; sourceTree = "<group>"; };
 		5691892A76E1A24CE7AAF729 /* MenuBarMonitorInstructionOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarMonitorInstructionOverlay.swift; sourceTree = "<group>"; };
 		57AABB29DD65A9BDEEAF5208 /* KeepAwakeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepAwakeController.swift; sourceTree = "<group>"; };
@@ -220,6 +220,7 @@
 		869D81BAA63D3ECC1CF31B7E /* 0.1.7.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.7.json; sourceTree = "<group>"; };
 		89301AF45127E0756C73A84D /* 0.2.3.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.2.3.json; sourceTree = "<group>"; };
 		894ADEF97DF74C5A2CC2FB56 /* ScanActivityMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanActivityMonitor.swift; sourceTree = "<group>"; };
+		8B18F7DD741E9D3F3B88945B /* 0.7.11.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.11.json; sourceTree = "<group>"; };
 		8D2B40F26DC40B81DD755E3F /* 0.6.9.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.6.9.json; sourceTree = "<group>"; };
 		8D515CF1494436D3A33BC32C /* RecommendationReviewSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendationReviewSheet.swift; sourceTree = "<group>"; };
 		8DE0414EB1623E719F460CAE /* MenuBarHealthScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarHealthScore.swift; sourceTree = "<group>"; };
@@ -242,6 +243,7 @@
 		A82F3A2475D36769351F8CBC /* IndexRebuildOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexRebuildOverlay.swift; sourceTree = "<group>"; };
 		A837FD3874FB7FAF41F641AD /* 0.4.1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.4.1.json; sourceTree = "<group>"; };
 		A9F503999EF5B8D256503AAB /* PythonSetupPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PythonSetupPrompt.swift; sourceTree = "<group>"; };
+		AEA7510719FC9D71F899D3F2 /* StartupAppsMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupAppsMonitor.swift; sourceTree = "<group>"; };
 		AF2F3FBB3FF2505786ACA7F7 /* 0.7.7.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.7.json; sourceTree = "<group>"; };
 		AFD9C0D25CF62C96CB4B8902 /* 0.5.6.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.6.json; sourceTree = "<group>"; };
 		B1C8159FF48669E7295F9738 /* 0.1.9.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.9.json; sourceTree = "<group>"; };
@@ -321,7 +323,6 @@
 				950473F382728BB7A8C75C98 /* LaunchSnapshotStore.swift */,
 				F390C5E410CA72074E3A8BE7 /* MemoryActionExecutor.swift */,
 				16E12E0B51D60F2F32404DC0 /* MemoryAnalyzerMonitor.swift */,
-				B8D4F02A5E3C9B7F2A0164D /* StartupAppsMonitor.swift */,
 				FB4C021EC521213A445B557D /* MemoryInsightActionMatcher.swift */,
 				9040D8189C7D40E73615348C /* MemoryInsightNotificationService.swift */,
 				049FE94153CD8C506C36E4B6 /* MemoryIssueHistoryStore.swift */,
@@ -332,6 +333,7 @@
 				238E83EDCC4C147C2BE4E4FB /* ScanningDockTileView.swift */,
 				831704D62E5020E6E4F2219B /* ScanProgressPoller.swift */,
 				47192B19910D5284C7458EAB /* ScanScheduleService.swift */,
+				AEA7510719FC9D71F899D3F2 /* StartupAppsMonitor.swift */,
 				DD1DBFAFBE898F19B3B507D5 /* SystemHealthMonitor.swift */,
 				BAEC7145766F553BED663558 /* SystemHealthNotificationService.swift */,
 				27A56F4CF3526711AAE9AE7B /* VolumeKeepAwakePulse.swift */,
@@ -410,6 +412,7 @@
 				92A64FF66924AF8BD0190688 /* 0.7.8.json */,
 				EB11D325302CCFC42568E31D /* 0.7.9.json */,
 				BFACD38CAF28B9B0DB27167D /* 0.7.10.json */,
+				8B18F7DD741E9D3F3B88945B /* 0.7.11.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -475,13 +478,13 @@
 				DB541EF7FCA4D4A09F925A52 /* ScanHistoryTabView.swift */,
 				C9B62028DBE2C0E221B5303A /* ScanModePromptOverlay.swift */,
 				BCA608DC2B32B3460DC11304 /* ScanScheduleTabView.swift */,
+				4D54BBDE3B8DB29184E8266D /* StartupAppsView.swift */,
 				9632663F581782670036F59C /* StartupSplashView.swift */,
 				2BF737B0AA3066062F3881A4 /* StatusBadge.swift */,
 				D86CC7AC5168C4BC8A70ABDD /* StorageBreakdownView.swift */,
 				FF84008C7D0F508E5B8F5851 /* StorageCleanupInsightsSection.swift */,
 				A3F4C97E4FF375B02034BE88 /* SystemMemoryReliefView.swift */,
 				BBB2B6BB069E423D075EDFE3 /* SystemOptimizationView.swift */,
-				D0F624C7A5E1D9B4C2386F /* StartupAppsView.swift */,
 				64E3813DA348AA12313FC982 /* SystemStatusView.swift */,
 				D4BCD4E96BC002C2E47A8E33 /* VolumeDiskTabView.swift */,
 				F9360EC36C59D568DEE4B034 /* WhatsNewTourView.swift */,
@@ -658,6 +661,7 @@
 				ADEEBB229E346E98CFE73C02 /* 0.7.0.json in Resources */,
 				37E65E16FE154CA128660458 /* 0.7.1.json in Resources */,
 				A5D1F53A2E12133F6299236A /* 0.7.10.json in Resources */,
+				3A6E008A15320E0977327789 /* 0.7.11.json in Resources */,
 				7363E28A199FEB003256A74F /* 0.7.2.json in Resources */,
 				EB56D9F7608C74B1ED807A5D /* 0.7.3.json in Resources */,
 				BD59F8106D44F5E87359A802 /* 0.7.4.json in Resources */,
@@ -742,7 +746,6 @@
 				E8EBB3946721C85434EA08EB /* MaintenanceView.swift in Sources */,
 				AAAAA899D7754707AAD2D90F /* MemoryActionExecutor.swift in Sources */,
 				8F048F3CE1F6DDE014892441 /* MemoryAnalyzerMonitor.swift in Sources */,
-				A7C3E91F4D2B8A6E1F9053C /* StartupAppsMonitor.swift in Sources */,
 				AD9B75BC6DC71E2F9CF51405 /* MemoryAnalyzerView.swift in Sources */,
 				A00A29FB7A9AB8CF36925A53 /* MemoryInsightActionMatcher.swift in Sources */,
 				C0AAFDD1A73DEA203B988C30 /* MemoryInsightChatView.swift in Sources */,
@@ -770,6 +773,8 @@
 				FFF53442731852676DFDD026 /* ScanScheduleTabView.swift in Sources */,
 				FACE59C51DED810AEC1F3B65 /* ScanningDockTileView.swift in Sources */,
 				2E51EA5FD30ECF1DA75CE384 /* SparkleUpdater.swift in Sources */,
+				39D358830B3310F80D7E34BC /* StartupAppsMonitor.swift in Sources */,
+				3938F8DCE93E1F9DE02528D5 /* StartupAppsView.swift in Sources */,
 				FAB2B6356F46985804A0B25C /* StartupSplashView.swift in Sources */,
 				C61435492234EF4EFEB45B5C /* StatusBadge.swift in Sources */,
 				9163047ADC6314366674E59B /* StorageBreakdownView.swift in Sources */,
@@ -778,7 +783,6 @@
 				3DCDE49CEF1302917C0BF7DB /* SystemHealthNotificationService.swift in Sources */,
 				F5CDF3E090F86A36D4708FE1 /* SystemMemoryReliefView.swift in Sources */,
 				FA5575535E0F00F7409EB33C /* SystemOptimizationView.swift in Sources */,
-				C9E513B6F4D0C8A3B1275E /* StartupAppsView.swift in Sources */,
 				B1CF70C5E32C91E0CB3E2E05 /* SystemStatusView.swift in Sources */,
 				E1A2ACAD991ED07FA794BD6A /* VolumeDiskTabView.swift in Sources */,
 				C23802B4AAF74663F4B08133 /* VolumeKeepAwakePulse.swift in Sources */,
@@ -915,14 +919,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7011;
+				CURRENT_PROJECT_VERSION = 7012;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.7.11;
+				MARKETING_VERSION = 0.7.12;
 				OTHER_LDFLAGS = "$(inherited) -weak_framework FoundationModels";
 				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
 				SDKROOT = macosx;
@@ -937,14 +941,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7011;
+				CURRENT_PROJECT_VERSION = 7012;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.7.11;
+				MARKETING_VERSION = 0.7.12;
 				OTHER_LDFLAGS = "$(inherited) -weak_framework FoundationModels";
 				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
 				SDKROOT = macosx;
