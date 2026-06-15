@@ -550,7 +550,12 @@ struct AppBrandIcon: View {
 
     var body: some View {
         Group {
-            if let image = Self.loadImage() {
+            if NSImage(named: "BrandIcon") != nil {
+                Image("BrandIcon")
+                    .resizable()
+                    .interpolation(.high)
+                    .aspectRatio(contentMode: .fit)
+            } else if let image = Self.loadImage() {
                 Image(nsImage: image)
                     .resizable()
                     .interpolation(.high)
@@ -572,11 +577,28 @@ struct AppBrandIcon: View {
     }
 
     static func loadImage() -> NSImage? {
+        if let image = NSImage(named: "BrandIcon") {
+            return normalized(image)
+        }
         if let url = Bundle.main.url(forResource: "AppIconSource", withExtension: "png"),
            let image = NSImage(contentsOf: url) {
+            return normalized(image)
+        }
+        if let image = NSImage(named: "AppIconSource") {
+            return normalized(image)
+        }
+        return nil
+    }
+
+    private static func normalized(_ image: NSImage) -> NSImage {
+        image.isTemplate = false
+        guard let rep = image.representations.compactMap({ $0 as? NSBitmapImageRep }).max(by: { $0.pixelsWide < $1.pixelsWide }) else {
             return image
         }
-        return NSImage(named: "AppIconSource")
+        let pixelSize = NSSize(width: rep.pixelsWide, height: rep.pixelsHigh)
+        let normalized = NSImage(size: pixelSize)
+        normalized.addRepresentation(rep)
+        return normalized
     }
 }
 

@@ -17,8 +17,11 @@ final class StartupAppsMonitor: ObservableObject {
     @Published private(set) var aiProviderLabel = "Rule-based"
     @Published private(set) var scanDiagnostics: StartupAppsScanDiagnostics?
     @Published var errorMessage: String?
+    @Published var actionResultMessage: String?
+    @Published private(set) var performingActionItemID: String?
 
     private let scanner = StartupAppsScanner()
+    private let actionManager = StartupAppsManager()
     private var analysisEngine = StartupAppsAnalysisEngine()
     private var scanTask: Task<Void, Never>?
     private var analysisTask: Task<Void, Never>?
@@ -127,6 +130,35 @@ final class StartupAppsMonitor: ObservableObject {
         for link in urls {
             if let url = URL(string: link), NSWorkspace.shared.open(url) {
                 return
+            }
+        }
+    }
+
+    func availableActions(for item: StartupAppItem) -> [StartupAppActionKind] {
+        let recommendation = report?.analysis(for: item)?.recommendation
+        return actionManager.availableActions(for: item, recommendation: recommendation)
+    }
+
+    func performAction(_ action: StartupAppActionKind, on item: StartupAppItem) {
+        guard performingActionItemID == nil else { return }
+
+        performingActionItemID = item.id
+        actionResultMessage = nil
+
+        Task {
+            let result = await Task.detached(priority: .userInitiated) { [actionManager, item, action] in
+                actionManager.perform(action, on: item)
+            }.value
+
+            performingActionItemID = nil
+
+            if result.action == .disableBackgroundActivity && result.succeeded {
+                openLoginItemsSettings()
+            }
+
+            actionResultMessage = result.message
+            if result.succeeded && result.action != .openLoginItemsSettings {
+                scanAndAnalyze(force: true)
             }
         }
     }

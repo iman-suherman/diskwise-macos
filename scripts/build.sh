@@ -50,6 +50,10 @@ if [[ -d "$APP_PATH" ]]; then
   if [[ -f "$ICNS_SOURCE" ]]; then
     cp "$ICNS_SOURCE" "$APP_PATH/Contents/Resources/AppIcon.icns"
   fi
+  PNG_SOURCE="$APP_DIR/DiskWise/Assets/AppIconSource.png"
+  if [[ -f "$PNG_SOURCE" ]]; then
+    cp "$PNG_SOURCE" "$APP_PATH/Contents/Resources/AppIconSource.png"
+  fi
   touch "$APP_PATH"
   /System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister -f -R -trusted "$APP_PATH"
   echo "Built: $APP_PATH"

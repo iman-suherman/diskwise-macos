@@ -80,6 +80,13 @@ struct StartupAppsView: View {
                         .controlSize(.small)
                 }
 
+                if let message = monitor.actionResultMessage {
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+
                 Button {
                     monitor.openLoginItemsSettings()
                 } label: {
@@ -234,7 +241,13 @@ struct StartupAppsView: View {
                 StartupAppRow(
                     item: item,
                     analysis: report.analysis(for: item),
-                    isAnalyzing: monitor.isAnalyzing && monitor.report?.analysis(for: item) == nil
+                    isAnalyzing: monitor.isAnalyzing && monitor.report?.analysis(for: item) == nil,
+                    availableActions: monitor.availableActions(for: item),
+                    isPerformingAction: monitor.performingActionItemID == item.id,
+                    onPerformAction: { action in
+                        monitor.performAction(action, on: item)
+                    },
+                    onOpenLoginItems: { monitor.openLoginItemsSettings() }
                 )
             }
         }
@@ -397,6 +410,12 @@ private struct StartupAppRow: View {
     let item: StartupAppItem
     let analysis: StartupAppAnalysis?
     let isAnalyzing: Bool
+    let availableActions: [StartupAppActionKind]
+    let isPerformingAction: Bool
+    let onPerformAction: (StartupAppActionKind) -> Void
+    let onOpenLoginItems: () -> Void
+
+    @State private var pendingAction: StartupAppActionKind?
 
     var body: some View {
         GroupBox {
@@ -472,7 +491,106 @@ private struct StartupAppRow: View {
                         .font(.callout)
                         .foregroundStyle(.tertiary)
                 }
+
+                if !availableActions.isEmpty {
+                    Divider()
+                    actionButtons
+                }
             }
+        }
+        .confirmationDialog(
+            pendingAction?.confirmationTitle ?? "",
+            isPresented: Binding(
+                get: { pendingAction != nil },
+                set: { if !$0 { pendingAction = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            if let action = pendingAction {
+                if action.isDestructive {
+                    Button(action.title, role: .destructive) {
+                        onPerformAction(action)
+                    }
+                } else {
+                    Button(action.title) {
+                        onPerformAction(action)
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            }
+        } message: {
+            if let action = pendingAction {
+                Text(actionConfirmationMessage(for: action))
+            }
+        }
+    }
+
+    private var actionButtons: some View {
+        HStack(spacing: 8) {
+            if isPerformingAction {
+                ProgressView()
+                    .controlSize(.small)
+            }
+
+            ForEach(availableActions, id: \.self) { action in
+                actionButton(for: action)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func actionButton(for action: StartupAppActionKind) -> some View {
+        let label = Label(action.title, systemImage: actionIcon(for: action))
+        if action == .removeFromLogin {
+            Button {
+                triggerAction(action)
+            } label: {
+                label
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .disabled(isPerformingAction)
+        } else {
+            Button {
+                triggerAction(action)
+            } label: {
+                label
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .disabled(isPerformingAction)
+        }
+    }
+
+    private func triggerAction(_ action: StartupAppActionKind) {
+        if action.isDestructive {
+            pendingAction = action
+        } else if action == .openLoginItemsSettings {
+            onOpenLoginItems()
+        } else {
+            onPerformAction(action)
+        }
+    }
+
+    private func actionIcon(for action: StartupAppActionKind) -> String {
+        switch action {
+        case .removeFromLogin: return "minus.circle"
+        case .disableBackgroundActivity: return "gearshape"
+        case .unloadLaunchAgent: return "trash"
+        case .openLoginItemsSettings: return "arrow.up.forward.app"
+        }
+    }
+
+    private func actionConfirmationMessage(for action: StartupAppActionKind) -> String {
+        switch action {
+        case .removeFromLogin:
+            return "\(item.name) will no longer open automatically when you sign in. You can still launch it from the Dock or Applications."
+        case .unloadLaunchAgent:
+            return "This removes the Launch Agent plist from ~/Library/LaunchAgents and stops it from starting at login."
+        case .disableBackgroundActivity:
+            return "DiskWise will open Login Items so you can turn off background activity for \(item.name)."
+        case .openLoginItemsSettings:
+            return "Open System Settings to manage login items."
         }
     }
 

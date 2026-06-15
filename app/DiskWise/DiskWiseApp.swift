@@ -22,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }()
 
         if let icon {
+            icon.isTemplate = false
             NSApp.applicationIconImage = icon
         }
 
@@ -127,7 +128,7 @@ struct ContentView: View {
                     NavigationSplitView {
                         VStack(spacing: 0) {
                             HStack(spacing: 10) {
-                                AppBrandIcon(size: 28, showsShadow: false)
+                                AppBrandIcon(size: 32, showsShadow: false)
                                 Text("DiskWise")
                                     .font(.title2.bold())
                             }

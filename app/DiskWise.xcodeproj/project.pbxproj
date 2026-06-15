@@ -123,6 +123,7 @@
 		DB7B6708505DFFED5A0362F1 /* 0.6.5.json in Resources */ = {isa = PBXBuildFile; fileRef = 69A80E5FA87260E54639C51F /* 0.6.5.json */; };
 		DD2F2233CFB17ABB37688ACD /* RecommendationReviewSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D515CF1494436D3A33BC32C /* RecommendationReviewSheet.swift */; };
 		DF328D0F13457A5F4FBEE1E8 /* ScanModePromptOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B62028DBE2C0E221B5303A /* ScanModePromptOverlay.swift */; };
+		E002F4451C7803E9D819531D /* 0.7.15.json in Resources */ = {isa = PBXBuildFile; fileRef = 75D6F1FF35E50533DC9A2049 /* 0.7.15.json */; };
 		E092E696381D4EF17F0792CD /* 0.7.14.json in Resources */ = {isa = PBXBuildFile; fileRef = FB1EA2EEABBC08BE11392F86 /* 0.7.14.json */; };
 		E0B3A78BA988C335E31C8595 /* 0.3.3.json in Resources */ = {isa = PBXBuildFile; fileRef = 585C27DC3BE99A64AEDE2C68 /* 0.3.3.json */; };
 		E1A2ACAD991ED07FA794BD6A /* VolumeDiskTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4BCD4E96BC002C2E47A8E33 /* VolumeDiskTabView.swift */; };
@@ -212,6 +213,7 @@
 		704B5BBC0BE69143CC463ED9 /* 0.4.0.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.4.0.json; sourceTree = "<group>"; };
 		73DF2B2F817FCECB71C37049 /* 0.7.13.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.13.json; sourceTree = "<group>"; };
 		755D3336D602D3FBBB813589 /* 0.5.16.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.16.json; sourceTree = "<group>"; };
+		75D6F1FF35E50533DC9A2049 /* 0.7.15.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.15.json; sourceTree = "<group>"; };
 		7606C2E2E0391264171C1F55 /* MainScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainScreens.swift; sourceTree = "<group>"; };
 		7651FCF0CBEA357BEBDCFA2D /* MemoryInsightChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryInsightChatView.swift; sourceTree = "<group>"; };
 		7A638EA06DBCE65A323623F3 /* 0.3.5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.3.5.json; sourceTree = "<group>"; };
@@ -422,6 +424,7 @@
 				11EE2DC04D984EB5256B44C7 /* 0.7.12.json */,
 				73DF2B2F817FCECB71C37049 /* 0.7.13.json */,
 				FB1EA2EEABBC08BE11392F86 /* 0.7.14.json */,
+				75D6F1FF35E50533DC9A2049 /* 0.7.15.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -674,6 +677,7 @@
 				FCB674976ED21A986B5E74BB /* 0.7.12.json in Resources */,
 				241966EC2A2235EBEB621259 /* 0.7.13.json in Resources */,
 				E092E696381D4EF17F0792CD /* 0.7.14.json in Resources */,
+				E002F4451C7803E9D819531D /* 0.7.15.json in Resources */,
 				7363E28A199FEB003256A74F /* 0.7.2.json in Resources */,
 				EB56D9F7608C74B1ED807A5D /* 0.7.3.json in Resources */,
 				BD59F8106D44F5E87359A802 /* 0.7.4.json in Resources */,

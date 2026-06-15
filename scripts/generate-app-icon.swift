@@ -199,8 +199,37 @@ func removeBackground(rep: NSBitmapImageRep, width: Int, height: Int, mode: Back
     }
 }
 
+func removeDarkMatte(rep: NSBitmapImageRep, width: Int, height: Int) {
+    guard let data = rep.bitmapData else { return }
+    let bytesPerRow = rep.bytesPerRow
+
+    for y in 0..<height {
+        for x in 0..<width {
+            let offset = y * bytesPerRow + x * 4
+            if data[offset + 3] == 0 { continue }
+
+            let red = Int(data[offset])
+            let green = Int(data[offset + 1])
+            let blue = Int(data[offset + 2])
+            let value = luminance(red: red, green: green, blue: blue)
+
+            if value <= blackThreshold {
+                data[offset] = 0
+                data[offset + 1] = 0
+                data[offset + 2] = 0
+                data[offset + 3] = 0
+            } else if value < blackThreshold + feather {
+                let alpha = (value - blackThreshold) * 255 / feather
+                data[offset + 3] = UInt8(min(255, max(0, alpha)))
+            }
+        }
+    }
+}
+
 func finalizeTransparentBitmap(rep: NSBitmapImageRep, width: Int, height: Int, mode: BackgroundMode) {
-    // Background removal is handled by edge-connected flood fill in removeBackground.
+    if mode == .light {
+        removeDarkMatte(rep: rep, width: width, height: height)
+    }
 }
 
 func makeTransparentBitmap(from path: String) -> (rep: NSBitmapImageRep, width: Int, height: Int)? {
@@ -426,6 +455,13 @@ let websiteIconURL = URL(fileURLWithPath: websiteIconPath)
 try? FileManager.default.removeItem(at: websiteIconURL)
 try FileManager.default.copyItem(at: master1024, to: websiteIconURL)
 print("Synced website/public/app-icon.png from 1024px master")
+
+let brandIconURL = directoryURL
+    .deletingLastPathComponent()
+    .appendingPathComponent("BrandIcon.imageset/brand-icon.png")
+try? FileManager.default.removeItem(at: brandIconURL)
+try FileManager.default.copyItem(at: master1024, to: brandIconURL)
+print("Synced BrandIcon.imageset from 1024px master")
 
 if CommandLine.arguments.dropFirst().dropFirst().first != nil && sourceImagePath != appIconRawPath {
     let rawURL = URL(fileURLWithPath: appIconRawPath)

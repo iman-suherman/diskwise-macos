@@ -1,0 +1,17 @@
+{
+  "summary": "Startup Apps can remove login items in-app, and brand icons no longer show a black matte on the Dock, installer, or sidebar.",
+  "introduced": [
+    "Startup Apps actions — Remove from Login, Disable in Settings, and Unload Agent buttons on items flagged Optional or Disable at login"
+  ],
+  "changed": [
+    "Brand icons — strip black squircle matte from generated app, Dock, and website icons; sidebar uses BrandIcon asset catalog image",
+    "Dock icon — AppIconSource.png bundled with the app for transparent dock artwork",
+    "Sidebar header — correct full database/checkmark logo beside the DiskWise title"
+  ],
+  "fixed": [
+    "Installer and Dock icons — no longer show opaque black rounded-square background on dark UI"
+  ],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}
