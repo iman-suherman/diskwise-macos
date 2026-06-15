@@ -28,8 +28,8 @@ export function Header() {
             <Image
               src="/app-icon.png"
               alt=""
-              width={908}
-              height={890}
+              width={1024}
+              height={1024}
               priority
               sizes="48px"
               className="app-icon-mark relative h-full w-full object-contain"

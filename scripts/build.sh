@@ -15,9 +15,10 @@ if ! command -v xcodegen >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "==> Generating app icon from app/DiskWise/Assets/AppIconSource.raw.png"
+echo "==> Generating app icon from website/public/app-icon.png"
 swift "$ROOT_DIR/scripts/generate-app-icon.swift" \
-  "$APP_DIR/DiskWise/Assets.xcassets/AppIcon.appiconset"
+  "$APP_DIR/DiskWise/Assets.xcassets/AppIcon.appiconset" \
+  "$ROOT_DIR/website/public/app-icon.png"
 
 echo "==> Generating dock scanning icon from app/DiskWise/Assets/DockScanning.raw.png"
 swift "$ROOT_DIR/scripts/prepare-dock-scanning-icon.swift"

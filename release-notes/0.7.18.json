@@ -1,0 +1,15 @@
+{
+  "summary": "DiskWise adopts a new smooth blue database icon everywhere — sidebar, Dock, installer, and website header.",
+  "introduced": [],
+  "changed": [
+    "Brand icon — smooth flat database + checkmark artwork replaces the previous white-circle app icon",
+    "Icon pipeline — website/public/app-icon.png is the canonical master; builds resize it without reprocessing old raw artwork",
+    "Website header — top-left logo uses the same app-icon.png asset at correct 1024×1024 dimensions"
+  ],
+  "fixed": [
+    "App and installer icons — no longer regenerated from legacy raw artwork that showed a white square on dark UI"
+  ],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

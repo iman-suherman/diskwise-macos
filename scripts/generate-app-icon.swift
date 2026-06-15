@@ -7,7 +7,7 @@ let outputDirectory = CommandLine.arguments.dropFirst().first
     ?? repoRoot.appendingPathComponent("app/DiskWise/Assets.xcassets/AppIcon.appiconset").path
 
 let sourceImagePath = CommandLine.arguments.dropFirst().dropFirst().first
-    ?? repoRoot.appendingPathComponent("app/DiskWise/Assets/AppIconSource.raw.png").path
+    ?? websiteIconPath
 
 let appIconSourcePath = repoRoot.appendingPathComponent("app/DiskWise/Assets/AppIconSource.png").path
 let appIconRawPath = repoRoot.appendingPathComponent("app/DiskWise/Assets/AppIconSource.raw.png").path
@@ -301,6 +301,23 @@ func finalizeTransparentBitmap(rep: NSBitmapImageRep, width: Int, height: Int, m
     }
 }
 
+func isCuratedMasterPath(_ path: String) -> Bool {
+    let standardized = URL(fileURLWithPath: path).standardizedFileURL.path
+    let curatedPaths = [
+        URL(fileURLWithPath: websiteIconPath).standardizedFileURL.path,
+        URL(fileURLWithPath: appIconSourcePath).standardizedFileURL.path,
+    ]
+    return curatedPaths.contains(standardized) || standardized.hasSuffix("app-icon.png")
+}
+
+func loadMasterBitmap(from path: String) -> (rep: NSBitmapImageRep, width: Int, height: Int)? {
+    if isCuratedMasterPath(path) {
+        guard let loaded = loadBitmap(from: path) else { return nil }
+        return loaded
+    }
+    return makeTransparentBitmap(from: path)
+}
+
 func makeTransparentBitmap(from path: String) -> (rep: NSBitmapImageRep, width: Int, height: Int)? {
     guard let initial = loadBitmap(from: path) else { return nil }
     let mode = detectBackgroundMode(rep: initial.rep, width: initial.width, height: initial.height)
@@ -491,17 +508,24 @@ func savePNG(_ rep: NSBitmapImageRep, to url: URL) throws {
     try data.write(to: url)
 }
 
-guard let initial = makeTransparentBitmap(from: sourceImagePath) else {
+guard let initial = loadMasterBitmap(from: sourceImagePath) else {
     fputs("error: unable to load source icon at \(sourceImagePath)\n", stderr)
     exit(1)
 }
 
-let cropped = cropToOpaqueBounds(initial.rep, width: initial.width, height: initial.height)
-var normalizedSource = squareCanvas(from: image(from: cropped))
-normalizedSource.size = NSSize(
-    width: normalizedSource.representations.first?.pixelsWide ?? Int(normalizedSource.size.width),
-    height: normalizedSource.representations.first?.pixelsHigh ?? Int(normalizedSource.size.height)
-)
+let usesCuratedMaster = isCuratedMasterPath(sourceImagePath)
+let normalizedSource: NSImage
+if usesCuratedMaster {
+    normalizedSource = image(from: initial.rep)
+    normalizedSource.size = NSSize(width: initial.width, height: initial.height)
+} else {
+    let cropped = cropToOpaqueBounds(initial.rep, width: initial.width, height: initial.height)
+    normalizedSource = squareCanvas(from: image(from: cropped))
+    normalizedSource.size = NSSize(
+        width: normalizedSource.representations.first?.pixelsWide ?? Int(normalizedSource.size.width),
+        height: normalizedSource.representations.first?.pixelsHigh ?? Int(normalizedSource.size.height)
+    )
+}
 
 print("Using source icon: \(sourceImagePath)")
 
@@ -509,7 +533,7 @@ let directoryURL = URL(fileURLWithPath: outputDirectory, isDirectory: true)
 try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
 
 for entry in sizes {
-    let rep = resizedIcon(from: normalizedSource, pixels: entry.size)
+    let rep = resizedIcon(from: normalizedSource, pixels: entry.size, clipIconShape: !usesCuratedMaster)
     try savePNG(rep, to: directoryURL.appendingPathComponent(entry.name))
     print("Generated \(entry.name) (\(entry.size)x\(entry.size))")
 }
@@ -520,10 +544,12 @@ try? FileManager.default.removeItem(at: appIconSourceURL)
 try FileManager.default.copyItem(at: master1024, to: appIconSourceURL)
 print("Synced AppIconSource.png from 1024px master")
 
-let websiteIconURL = URL(fileURLWithPath: websiteIconPath)
-try? FileManager.default.removeItem(at: websiteIconURL)
-try FileManager.default.copyItem(at: master1024, to: websiteIconURL)
-print("Synced website/public/app-icon.png from 1024px master")
+if !usesCuratedMaster {
+    let websiteIconURL = URL(fileURLWithPath: websiteIconPath)
+    try? FileManager.default.removeItem(at: websiteIconURL)
+    try FileManager.default.copyItem(at: master1024, to: websiteIconURL)
+    print("Synced website/public/app-icon.png from 1024px master")
+}
 
 let brandIconURL = directoryURL
     .deletingLastPathComponent()
@@ -532,7 +558,10 @@ try? FileManager.default.removeItem(at: brandIconURL)
 try FileManager.default.copyItem(at: master1024, to: brandIconURL)
 print("Synced BrandIcon.imageset from 1024px master")
 
-if CommandLine.arguments.dropFirst().dropFirst().first != nil && sourceImagePath != appIconRawPath {
+if !usesCuratedMaster,
+   CommandLine.arguments.dropFirst().dropFirst().first != nil,
+   sourceImagePath != appIconRawPath
+{
     let rawURL = URL(fileURLWithPath: appIconRawPath)
     let sourceURL = URL(fileURLWithPath: sourceImagePath)
     try? FileManager.default.removeItem(at: rawURL)

@@ -105,6 +105,7 @@
 		BCC178A5B4049531784C13F4 /* MemoryInsightContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E44A3EA17C6392E5E93BC0 /* MemoryInsightContentView.swift */; };
 		BD59F8106D44F5E87359A802 /* 0.7.4.json in Resources */ = {isa = PBXBuildFile; fileRef = 379B778859113D86535C101F /* 0.7.4.json */; };
 		BF36D88A5025F7EB71A8CEFA /* DockVisibilityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCF61B84FF67A42557A15C53 /* DockVisibilityController.swift */; };
+		C02CF84F9914F4B1C54A3496 /* 0.7.17.json in Resources */ = {isa = PBXBuildFile; fileRef = A60E9F642DCE99AD821E43DF /* 0.7.17.json */; };
 		C0AAFDD1A73DEA203B988C30 /* MemoryInsightChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7651FCF0CBEA357BEBDCFA2D /* MemoryInsightChatView.swift */; };
 		C23802B4AAF74663F4B08133 /* VolumeKeepAwakePulse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A56F4CF3526711AAE9AE7B /* VolumeKeepAwakePulse.swift */; };
 		C256930CBBDF46341022ACC3 /* 0.1.10.json in Resources */ = {isa = PBXBuildFile; fileRef = 68AEC5E5D4795F6522D2BDFF /* 0.1.10.json */; };
@@ -246,6 +247,7 @@
 		A1E44A3EA17C6392E5E93BC0 /* MemoryInsightContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryInsightContentView.swift; sourceTree = "<group>"; };
 		A2CDC4AD9678214299B3247C /* 0.5.0.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.0.json; sourceTree = "<group>"; };
 		A3F4C97E4FF375B02034BE88 /* SystemMemoryReliefView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMemoryReliefView.swift; sourceTree = "<group>"; };
+		A60E9F642DCE99AD821E43DF /* 0.7.17.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.17.json; sourceTree = "<group>"; };
 		A6C028E81B0947C7D6A69EE9 /* SavedScanPromptOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedScanPromptOverlay.swift; sourceTree = "<group>"; };
 		A747FB1CC7E32E59400CF819 /* 0.3.1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.3.1.json; sourceTree = "<group>"; };
 		A78CC063A378D25BAFE7A767 /* 0.5.8.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.8.json; sourceTree = "<group>"; };
@@ -428,6 +430,7 @@
 				FB1EA2EEABBC08BE11392F86 /* 0.7.14.json */,
 				75D6F1FF35E50533DC9A2049 /* 0.7.15.json */,
 				727F42E358B46F97625385BC /* 0.7.16.json */,
+				A60E9F642DCE99AD821E43DF /* 0.7.17.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -682,6 +685,7 @@
 				E092E696381D4EF17F0792CD /* 0.7.14.json in Resources */,
 				E002F4451C7803E9D819531D /* 0.7.15.json in Resources */,
 				6298E5D5204A066A38B1B848 /* 0.7.16.json in Resources */,
+				C02CF84F9914F4B1C54A3496 /* 0.7.17.json in Resources */,
 				7363E28A199FEB003256A74F /* 0.7.2.json in Resources */,
 				EB56D9F7608C74B1ED807A5D /* 0.7.3.json in Resources */,
 				BD59F8106D44F5E87359A802 /* 0.7.4.json in Resources */,
