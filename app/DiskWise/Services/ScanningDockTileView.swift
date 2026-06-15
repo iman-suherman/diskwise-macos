@@ -2,12 +2,13 @@ import AppKit
 import SwiftUI
 
 final class ScanningDockTileView: NSView {
-    private let scanningImage: NSImage
+    private let baseImage: NSImage
+    private let ringImage: NSImage?
     private let updatesDockTile: Bool
     private let imageInsetFraction: CGFloat
     private var animationTimer: Timer?
     private var rotationAngle: CGFloat = 0
-    private var pulsePhase: CGFloat = 0
+    private var scanBeamPhase: CGFloat = 0
 
     var progressFraction: Double = 0
     var progressLabel = ""
@@ -19,17 +20,32 @@ final class ScanningDockTileView: NSView {
         }
     }
 
-    init(image: NSImage, size: NSSize? = nil, updatesDockTile: Bool = true, imageInsetFraction: CGFloat = 0) {
-        scanningImage = image
+    init(
+        baseImage: NSImage,
+        ringImage: NSImage? = nil,
+        size: NSSize? = nil,
+        updatesDockTile: Bool = true,
+        imageInsetFraction: CGFloat = 0
+    ) {
+        self.baseImage = baseImage
+        self.ringImage = ringImage
         self.updatesDockTile = updatesDockTile
         self.imageInsetFraction = imageInsetFraction
         let resolvedSize = size ?? NSApp.dockTile.size
         super.init(frame: NSRect(origin: .zero, size: resolvedSize))
     }
 
+    static func loadLayeredScanningImages() -> (base: NSImage, ring: NSImage?)? {
+        let base = NSImage(named: "DockScanningBase")
+            ?? NSImage(named: "DockScanning")
+        guard let base else { return nil }
+        let ring = NSImage(named: "DockScanningRing")
+        return (base, ring)
+    }
+
     static func loadScanningImage() -> NSImage? {
-        if let image = NSImage(named: "DockScanning") {
-            return image
+        if let layered = loadLayeredScanningImages() {
+            return layered.base
         }
         if let url = Bundle.main.url(forResource: "scanning", withExtension: "png"),
            let image = NSImage(contentsOf: url) {
@@ -52,11 +68,14 @@ final class ScanningDockTileView: NSView {
 
         animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
             guard let self else { return }
-            self.rotationAngle += .pi / 45
+            self.rotationAngle += .pi / 36
             if self.rotationAngle >= .pi * 2 {
                 self.rotationAngle -= .pi * 2
             }
-            self.pulsePhase += 0.1
+            self.scanBeamPhase += 0.035
+            if self.scanBeamPhase >= 1 {
+                self.scanBeamPhase = 0
+            }
             self.needsDisplay = true
             if self.updatesDockTile {
                 NSApp.dockTile.display()
@@ -81,44 +100,78 @@ final class ScanningDockTileView: NSView {
 
         let inset = bounds.width * imageInsetFraction
         let imageRect = bounds.insetBy(dx: inset, dy: inset)
-        scanningImage.draw(in: imageRect, from: .zero, operation: .sourceOver, fraction: 1.0)
-
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
-        let ringRadius = bounds.width * 0.44
-        let lineWidth = max(1.5, bounds.width * 0.022)
 
-        context.saveGState()
-        context.setStrokeColor(NSColor(calibratedRed: 0.2, green: 0.78, blue: 1.0, alpha: 0.9).cgColor)
-        context.setLineWidth(lineWidth)
-        context.setLineCap(.round)
-        context.addArc(
-            center: center,
-            radius: ringRadius,
-            startAngle: rotationAngle - .pi / 2,
-            endAngle: rotationAngle + .pi / 5 - .pi / 2,
-            clockwise: false
-        )
-        context.strokePath()
-        context.restoreGState()
+        baseImage.draw(in: imageRect, from: .zero, operation: .sourceOver, fraction: 1.0)
+        drawScanBeam(in: imageRect, context: context)
 
-        let dotAngle = rotationAngle - .pi / 2
-        let pulse = 0.65 + 0.35 * sin(pulsePhase)
-        let dotRadius = max(1.5, bounds.width * 0.028 * pulse)
-        let dotCenter = CGPoint(
-            x: center.x + ringRadius * cos(dotAngle),
-            y: center.y + ringRadius * sin(dotAngle)
-        )
-        context.setFillColor(NSColor(calibratedRed: 0.35, green: 0.9, blue: 1.0, alpha: 0.95).cgColor)
-        context.fillEllipse(in: CGRect(
-            x: dotCenter.x - dotRadius,
-            y: dotCenter.y - dotRadius,
-            width: dotRadius * 2,
-            height: dotRadius * 2
-        ))
+        if let ringImage {
+            context.saveGState()
+            context.translateBy(x: center.x, y: center.y)
+            context.rotate(by: rotationAngle)
+            context.translateBy(x: -center.x, y: -center.y)
+            ringImage.draw(in: imageRect, from: .zero, operation: .sourceOver, fraction: 1.0)
+            context.restoreGState()
+        } else {
+            drawFallbackRing(in: bounds, center: center, context: context)
+        }
 
         if progressFraction > 0.05, !progressLabel.isEmpty, progressLabel != "0%" {
             drawProgressBadge(progressLabel, in: bounds)
         }
+    }
+
+    private func drawScanBeam(in imageRect: NSRect, context: CGContext) {
+        let beamCenterY = imageRect.minY + imageRect.height * (0.24 + 0.46 * scanBeamPhase)
+        let beamHeight = max(2, imageRect.height * 0.028)
+        let beamRect = CGRect(
+            x: imageRect.minX + imageRect.width * 0.14,
+            y: beamCenterY - beamHeight / 2,
+            width: imageRect.width * 0.72,
+            height: beamHeight
+        )
+
+        context.saveGState()
+        context.setShadow(offset: .zero, blur: beamHeight * 1.4, color: NSColor(
+            calibratedRed: 0.0,
+            green: 0.9,
+            blue: 1.0,
+            alpha: 0.55
+        ).cgColor)
+        context.setFillColor(NSColor(
+            calibratedRed: 0.55,
+            green: 0.95,
+            blue: 1.0,
+            alpha: 0.92
+        ).cgColor)
+        context.fill(beamRect)
+        context.restoreGState()
+    }
+
+    private func drawFallbackRing(in bounds: NSRect, center: CGPoint, context: CGContext) {
+        let ringRadius = bounds.width * 0.44
+        let lineWidth = max(1.5, bounds.width * 0.022)
+        let dashLength = bounds.width * 0.045
+        let dashGap = bounds.width * 0.03
+        context.saveGState()
+        context.setStrokeColor(NSColor(
+            calibratedRed: 0.145,
+            green: 0.35,
+            blue: 0.71,
+            alpha: 0.85
+        ).cgColor)
+        context.setLineWidth(lineWidth)
+        context.setLineCap(.round)
+        context.setLineDash(phase: rotationAngle * ringRadius, lengths: [dashLength, dashGap])
+        context.addArc(
+            center: center,
+            radius: ringRadius,
+            startAngle: 0,
+            endAngle: .pi * 2,
+            clockwise: false
+        )
+        context.strokePath()
+        context.restoreGState()
     }
 
     private func drawProgressBadge(_ label: String, in bounds: NSRect) {
@@ -158,11 +211,13 @@ struct ScanningDockTileRepresentable: NSViewRepresentable {
     var statusDescription = ""
 
     func makeNSView(context: Context) -> ScanningDockTileView {
-        let image = ScanningDockTileView.loadScanningImage()
+        let layered = ScanningDockTileView.loadLayeredScanningImages()
+        let baseImage = layered?.base
             ?? NSApp.applicationIconImage
             ?? NSImage(systemSymbolName: "externaldrive.fill", accessibilityDescription: nil)!
         let view = ScanningDockTileView(
-            image: image,
+            baseImage: baseImage,
+            ringImage: layered?.ring,
             size: NSSize(width: size, height: size),
             updatesDockTile: false
         )

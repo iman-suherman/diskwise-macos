@@ -3,11 +3,15 @@
 @tailwind utilities;
 
 :root {
-  --background: #0a0a0b;
+  --brand-blue: #2559b4;
+  --brand-blue-light: #4a7fd4;
+  --brand-blue-dark: #183a72;
+  --brand-charcoal: #21282f;
+  --background: #121518;
   --foreground: #f1f5f9;
   --muted: #94a3b8;
-  --surface: #141416;
-  --surface-elevated: #1c1c1f;
+  --surface: #171c24;
+  --surface-elevated: #21282f;
   --border: rgba(255, 255, 255, 0.08);
 }
 
@@ -19,17 +23,18 @@ html {
 
 body {
   overflow-x: hidden;
+  font-family: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
   color: var(--foreground);
   background:
-    radial-gradient(circle at top left, rgba(0, 122, 255, 0.18), transparent 32%),
-    radial-gradient(circle at top right, rgba(88, 86, 214, 0.14), transparent 28%),
-    radial-gradient(circle at 80% 20%, rgba(76, 217, 100, 0.08), transparent 22%),
+    radial-gradient(circle at top left, rgba(37, 89, 180, 0.22), transparent 32%),
+    radial-gradient(circle at top right, rgba(24, 58, 114, 0.18), transparent 28%),
+    radial-gradient(circle at 80% 20%, rgba(33, 40, 47, 0.35), transparent 22%),
     var(--background);
   min-height: 100vh;
 }
 
 .gradient-text {
-  background: linear-gradient(90deg, #4da3ff 0%, #8b89ff 45%, #007aff 100%);
+  background: linear-gradient(90deg, #4a7fd4 0%, #2559b4 55%, #183a72 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -40,7 +45,7 @@ body {
 }
 
 .btn-primary {
-  @apply inline-flex items-center justify-center rounded-xl bg-brand-blue px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#3395ff];
+  @apply inline-flex items-center justify-center rounded-xl bg-brand-blue px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-blueLight;
 }
 
 .btn-secondary {
@@ -66,7 +71,7 @@ body {
 .scanning-hero {
   position: relative;
   aspect-ratio: 1;
-  /* Clip scanning.png square corners; background stays transparent so page glow shows through */
+  /* Rounded hero logo card; white logo background reads as a clean tile on the dark hero */
   border-radius: 22%;
   overflow: hidden;
 }
@@ -76,7 +81,7 @@ body {
   inset: 10%;
   z-index: 0;
   border-radius: 22%;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.28) 0%, transparent 68%);
+  background: radial-gradient(circle, rgba(37, 89, 180, 0.32) 0%, transparent 68%);
   animation: scanning-hero-glow 2.8s ease-in-out infinite;
 }
 
@@ -89,9 +94,9 @@ body {
   background: conic-gradient(
     from -90deg,
     transparent 0deg,
-    rgba(56, 189, 248, 0.15) 24deg,
-    rgba(125, 211, 252, 0.95) 42deg,
-    rgba(56, 189, 248, 0.2) 58deg,
+    rgba(37, 89, 180, 0.18) 24deg,
+    rgba(74, 127, 212, 0.95) 42deg,
+    rgba(37, 89, 180, 0.22) 58deg,
     transparent 82deg,
     transparent 360deg
   );
@@ -110,13 +115,13 @@ body {
     from -90deg,
     transparent 0deg,
     transparent 352deg,
-    rgba(186, 230, 253, 0.95) 356deg,
+    rgba(140, 175, 230, 0.95) 356deg,
     transparent 360deg
   );
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
   animation: scanning-hero-spin 2.4s linear infinite;
-  filter: drop-shadow(0 0 6px rgba(125, 211, 252, 0.85));
+  filter: drop-shadow(0 0 6px rgba(74, 127, 212, 0.85));
 }
 
 @keyframes scanning-hero-spin {

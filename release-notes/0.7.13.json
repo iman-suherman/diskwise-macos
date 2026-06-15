@@ -1,0 +1,16 @@
+{
+  "summary": "DiskWise gets a refreshed brand identity — new app icon, marketing site colors and typography, and an animated scanning logo on startup and in the Dock.",
+  "introduced": [
+    "Brand icon — database checkmark logo across the macOS app, DMG installer, website header, favicon, and social preview image",
+    "Animated scanning logo — startup splash and Dock tile use the layered scanning artwork with a rotating ring and moving scan beam during setup and volume scans",
+    "Marketing site refresh — hero logo, Montserrat typography, and logo-matched blue/charcoal theme replace the previous multi-color accent palette"
+  ],
+  "changed": [
+    "Website SEO — Open Graph and Twitter metadata now point at the new app icon on diskwise.suherman.net",
+    "Icon pipeline — app and dock scanning assets regenerate from canonical raw PNG sources with white-background transparency support"
+  ],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

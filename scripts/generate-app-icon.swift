@@ -7,9 +7,11 @@ let outputDirectory = CommandLine.arguments.dropFirst().first
     ?? repoRoot.appendingPathComponent("app/DiskWise/Assets.xcassets/AppIcon.appiconset").path
 
 let sourceImagePath = CommandLine.arguments.dropFirst().dropFirst().first
-    ?? repoRoot.appendingPathComponent("website/public/app-icon.png").path
+    ?? repoRoot.appendingPathComponent("app/DiskWise/Assets/AppIconSource.raw.png").path
 
 let appIconSourcePath = repoRoot.appendingPathComponent("app/DiskWise/Assets/AppIconSource.png").path
+let appIconRawPath = repoRoot.appendingPathComponent("app/DiskWise/Assets/AppIconSource.raw.png").path
+let websiteIconPath = repoRoot.appendingPathComponent("website/public/app-icon.png").path
 
 let sizes: [(name: String, size: Int)] = [
     ("icon_16x16.png", 16),
@@ -25,9 +27,19 @@ let sizes: [(name: String, size: Int)] = [
 ]
 
 let blackThreshold = 28
+let whiteThreshold = 238
 let feather = 24
 
-func makeTransparentBitmap(from path: String) -> (rep: NSBitmapImageRep, width: Int, height: Int)? {
+enum BackgroundMode {
+    case dark
+    case light
+}
+
+func luminance(red: Int, green: Int, blue: Int) -> Int {
+    (red * 299 + green * 587 + blue * 114) / 1000
+}
+
+func loadBitmap(from path: String) -> (rep: NSBitmapImageRep, width: Int, height: Int)? {
     guard let image = NSImage(contentsOfFile: path),
           let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
         return nil
@@ -53,33 +65,129 @@ func makeTransparentBitmap(from path: String) -> (rep: NSBitmapImageRep, width: 
 
     rep.size = NSSize(width: width, height: height)
     context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+    return (rep, width, height)
+}
 
-    guard let data = rep.bitmapData else { return nil }
+func detectBackgroundMode(rep: NSBitmapImageRep, width: Int, height: Int) -> BackgroundMode {
+    guard let data = rep.bitmapData else { return .dark }
     let bytesPerRow = rep.bytesPerRow
 
-    for y in 0..<height {
-        for x in 0..<width {
-            let offset = y * bytesPerRow + x * 4
-            let red = Int(data[offset])
-            let green = Int(data[offset + 1])
-            let blue = Int(data[offset + 2])
-            let luminance = (red * 299 + green * 587 + blue * 114) / 1000
+    let samplePoints = [
+        (0, 0),
+        (width - 1, 0),
+        (0, height - 1),
+        (width - 1, height - 1),
+    ]
 
-            if luminance <= blackThreshold {
-                data[offset] = 0
-                data[offset + 1] = 0
-                data[offset + 2] = 0
-                data[offset + 3] = 0
-            } else if luminance < blackThreshold + feather {
-                let alpha = (luminance - blackThreshold) * 255 / feather
-                data[offset + 3] = UInt8(min(255, max(0, alpha)))
-            } else {
-                data[offset + 3] = 255
+    var totalLuminance = 0
+    for (x, y) in samplePoints {
+        let offset = y * bytesPerRow + x * 4
+        let red = Int(data[offset])
+        let green = Int(data[offset + 1])
+        let blue = Int(data[offset + 2])
+        totalLuminance += luminance(red: red, green: green, blue: blue)
+    }
+
+    return totalLuminance / samplePoints.count >= 128 ? .light : .dark
+}
+
+func isBackgroundPixel(red: Int, green: Int, blue: Int, mode: BackgroundMode) -> Bool {
+    switch mode {
+    case .dark:
+        return luminance(red: red, green: green, blue: blue) <= blackThreshold
+    case .light:
+        return min(red, green, blue) >= whiteThreshold
+    }
+}
+
+func removeBackground(rep: NSBitmapImageRep, width: Int, height: Int, mode: BackgroundMode) {
+    guard let data = rep.bitmapData else { return }
+    let bytesPerRow = rep.bytesPerRow
+    let pixelCount = width * height
+    var visited = [Bool](repeating: false, count: pixelCount)
+    var queue: [(Int, Int)] = []
+
+    for x in 0..<width {
+        queue.append((x, 0))
+        queue.append((x, height - 1))
+    }
+    for y in 0..<height {
+        queue.append((0, y))
+        queue.append((width - 1, y))
+    }
+
+    while !queue.isEmpty {
+        let (x, y) = queue.removeFirst()
+        let index = y * width + x
+        if visited[index] { continue }
+        visited[index] = true
+
+        let offset = y * bytesPerRow + x * 4
+        let red = Int(data[offset])
+        let green = Int(data[offset + 1])
+        let blue = Int(data[offset + 2])
+
+        guard isBackgroundPixel(red: red, green: green, blue: blue, mode: mode) else { continue }
+
+        data[offset + 3] = 0
+
+        if x > 0 { queue.append((x - 1, y)) }
+        if x + 1 < width { queue.append((x + 1, y)) }
+        if y > 0 { queue.append((x, y - 1)) }
+        if y + 1 < height { queue.append((x, y + 1)) }
+    }
+
+    if mode == .dark {
+        for y in 0..<height {
+            for x in 0..<width {
+                let offset = y * bytesPerRow + x * 4
+                let red = Int(data[offset])
+                let green = Int(data[offset + 1])
+                let blue = Int(data[offset + 2])
+                let value = luminance(red: red, green: green, blue: blue)
+
+                if value <= blackThreshold {
+                    data[offset] = 0
+                    data[offset + 1] = 0
+                    data[offset + 2] = 0
+                    data[offset + 3] = 0
+                } else if value < blackThreshold + feather {
+                    let alpha = (value - blackThreshold) * 255 / feather
+                    data[offset + 3] = UInt8(min(255, max(0, alpha)))
+                } else {
+                    data[offset + 3] = 255
+                }
+            }
+        }
+    } else {
+        for y in 0..<height {
+            for x in 0..<width {
+                let offset = y * bytesPerRow + x * 4
+                if data[offset + 3] == 0 { continue }
+
+                let red = Int(data[offset])
+                let green = Int(data[offset + 1])
+                let blue = Int(data[offset + 2])
+                let minimum = min(red, green, blue)
+
+                if minimum >= whiteThreshold {
+                    data[offset + 3] = 255
+                } else if minimum >= whiteThreshold - feather {
+                    let alpha = (whiteThreshold - minimum) * 255 / feather
+                    data[offset + 3] = UInt8(min(255, max(0, alpha)))
+                } else {
+                    data[offset + 3] = 255
+                }
             }
         }
     }
+}
 
-    return (rep, width, height)
+func makeTransparentBitmap(from path: String) -> (rep: NSBitmapImageRep, width: Int, height: Int)? {
+    guard let initial = loadBitmap(from: path) else { return nil }
+    let mode = detectBackgroundMode(rep: initial.rep, width: initial.width, height: initial.height)
+    removeBackground(rep: initial.rep, width: initial.width, height: initial.height, mode: mode)
+    return initial
 }
 
 func cropToOpaqueBounds(_ rep: NSBitmapImageRep, width: Int, height: Int, padding: Int = 6) -> NSBitmapImageRep {
@@ -287,6 +395,19 @@ let appIconSourceURL = URL(fileURLWithPath: appIconSourcePath)
 try? FileManager.default.removeItem(at: appIconSourceURL)
 try FileManager.default.copyItem(at: master1024, to: appIconSourceURL)
 print("Synced AppIconSource.png from 1024px master")
+
+let websiteIconURL = URL(fileURLWithPath: websiteIconPath)
+try? FileManager.default.removeItem(at: websiteIconURL)
+try FileManager.default.copyItem(at: master1024, to: websiteIconURL)
+print("Synced website/public/app-icon.png from 1024px master")
+
+if CommandLine.arguments.dropFirst().dropFirst().first != nil && sourceImagePath != appIconRawPath {
+    let rawURL = URL(fileURLWithPath: appIconRawPath)
+    let sourceURL = URL(fileURLWithPath: sourceImagePath)
+    try? FileManager.default.removeItem(at: rawURL)
+    try FileManager.default.copyItem(at: sourceURL, to: rawURL)
+    print("Synced AppIconSource.raw.png from source icon")
+}
 
 let icnsOutput = directoryURL
     .deletingLastPathComponent()

@@ -71,7 +71,7 @@ export function AppPreview() {
             } ${preview.imageFirst ? "" : "lg:[&>div:first-child]:order-2 lg:[&>div:last-child]:order-1"}`}
           >
             <div className={imageWrapperClass(preview.large)}>
-              <div className="absolute -inset-6 rounded-full bg-gradient-to-br from-brand-blue/10 via-brand-purple/5 to-transparent blur-3xl" />
+              <div className="absolute -inset-6 rounded-full bg-gradient-to-br from-brand-blue/12 via-brand-blueDark/8 to-transparent blur-3xl" />
               <div className="relative rounded-[1.35rem] sm:rounded-[1.5rem]">
                 <div className="relative overflow-hidden rounded-xl shadow-[0_4px_14px_rgba(0,0,0,0.55),0_20px_48px_rgba(0,0,0,0.5),0_40px_80px_rgba(0,0,0,0.4)] sm:rounded-2xl">
                   <Image

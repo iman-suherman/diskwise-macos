@@ -24,6 +24,7 @@ targets:
           - Assets/AppIcon.icns
           - Assets/AppIconSource.png
           - Assets/AppIconSource.raw.png
+          - Assets/DockScanning.raw.png
     preBuildScripts:
       - name: Sync Release Notes
         script: |

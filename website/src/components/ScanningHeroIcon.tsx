@@ -13,14 +13,14 @@ export function ScanningHeroIcon({ className = "", priority = false }: ScanningH
       <div aria-hidden className="scanning-hero-ring" />
       <div aria-hidden className="scanning-hero-sweep" />
       <Image
-        src="/scanning.png"
-        alt={`${BRAND_NAME} scanning your drives`}
-        width={1254}
-        height={1254}
+        src="/hero-logo.png"
+        alt={`${BRAND_NAME} logo`}
+        width={1024}
+        height={1024}
         priority={priority}
         unoptimized
         sizes="(max-width: 1024px) 90vw, 32rem"
-        className="scanning-hero-image relative z-10 h-auto w-full object-contain drop-shadow-[0_16px_40px_rgba(0,122,255,0.35)]"
+        className="scanning-hero-image relative z-10 h-auto w-full object-contain drop-shadow-[0_16px_40px_rgba(37,89,180,0.35)]"
       />
     </div>
   );

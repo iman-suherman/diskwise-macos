@@ -18,7 +18,7 @@
     "setup:xcodegen": "brew install xcodegen",
     "setup:xcode": "xcodebuild -runFirstLaunch",
     "build:app": "bash scripts/build.sh",
-    "prepare:icon": "swift scripts/generate-app-icon.swift app/DiskWise/Assets.xcassets/AppIcon.appiconset",
+    "prepare:icon": "swift scripts/generate-app-icon.swift app/DiskWise/Assets.xcassets/AppIcon.appiconset && swift scripts/prepare-dock-scanning-icon.swift",
     "prepare:website": "swift scripts/prepare-website-assets.swift && swift scripts/prepare-website-screenshots.swift",
     "build:app:release": "bash scripts/build.sh release",
     "run:app": "bash scripts/run-app.sh",

@@ -11,13 +11,13 @@ const highlights = [
     title: "Optional local AI",
     description: "Connect Ollama or LM Studio for reports — still fully on-device when enabled.",
     icon: "🤖",
-    tint: "bg-brand-purple/15 text-brand-purple",
+    tint: "bg-brand-blueLight/15 text-brand-blueLight",
   },
   {
     title: "You stay in control",
     description: "Grant Full Disk Access only when needed, with clear explanations in the app.",
     icon: "🔒",
-    tint: "bg-brand-green/15 text-brand-green",
+    tint: "bg-brand-charcoal/50 text-brand-blueLight",
   },
 ];
 
@@ -33,7 +33,7 @@ export function PrivacySection() {
     <section id="privacy" className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 md:py-10">
       <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-brand-green">
+          <p className="text-sm font-semibold uppercase tracking-wide text-brand-blue">
             Private by design
           </p>
           <h2 className="mt-2 text-2xl font-bold text-slate-50 sm:mt-3 sm:text-3xl md:text-4xl">
@@ -70,15 +70,15 @@ export function PrivacySection() {
             ))}
           </ul>
 
-          <div className="mt-6 rounded-2xl border border-brand-green/20 bg-brand-green/10 p-5">
-            <p className="flex items-center gap-2 text-sm font-semibold text-brand-green">
+          <div className="mt-6 rounded-2xl border border-brand-blue/20 bg-brand-blue/10 p-5">
+            <p className="flex items-center gap-2 text-sm font-semibold text-brand-blueLight">
               <span aria-hidden>🛡️</span>
               Privacy first
             </p>
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">
               {privacyChecks.map((item) => (
                 <li key={item} className="flex items-center gap-2 text-sm text-slate-300">
-                  <span className="text-brand-green" aria-hidden>
+                  <span className="text-brand-blueLight" aria-hidden>
                     ✓
                   </span>
                   {item}

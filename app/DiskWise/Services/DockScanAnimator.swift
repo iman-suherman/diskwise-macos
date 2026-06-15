@@ -13,10 +13,11 @@ final class DockScanAnimator {
         guard ScanActivityMonitor.shared.isScanning else { return }
         guard view == nil else { return }
         guard !AppSettings.shared.hideFromDock else { return }
-        guard let image = ScanningDockTileView.loadScanningImage() else { return }
+        guard let layered = ScanningDockTileView.loadLayeredScanningImages() else { return }
 
         let scanView = ScanningDockTileView(
-            image: image,
+            baseImage: layered.base,
+            ringImage: layered.ring,
             size: NSApp.dockTile.size,
             updatesDockTile: true,
             imageInsetFraction: 0.08

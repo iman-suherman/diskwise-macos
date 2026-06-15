@@ -69,11 +69,11 @@ export function Hero() {
         <div className="relative mx-auto flex w-full max-w-md items-center justify-center overflow-visible lg:mx-0 lg:max-w-lg">
           <div
             aria-hidden
-            className="pointer-events-none absolute left-1/2 top-1/2 h-[130%] w-[130%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(0,122,255,0.2)_0%,rgba(88,86,214,0.12)_38%,transparent_72%)] blur-3xl"
+            className="pointer-events-none absolute left-1/2 top-1/2 h-[130%] w-[130%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(37,89,180,0.22)_0%,rgba(24,58,114,0.14)_38%,transparent_72%)] blur-3xl"
           />
           <div
             aria-hidden
-            className="pointer-events-none absolute left-1/2 top-1/2 h-[95%] w-[95%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-brand-blue/25 via-brand-purple/15 to-brand-green/10 blur-[72px]"
+            className="pointer-events-none absolute left-1/2 top-1/2 h-[95%] w-[95%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-brand-blue/25 via-brand-blueDark/20 to-brand-charcoal/15 blur-[72px]"
           />
           <ScanningHeroIcon priority className="relative w-full" />
         </div>

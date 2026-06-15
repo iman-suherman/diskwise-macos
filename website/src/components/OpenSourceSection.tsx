@@ -22,7 +22,7 @@ export function OpenSourceSection() {
     <section id="opensource" className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 md:py-10">
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-6 sm:rounded-[2rem] sm:px-8 sm:py-8 md:px-10">
         <div className="max-w-3xl">
-          <p className="text-sm font-semibold uppercase tracking-wide text-brand-purple">
+          <p className="text-sm font-semibold uppercase tracking-wide text-brand-blue">
             Open source
           </p>
           <h2 className="mt-2 text-2xl font-bold text-slate-50 sm:text-3xl md:text-4xl">
@@ -35,7 +35,7 @@ export function OpenSourceSection() {
           </p>
           <a
             href={GITHUB_REPO_URL}
-            className="mt-4 inline-flex items-center gap-2 text-base font-semibold text-brand-blue transition hover:text-[#3395ff]"
+            className="mt-4 inline-flex items-center gap-2 text-base font-semibold text-brand-blue transition hover:text-brand-blueLight"
             target="_blank"
             rel="noopener noreferrer"
           >

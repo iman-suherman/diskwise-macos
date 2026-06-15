@@ -146,6 +146,7 @@
 		FB1EE01EE283AA5723F4BECE /* 0.6.4.json in Resources */ = {isa = PBXBuildFile; fileRef = C936F9E4DDBAE8C20A5F61F8 /* 0.6.4.json */; };
 		FC44ADD51FA39A6B7F20E292 /* 0.3.2.json in Resources */ = {isa = PBXBuildFile; fileRef = EA71528515544DA6FC276B6D /* 0.3.2.json */; };
 		FC6623E26E2D1FA21EC83507 /* MenuBarExtensionPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */; };
+		FCB674976ED21A986B5E74BB /* 0.7.12.json in Resources */ = {isa = PBXBuildFile; fileRef = 11EE2DC04D984EB5256B44C7 /* 0.7.12.json */; };
 		FCE4BBDDC79F3B9E5D5C20E0 /* install_python.sh in Resources */ = {isa = PBXBuildFile; fileRef = B9CA49BFF86E2DE13A0B87F6 /* install_python.sh */; };
 		FCF606D37E9D8BF36ECAAC88 /* 0.3.8.json in Resources */ = {isa = PBXBuildFile; fileRef = D920979DEAE9BF18B35E7E3F /* 0.3.8.json */; };
 		FEA8DD2C15EB143E7407A90C /* 0.7.7.json in Resources */ = {isa = PBXBuildFile; fileRef = AF2F3FBB3FF2505786ACA7F7 /* 0.7.7.json */; };
@@ -159,6 +160,7 @@
 		0C9C379B2C9182ADB1BEAB44 /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
 		0FF3D9E21CD3A7F219755FE8 /* 0.5.13.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.13.json; sourceTree = "<group>"; };
 		113502CA74BB9433B18AF27C /* 0.5.2.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.2.json; sourceTree = "<group>"; };
+		11EE2DC04D984EB5256B44C7 /* 0.7.12.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.12.json; sourceTree = "<group>"; };
 		12CCFACE9205DEE44CA8BD1F /* 0.5.7.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.7.json; sourceTree = "<group>"; };
 		13B125BAFCD3CE178BEAA409 /* 0.2.1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.2.1.json; sourceTree = "<group>"; };
 		15BE9BA6642050B89F9552F0 /* entitlements.mac.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = entitlements.mac.plist; sourceTree = "<group>"; };
@@ -413,6 +415,7 @@
 				EB11D325302CCFC42568E31D /* 0.7.9.json */,
 				BFACD38CAF28B9B0DB27167D /* 0.7.10.json */,
 				8B18F7DD741E9D3F3B88945B /* 0.7.11.json */,
+				11EE2DC04D984EB5256B44C7 /* 0.7.12.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -662,6 +665,7 @@
 				37E65E16FE154CA128660458 /* 0.7.1.json in Resources */,
 				A5D1F53A2E12133F6299236A /* 0.7.10.json in Resources */,
 				3A6E008A15320E0977327789 /* 0.7.11.json in Resources */,
+				FCB674976ED21A986B5E74BB /* 0.7.12.json in Resources */,
 				7363E28A199FEB003256A74F /* 0.7.2.json in Resources */,
 				EB56D9F7608C74B1ED807A5D /* 0.7.3.json in Resources */,
 				BD59F8106D44F5E87359A802 /* 0.7.4.json in Resources */,

@@ -4,13 +4,16 @@ const config: Config = {
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-montserrat)", "ui-sans-serif", "system-ui", "sans-serif"],
+      },
       colors: {
         brand: {
-          blue: "#007AFF",
-          blueDark: "#003366",
-          green: "#4CD964",
-          orange: "#FF9500",
-          purple: "#5856D6",
+          blue: "#2559B4",
+          blueLight: "#4A7FD4",
+          blueDark: "#183A72",
+          charcoal: "#21282F",
+          charcoalLight: "#3A4550",
           silver: "#E5E5E5",
         },
       },

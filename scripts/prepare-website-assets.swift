@@ -138,34 +138,48 @@ func cropToOpaqueBounds(_ rep: NSBitmapImageRep, width: Int, height: Int, paddin
     return cropped
 }
 
-guard let initial = makeTransparentBitmap(from: sourcePath) else {
-    fputs("prepare-website-assets: failed to load \(sourcePath)\n", stderr)
-    exit(1)
+let defaultAppIconSource = repoRoot.appendingPathComponent("app/DiskWise/Assets/AppIconSource.png").path
+
+if sourcePath == defaultAppIconSource {
+    let sourceURL = URL(fileURLWithPath: sourcePath)
+    let outputURL = URL(fileURLWithPath: outputPath)
+    try FileManager.default.createDirectory(
+        at: outputURL.deletingLastPathComponent(),
+        withIntermediateDirectories: true
+    )
+    try? FileManager.default.removeItem(at: outputURL)
+    try FileManager.default.copyItem(at: sourceURL, to: outputURL)
+    fputs("prepare-website-assets: copied \(sourcePath) to \(outputPath)\n", stderr)
+} else {
+    guard let initial = makeTransparentBitmap(from: sourcePath) else {
+        fputs("prepare-website-assets: failed to load \(sourcePath)\n", stderr)
+        exit(1)
+    }
+
+    let cropped = cropToOpaqueBounds(initial.rep, width: initial.width, height: initial.height)
+
+    guard let png = cropped.representation(using: .png, properties: [:]) else {
+        fputs("prepare-website-assets: failed to encode PNG\n", stderr)
+        exit(1)
+    }
+
+    let outputURL = URL(fileURLWithPath: outputPath)
+    try FileManager.default.createDirectory(
+        at: outputURL.deletingLastPathComponent(),
+        withIntermediateDirectories: true
+    )
+    try png.write(to: outputURL)
+
+    fputs("prepare-website-assets: wrote \(outputPath)\n", stderr)
+
+    let heroCropped = cropToOpaqueBounds(initial.rep, width: initial.width, height: initial.height, padding: 0)
+
+    guard let heroPNG = heroCropped.representation(using: .png, properties: [:]) else {
+        fputs("prepare-website-assets: failed to encode hero PNG\n", stderr)
+        exit(1)
+    }
+
+    let heroOutputURL = URL(fileURLWithPath: heroOutputPath)
+    try heroPNG.write(to: heroOutputURL)
+    fputs("prepare-website-assets: wrote \(heroOutputPath)\n", stderr)
 }
-
-let cropped = cropToOpaqueBounds(initial.rep, width: initial.width, height: initial.height)
-
-guard let png = cropped.representation(using: .png, properties: [:]) else {
-    fputs("prepare-website-assets: failed to encode PNG\n", stderr)
-    exit(1)
-}
-
-let outputURL = URL(fileURLWithPath: outputPath)
-try FileManager.default.createDirectory(
-    at: outputURL.deletingLastPathComponent(),
-    withIntermediateDirectories: true
-)
-try png.write(to: outputURL)
-
-fputs("prepare-website-assets: wrote \(outputPath)\n", stderr)
-
-let heroCropped = cropToOpaqueBounds(initial.rep, width: initial.width, height: initial.height, padding: 0)
-
-guard let heroPNG = heroCropped.representation(using: .png, properties: [:]) else {
-    fputs("prepare-website-assets: failed to encode hero PNG\n", stderr)
-    exit(1)
-}
-
-let heroOutputURL = URL(fileURLWithPath: heroOutputPath)
-try heroPNG.write(to: heroOutputURL)
-fputs("prepare-website-assets: wrote \(heroOutputPath)\n", stderr)

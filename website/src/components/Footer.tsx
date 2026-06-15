@@ -12,7 +12,7 @@ export function Footer() {
           reports are welcome on{" "}
           <a
             href={GITHUB_REPO_URL}
-            className="text-brand-blue transition hover:text-[#3395ff]"
+            className="text-brand-blue transition hover:text-brand-blueLight"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -26,7 +26,7 @@ export function Footer() {
             © {new Date().getFullYear()} Iman Suherman. Open source on{" "}
             <a
               href={GITHUB_REPO_URL}
-              className="text-brand-blue transition hover:text-[#3395ff]"
+              className="text-brand-blue transition hover:text-brand-blueLight"
               target="_blank"
               rel="noopener noreferrer"
             >

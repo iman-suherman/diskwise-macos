@@ -11,20 +11,20 @@ const highlights = [
     title: "Find duplicates",
     description: "Detect duplicates by filename, size, SHA256 hash, and video fingerprinting.",
     icon: "🔍",
-    tint: "bg-brand-purple/15 text-brand-purple",
+    tint: "bg-brand-blueLight/15 text-brand-blueLight",
   },
   {
     title: "AI chat & recommendations",
     description:
       "Ask DiskWise what is using your disk, then review ranked cleanup suggestions for caches, old DMGs, and stale files.",
     icon: "✨",
-    tint: "bg-brand-orange/15 text-brand-orange",
+    tint: "bg-brand-blueDark/25 text-brand-blue",
   },
   {
     title: "Safe cleanup",
     description: "Preview every action and move files to Trash — never permanent deletion by default.",
     icon: "🗑️",
-    tint: "bg-brand-green/15 text-brand-green",
+    tint: "bg-brand-charcoal/50 text-brand-blueLight",
   },
 ];
 
