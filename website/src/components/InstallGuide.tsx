@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { LocalReleaseDate } from "@/components/LocalReleaseDate";
 import { DownloadButton } from "@/components/DownloadButton";
@@ -36,9 +37,10 @@ const steps = [
       "Open System Settings → Privacy & Security → Full Disk Access and enable DiskWise when ready.",
   },
   {
-    title: "Run your first scan",
-    description: "Select a volume, start a scan, and review duplicates and AI recommendations.",
-    detail: "All analysis stays on your Mac.",
+    title: "Run your first scan or health check",
+    description:
+      "Open Disk Analysis to scan a drive, or System Optimization for a health score and memory insights.",
+    detail: "All analysis stays on your Mac — preview cleanup before anything moves to Trash.",
   },
 ];
 
@@ -62,8 +64,20 @@ export function InstallGuide() {
         Install DiskWise on macOS
       </h1>
       <p className="mt-4 text-base leading-7 text-slate-400">
-        Follow these steps to download the DMG, install the app, and run your first storage scan.
+        Follow these steps to download the DMG, drag DiskWise into Applications, and explore disk
+        analysis, system health, and safe cleanup.
       </p>
+
+      <div className="relative mt-8 overflow-hidden rounded-2xl border border-white/10 shadow-soft">
+        <Image
+          src="/screenshot-install-dmg.png"
+          alt="DiskWise DMG installer window showing drag to Applications"
+          width={1024}
+          height={679}
+          unoptimized
+          className="block h-auto w-full"
+        />
+      </div>
 
       <div className="mt-8 flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-4">

@@ -13,17 +13,18 @@ export function CtaBanner() {
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="text-xl font-bold sm:text-2xl md:text-3xl">
-              Ready to understand what is using your disk?
+              Ready to see what your Mac is really using?
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-blue-100/90 md:text-base">
-              Download DiskWise for macOS, scan your volumes, and start reclaiming space with
+              Download DiskWise, drag it to Applications, and start with a disk scan or health
+              check. Preview every cleanup, keep your data on-device, and reclaim space with
               confidence.
             </p>
           </div>
           <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2">
             <DownloadButton latest={latest} loading={loading} className="btn-cta-primary" />
-            <Link href="/versions" className="btn-cta-secondary">
-              Browse versions
+            <Link href="/install" className="btn-cta-secondary">
+              Install guide
             </Link>
           </div>
         </div>

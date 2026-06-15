@@ -26,12 +26,13 @@ export function Hero() {
             {BRAND_TAGLINE}
           </span>
           <h1 className="mt-4 max-w-4xl text-balance text-3xl font-bold leading-[1.15] tracking-tight text-slate-50 sm:mt-6 sm:text-4xl md:text-5xl lg:text-[3.25rem] xl:text-6xl">
-            Reclaim disk space with{" "}
-            <span className="gradient-text">AI-powered storage insights.</span>
+            Understand your Mac&apos;s storage, speed, and{" "}
+            <span className="gradient-text">overall health.</span>
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-slate-400 sm:mt-6 sm:text-lg sm:leading-8 md:text-xl md:leading-9">
-            Scan volumes, find duplicate videos, get safe cleanup suggestions, and ask AI about your
-            storage — all from a native macOS app built for privacy.
+            {BRAND_NAME} is a native macOS app that scans your drives, scores system health,
+            finds duplicates, cleans caches safely, and explains what to do next — with on-device
+            AI guidance, not cloud uploads.
           </p>
 
           <div id="download" className="mt-6 flex flex-col gap-3 sm:mt-8">
@@ -60,9 +61,9 @@ export function Hero() {
           </div>
 
           <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-500 sm:mt-8 sm:gap-x-8 sm:text-base">
-            <span>On-device analysis</span>
-            <span>Duplicate video detection</span>
-            <span>Safe Trash workflow</span>
+            <span>Health score &amp; live metrics</span>
+            <span>Safe cleanup preview</span>
+            <span>On-device AI insights</span>
           </div>
         </div>
 

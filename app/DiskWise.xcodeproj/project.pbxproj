@@ -59,6 +59,7 @@
 		50F2B27FC2096A06C3D489A2 /* 0.3.0.json in Resources */ = {isa = PBXBuildFile; fileRef = E07BA2DFFEA459773CAC869C /* 0.3.0.json */; };
 		5859A10FF74FA776495B0C10 /* 0.1.5.json in Resources */ = {isa = PBXBuildFile; fileRef = 1824EBE404CDE19C9B86E756 /* 0.1.5.json */; };
 		5DFD07E54D9D275EAA4738AB /* 0.7.5.json in Resources */ = {isa = PBXBuildFile; fileRef = 16E23BB557336EA8EE0B3D6F /* 0.7.5.json */; };
+		6298E5D5204A066A38B1B848 /* 0.7.16.json in Resources */ = {isa = PBXBuildFile; fileRef = 727F42E358B46F97625385BC /* 0.7.16.json */; };
 		6318B6DBFB0D7C217BB8872A /* 0.2.3.json in Resources */ = {isa = PBXBuildFile; fileRef = 89301AF45127E0756C73A84D /* 0.2.3.json */; };
 		6364632C8485413073CA9BB3 /* MainScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7606C2E2E0391264171C1F55 /* MainScreens.swift */; };
 		68EAF0F0D832F829DC54A2EC /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98EFAE1062F153FAFA7B0D8A /* AboutView.swift */; };
@@ -211,6 +212,7 @@
 		69A80E5FA87260E54639C51F /* 0.6.5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.6.5.json; sourceTree = "<group>"; };
 		6F9652CCD6DFF89AC365DBCD /* ActivityLogSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityLogSheet.swift; sourceTree = "<group>"; };
 		704B5BBC0BE69143CC463ED9 /* 0.4.0.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.4.0.json; sourceTree = "<group>"; };
+		727F42E358B46F97625385BC /* 0.7.16.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.16.json; sourceTree = "<group>"; };
 		73DF2B2F817FCECB71C37049 /* 0.7.13.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.13.json; sourceTree = "<group>"; };
 		755D3336D602D3FBBB813589 /* 0.5.16.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.16.json; sourceTree = "<group>"; };
 		75D6F1FF35E50533DC9A2049 /* 0.7.15.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.15.json; sourceTree = "<group>"; };
@@ -425,6 +427,7 @@
 				73DF2B2F817FCECB71C37049 /* 0.7.13.json */,
 				FB1EA2EEABBC08BE11392F86 /* 0.7.14.json */,
 				75D6F1FF35E50533DC9A2049 /* 0.7.15.json */,
+				727F42E358B46F97625385BC /* 0.7.16.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -678,6 +681,7 @@
 				241966EC2A2235EBEB621259 /* 0.7.13.json in Resources */,
 				E092E696381D4EF17F0792CD /* 0.7.14.json in Resources */,
 				E002F4451C7803E9D819531D /* 0.7.15.json in Resources */,
+				6298E5D5204A066A38B1B848 /* 0.7.16.json in Resources */,
 				7363E28A199FEB003256A74F /* 0.7.2.json in Resources */,
 				EB56D9F7608C74B1ED807A5D /* 0.7.3.json in Resources */,
 				BD59F8106D44F5E87359A802 /* 0.7.4.json in Resources */,
@@ -935,14 +939,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7016;
+				CURRENT_PROJECT_VERSION = 7017;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.7.16;
+				MARKETING_VERSION = 0.7.17;
 				OTHER_LDFLAGS = "$(inherited) -weak_framework FoundationModels";
 				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
 				SDKROOT = macosx;
@@ -957,14 +961,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7016;
+				CURRENT_PROJECT_VERSION = 7017;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.7.16;
+				MARKETING_VERSION = 0.7.17;
 				OTHER_LDFLAGS = "$(inherited) -weak_framework FoundationModels";
 				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
 				SDKROOT = macosx;

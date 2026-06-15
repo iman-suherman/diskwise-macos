@@ -15,7 +15,7 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: BRAND_NAME,
-  description: `${BRAND_TAGLINE}. Scan drives, detect duplicates, and safely reclaim disk space on macOS.`,
+  description: `${BRAND_TAGLINE}. Scan storage, score system health, find duplicates, clean caches safely, and get on-device AI insights.`,
   icons: {
     icon: [
       { url: "/app-icon.png", type: "image/png", sizes: "512x512" },
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     type: "website",
     siteName: BRAND_NAME,
     title: BRAND_NAME,
-    description: `${BRAND_TAGLINE}. Scan drives, detect duplicates, and safely reclaim disk space on macOS.`,
+    description: `${BRAND_TAGLINE}. Scan storage, score system health, find duplicates, clean caches safely, and get on-device AI insights.`,
     url: SITE_URL,
     images: [
       {
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: BRAND_NAME,
-    description: `${BRAND_TAGLINE}. Scan drives, detect duplicates, and safely reclaim disk space on macOS.`,
+    description: `${BRAND_TAGLINE}. Scan storage, score system health, find duplicates, clean caches safely, and get on-device AI insights.`,
     images: ["/app-icon.png"],
   },
 };

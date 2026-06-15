@@ -2,30 +2,33 @@ import { BRAND_NAME } from "@/lib/brand";
 
 const highlights = [
   {
-    title: "Everything stays on your Mac",
-    description: "Scans, metadata extraction, and duplicate detection run locally — no cloud upload.",
+    title: "Analysis stays on your Mac",
+    description:
+      "Volume scans, health metrics, startup inventories, and cleanup previews are processed locally. Your file contents are not uploaded to a cloud service.",
     icon: "💻",
     tint: "bg-brand-blue/15 text-brand-blue",
   },
   {
-    title: "Optional local AI",
-    description: "Connect Ollama or LM Studio for reports — still fully on-device when enabled.",
+    title: "On-device AI by default",
+    description:
+      "Apple Intelligence insights and optional Ollama or LM Studio reports run on your machine. You choose the AI provider in Settings — nothing leaves without your setup.",
     icon: "🤖",
     tint: "bg-brand-blueLight/15 text-brand-blueLight",
   },
   {
-    title: "You stay in control",
-    description: "Grant Full Disk Access only when needed, with clear explanations in the app.",
+    title: "Transparent permissions",
+    description:
+      "Full Disk Access and login-item access are requested only when needed, with in-app explanations — like the Startup Apps panel that describes why each permission helps.",
     icon: "🔒",
     tint: "bg-brand-charcoal/50 text-brand-blueLight",
   },
 ];
 
 const privacyChecks = [
-  "No path or content upload",
-  "On-device SQLite database",
+  "No accounts required",
   "Trash-first cleanup workflow",
-  "Transparent permissions",
+  "Local scan history on device",
+  "Clear permission explanations",
 ];
 
 export function PrivacySection() {
@@ -37,19 +40,18 @@ export function PrivacySection() {
             Private by design
           </p>
           <h2 className="mt-2 text-2xl font-bold text-slate-50 sm:mt-3 sm:text-3xl md:text-4xl">
-            Intelligent analysis without sending your files to the cloud.
+            Smart recommendations without sending your files to the cloud.
           </h2>
           <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400 sm:text-base sm:leading-7">
-            Your storage data is yours. {BRAND_NAME} is designed as a private consultant, not a
-            data collection service — no accounts, no telemetry, and no path or file content upload
-            by default.
+            DiskWise reads your storage and system metrics to give you useful answers — like which
+            apps use the most memory or which startup items you can disable. That work happens on
+            your Mac, not on someone else&apos;s server.
           </p>
           <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400 sm:text-base sm:leading-7">
-            Volume scans, classifications, duplicate hashes, and recommendations are indexed in a
-            local SQLite database on your Mac. Optional Ollama or LM Studio reports stay on-device
-            when you connect them. Cleanup always previews what will move to Trash before you
-            confirm, and Full Disk Access is requested only when broader visibility is needed —
-            with clear explanations in the app.
+            When you clean up, every action is previewed first and files go to Trash by default so
+            you can recover them. The Activity Log keeps a local history of what DiskWise did, and
+            Settings let you tune scanning limits, notifications, menu bar behavior, and AI options
+            without creating an account.
           </p>
         </div>
 
