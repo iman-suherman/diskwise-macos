@@ -77,6 +77,7 @@
 		94D3EF8213E3A2C27E9C0D3E /* 0.6.2.json in Resources */ = {isa = PBXBuildFile; fileRef = B7DB0862BEAD6D13A019D0FD /* 0.6.2.json */; };
 		A00A29FB7A9AB8CF36925A53 /* MemoryInsightActionMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB4C021EC521213A445B557D /* MemoryInsightActionMatcher.swift */; };
 		A1E6344A43CABB46455859D5 /* DuplicateKit in Frameworks */ = {isa = PBXBuildFile; productRef = E44897D5C0C445D604A9F3CB /* DuplicateKit */; };
+		A5D1F53A2E12133F6299236A /* 0.7.10.json in Resources */ = {isa = PBXBuildFile; fileRef = BFACD38CAF28B9B0DB27167D /* 0.7.10.json */; };
 		A8EB01EF6D724668896DB76B /* MemoryIssuePatternsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B279AA786CF5493C396C6AC4 /* MemoryIssuePatternsView.swift */; };
 		A95B375EB57B93CEB3A6A1CA /* 0.6.1.json in Resources */ = {isa = PBXBuildFile; fileRef = 2A6023015E9A7D986EB17D42 /* 0.6.1.json */; };
 		AAAAA899D7754707AAD2D90F /* MemoryActionExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F390C5E410CA72074E3A8BE7 /* MemoryActionExecutor.swift */; };
@@ -106,6 +107,7 @@
 		C9D4B856CC4D658C4888B06B /* ActivityLogSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9652CCD6DFF89AC365DBCD /* ActivityLogSheet.swift */; };
 		CA56034949A15AD6CE384592 /* 0.5.22.json in Resources */ = {isa = PBXBuildFile; fileRef = 678F267499B6726540D41724 /* 0.5.22.json */; };
 		CA7C9CD8FD9293A120418664 /* 0.1.6.json in Resources */ = {isa = PBXBuildFile; fileRef = 5979A1D743A7CB6E68AF97F0 /* 0.1.6.json */; };
+		CE4AB36A51C56EC5E2224FDC /* 0.7.9.json in Resources */ = {isa = PBXBuildFile; fileRef = EB11D325302CCFC42568E31D /* 0.7.9.json */; };
 		CEDB69B1546D36AA03C98FCA /* 0.2.4.json in Resources */ = {isa = PBXBuildFile; fileRef = 609A25A76F7A03E84B6D8448 /* 0.2.4.json */; };
 		CF5EA10F2F59A9990E2B461A /* 0.5.16.json in Resources */ = {isa = PBXBuildFile; fileRef = 755D3336D602D3FBBB813589 /* 0.5.16.json */; };
 		D3FFBBAD657EC2AC111B04A1 /* 0.3.4.json in Resources */ = {isa = PBXBuildFile; fileRef = EA797143DAE648998B02AFE0 /* 0.3.4.json */; };
@@ -244,6 +246,7 @@
 		BBB2B6BB069E423D075EDFE3 /* SystemOptimizationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemOptimizationView.swift; sourceTree = "<group>"; };
 		BCA608DC2B32B3460DC11304 /* ScanScheduleTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanScheduleTabView.swift; sourceTree = "<group>"; };
 		BE77E6EAC751129191A39F6D /* DockScanAnimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockScanAnimator.swift; sourceTree = "<group>"; };
+		BFACD38CAF28B9B0DB27167D /* 0.7.10.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.10.json; sourceTree = "<group>"; };
 		C27E95DFD0F9841389B35E2F /* diskwise_scan.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = diskwise_scan.py; sourceTree = "<group>"; };
 		C91D0D7194E3DC4018956A4D /* 0.1.8.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.8.json; sourceTree = "<group>"; };
 		C936F9E4DDBAE8C20A5F61F8 /* 0.6.4.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.6.4.json; sourceTree = "<group>"; };
@@ -268,6 +271,7 @@
 		EA71528515544DA6FC276B6D /* 0.3.2.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.3.2.json; sourceTree = "<group>"; };
 		EA797143DAE648998B02AFE0 /* 0.3.4.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.3.4.json; sourceTree = "<group>"; };
 		EAC96980391A69DA322FA935 /* 0.5.5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.5.json; sourceTree = "<group>"; };
+		EB11D325302CCFC42568E31D /* 0.7.9.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.9.json; sourceTree = "<group>"; };
 		ECB3AB7371053E74D93E160B /* 0.7.6.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.6.json; sourceTree = "<group>"; };
 		F1FC1DF0971CB5B4441676DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F2B0EC8C9101C78D4830FB22 /* 0.5.10.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.10.json; sourceTree = "<group>"; };
@@ -395,6 +399,8 @@
 				ECB3AB7371053E74D93E160B /* 0.7.6.json */,
 				AF2F3FBB3FF2505786ACA7F7 /* 0.7.7.json */,
 				92A64FF66924AF8BD0190688 /* 0.7.8.json */,
+				EB11D325302CCFC42568E31D /* 0.7.9.json */,
+				BFACD38CAF28B9B0DB27167D /* 0.7.10.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -639,6 +645,7 @@
 				4CB29676DDA65858C1FE9E47 /* 0.6.9.json in Resources */,
 				ADEEBB229E346E98CFE73C02 /* 0.7.0.json in Resources */,
 				37E65E16FE154CA128660458 /* 0.7.1.json in Resources */,
+				A5D1F53A2E12133F6299236A /* 0.7.10.json in Resources */,
 				7363E28A199FEB003256A74F /* 0.7.2.json in Resources */,
 				EB56D9F7608C74B1ED807A5D /* 0.7.3.json in Resources */,
 				BD59F8106D44F5E87359A802 /* 0.7.4.json in Resources */,
@@ -646,6 +653,7 @@
 				91890FA22A9952873A08995C /* 0.7.6.json in Resources */,
 				FEA8DD2C15EB143E7407A90C /* 0.7.7.json in Resources */,
 				EAFEBF74811307EE56C508CF /* 0.7.8.json in Resources */,
+				CE4AB36A51C56EC5E2224FDC /* 0.7.9.json in Resources */,
 				BAC56BC5D44D164A6D1651C3 /* Assets.xcassets in Resources */,
 				7F3FA96EA3B2337449CD40D0 /* diskwise_scan.py in Resources */,
 				E559D2BF705EE1AB7F9CA4EA /* entitlements.mac.plist in Resources */,
@@ -891,14 +899,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7009;
+				CURRENT_PROJECT_VERSION = 7010;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.7.9;
+				MARKETING_VERSION = 0.7.10;
 				OTHER_LDFLAGS = "$(inherited) -weak_framework FoundationModels";
 				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
 				SDKROOT = macosx;
@@ -913,14 +921,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7009;
+				CURRENT_PROJECT_VERSION = 7010;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.7.9;
+				MARKETING_VERSION = 0.7.10;
 				OTHER_LDFLAGS = "$(inherited) -weak_framework FoundationModels";
 				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
 				SDKROOT = macosx;
