@@ -1,0 +1,13 @@
+{
+  "summary": "Configure low-space alerts per drive directly in Disk Analysis — a new Notifications tab beside Insights.",
+  "introduced": [
+    "Disk Analysis — Notifications tab — per-drive low-space alert toggles, custom thresholds, and live status for the selected volume"
+  ],
+  "changed": [
+    "Settings → Notifications — per-drive overrides sync with Disk Analysis; global disk and memory notification toggles stay in Settings"
+  ],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

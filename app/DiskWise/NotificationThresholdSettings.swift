@@ -41,6 +41,15 @@ struct DiskNotificationResolvedSettings: Equatable {
     let thresholdMode: NotificationThresholdMode
     let freePercent: Int
     let freeGigabytes: Double
+
+    var alertDescription: String {
+        switch thresholdMode {
+        case .percentage:
+            return "Alert when free space drops below \(freePercent)%"
+        case .absolute:
+            return String(format: "Alert when free space drops below %.1f GB", freeGigabytes)
+        }
+    }
 }
 
 enum NotificationThresholdDefaults {
