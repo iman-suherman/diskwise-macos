@@ -80,7 +80,7 @@ struct DeviceSidebarRow: View {
                     .foregroundStyle(.secondary)
 
                 ProgressView(value: volume.usageFraction)
-                    .tint(usageColor(for: volume.usageFraction))
+                    .tint(MenuBarDiskThresholds.statusColor(for: volume))
 
                 HStack(spacing: 6) {
                     Text("\(DiskWiseFormatters.bytes.string(fromByteCount: volume.freeSize)) free")
@@ -162,14 +162,6 @@ struct DeviceSidebarRow: View {
                 }
                 .disabled(isEjectDisabled)
             }
-        }
-    }
-
-    private func usageColor(for fraction: Double) -> Color {
-        switch fraction {
-        case 0.9...: return .red
-        case 0.75..<0.9: return .orange
-        default: return .accentColor
         }
     }
 }

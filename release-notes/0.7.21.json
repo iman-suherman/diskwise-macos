@@ -1,0 +1,12 @@
+{
+  "summary": "Disk space colors now turn red only when a drive crosses your notification alert threshold — not at fixed 10% free.",
+  "introduced": [],
+  "changed": [
+    "Menu bar and Disk Analysis — free-space labels use red only below your configured alert threshold; orange below 25% free, green otherwise",
+    "Device sidebar — drive usage bars follow the same threshold-based red and standard green/orange grading"
+  ],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

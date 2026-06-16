@@ -68,10 +68,10 @@ final class SystemVolumeMonitor: ObservableObject {
     private func refreshInterval(for volume: MountedVolume?) -> Duration {
         guard let volume else { return .seconds(60) }
         let freeFraction = max(0, 1 - volume.usageFraction)
-        if MenuBarDiskThresholds.isCriticallyLow(freeSize: volume.freeSize) {
+        if MenuBarDiskThresholds.isBelowAlertThreshold(for: volume) {
             return .seconds(15)
         }
-        if freeFraction < 0.15 {
+        if freeFraction < 0.25 {
             return .seconds(30)
         }
         return .seconds(60)
@@ -107,29 +107,40 @@ final class SystemVolumeMonitor: ObservableObject {
     }
 }
 
+@MainActor
 enum MenuBarDiskThresholds {
-    static var physicalMemoryBytes: Int64 {
-        Int64(ProcessInfo.processInfo.physicalMemory)
+    /// Free space below 25% — orange in standard grading (not alert red).
+    static let standardOrangeFreeFraction = 0.25
+
+    static func isBelowAlertThreshold(
+        for volume: MountedVolume,
+        settings: AppSettings = .shared
+    ) -> Bool {
+        guard let resolved = settings.resolvedDiskNotificationSettings(for: volume) else { return false }
+        return NotificationThresholdLogic.isDiskLowOnSpace(
+            freeSize: volume.freeSize,
+            totalSize: volume.totalSize,
+            settings: resolved
+        )
     }
 
-    static func isCriticallyLow(freeSize: Int64) -> Bool {
-        freeSize < physicalMemoryBytes * 2
-    }
-
-    /// Matches Disk Analysis Overview free-space accent: green when healthy, orange when low, red when critical.
-    static func statusColor(freeSize: Int64, freeFraction: Double) -> Color {
-        let fraction = max(0, min(1, freeFraction))
-        if isCriticallyLow(freeSize: freeSize) || fraction < 0.10 {
+    /// Red only when below the notification alert threshold; otherwise green/orange grading.
+    static func statusColor(
+        for volume: MountedVolume,
+        settings: AppSettings = .shared
+    ) -> Color {
+        if isBelowAlertThreshold(for: volume, settings: settings) {
             return .red
         }
-        if fraction < 0.25 {
+        return standardStatusColor(freeFraction: max(0, 1 - volume.usageFraction))
+    }
+
+    static func standardStatusColor(freeFraction: Double) -> Color {
+        let fraction = max(0, min(1, freeFraction))
+        if fraction < standardOrangeFreeFraction {
             return .orange
         }
         return .green
-    }
-
-    static func statusColor(for volume: MountedVolume) -> Color {
-        statusColor(freeSize: volume.freeSize, freeFraction: max(0, 1 - volume.usageFraction))
     }
 }
 
