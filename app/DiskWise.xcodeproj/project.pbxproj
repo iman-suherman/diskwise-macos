@@ -112,6 +112,7 @@
 		C23802B4AAF74663F4B08133 /* VolumeKeepAwakePulse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A56F4CF3526711AAE9AE7B /* VolumeKeepAwakePulse.swift */; };
 		C256930CBBDF46341022ACC3 /* 0.1.10.json in Resources */ = {isa = PBXBuildFile; fileRef = 68AEC5E5D4795F6522D2BDFF /* 0.1.10.json */; };
 		C3431BB2FF1AC970B0753F56 /* 0.6.7.json in Resources */ = {isa = PBXBuildFile; fileRef = 48D63726017BAD71010C8039 /* 0.6.7.json */; };
+		C45BFE7BD7BBC50105815665 /* 0.7.20.json in Resources */ = {isa = PBXBuildFile; fileRef = 5FC887AAEF199DA5B2A55208 /* 0.7.20.json */; };
 		C61435492234EF4EFEB45B5C /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BF737B0AA3066062F3881A4 /* StatusBadge.swift */; };
 		C84FBDE95F4E69048130E448 /* 0.5.6.json in Resources */ = {isa = PBXBuildFile; fileRef = AFD9C0D25CF62C96CB4B8902 /* 0.5.6.json */; };
 		C9D4B856CC4D658C4888B06B /* ActivityLogSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9652CCD6DFF89AC365DBCD /* ActivityLogSheet.swift */; };
@@ -206,6 +207,7 @@
 		585C27DC3BE99A64AEDE2C68 /* 0.3.3.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.3.3.json; sourceTree = "<group>"; };
 		5979A1D743A7CB6E68AF97F0 /* 0.1.6.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.1.6.json; sourceTree = "<group>"; };
 		59BE6D4E63982B3DA6147788 /* 0.5.21.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.21.json; sourceTree = "<group>"; };
+		5FC887AAEF199DA5B2A55208 /* 0.7.20.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.20.json; sourceTree = "<group>"; };
 		609A25A76F7A03E84B6D8448 /* 0.2.4.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.2.4.json; sourceTree = "<group>"; };
 		61EB1B1E7AD0267851557FD9 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		64E3813DA348AA12313FC982 /* SystemStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemStatusView.swift; sourceTree = "<group>"; };
@@ -437,6 +439,7 @@
 				A60E9F642DCE99AD821E43DF /* 0.7.17.json */,
 				6E0D1C9A3ACA36DCEBCB0755 /* 0.7.18.json */,
 				25779B4280CF1B5976FA9CEA /* 0.7.19.json */,
+				5FC887AAEF199DA5B2A55208 /* 0.7.20.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -695,6 +698,7 @@
 				71D4689F4BD655873CE326F5 /* 0.7.18.json in Resources */,
 				6621EB0DF525473982B4F50D /* 0.7.19.json in Resources */,
 				7363E28A199FEB003256A74F /* 0.7.2.json in Resources */,
+				C45BFE7BD7BBC50105815665 /* 0.7.20.json in Resources */,
 				EB56D9F7608C74B1ED807A5D /* 0.7.3.json in Resources */,
 				BD59F8106D44F5E87359A802 /* 0.7.4.json in Resources */,
 				5DFD07E54D9D275EAA4738AB /* 0.7.5.json in Resources */,
@@ -951,14 +955,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7021;
+				CURRENT_PROJECT_VERSION = 7022;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.7.21;
+				MARKETING_VERSION = 0.7.22;
 				OTHER_LDFLAGS = "$(inherited) -weak_framework FoundationModels";
 				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
 				SDKROOT = macosx;
@@ -973,14 +977,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7021;
+				CURRENT_PROJECT_VERSION = 7022;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.7.21;
+				MARKETING_VERSION = 0.7.22;
 				OTHER_LDFLAGS = "$(inherited) -weak_framework FoundationModels";
 				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
 				SDKROOT = macosx;
