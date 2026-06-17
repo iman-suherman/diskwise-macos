@@ -9,11 +9,22 @@ final class KeepAwakeController: ObservableObject {
 
     @Published private(set) var isActive = false
     @Published private(set) var activeVolumePaths: Set<String> = []
+    @Published private(set) var isPreventingSystemSleep = false
 
     private var diskIdleAssertionID: IOPMAssertionID = 0
+    private var systemSleepAssertionID: IOPMAssertionID = 0
     private var keepAliveTask: Task<Void, Never>?
 
     private init() {}
+
+    /// Prevents idle system sleep while DiskWise runs. Display sleep is not blocked.
+    func applyPreventSystemSleep(_ enabled: Bool) {
+        if enabled {
+            activateSystemSleepAssertion()
+        } else {
+            releaseSystemSleepAssertion()
+        }
+    }
 
     func apply(volumePaths: Set<String>) {
         deactivate()
@@ -43,6 +54,33 @@ final class KeepAwakeController: ObservableObject {
         if result != kIOReturnSuccess {
             diskIdleAssertionID = 0
         }
+    }
+
+    private func activateSystemSleepAssertion() {
+        guard systemSleepAssertionID == 0 else { return }
+
+        let reason = "DiskWise Keep Mac Awake" as CFString
+        let assertionType = "PreventUserIdleSystemSleep" as CFString
+        let result = IOPMAssertionCreateWithName(
+            assertionType,
+            IOPMAssertionLevel(kIOPMAssertionLevelOn),
+            reason,
+            &systemSleepAssertionID
+        )
+        if result != kIOReturnSuccess {
+            systemSleepAssertionID = 0
+            isPreventingSystemSleep = false
+        } else {
+            isPreventingSystemSleep = true
+        }
+    }
+
+    private func releaseSystemSleepAssertion() {
+        if systemSleepAssertionID != 0 {
+            IOPMAssertionRelease(systemSleepAssertionID)
+            systemSleepAssertionID = 0
+        }
+        isPreventingSystemSleep = false
     }
 
     private func startKeepAliveTask(for paths: Set<String>) {

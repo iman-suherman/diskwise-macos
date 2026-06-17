@@ -75,6 +75,7 @@ final class AppSettings: ObservableObject {
         static let showMenuBarHealthScore = "diskwise.settings.showMenuBarHealthScore"
         static let keepAwakeEnabled = "diskwise.settings.keepAwakeEnabled"
         static let keepAwakeVolumePaths = "diskwise.settings.keepAwakeVolumePaths"
+        static let preventSystemSleepWhileRunning = "diskwise.settings.preventSystemSleepWhileRunning"
         static let hideFromDock = "diskwise.settings.hideFromDock"
         static let launchAtLogin = "diskwise.settings.launchAtLogin"
         static let memoryAnalyzerEnabled = "diskwise.settings.memoryAnalyzerEnabled"
@@ -164,6 +165,16 @@ final class AppSettings: ObservableObject {
                 forKey: Keys.keepAwakeVolumePaths
             )
             syncKeepAwakeState()
+        }
+    }
+
+    @Published var preventSystemSleepWhileRunning: Bool {
+        didSet {
+            UserDefaults.standard.set(
+                preventSystemSleepWhileRunning,
+                forKey: Keys.preventSystemSleepWhileRunning
+            )
+            syncPreventSystemSleepState()
         }
     }
 
@@ -372,6 +383,10 @@ final class AppSettings: ObservableObject {
         KeepAwakeController.shared.apply(volumePaths: resolvedKeepAwakeVolumePaths())
     }
 
+    private func syncPreventSystemSleepState() {
+        KeepAwakeController.shared.applyPreventSystemSleep(preventSystemSleepWhileRunning)
+    }
+
     func setHideFromDock(_ hidden: Bool) {
         hideFromDock = hidden
         DockVisibilityController.apply(hidden: hidden)
@@ -498,6 +513,12 @@ final class AppSettings: ObservableObject {
         } else {
             keepAwakeVolumePaths = []
         }
+        if defaults.object(forKey: Keys.preventSystemSleepWhileRunning) == nil,
+           defaults.bool(forKey: Keys.keepAwakeEnabled) {
+            preventSystemSleepWhileRunning = true
+        } else {
+            preventSystemSleepWhileRunning = defaults.bool(forKey: Keys.preventSystemSleepWhileRunning)
+        }
         if defaults.object(forKey: Keys.launchAtLogin) == nil {
             launchAtLogin = MenuBarMonitorController.launchAtLoginEnabled
         } else {
@@ -558,6 +579,7 @@ final class AppSettings: ObservableObject {
             stored: defaults.stringArray(forKey: Keys.menuPaneOrder)
         )
         syncKeepAwakeState()
+        syncPreventSystemSleepState()
     }
 
     static func resolvedMenuPaneOrder(stored: [String]?) -> [DetailPane] {
@@ -624,6 +646,7 @@ final class AppSettings: ObservableObject {
         menuBarFreeSpaceVolumePaths = []
         showMenuBarHealthScore = false
         keepAwakeVolumePaths = []
+        preventSystemSleepWhileRunning = false
         hideFromDock = false
         launchAtLogin = false
         memoryAnalyzerEnabled = true

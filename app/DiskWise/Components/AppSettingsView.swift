@@ -42,6 +42,7 @@ struct AppSettingsView: View {
     var embeddedInPanel: Bool = false
 
     @State private var selectedTab: AppSettingsTab = .scanning
+    @ObservedObject private var keepAwake = KeepAwakeController.shared
 
     var body: some View {
         Group {
@@ -252,6 +253,33 @@ struct AppSettingsView: View {
                     Button("Open Login Items Settings") {
                         MenuBarMonitorController.openLoginItemsSettingsForApproval()
                     }
+                }
+            }
+
+            Section("Power") {
+                Toggle(
+                    "Keep Mac awake while DiskWise is running",
+                    isOn: $settings.preventSystemSleepWhileRunning
+                )
+
+                Text(
+                    "Prevents your Mac from sleeping while DiskWise is open so long scans, scheduled jobs, and background analysis can finish. Your screen can still turn off and lock normally — only system sleep is blocked."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+                Text(
+                    "Separate from Keep Disks Awake in Menu Bar settings, which only stops selected drives from spinning down and does not prevent Mac sleep."
+                )
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+
+                if keepAwake.isPreventingSystemSleep {
+                    Label("System sleep is currently prevented", systemImage: "bolt.fill")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
                 }
             }
 

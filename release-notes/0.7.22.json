@@ -1,0 +1,11 @@
+{
+  "summary": "Settings can keep your Mac awake during long DiskWise work while your screen still turns off normally.",
+  "introduced": [
+    "Settings → General → Power — Keep Mac awake while DiskWise is running prevents system sleep during scans and scheduled jobs; display can still dim, turn off, and lock"
+  ],
+  "changed": [],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}
