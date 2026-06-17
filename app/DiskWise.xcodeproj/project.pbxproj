@@ -68,6 +68,7 @@
 		72866D3338346773621D17C0 /* StorageCleanupInsightsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF84008C7D0F508E5B8F5851 /* StorageCleanupInsightsSection.swift */; };
 		72B2EA208FA6F23B1F8A8F97 /* 0.1.9.json in Resources */ = {isa = PBXBuildFile; fileRef = B1C8159FF48669E7295F9738 /* 0.1.9.json */; };
 		7363E28A199FEB003256A74F /* 0.7.2.json in Resources */ = {isa = PBXBuildFile; fileRef = DE4613CFBCD420C3DE913DEC /* 0.7.2.json */; };
+		744CAB7C44A49FEC7AED76EF /* 0.7.21.json in Resources */ = {isa = PBXBuildFile; fileRef = 93124FE461E9ACC993C3D5BA /* 0.7.21.json */; };
 		75E2033E8389AC2CF2A55666 /* ActivityLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57BB2C32DA1EC6AD699DBDBD /* ActivityLog.swift */; };
 		7D3DB7CE2ED58186491D8C35 /* 0.5.5.json in Resources */ = {isa = PBXBuildFile; fileRef = EAC96980391A69DA322FA935 /* 0.5.5.json */; };
 		7F3FA96EA3B2337449CD40D0 /* diskwise_scan.py in Resources */ = {isa = PBXBuildFile; fileRef = C27E95DFD0F9841389B35E2F /* diskwise_scan.py */; };
@@ -242,6 +243,7 @@
 		8DE0414EB1623E719F460CAE /* MenuBarHealthScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarHealthScore.swift; sourceTree = "<group>"; };
 		9040D8189C7D40E73615348C /* MemoryInsightNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryInsightNotificationService.swift; sourceTree = "<group>"; };
 		92A64FF66924AF8BD0190688 /* 0.7.8.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.8.json; sourceTree = "<group>"; };
+		93124FE461E9ACC993C3D5BA /* 0.7.21.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.21.json; sourceTree = "<group>"; };
 		950473F382728BB7A8C75C98 /* LaunchSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchSnapshotStore.swift; sourceTree = "<group>"; };
 		955E6302377D998824A2996E /* DiskWiseApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskWiseApp.swift; sourceTree = "<group>"; };
 		9604CB761CB34350EFF29978 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -440,6 +442,7 @@
 				6E0D1C9A3ACA36DCEBCB0755 /* 0.7.18.json */,
 				25779B4280CF1B5976FA9CEA /* 0.7.19.json */,
 				5FC887AAEF199DA5B2A55208 /* 0.7.20.json */,
+				93124FE461E9ACC993C3D5BA /* 0.7.21.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -699,6 +702,7 @@
 				6621EB0DF525473982B4F50D /* 0.7.19.json in Resources */,
 				7363E28A199FEB003256A74F /* 0.7.2.json in Resources */,
 				C45BFE7BD7BBC50105815665 /* 0.7.20.json in Resources */,
+				744CAB7C44A49FEC7AED76EF /* 0.7.21.json in Resources */,
 				EB56D9F7608C74B1ED807A5D /* 0.7.3.json in Resources */,
 				BD59F8106D44F5E87359A802 /* 0.7.4.json in Resources */,
 				5DFD07E54D9D275EAA4738AB /* 0.7.5.json in Resources */,
@@ -955,14 +959,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7022;
+				CURRENT_PROJECT_VERSION = 7023;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.7.22;
+				MARKETING_VERSION = 0.7.23;
 				OTHER_LDFLAGS = "$(inherited) -weak_framework FoundationModels";
 				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
 				SDKROOT = macosx;
@@ -977,14 +981,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7022;
+				CURRENT_PROJECT_VERSION = 7023;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.7.22;
+				MARKETING_VERSION = 0.7.23;
 				OTHER_LDFLAGS = "$(inherited) -weak_framework FoundationModels";
 				PRODUCT_BUNDLE_IDENTIFIER = net.suherman.diskwise;
 				SDKROOT = macosx;
