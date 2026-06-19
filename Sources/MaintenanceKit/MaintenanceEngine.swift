@@ -54,6 +54,18 @@ public final class MaintenanceEngine: @unchecked Sendable {
         appUninstallScanner.scan(isCancelled: isCancelled)
     }
 
+    public func refreshInstalledApp(_ app: InstalledApp) -> InstalledApp? {
+        appUninstallScanner.refreshInstalledApp(app)
+    }
+
+    public func refreshInstalledApps(_ apps: [InstalledApp]) -> [InstalledApp] {
+        appUninstallScanner.refreshInstalledApps(apps)
+    }
+
+    public func appBundleExists(_ app: InstalledApp) -> Bool {
+        appUninstallScanner.appBundleExists(app)
+    }
+
     public func systemSnapshot() -> SystemSnapshot {
         systemMonitor.snapshot()
     }
@@ -80,6 +92,19 @@ public final class MaintenanceEngine: @unchecked Sendable {
 
     public func uninstallApp(_ app: InstalledApp, includeAppBundle: Bool = true) -> CleanupResult {
         let entries = appUninstallScanner.entriesForUninstall(app: app, includeAppBundle: includeAppBundle)
+        guard !entries.isEmpty else {
+            return CleanupResult(
+                movedCount: 0,
+                movedBytes: 0,
+                trashedURLs: [],
+                failures: [
+                    CleanupFailure(
+                        path: app.bundlePath,
+                        reason: "Nothing left to remove — the app and its support files are already gone."
+                    ),
+                ]
+            )
+        }
         return executeCleanup(entries: entries)
     }
 

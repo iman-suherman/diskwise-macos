@@ -148,6 +148,11 @@ enum SidebarSelection: Hashable {
     case pane(DetailPane)
 }
 
+struct AppUninstallOutcome {
+    let result: CleanupResult
+    let bundleWasMissing: Bool
+}
+
 enum AppStatusKind {
     case ready
     case working
@@ -2937,14 +2942,39 @@ final class AppViewModel: ObservableObject {
         scanMaintenance(.apfsSnapshots)
     }
 
-    func uninstallSelectedApp(_ app: InstalledApp) {
+    func refreshInstalledAppsList() {
+        installedApps = maintenanceEngine.refreshInstalledApps(installedApps)
+    }
+
+    @discardableResult
+    func uninstallSelectedApp(_ app: InstalledApp) -> AppUninstallOutcome {
+        let bundleWasMissing = !maintenanceEngine.appBundleExists(app)
         setStatus("Uninstalling \(app.name)…", kind: .working)
-        let result = maintenanceEngine.uninstallApp(app)
-        reportCleanupResult(result)
-        selectedAppForUninstall = nil
-        if result.movedCount > 0 {
-            scanMaintenance(.appUninstall)
+
+        let appForCleanup = maintenanceEngine.refreshInstalledApp(app) ?? app
+        let result = maintenanceEngine.uninstallApp(appForCleanup, includeAppBundle: !bundleWasMissing)
+
+        if bundleWasMissing, result.movedCount > 0 {
+            let detail = "\(result.movedCount) leftover files · \(DiskWiseFormatters.bytes.string(fromByteCount: result.movedBytes))"
+            logActivity(.cleanup, "Removed leftover files for \(app.name)", detail: detail)
+            setStatus(
+                "Removed leftover files for \(app.name) (\(DiskWiseFormatters.bytes.string(fromByteCount: result.movedBytes)))",
+                kind: .success
+            )
+        } else {
+            reportCleanupResult(result)
         }
+
+        selectedAppForUninstall = nil
+
+        if result.movedCount > 0 || bundleWasMissing {
+            installedApps.removeAll { $0.id == app.id }
+            if result.movedCount > 0 {
+                scanMaintenance(.appUninstall)
+            }
+        }
+
+        return AppUninstallOutcome(result: result, bundleWasMissing: bundleWasMissing)
     }
 
     func runOptimizationTask(_ task: OptimizationTask) {

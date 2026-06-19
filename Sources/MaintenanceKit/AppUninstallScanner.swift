@@ -3,20 +3,26 @@ import Foundation
 public final class AppUninstallScanner: @unchecked Sendable {
     private let fileManager: FileManager
     private let homeDirectory: String
+    private let applicationRoots: [String]
 
-    public init(fileManager: FileManager = .default, homeDirectory: String? = nil) {
+    public init(
+        fileManager: FileManager = .default,
+        homeDirectory: String? = nil,
+        applicationRoots: [String]? = nil
+    ) {
         self.fileManager = fileManager
-        self.homeDirectory = homeDirectory ?? fileManager.homeDirectoryForCurrentUser.path
+        let resolvedHome = homeDirectory ?? fileManager.homeDirectoryForCurrentUser.path
+        self.homeDirectory = resolvedHome
+        self.applicationRoots = applicationRoots ?? [
+            "/Applications",
+            (resolvedHome as NSString).appendingPathComponent("Applications"),
+        ]
     }
 
     public func scan(isCancelled: (@Sendable () -> Bool)? = nil) -> [InstalledApp] {
         var apps: [InstalledApp] = []
-        let roots = [
-            "/Applications",
-            (homeDirectory as NSString).appendingPathComponent("Applications"),
-        ]
 
-        for root in roots {
+        for root in applicationRoots {
             if isCancelled?() == true { break }
             guard let contents = try? fileManager.contentsOfDirectory(atPath: root) else { continue }
             for name in contents where name.hasSuffix(".app") {
@@ -29,6 +35,33 @@ public final class AppUninstallScanner: @unchecked Sendable {
         }
 
         return apps.sorted { $0.totalSize > $1.totalSize }
+    }
+
+    public func appBundleExists(_ app: InstalledApp) -> Bool {
+        fileManager.fileExists(atPath: app.bundlePath)
+    }
+
+    /// Re-validates bundle and related files against disk. Returns `nil` when nothing remains.
+    public func refreshInstalledApp(_ app: InstalledApp) -> InstalledApp? {
+        if fileManager.fileExists(atPath: app.bundlePath) {
+            return makeInstalledApp(bundlePath: app.bundlePath)
+        }
+
+        let leftovers = relatedFiles(forAppName: app.name, bundleID: app.bundleID)
+        guard !leftovers.isEmpty else { return nil }
+
+        return InstalledApp(
+            name: app.name,
+            bundlePath: app.bundlePath,
+            bundleID: app.bundleID,
+            size: 0,
+            version: app.version,
+            relatedFiles: leftovers
+        )
+    }
+
+    public func refreshInstalledApps(_ apps: [InstalledApp]) -> [InstalledApp] {
+        apps.compactMap { refreshInstalledApp($0) }
     }
 
     private func makeInstalledApp(bundlePath: String) -> InstalledApp? {
@@ -128,8 +161,8 @@ public final class AppUninstallScanner: @unchecked Sendable {
     }
 
     public func entriesForUninstall(app: InstalledApp, includeAppBundle: Bool = true) -> [MaintenanceEntry] {
-        var entries = app.relatedFiles
-        if includeAppBundle {
+        var entries = app.relatedFiles.filter { fileManager.fileExists(atPath: $0.path) }
+        if includeAppBundle, fileManager.fileExists(atPath: app.bundlePath) {
             entries.insert(
                 MaintenanceEntry(
                     path: app.bundlePath,

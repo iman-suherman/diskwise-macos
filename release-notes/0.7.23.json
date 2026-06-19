@@ -1,0 +1,14 @@
+{
+  "summary": "Uninstall Apps no longer shows apps you already deleted, and failed uninstalls now explain what went wrong.",
+  "introduced": [],
+  "changed": [
+    "Uninstall Apps — opening the tab re-validates the app list against disk so manually deleted apps disappear without a full rescan"
+  ],
+  "fixed": [
+    "Uninstall Apps — ghost entries for apps already removed from Applications are dropped from the list on refresh",
+    "Uninstall Apps — failed uninstall now shows an alert explaining why nothing moved (e.g. app already gone or Full Disk Access needed) instead of failing silently"
+  ],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

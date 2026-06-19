@@ -403,6 +403,8 @@ private struct AppUninstallPanel: View {
     @EnvironmentObject private var viewModel: AppViewModel
     @State private var appPendingUninstall: InstalledApp?
     @State private var showUninstallConfirm = false
+    @State private var showUninstallFailureAlert = false
+    @State private var uninstallFailureMessage = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -449,11 +451,19 @@ private struct AppUninstallPanel: View {
         }
         .padding(.horizontal, 28)
         .padding(.bottom, 28)
+        .onAppear {
+            viewModel.refreshInstalledAppsList()
+        }
         .alert("Uninstall \(appPendingUninstall?.name ?? "app")?", isPresented: $showUninstallConfirm) {
             Button("Cancel", role: .cancel) {}
             Button("Move to Trash", role: .destructive) {
                 if let app = appPendingUninstall {
-                    viewModel.uninstallSelectedApp(app)
+                    let outcome = viewModel.uninstallSelectedApp(app)
+                    if outcome.result.movedCount == 0,
+                       let message = uninstallFailureMessage(for: outcome, appName: app.name) {
+                        uninstallFailureMessage = message
+                        showUninstallFailureAlert = true
+                    }
                 }
             }
         } message: {
@@ -461,6 +471,29 @@ private struct AppUninstallPanel: View {
                 Text("This moves \(app.name) and \(app.relatedFiles.count) related items to Trash. You can restore them from Finder.")
             }
         }
+        .alert("Could not uninstall app", isPresented: $showUninstallFailureAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(uninstallFailureMessage)
+        }
+    }
+
+    private func uninstallFailureMessage(for outcome: AppUninstallOutcome, appName: String) -> String? {
+        guard outcome.result.movedCount == 0 else { return nil }
+
+        if outcome.bundleWasMissing {
+            if let first = outcome.result.failures.first {
+                return "\(appName) was already removed from Applications. \(first.reason)"
+            }
+            return "\(appName) was already removed from Applications and has no leftover support files."
+        }
+
+        if let first = outcome.result.failures.first {
+            let name = URL(fileURLWithPath: first.path).lastPathComponent
+            return "\(name): \(first.reason)"
+        }
+
+        return "No files were moved to Trash for \(appName). Try granting Full Disk Access, then scan again."
     }
 }
 
