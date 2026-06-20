@@ -26,6 +26,16 @@ const DEPLOY_TARGETS = [
     branch: DEFAULT_BRANCH,
     npmScript: "deploy:registry",
   },
+  {
+    repo: "diskwise-app",
+    label: "DiskWise macOS DMG",
+    branch: DEFAULT_BRANCH,
+    npmScript: "release:direct",
+    details: [
+      "Manual: npm run release",
+      "Retry: npm run diskwise:deploy:retry -- --repo diskwise-app",
+    ],
+  },
 ];
 
 function getDeployTarget(repo) {

@@ -28,6 +28,7 @@
     "sign": "bash scripts/sign.sh",
     "package": "bash scripts/package.sh",
     "release": "node scripts/release-publish.cjs",
+    "release:direct": "node scripts/release-publish.cjs",
     "delete:version": "node scripts/delete-version.cjs",
     "republish:notes": "node scripts/republish-notes.cjs",
     "republish:notes:all": "node scripts/republish-all-notes.cjs",

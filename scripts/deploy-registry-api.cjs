@@ -7,12 +7,31 @@ const path = require("path");
 const { resolveGcpProjectId } = require("./gcp-config.cjs");
 const { applyGcpEnv } = require("./apply-gcp-env.cjs");
 const { loadDotenv } = require("./load-dotenv.cjs");
+const { getDeployTarget } = require("./deploy-config.cjs");
+const { recordDirectDeployOutcome } = require("./deploy-record-direct.cjs");
 
 const root = path.join(__dirname, "..");
 const serviceDir = path.join(root, "services", "registry-api");
 const shell = process.platform === "win32";
+const DEPLOY_REPO = "diskwise-registry";
+const DEPLOY_NPM_SCRIPT = "deploy:registry";
+const deployTarget = getDeployTarget(DEPLOY_REPO);
+const deployStartedAt = new Date().toISOString();
+
+function recordDeploy(status, { exitCode = 0, error = null } = {}) {
+  recordDirectDeployOutcome({
+    repo: DEPLOY_REPO,
+    label: deployTarget?.label,
+    npmScript: DEPLOY_NPM_SCRIPT,
+    status,
+    startedAt: deployStartedAt,
+    exitCode,
+    error,
+  });
+}
 
 function fail(message) {
+  recordDeploy("failure", { exitCode: 1, error: message });
   console.error(`deploy:registry: ${message}`);
   process.exit(1);
 }
@@ -25,7 +44,10 @@ function run(command, args, options = {}) {
     env: process.env,
   });
   if (r.error) throw r.error;
-  if (r.status !== 0) process.exit(r.status ?? 1);
+  if (r.status !== 0) {
+    recordDeploy("failure", { exitCode: r.status ?? 1, error: `${command} exited ${r.status ?? 1}` });
+    process.exit(r.status ?? 1);
+  }
 }
 
 function main() {
@@ -102,6 +124,7 @@ function main() {
   ]);
 
   console.log("deploy:registry: done");
+  recordDeploy("success", { exitCode: 0 });
 }
 
 main();

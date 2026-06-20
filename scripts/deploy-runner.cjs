@@ -21,6 +21,7 @@ const {
   recordActivity,
 } = require("./deploy-store.cjs");
 const { loadDotenv } = require("./load-dotenv.cjs");
+const { RUNNER_ENV } = require("./deploy-record-direct.cjs");
 const { resolveGcpProjectId } = require("./gcp-config.cjs");
 const { getProjectAdcPath } = require("./gcp-lib-adc.cjs");
 
@@ -116,7 +117,7 @@ function runDeploy(target, logFile, deploymentId, background) {
 
     const child = spawn("npm", ["run", target.npmScript], {
       cwd: REPO_ROOT,
-      env: process.env,
+      env: { ...process.env, [RUNNER_ENV]: "1" },
       stdio: ["ignore", "pipe", "pipe"],
       shell,
     });
