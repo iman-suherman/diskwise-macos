@@ -17,8 +17,9 @@ const DEPLOY_TARGETS = [
   {
     repo: "diskwise-download",
     label: "diskwise-download.suherman.net",
+    infraDeploy: true,
     note: "manual",
-    details: ["Deploy from suherman-net-infra when download proxy is configured"],
+    details: ["Deploy from suherman-net-infra: npm run cloudflare:diskwise -- --skip-website --skip-registry"],
   },
   {
     repo: "diskwise-registry",
