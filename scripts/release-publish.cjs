@@ -7,7 +7,7 @@ const path = require("path");
 const { loadDotenv } = require("./load-dotenv.cjs");
 const { getLatestPluginRelease, markReleaseCheckpoint } = require("./registry-read.cjs");
 const { bumpSemver, assertSemver } = require("./semver.cjs");
-const { suggestBumpLevel, getCommits, isMetaCommit } = require("./generate-release-notes.cjs");
+const { suggestBumpLevel, getCommits, isMetaCommit, getChangedFiles } = require("./generate-release-notes.cjs");
 const { uploadRelease, dmgFileName, resolveAppId } = require("./upload-release.cjs");
 const { syncAppVersion } = require("./sync-app-version.cjs");
 const { getDeployTarget } = require("./deploy-config.cjs");
@@ -79,6 +79,21 @@ function isPostReleaseSyncOnly(commits) {
   return commits.every((commit) => {
     const subject = commit.subject.trim();
     return isMetaCommit(subject) || POST_RELEASE_SYNC_PATTERN.test(subject);
+  });
+}
+
+function isDeployCheckpointOnlyChange(changedFiles) {
+  if (!changedFiles.length) return true;
+  return changedFiles.every((file) => {
+    if (file.startsWith("scripts/")) return true;
+    if (file.startsWith("release-notes/")) return true;
+    if (file.startsWith("logs/")) return true;
+    if (file === "package.json") return true;
+    if (file === "app/project.yml") return true;
+    if (file === "app/DiskWise/Info.plist") return true;
+    if (file.startsWith("app/DiskWise.xcodeproj/")) return true;
+    if (file.startsWith("app/DiskWise/Assets.xcassets/")) return true;
+    return false;
   });
 }
 
@@ -221,6 +236,23 @@ async function main() {
       headCommit,
       version: releaseState.lastReleasedVersion,
       reason: "post-release Xcode sync only",
+    });
+    return;
+  }
+
+  const changeRange = lastCommit ? `${lastCommit}..HEAD` : "HEAD";
+  const changedFiles = getChangedFiles(changeRange);
+  if (
+    !force &&
+    lastCommit &&
+    releaseState.lastReleasedVersion &&
+    isDeployCheckpointOnlyChange(changedFiles)
+  ) {
+    await syncPublishedReleaseCheckpoint({
+      appId,
+      headCommit,
+      version: releaseState.lastReleasedVersion,
+      reason: `v${releaseState.lastReleasedVersion} already published (deploy checkpoint only)`,
     });
     return;
   }

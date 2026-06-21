@@ -411,6 +411,7 @@ module.exports = {
   suggestBumpLevel,
   getCommits,
   getPreviousReleaseTag,
+  getChangedFiles,
   isMetaCommit,
   analyzeChanges,
   buildMarkdown,
