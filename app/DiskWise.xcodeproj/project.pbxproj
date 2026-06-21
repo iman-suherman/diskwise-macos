@@ -115,6 +115,7 @@
 		C0AAFDD1A73DEA203B988C30 /* MemoryInsightChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7651FCF0CBEA357BEBDCFA2D /* MemoryInsightChatView.swift */; };
 		C23802B4AAF74663F4B08133 /* VolumeKeepAwakePulse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A56F4CF3526711AAE9AE7B /* VolumeKeepAwakePulse.swift */; };
 		C256930CBBDF46341022ACC3 /* 0.1.10.json in Resources */ = {isa = PBXBuildFile; fileRef = 68AEC5E5D4795F6522D2BDFF /* 0.1.10.json */; };
+		C2F653ED2F0E798CACB10C7D /* 0.7.25.json in Resources */ = {isa = PBXBuildFile; fileRef = EACA58C43E1CC245A219E4A3 /* 0.7.25.json */; };
 		C3431BB2FF1AC970B0753F56 /* 0.6.7.json in Resources */ = {isa = PBXBuildFile; fileRef = 48D63726017BAD71010C8039 /* 0.6.7.json */; };
 		C45BFE7BD7BBC50105815665 /* 0.7.20.json in Resources */ = {isa = PBXBuildFile; fileRef = 5FC887AAEF199DA5B2A55208 /* 0.7.20.json */; };
 		C61435492234EF4EFEB45B5C /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BF737B0AA3066062F3881A4 /* StatusBadge.swift */; };
@@ -306,6 +307,7 @@
 		EA71528515544DA6FC276B6D /* 0.3.2.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.3.2.json; sourceTree = "<group>"; };
 		EA797143DAE648998B02AFE0 /* 0.3.4.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.3.4.json; sourceTree = "<group>"; };
 		EAC96980391A69DA322FA935 /* 0.5.5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.5.json; sourceTree = "<group>"; };
+		EACA58C43E1CC245A219E4A3 /* 0.7.25.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.25.json; sourceTree = "<group>"; };
 		EB11D325302CCFC42568E31D /* 0.7.9.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.9.json; sourceTree = "<group>"; };
 		ECB3AB7371053E74D93E160B /* 0.7.6.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.6.json; sourceTree = "<group>"; };
 		F1FC1DF0971CB5B4441676DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -452,6 +454,7 @@
 				93124FE461E9ACC993C3D5BA /* 0.7.21.json */,
 				BAF93BBB373E937E6CD1C0DF /* 0.7.22.json */,
 				7A171BD771373E524F4F7401 /* 0.7.23.json */,
+				EACA58C43E1CC245A219E4A3 /* 0.7.25.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -714,6 +717,7 @@
 				744CAB7C44A49FEC7AED76EF /* 0.7.21.json in Resources */,
 				67C9DED617D7E6327AAF1690 /* 0.7.22.json in Resources */,
 				84EEAAFB6C9B9CC9CBFA64A1 /* 0.7.23.json in Resources */,
+				C2F653ED2F0E798CACB10C7D /* 0.7.25.json in Resources */,
 				EB56D9F7608C74B1ED807A5D /* 0.7.3.json in Resources */,
 				BD59F8106D44F5E87359A802 /* 0.7.4.json in Resources */,
 				5DFD07E54D9D275EAA4738AB /* 0.7.5.json in Resources */,
@@ -971,7 +975,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7025;
+				CURRENT_PROJECT_VERSION = 7026;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -993,7 +997,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7025;
+				CURRENT_PROJECT_VERSION = 7026;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = DiskWise/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
