@@ -77,8 +77,9 @@ final class SystemHealthNotificationService {
             usedPercent: settings.memoryNotificationUsedPercent,
             freeGigabytes: settings.memoryNotificationFreeGigabytes
         )
+        let pressureCritical = NotificationThresholdLogic.isMemoryPressureCritical(snapshot: snapshot)
 
-        guard thresholdExceeded else {
+        guard thresholdExceeded || pressureCritical else {
             lastNotifiedAt = nil
             lastNotifiedMemoryUsedPercent = nil
             return
@@ -97,9 +98,10 @@ final class SystemHealthNotificationService {
         guard authorized else { return }
 
         let suggestions = resolvedSuggestions(for: snapshot)
+        let assessment = snapshot.memoryPressureAssessment
         let content = UNMutableNotificationContent()
-        content.title = notificationTitle(for: snapshot, settings: settings)
-        content.subtitle = "DiskWise · \(Int(snapshot.memoryUsedPercent.rounded()))% memory in use"
+        content.title = notificationTitle(for: snapshot, settings: settings, assessment: assessment)
+        content.subtitle = "DiskWise · \(assessment.severity.label) memory pressure"
         content.body = suggestions.joined(separator: " ")
         content.interruptionLevel = .active
         content.categoryIdentifier = Self.categoryIdentifier
@@ -150,14 +152,24 @@ final class SystemHealthNotificationService {
         return SystemHealthMonitorCore.poorHealthMemoryCleanupSuggestions(for: snapshot)
     }
 
-    private func notificationTitle(for snapshot: SystemHealthSnapshot, settings: AppSettings) -> String {
+    private func notificationTitle(
+        for snapshot: SystemHealthSnapshot,
+        settings: AppSettings,
+        assessment: MemoryPressureAssessment
+    ) -> String {
+        if assessment.reliefTier == .reboot {
+            return "Restart recommended — swap is \(MenuBarFormatters.gigabytes(assessment.metrics.swapUsedBytes))"
+        }
+        if let target = assessment.recommendedQuitTarget, assessment.reliefTier == .quitApps {
+            return "Quit \(target.name) to free memory"
+        }
         switch settings.memoryNotificationThresholdMode {
         case .percentage:
-            return "Memory usage is high (\(Int(snapshot.memoryUsedPercent.rounded()))%)"
+            return "Memory pressure is \(assessment.severity.label) (\(Int(snapshot.memoryUsedPercent.rounded()))% in use)"
         case .absolute:
             let freeBytes = NotificationThresholdLogic.memoryFreeBytes(from: snapshot)
             let freeLabel = MenuBarFormatters.readableFreeSpace(freeBytes)
-            return "Free memory is low (\(freeLabel) remaining)"
+            return "Free RAM is low (\(freeLabel) remaining)"
         }
     }
 }

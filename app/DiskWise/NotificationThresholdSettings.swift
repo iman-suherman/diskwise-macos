@@ -83,7 +83,11 @@ enum NotificationThresholdDefaults {
 
 enum NotificationThresholdLogic {
     static func memoryFreeBytes(from snapshot: SystemHealthSnapshot) -> Int64 {
-        max(0, snapshot.physicalMemoryBytes - snapshot.memoryUsedBytes)
+        snapshot.memoryPagesFreeBytes
+    }
+
+    static func isMemoryPressureCritical(snapshot: SystemHealthSnapshot) -> Bool {
+        snapshot.memoryPressureAssessment.severity >= .high
     }
 
     static func isMemoryThresholdExceeded(

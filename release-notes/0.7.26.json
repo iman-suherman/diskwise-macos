@@ -1,0 +1,17 @@
+{
+  "summary": "System Status and the menu bar now detect real memory pressure — free RAM, swap, and compression — and suggest quit, purge, or restart before acting.",
+  "introduced": [
+    "Memory pressure tiers — Normal through Critical based on free RAM, swap usage, memory compressor, and WindowServer CPU (typing lag indicator)",
+    "Tiered relief actions — purge cache for moderate pressure, quit the worst heavy app for high/critical, restart when swap is accumulated",
+    "Confirm before cleanup — System Status and menu bar ask before freeing memory, quitting an offender, or requesting restart"
+  ],
+  "changed": [
+    "Health score factors in swap and free pages, not just memory used %",
+    "Notifications when pressure is High or Critical, with tier-specific titles (quit app, restart recommended)",
+    "System Status details show free RAM, swap, and compressed memory"
+  ],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

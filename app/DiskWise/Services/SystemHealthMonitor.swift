@@ -74,6 +74,109 @@ enum MemoryReliefResult: Sendable, Equatable {
     case failed(String)
 }
 
+/// Activity Monitor–style memory pressure (green → yellow → red).
+enum MemoryPressureSeverity: String, Sendable, CaseIterable, Comparable {
+    case normal
+    case moderate
+    case high
+    case critical
+
+    private var rank: Int {
+        switch self {
+        case .normal: return 0
+        case .moderate: return 1
+        case .high: return 2
+        case .critical: return 3
+        }
+    }
+
+    static func < (lhs: MemoryPressureSeverity, rhs: MemoryPressureSeverity) -> Bool {
+        lhs.rank < rhs.rank
+    }
+
+    var label: String {
+        switch self {
+        case .normal: return "Normal"
+        case .moderate: return "Moderate"
+        case .high: return "High"
+        case .critical: return "Critical"
+        }
+    }
+
+    var activityMonitorColor: (red: Double, green: Double, blue: Double) {
+        switch self {
+        case .normal: return (0.2, 0.78, 0.35)
+        case .moderate: return (1.0, 0.75, 0.1)
+        case .high: return (1.0, 0.45, 0.1)
+        case .critical: return (0.95, 0.25, 0.22)
+        }
+    }
+}
+
+/// What kind of relief macOS needs — purge alone is not enough at higher tiers.
+enum MemoryReliefTier: Int, Sendable, Comparable {
+    case none = 0
+    case purgeCache = 1
+    case quitApps = 2
+    case reboot = 3
+
+    static func < (lhs: MemoryReliefTier, rhs: MemoryReliefTier) -> Bool {
+        lhs.rawValue < rhs.rawValue
+    }
+
+    var label: String {
+        switch self {
+        case .none: return "No action needed"
+        case .purgeCache: return "Reclaim inactive cache"
+        case .quitApps: return "Quit heavy apps"
+        case .reboot: return "Restart Mac"
+        }
+    }
+}
+
+struct MemoryPressureMetrics: Sendable {
+    let usedBytes: Int64
+    let usedPercent: Double
+    let physicalBytes: Int64
+    /// Truly free pages (not file cache).
+    let pagesFreeBytes: Int64
+    /// Inactive pages macOS can reclaim without quitting apps.
+    let reclaimableBytes: Int64
+    let compressedBytes: Int64
+    let swapUsedBytes: Int64
+    let swapTotalBytes: Int64
+
+    var swapUsedPercent: Double {
+        guard swapTotalBytes > 0 else { return 0 }
+        return Double(swapUsedBytes) / Double(swapTotalBytes) * 100
+    }
+
+    var compressedPercent: Double {
+        guard physicalBytes > 0 else { return 0 }
+        return Double(compressedBytes) / Double(physicalBytes) * 100
+    }
+
+    var pagesFreePercent: Double {
+        guard physicalBytes > 0 else { return 0 }
+        return Double(pagesFreeBytes) / Double(physicalBytes) * 100
+    }
+}
+
+struct MemoryPressureAssessment: Sendable {
+    let severity: MemoryPressureSeverity
+    let reliefTier: MemoryReliefTier
+    let summary: String
+    let symptomDetail: String?
+    let suggestions: [String]
+    let recommendedQuitTarget: ProcessUsage?
+    let windowServerStressed: Bool
+    let metrics: MemoryPressureMetrics
+
+    var statusLabel: String {
+        "\(severity.label) · \(reliefTier.label)"
+    }
+}
+
 enum ProcessTerminateResult: Sendable, Equatable {
     case terminated
     case permissionDenied
@@ -108,6 +211,14 @@ struct SystemHealthSnapshot: Sendable {
     let machineModel: String
     let topCPUProcesses: [ProcessUsage]
     let topMemoryProcesses: [ProcessUsage]
+    let memoryPagesFreeBytes: Int64
+    let memoryCompressedBytes: Int64
+    let swapUsedBytes: Int64
+    let swapTotalBytes: Int64
+
+    var memoryPressureAssessment: MemoryPressureAssessment {
+        SystemHealthMonitorCore.assessMemoryPressure(for: self)
+    }
 
     func replacingProcesses(
         topCPU: [ProcessUsage],
@@ -132,7 +243,11 @@ struct SystemHealthSnapshot: Sendable {
             uptimeSeconds: uptimeSeconds,
             machineModel: machineModel,
             topCPUProcesses: topCPU,
-            topMemoryProcesses: topMemory
+            topMemoryProcesses: topMemory,
+            memoryPagesFreeBytes: memoryPagesFreeBytes,
+            memoryCompressedBytes: memoryCompressedBytes,
+            swapUsedBytes: swapUsedBytes,
+            swapTotalBytes: swapTotalBytes
         )
     }
 }
@@ -181,7 +296,8 @@ enum SystemHealthMonitorCore {
                 detail: memoryPressureDetail(
                     usedBytes: snapshot.memoryUsedBytes,
                     physicalBytes: snapshot.physicalMemoryBytes,
-                    usedPercent: snapshot.memoryUsedPercent
+                    usedPercent: snapshot.memoryUsedPercent,
+                    metrics: snapshot.memoryPressureAssessment.metrics
                 )
             ),
             HealthScoreFactor(
@@ -198,13 +314,7 @@ enum SystemHealthMonitorCore {
             ),
         ]
 
-        let recommendations = healthRecommendations(
-            cpuUsagePercent: snapshot.cpuUsagePercent,
-            memoryUsedPercent: snapshot.memoryUsedPercent,
-            diskUsedPercent: snapshot.diskUsedPercent,
-            loadAverage: snapshot.loadAverage1,
-            processorCount: snapshot.processorCount
-        )
+        let recommendations = healthRecommendations(for: snapshot)
 
         let formula = healthScoreFormula(
             cpuComponent: cpuComponent,
@@ -332,9 +442,23 @@ enum SystemHealthMonitorCore {
     private static func memoryPressureDetail(
         usedBytes: Int64,
         physicalBytes: Int64,
-        usedPercent: Double
+        usedPercent: Double,
+        metrics: MemoryPressureMetrics
     ) -> String {
-        "About \(MenuBarFormatters.gigabytes(usedBytes)) of \(MenuBarFormatters.gigabytes(physicalBytes)) (\(String(format: "%.1f", usedPercent))%) is actively wired, active, or compressed. macOS uses spare RAM for file cache, which is normal. Score contribution: 35% weight on memory headroom."
+        var parts = [
+            "About \(MenuBarFormatters.gigabytes(usedBytes)) of \(MenuBarFormatters.gigabytes(physicalBytes)) (\(String(format: "%.1f", usedPercent))%) is wired, active, or compressed.",
+            "Free RAM: \(MenuBarFormatters.gigabytes(metrics.pagesFreeBytes)) (\(String(format: "%.1f", metrics.pagesFreePercent))% of physical).",
+        ]
+        if metrics.compressedBytes > 0 {
+            parts.append("Compressor holds \(MenuBarFormatters.gigabytes(metrics.compressedBytes)).")
+        }
+        if metrics.swapTotalBytes > 0 {
+            parts.append(
+                "Swap: \(MenuBarFormatters.gigabytes(metrics.swapUsedBytes)) used of \(MenuBarFormatters.gigabytes(metrics.swapTotalBytes)) (\(String(format: "%.0f", metrics.swapUsedPercent))%)."
+            )
+        }
+        parts.append("Score contribution: 35% weight on memory headroom, adjusted for swap and free pages.")
+        return parts.joined(separator: " ")
     }
 
     private static func diskPressureDetail(
@@ -369,6 +493,20 @@ enum SystemHealthMonitorCore {
             items.append("No urgent action needed. Keep an eye on Top CPU and Top Memory if performance changes.")
         }
         return items
+    }
+
+    static func healthRecommendations(for snapshot: SystemHealthSnapshot) -> [String] {
+        let assessment = snapshot.memoryPressureAssessment
+        if assessment.reliefTier >= .purgeCache {
+            return assessment.suggestions
+        }
+        return healthRecommendations(
+            cpuUsagePercent: snapshot.cpuUsagePercent,
+            memoryUsedPercent: snapshot.memoryUsedPercent,
+            diskUsedPercent: snapshot.diskUsedPercent,
+            loadAverage: snapshot.loadAverage1,
+            processorCount: snapshot.processorCount
+        )
     }
 
     static func idleCPUMessage(for snapshot: SystemHealthSnapshot) -> String {
@@ -491,7 +629,7 @@ enum SystemHealthMonitorCore {
 
     private static func captureLaunchQuickSync(volume: MountedVolume?) -> SystemHealthSnapshot {
         let cpuUsage = readCPUUsagePercent(sampleIntervalMicroseconds: 40_000)
-        let memory = readMemoryUsage()
+        let memoryMetrics = readMemoryPressureMetrics()
         let load = readLoadAverage()
         let processorCount = ProcessInfo.processInfo.processorCount
         let physicalMemory = Int64(ProcessInfo.processInfo.physicalMemory)
@@ -502,8 +640,9 @@ enum SystemHealthMonitorCore {
 
         let score = computeHealthScore(
             cpuUsagePercent: cpuUsage,
-            memoryUsedPercent: memory.usedPercent,
-            diskUsedPercent: diskUsedPercent
+            memoryUsedPercent: memoryMetrics.usedPercent,
+            diskUsedPercent: diskUsedPercent,
+            memoryMetrics: memoryMetrics
         )
 
         return SystemHealthSnapshot(
@@ -512,12 +651,12 @@ enum SystemHealthMonitorCore {
             macOSVersion: formattedMacOSVersion(),
             macOSBuild: readMacOSBuild(),
             cpuUsagePercent: cpuUsage,
-            memoryUsedPercent: memory.usedPercent,
+            memoryUsedPercent: memoryMetrics.usedPercent,
             loadAverage1: load.0,
             loadAverage5: load.1,
             loadAverage15: load.2,
             processorCount: processorCount,
-            memoryUsedBytes: memory.usedBytes,
+            memoryUsedBytes: memoryMetrics.usedBytes,
             physicalMemoryBytes: physicalMemory,
             diskUsedPercent: diskUsedPercent,
             diskFreeBytes: diskFreeBytes,
@@ -525,7 +664,11 @@ enum SystemHealthMonitorCore {
             uptimeSeconds: uptime,
             machineModel: readMachineModel(),
             topCPUProcesses: [],
-            topMemoryProcesses: []
+            topMemoryProcesses: [],
+            memoryPagesFreeBytes: memoryMetrics.pagesFreeBytes,
+            memoryCompressedBytes: memoryMetrics.compressedBytes,
+            swapUsedBytes: memoryMetrics.swapUsedBytes,
+            swapTotalBytes: memoryMetrics.swapTotalBytes
         )
     }
 
@@ -542,7 +685,7 @@ enum SystemHealthMonitorCore {
     @MainActor
     static func capture(volume: MountedVolume?, processLimit: Int = 5) -> SystemHealthSnapshot {
         let cpuUsage = readCPUUsagePercent()
-        let memory = readMemoryUsage()
+        let memoryMetrics = readMemoryPressureMetrics()
         let load = readLoadAverage()
         let processorCount = ProcessInfo.processInfo.processorCount
         let physicalMemory = Int64(ProcessInfo.processInfo.physicalMemory)
@@ -558,8 +701,9 @@ enum SystemHealthMonitorCore {
 
         let score = computeHealthScore(
             cpuUsagePercent: cpuUsage,
-            memoryUsedPercent: memory.usedPercent,
-            diskUsedPercent: diskUsedPercent
+            memoryUsedPercent: memoryMetrics.usedPercent,
+            diskUsedPercent: diskUsedPercent,
+            memoryMetrics: memoryMetrics
         )
 
         return SystemHealthSnapshot(
@@ -568,12 +712,12 @@ enum SystemHealthMonitorCore {
             macOSVersion: formattedMacOSVersion(),
             macOSBuild: readMacOSBuild(),
             cpuUsagePercent: cpuUsage,
-            memoryUsedPercent: memory.usedPercent,
+            memoryUsedPercent: memoryMetrics.usedPercent,
             loadAverage1: load.0,
             loadAverage5: load.1,
             loadAverage15: load.2,
             processorCount: processorCount,
-            memoryUsedBytes: memory.usedBytes,
+            memoryUsedBytes: memoryMetrics.usedBytes,
             physicalMemoryBytes: physicalMemory,
             diskUsedPercent: diskUsedPercent,
             diskFreeBytes: diskFreeBytes,
@@ -581,20 +725,47 @@ enum SystemHealthMonitorCore {
             uptimeSeconds: uptime,
             machineModel: readMachineModel(),
             topCPUProcesses: processes.byCPU,
-            topMemoryProcesses: processes.byMemory
+            topMemoryProcesses: processes.byMemory,
+            memoryPagesFreeBytes: memoryMetrics.pagesFreeBytes,
+            memoryCompressedBytes: memoryMetrics.compressedBytes,
+            swapUsedBytes: memoryMetrics.swapUsedBytes,
+            swapTotalBytes: memoryMetrics.swapTotalBytes
         )
     }
 
     static func computeHealthScore(
         cpuUsagePercent: Double,
         memoryUsedPercent: Double,
-        diskUsedPercent: Double
+        diskUsedPercent: Double,
+        memoryMetrics: MemoryPressureMetrics? = nil
     ) -> Int {
+        let effectiveMemoryPercent = effectiveMemoryUsagePercent(
+            baseUsedPercent: memoryUsedPercent,
+            metrics: memoryMetrics
+        )
         let cpuScore = max(0, 100 - cpuUsagePercent)
-        let memoryScore = max(0, 100 - memoryUsedPercent)
+        let memoryScore = max(0, 100 - effectiveMemoryPercent)
         let diskScore = max(0, 100 - diskUsedPercent)
         let weighted = cpuScore * 0.4 + memoryScore * 0.35 + diskScore * 0.25
         return Int(min(100, max(0, weighted.rounded())))
+    }
+
+    private static func effectiveMemoryUsagePercent(
+        baseUsedPercent: Double,
+        metrics: MemoryPressureMetrics?
+    ) -> Double {
+        guard let metrics else { return baseUsedPercent }
+        var adjusted = baseUsedPercent
+        if metrics.pagesFreeBytes < criticalPagesFreeBytes {
+            adjusted = max(adjusted, 92)
+        } else if metrics.pagesFreeBytes < lowPagesFreeBytes {
+            adjusted = max(adjusted, 85)
+        }
+        adjusted += metrics.swapUsedPercent * 0.15
+        if metrics.compressedPercent >= 10 {
+            adjusted += min(8, metrics.compressedPercent * 0.25)
+        }
+        return min(100, adjusted)
     }
 
     static func healthScoreColor(_ score: Int) -> (red: Double, green: Double, blue: Double) {
@@ -625,7 +796,241 @@ enum SystemHealthMonitorCore {
 
     static let poorHealthScoreThreshold = 40
 
+    private static let criticalPagesFreeBytes: Int64 = 512 * 1024 * 1024
+    private static let lowPagesFreeBytes: Int64 = 1024 * 1024 * 1024
+    private static let significantSwapUsedBytes: Int64 = 4 * 1024 * 1024 * 1024
+    private static let rebootUptimeSeconds: TimeInterval = 24 * 3600
+
+    private static let protectedQuitProcessNames: Set<String> = [
+        "windowserver", "kernel_task", "launchd", "loginwindow", "diskwise",
+    ]
+
+    static func assessMemoryPressure(for snapshot: SystemHealthSnapshot) -> MemoryPressureAssessment {
+        let metrics = memoryPressureMetrics(from: snapshot)
+        let windowServerStressed = isWindowServerStressed(snapshot: snapshot)
+        let severity = memoryPressureSeverity(metrics: metrics, windowServerStressed: windowServerStressed)
+        let reliefTier = memoryReliefTier(
+            metrics: metrics,
+            severity: severity,
+            uptimeSeconds: snapshot.uptimeSeconds,
+            windowServerStressed: windowServerStressed
+        )
+        let quitTarget = reliefTier >= MemoryReliefTier.quitApps
+            ? recommendedQuitTarget(for: snapshot)
+            : nil
+        let suggestions = memoryReliefSuggestions(
+            tier: reliefTier,
+            metrics: metrics,
+            quitTarget: quitTarget,
+            uptimeSeconds: snapshot.uptimeSeconds,
+            windowServerStressed: windowServerStressed
+        )
+
+        return MemoryPressureAssessment(
+            severity: severity,
+            reliefTier: reliefTier,
+            summary: memoryPressureSummary(severity: severity, metrics: metrics),
+            symptomDetail: memoryPressureSymptomDetail(
+                severity: severity,
+                metrics: metrics,
+                windowServerStressed: windowServerStressed
+            ),
+            suggestions: suggestions,
+            recommendedQuitTarget: quitTarget,
+            windowServerStressed: windowServerStressed,
+            metrics: metrics
+        )
+    }
+
+    private static func memoryPressureMetrics(from snapshot: SystemHealthSnapshot) -> MemoryPressureMetrics {
+        MemoryPressureMetrics(
+            usedBytes: snapshot.memoryUsedBytes,
+            usedPercent: snapshot.memoryUsedPercent,
+            physicalBytes: snapshot.physicalMemoryBytes,
+            pagesFreeBytes: snapshot.memoryPagesFreeBytes,
+            reclaimableBytes: max(0, snapshot.physicalMemoryBytes - snapshot.memoryUsedBytes),
+            compressedBytes: snapshot.memoryCompressedBytes,
+            swapUsedBytes: snapshot.swapUsedBytes,
+            swapTotalBytes: snapshot.swapTotalBytes
+        )
+    }
+
+    private static func memoryPressureSeverity(
+        metrics: MemoryPressureMetrics,
+        windowServerStressed: Bool
+    ) -> MemoryPressureSeverity {
+        if metrics.pagesFreeBytes < criticalPagesFreeBytes
+            || metrics.swapUsedPercent >= 70
+            || (metrics.pagesFreeBytes < lowPagesFreeBytes && metrics.swapUsedPercent >= 50)
+            || (windowServerStressed && metrics.usedPercent >= 75) {
+            return .critical
+        }
+        if metrics.usedPercent >= 85
+            || metrics.swapUsedPercent >= 40
+            || metrics.compressedPercent >= 12
+            || windowServerStressed {
+            return .high
+        }
+        if metrics.usedPercent >= 70 || metrics.swapUsedPercent >= 25 || metrics.compressedPercent >= 8 {
+            return .moderate
+        }
+        return .normal
+    }
+
+    private static func memoryReliefTier(
+        metrics: MemoryPressureMetrics,
+        severity: MemoryPressureSeverity,
+        uptimeSeconds: TimeInterval,
+        windowServerStressed: Bool
+    ) -> MemoryReliefTier {
+        if metrics.swapUsedBytes >= significantSwapUsedBytes
+            || (metrics.swapUsedPercent >= 60 && uptimeSeconds >= rebootUptimeSeconds)
+            || metrics.swapUsedPercent >= 75 {
+            return .reboot
+        }
+        if severity == .critical || severity == .high || windowServerStressed {
+            return .quitApps
+        }
+        if severity == .moderate {
+            return .purgeCache
+        }
+        return .none
+    }
+
+    private static func isWindowServerStressed(snapshot: SystemHealthSnapshot) -> Bool {
+        snapshot.topCPUProcesses.contains { process in
+            let normalized = process.name.lowercased()
+            return normalized.contains("windowserver") && process.cpuPercent >= 40
+        }
+    }
+
+    static func recommendedQuitTarget(for snapshot: SystemHealthSnapshot) -> ProcessUsage? {
+        var scored: [Int32: (process: ProcessUsage, score: Double)] = [:]
+
+        for process in snapshot.topCPUProcesses + snapshot.topMemoryProcesses {
+            guard isQuitCandidate(process) else { continue }
+            let memoryGB = Double(process.memoryBytes) / 1_073_741_824
+            let score = process.cpuPercent * 1.5 + memoryGB * 12
+            if let existing = scored[process.id] {
+                scored[process.id] = (
+                    process: ProcessUsage(
+                        id: process.id,
+                        name: process.name,
+                        cpuPercent: max(existing.process.cpuPercent, process.cpuPercent),
+                        memoryBytes: max(existing.process.memoryBytes, process.memoryBytes)
+                    ),
+                    score: max(existing.score, score)
+                )
+            } else {
+                scored[process.id] = (process: process, score: score)
+            }
+        }
+
+        return scored.values
+            .sorted { $0.score > $1.score }
+            .first?
+            .process
+    }
+
+    private static func isQuitCandidate(_ process: ProcessUsage) -> Bool {
+        let normalized = process.name.lowercased()
+        if protectedQuitProcessNames.contains(where: { normalized.contains($0) }) {
+            return false
+        }
+        if normalized.hasPrefix("com.apple.") || normalized == "kernel_task" {
+            return false
+        }
+        return process.cpuPercent >= 25
+            || process.memoryBytes >= 600 * 1024 * 1024
+    }
+
+    private static func memoryPressureSummary(severity: MemoryPressureSeverity, metrics: MemoryPressureMetrics) -> String {
+        switch severity {
+        case .normal:
+            return "Memory pressure is normal. macOS has enough free RAM and swap headroom."
+        case .moderate:
+            return "Memory pressure is moderate (\(String(format: "%.0f", metrics.usedPercent))% in use). Close unused apps if performance dips."
+        case .high:
+            return "Memory pressure is high. Expect slowdowns — \(MenuBarFormatters.gigabytes(metrics.pagesFreeBytes)) free RAM, swap at \(String(format: "%.0f", metrics.swapUsedPercent))%."
+        case .critical:
+            return "Memory is exhausted. Only \(MenuBarFormatters.gigabytes(metrics.pagesFreeBytes)) free RAM with \(MenuBarFormatters.gigabytes(metrics.swapUsedBytes)) swap in use — the system is paging to disk."
+        }
+    }
+
+    private static func memoryPressureSymptomDetail(
+        severity: MemoryPressureSeverity,
+        metrics: MemoryPressureMetrics,
+        windowServerStressed: Bool
+    ) -> String? {
+        guard severity >= .high else { return nil }
+
+        var parts: [String] = []
+        if windowServerStressed {
+            parts.append("WindowServer is overloaded — you may feel system-wide typing lag or input delay, not a keyboard issue.")
+        }
+        if metrics.pagesFreeBytes < criticalPagesFreeBytes {
+            parts.append("Free RAM is effectively zero; macOS is relying on swap and the memory compressor.")
+        }
+        if metrics.swapUsedPercent >= 50 {
+            parts.append("Heavy swap use (\(String(format: "%.0f", metrics.swapUsedPercent))%) means apps are being paged to disk.")
+        }
+        if metrics.compressedBytes >= 2 * 1024 * 1024 * 1024 {
+            parts.append("The memory compressor holds \(MenuBarFormatters.gigabytes(metrics.compressedBytes)) — the VM subsystem is working continuously.")
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " ")
+    }
+
+    private static func memoryReliefSuggestions(
+        tier: MemoryReliefTier,
+        metrics: MemoryPressureMetrics,
+        quitTarget: ProcessUsage?,
+        uptimeSeconds: TimeInterval,
+        windowServerStressed: Bool
+    ) -> [String] {
+        switch tier {
+        case .none:
+            return ["No urgent action needed. Keep an eye on memory if you open more apps."]
+        case .purgeCache:
+            return [
+                "Free inactive memory to reclaim cached RAM",
+                "Quit apps you are not using before memory pressure rises further",
+            ]
+        case .quitApps:
+            var items: [String] = []
+            if let quitTarget {
+                let size = MenuBarFormatters.compactFreeSpace(quitTarget.memoryBytes)
+                let cpu = String(format: "%.0f", quitTarget.cpuPercent)
+                items.append("Quit \(quitTarget.name) (\(size), \(cpu)% CPU) — largest recoverable offender")
+            }
+            items.append("Close unused browser tabs and extra app windows")
+            if windowServerStressed {
+                items.append("Input lag should improve once RAM is freed — WindowServer is starved")
+            }
+            if metrics.swapUsedPercent >= 30 {
+                items.append("Purging cache alone will not help much while swap is \(String(format: "%.0f", metrics.swapUsedPercent))% full")
+            }
+            return Array(items.prefix(3))
+        case .reboot:
+            let uptimeHours = Int(uptimeSeconds / 3600)
+            var items = [
+                "Restart your Mac to clear \(MenuBarFormatters.gigabytes(metrics.swapUsedBytes)) of accumulated swap",
+            ]
+            if uptimeHours >= 24 {
+                items.append("Uptime is \(uptimeHours)h — a restart resets WindowServer and the memory compressor")
+            }
+            if let quitTarget {
+                items.append("Before restarting, quit \(quitTarget.name) if you need a quicker interim fix")
+            }
+            return Array(items.prefix(3))
+        }
+    }
+
     static func poorHealthMemoryCleanupSuggestions(for snapshot: SystemHealthSnapshot) -> [String] {
+        let assessment = snapshot.memoryPressureAssessment
+        if !assessment.suggestions.isEmpty {
+            return assessment.suggestions
+        }
+
         var suggestions: [String] = []
 
         if snapshot.memoryUsedPercent >= 60 {
@@ -646,6 +1051,15 @@ enum SystemHealthMonitorCore {
         }
 
         return Array(suggestions.prefix(3))
+    }
+
+    @MainActor
+    static func requestSystemRestart() -> Bool {
+        let script = "tell application \"Finder\" to restart"
+        var errorInfo: NSDictionary?
+        guard let appleScript = NSAppleScript(source: script) else { return false }
+        appleScript.executeAndReturnError(&errorInfo)
+        return errorInfo == nil
     }
 
     private static func readHostName() -> String {
@@ -683,6 +1097,28 @@ enum SystemHealthMonitorCore {
     }
 
     private static func readMemoryUsage() -> (usedBytes: Int64, usedPercent: Double) {
+        let metrics = readMemoryPressureMetrics()
+        return (metrics.usedBytes, metrics.usedPercent)
+    }
+
+    private struct SwapUsageStats {
+        var total: UInt64
+        var avail: UInt64
+        var used: UInt64
+        var pagesize: UInt32
+        var encrypted: UInt32
+    }
+
+    private static func readSwapUsage() -> (usedBytes: Int64, totalBytes: Int64) {
+        var swap = SwapUsageStats(total: 0, avail: 0, used: 0, pagesize: 0, encrypted: 0)
+        var size = MemoryLayout<SwapUsageStats>.size
+        guard sysctlbyname("vm.swapusage", &swap, &size, nil, 0) == 0 else {
+            return (0, 0)
+        }
+        return (Int64(swap.used), Int64(swap.total))
+    }
+
+    private static func readMemoryPressureMetrics() -> MemoryPressureMetrics {
         var stats = vm_statistics64()
         var count = mach_msg_type_number_t(
             MemoryLayout<vm_statistics64_data_t>.size / MemoryLayout<integer_t>.size
@@ -692,16 +1128,41 @@ enum SystemHealthMonitorCore {
                 host_statistics64(mach_host_self(), HOST_VM_INFO64, $0, &count)
             }
         }
-        guard result == KERN_SUCCESS else { return (0, 0) }
+
+        let physical = Int64(ProcessInfo.processInfo.physicalMemory)
+        guard result == KERN_SUCCESS else {
+            return MemoryPressureMetrics(
+                usedBytes: 0,
+                usedPercent: 0,
+                physicalBytes: physical,
+                pagesFreeBytes: 0,
+                reclaimableBytes: physical,
+                compressedBytes: 0,
+                swapUsedBytes: 0,
+                swapTotalBytes: 0
+            )
+        }
 
         let pageSize = Int64(vm_kernel_page_size)
+        let pagesFree = Int64(stats.free_count) * pageSize
+        let inactive = Int64(stats.inactive_count) * pageSize
         let active = Int64(stats.active_count) * pageSize
         let wired = Int64(stats.wire_count) * pageSize
         let compressed = Int64(stats.compressor_page_count) * pageSize
         let used = active + wired + compressed
-        let physical = Int64(ProcessInfo.processInfo.physicalMemory)
         let percent = physical > 0 ? Double(used) / Double(physical) * 100 : 0
-        return (used, percent)
+        let swap = readSwapUsage()
+
+        return MemoryPressureMetrics(
+            usedBytes: used,
+            usedPercent: percent,
+            physicalBytes: physical,
+            pagesFreeBytes: pagesFree,
+            reclaimableBytes: pagesFree + inactive,
+            compressedBytes: compressed,
+            swapUsedBytes: swap.usedBytes,
+            swapTotalBytes: swap.totalBytes
+        )
     }
 
     private static func readCPUTicks() -> (user: Double, system: Double, idle: Double, nice: Double)? {
@@ -1224,10 +1685,14 @@ final class SystemHealthMonitor: ObservableObject {
 
     private func refreshInterval(for snapshot: SystemHealthSnapshot?) -> Duration {
         guard let snapshot else { return .seconds(30) }
-        if snapshot.healthScore < 40 || snapshot.cpuUsagePercent > 85 || snapshot.memoryUsedPercent > 85 {
+        let pressure = snapshot.memoryPressureAssessment.severity
+        if pressure == .critical
+            || snapshot.healthScore < 40
+            || snapshot.cpuUsagePercent > 85
+            || snapshot.memoryUsedPercent > 85 {
             return .seconds(10)
         }
-        if snapshot.healthScore < 70 {
+        if pressure >= .high || snapshot.healthScore < 70 {
             return .seconds(20)
         }
         return .seconds(30)

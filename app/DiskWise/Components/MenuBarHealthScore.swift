@@ -118,6 +118,8 @@ struct MenuBarHealthPopoverContent: View {
 
     @ViewBuilder
     private func metricsGrid(_ snapshot: SystemHealthSnapshot) -> some View {
+        let assessment = snapshot.memoryPressureAssessment
+        let memoryRGB = assessment.severity.activityMonitorColor
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 metricHeader("CPU")
@@ -127,10 +129,15 @@ struct MenuBarHealthPopoverContent: View {
             HStack {
                 metricValue(String(format: "%.1f%%", snapshot.cpuUsagePercent))
                 Spacer()
-                metricValue(String(format: "%.1f%%", snapshot.memoryUsedPercent))
+                metricValue(
+                    assessment.severity.label,
+                    foregroundStyle: Color(red: memoryRGB.red, green: memoryRGB.green, blue: memoryRGB.blue)
+                )
             }
 
-            Text("Load \(formatLoad(snapshot.loadAverage1)) / \(snapshot.processorCount) cores \(formatGB(snapshot.memoryUsedBytes)) used")
+            Text(
+                "Load \(formatLoad(snapshot.loadAverage1)) / \(snapshot.processorCount) cores · \(MenuBarFormatters.gigabytes(assessment.metrics.pagesFreeBytes)) free RAM · swap \(String(format: "%.0f", assessment.metrics.swapUsedPercent))%"
+            )
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
 
@@ -153,10 +160,20 @@ struct MenuBarHealthPopoverContent: View {
 
     @ViewBuilder
     private func detailsSection(_ snapshot: SystemHealthSnapshot) -> some View {
+        let assessment = snapshot.memoryPressureAssessment
         VStack(alignment: .leading, spacing: 6) {
             Text("Details")
                 .font(.subheadline.weight(.semibold))
 
+            detailRow("Memory pressure", assessment.statusLabel)
+            detailRow("Free RAM", formatGB(snapshot.memoryPagesFreeBytes))
+            if snapshot.swapTotalBytes > 0 {
+                detailRow(
+                    "Swap used",
+                    "\(formatGB(snapshot.swapUsedBytes)) (\(String(format: "%.0f", assessment.metrics.swapUsedPercent))%)"
+                )
+            }
+            detailRow("Compressed", formatGB(snapshot.memoryCompressedBytes))
             detailRow("Total memory", formatGB(snapshot.physicalMemoryBytes))
             detailRow("Disk capacity", formatGB(snapshot.diskTotalBytes))
             detailRow(
@@ -257,6 +274,13 @@ struct MenuBarHealthPopoverContent: View {
     private func metricValue(_ value: String) -> some View {
         Text(value)
             .font(.body.monospacedDigit().weight(.semibold))
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func metricValue(_ value: String, foregroundStyle: Color) -> some View {
+        Text(value)
+            .font(.body.monospacedDigit().weight(.semibold))
+            .foregroundStyle(foregroundStyle)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 

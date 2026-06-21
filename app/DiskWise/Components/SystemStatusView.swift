@@ -355,10 +355,11 @@ struct SystemStatusView: View {
 
     @ViewBuilder
     private func metricsCard(_ snapshot: SystemHealthSnapshot) -> some View {
+        let assessment = snapshot.memoryPressureAssessment
         GroupBox {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                 metricTile(title: "CPU", value: String(format: "%.1f%%", snapshot.cpuUsagePercent), icon: "cpu")
-                metricTile(title: "Memory", value: String(format: "%.1f%%", snapshot.memoryUsedPercent), icon: "memorychip")
+                memoryPressureTile(assessment: assessment, snapshot: snapshot)
                 metricTile(title: "Disk", value: String(format: "%.1f%%", snapshot.diskUsedPercent), icon: "internaldrive")
                 metricTile(title: "Uptime", value: formatUptime(snapshot.uptimeSeconds), icon: "clock")
             }
@@ -366,11 +367,40 @@ struct SystemStatusView: View {
     }
 
     @ViewBuilder
+    private func memoryPressureTile(assessment: MemoryPressureAssessment, snapshot: SystemHealthSnapshot) -> some View {
+        let rgb = assessment.severity.activityMonitorColor
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Memory", systemImage: "memorychip")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(assessment.severity.label)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Color(red: rgb.red, green: rgb.green, blue: rgb.blue))
+            Text("\(String(format: "%.1f%%", snapshot.memoryUsedPercent)) used · \(MenuBarFormatters.gigabytes(assessment.metrics.pagesFreeBytes)) free")
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    @ViewBuilder
     private func systemDetailsCard(_ snapshot: SystemHealthSnapshot) -> some View {
+        let assessment = snapshot.memoryPressureAssessment
         GroupBox {
             VStack(alignment: .leading, spacing: 8) {
+                detailRow("Memory pressure", assessment.statusLabel)
                 detailRow("Load average", String(format: "%.2f · %.2f · %.2f", snapshot.loadAverage1, snapshot.loadAverage5, snapshot.loadAverage15))
                 detailRow("Processor cores", "\(snapshot.processorCount)")
+                detailRow("Free RAM (pages)", MenuBarFormatters.gigabytes(snapshot.memoryPagesFreeBytes))
+                detailRow("Memory compressed", MenuBarFormatters.gigabytes(snapshot.memoryCompressedBytes))
+                if snapshot.swapTotalBytes > 0 {
+                    detailRow(
+                        "Swap",
+                        "\(MenuBarFormatters.gigabytes(snapshot.swapUsedBytes)) of \(MenuBarFormatters.gigabytes(snapshot.swapTotalBytes)) (\(String(format: "%.0f", assessment.metrics.swapUsedPercent))%)"
+                    )
+                }
                 detailRow("Memory used", MenuBarFormatters.gigabytes(snapshot.memoryUsedBytes))
                 detailRow("Physical memory", MenuBarFormatters.gigabytes(snapshot.physicalMemoryBytes))
                 detailRow("Disk free", MenuBarFormatters.gigabytes(snapshot.diskFreeBytes))
