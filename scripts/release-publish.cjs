@@ -7,7 +7,7 @@ const path = require("path");
 const { loadDotenv } = require("./load-dotenv.cjs");
 const { getLatestPluginRelease, markReleaseCheckpoint } = require("./registry-read.cjs");
 const { bumpSemver, assertSemver } = require("./semver.cjs");
-const { suggestBumpLevel, getCommits } = require("./generate-release-notes.cjs");
+const { suggestBumpLevel, getCommits, isMetaCommit } = require("./generate-release-notes.cjs");
 const { uploadRelease, dmgFileName, resolveAppId } = require("./upload-release.cjs");
 const { syncAppVersion } = require("./sync-app-version.cjs");
 const { getDeployTarget } = require("./deploy-config.cjs");
@@ -70,6 +70,34 @@ function getHeadCommit() {
 
 function hasWorkingTreeChanges() {
   return Boolean(runGit(["status", "--porcelain"]));
+}
+
+const POST_RELEASE_SYNC_PATTERN = /^Sync Xcode project after v\d+\.\d+\.\d+ release/i;
+
+function isPostReleaseSyncOnly(commits) {
+  if (commits.length === 0) return false;
+  return commits.every((commit) => {
+    const subject = commit.subject.trim();
+    return isMetaCommit(subject) || POST_RELEASE_SYNC_PATTERN.test(subject);
+  });
+}
+
+async function syncPublishedReleaseCheckpoint({
+  appId,
+  headCommit,
+  version,
+  reason,
+}) {
+  console.log(`release: skip — ${reason}`);
+  try {
+    await markReleaseCheckpoint(appId, headCommit, version);
+  } catch (err) {
+    console.warn(`release: could not update Firestore checkpoint (${err.message})`);
+  }
+  recordDeploy("success", {
+    exitCode: 0,
+    activityMessage: `deploy synced at HEAD — v${version} already published (${reason})`,
+  });
 }
 
 function getCommitsSince(sinceCommit) {
@@ -173,14 +201,27 @@ async function main() {
     commitsSinceLast.length === 0 &&
     !dirty
   ) {
-    console.log(
-      `release: skip — no code changes since last release (${lastCommit.slice(0, 7)}, v${releaseState.lastReleasedVersion || "?"})`
-    );
-    try {
-      await markReleaseCheckpoint(appId, headCommit, releaseState.lastReleasedVersion || pkg.version);
-    } catch (err) {
-      console.warn(`release: could not update Firestore checkpoint (${err.message})`);
-    }
+    await syncPublishedReleaseCheckpoint({
+      appId,
+      headCommit,
+      version: releaseState.lastReleasedVersion || pkg.version,
+      reason: `no code changes since last release (${lastCommit.slice(0, 7)})`,
+    });
+    return;
+  }
+
+  if (
+    !force &&
+    lastCommit &&
+    releaseState.lastReleasedVersion &&
+    isPostReleaseSyncOnly(commitsSinceLast)
+  ) {
+    await syncPublishedReleaseCheckpoint({
+      appId,
+      headCommit,
+      version: releaseState.lastReleasedVersion,
+      reason: "post-release Xcode sync only",
+    });
     return;
   }
 
