@@ -73,6 +73,7 @@
 		75E2033E8389AC2CF2A55666 /* ActivityLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57BB2C32DA1EC6AD699DBDBD /* ActivityLog.swift */; };
 		7D3DB7CE2ED58186491D8C35 /* 0.5.5.json in Resources */ = {isa = PBXBuildFile; fileRef = EAC96980391A69DA322FA935 /* 0.5.5.json */; };
 		7F3FA96EA3B2337449CD40D0 /* diskwise_scan.py in Resources */ = {isa = PBXBuildFile; fileRef = C27E95DFD0F9841389B35E2F /* diskwise_scan.py */; };
+		84EEAAFB6C9B9CC9CBFA64A1 /* 0.7.23.json in Resources */ = {isa = PBXBuildFile; fileRef = 7A171BD771373E524F4F7401 /* 0.7.23.json */; };
 		8583AE0ED670AF78E5A92139 /* DiskWiseMarkdownText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21EBCE6D32125F4A901301F0 /* DiskWiseMarkdownText.swift */; };
 		883E50B24DA9FB8AC0EE2570 /* 0.5.15.json in Resources */ = {isa = PBXBuildFile; fileRef = 3044C9BB20E3915450F34DC3 /* 0.5.15.json */; };
 		896F6AD480A23BD1277843C2 /* AppSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAC0147A7FB6FEF4116785C /* AppSettingsView.swift */; };
@@ -227,6 +228,7 @@
 		75D6F1FF35E50533DC9A2049 /* 0.7.15.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.15.json; sourceTree = "<group>"; };
 		7606C2E2E0391264171C1F55 /* MainScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainScreens.swift; sourceTree = "<group>"; };
 		7651FCF0CBEA357BEBDCFA2D /* MemoryInsightChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryInsightChatView.swift; sourceTree = "<group>"; };
+		7A171BD771373E524F4F7401 /* 0.7.23.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.23.json; sourceTree = "<group>"; };
 		7A638EA06DBCE65A323623F3 /* 0.3.5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.3.5.json; sourceTree = "<group>"; };
 		7F2C213738FE643532C9DFFF /* MenuBarPopoverSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPopoverSession.swift; sourceTree = "<group>"; };
 		7F81B798B01741C082A6B559 /* diskwise-macos */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "diskwise-macos"; path = ..; sourceTree = SOURCE_ROOT; };
@@ -446,6 +448,7 @@
 				5FC887AAEF199DA5B2A55208 /* 0.7.20.json */,
 				93124FE461E9ACC993C3D5BA /* 0.7.21.json */,
 				BAF93BBB373E937E6CD1C0DF /* 0.7.22.json */,
+				7A171BD771373E524F4F7401 /* 0.7.23.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -707,6 +710,7 @@
 				C45BFE7BD7BBC50105815665 /* 0.7.20.json in Resources */,
 				744CAB7C44A49FEC7AED76EF /* 0.7.21.json in Resources */,
 				67C9DED617D7E6327AAF1690 /* 0.7.22.json in Resources */,
+				84EEAAFB6C9B9CC9CBFA64A1 /* 0.7.23.json in Resources */,
 				EB56D9F7608C74B1ED807A5D /* 0.7.3.json in Resources */,
 				BD59F8106D44F5E87359A802 /* 0.7.4.json in Resources */,
 				5DFD07E54D9D275EAA4738AB /* 0.7.5.json in Resources */,
