@@ -2233,13 +2233,19 @@ final class AppViewModel: ObservableObject {
         storageAnalysisTask = Task.detached { [weak self, aiEngine] in
             guard let self else { return }
             do {
-                _ = try aiEngine.analyze(diskID: diskID, fileLimit: analysisFileLimit)
+                let report = try aiEngine.analyze(diskID: diskID, fileLimit: analysisFileLimit)
 
                 await MainActor.run {
+                    let shouldNotifyScanCleanup = self.pendingVolumeScanHistory != nil && !self.isRebuildingIndex
+                    let scanMode = self.pendingVolumeScanHistory?.mode ?? self.activeScanMode
+                    let volumeMountPath = self.selectedVolumePath ?? ""
+
                     self.isAnalyzing = false
                     self.scanPhase = .idle
                     self.scanStartTime = nil
-                    self.refreshInsights()
+                    self.analysisReport = report
+                    self.refreshCachedScanResultsInBackground()
+                    self.refreshAIInsights(for: report)
                     if let diskID = self.selectedDiskID {
                         self.persistLaunchSnapshotIfReady(forDiskID: diskID)
                         self.recordScanHistoryIfNeeded(forDiskID: diskID)
@@ -2259,6 +2265,19 @@ final class AppViewModel: ObservableObject {
                     }
                     self.releaseCachedMemory()
                     self.startNextQueuedScheduledScanIfNeeded()
+
+                    if shouldNotifyScanCleanup {
+                        Task {
+                            await ScanCleanupNotificationService.shared.notifyAfterScan(
+                                report: report,
+                                volumeName: volumeName,
+                                scanMode: scanMode,
+                                diskID: diskID,
+                                volumeMountPath: volumeMountPath,
+                                notificationsEnabled: self.appSettings.scanCleanupNotificationsEnabled
+                            )
+                        }
+                    }
                 }
             } catch {
                 await MainActor.run {
@@ -2606,6 +2625,94 @@ final class AppViewModel: ObservableObject {
             scanMaintenance(.apfsSnapshots)
         default:
             reviewRecommendation(recommendation)
+        }
+    }
+
+    func performSafeCleanupFromNotification(
+        recommendationType: String,
+        title: String,
+        diskID: Int64
+    ) async {
+        if let disk = disks.first(where: { $0.id == diskID }) {
+            selectedVolumePath = disk.mountPath
+            selectedDiskID = diskID
+        }
+
+        NSApp.activate(ignoringOtherApps: true)
+
+        switch recommendationType {
+        case "thin_apfs_snapshots":
+            executeAPFSSnapshotThinning()
+            return
+        case "project_purge":
+            await performMaintenanceCleanupDirect(.nodeModules)
+            return
+        case "delete_logs":
+            await performMaintenanceCleanupDirect(.logs)
+            return
+        case "delete_cache":
+            await performMaintenanceCleanupDirect(.appCaches)
+            return
+        default:
+            break
+        }
+
+        let threshold = Calendar.current.date(byAdding: .year, value: -2, to: Date())!
+        let files = (try? database.files(
+            forRecommendationType: recommendationType,
+            diskID: diskID,
+            oldFileThreshold: threshold,
+            limit: 500
+        )) ?? []
+
+        guard !files.isEmpty else {
+            setStatus("Nothing to clean for \(title)", kind: .ready)
+            return
+        }
+
+        let selectedIDs = defaultSelectedFileIDs(for: recommendationType, files: files)
+        let selectedFiles = files.filter { file in
+            guard let id = file.id else { return false }
+            return selectedIDs.contains(id)
+        }
+
+        guard !selectedFiles.isEmpty else {
+            setStatus("No eligible files selected for \(title)", kind: .ready)
+            return
+        }
+
+        let savings = selectedFiles.reduce(Int64(0)) { $0 + $1.size }
+        let recommendation = RecommendationRecord(
+            type: recommendationType,
+            title: title,
+            estimatedSavings: savings,
+            reason: "Cleaned from notification"
+        )
+        executeRecommendationCleanup(files: selectedFiles, recommendation: recommendation)
+        refreshInsights()
+    }
+
+    private func performMaintenanceCleanupDirect(_ kind: MaintenanceKind) async {
+        setStatus("Scanning \(kind.title.lowercased())…", kind: .working)
+        let scanResult = await Task.detached { [maintenanceEngine] in
+            maintenanceEngine.scan(kind)
+        }.value
+
+        guard !scanResult.entries.isEmpty else {
+            setStatus("No \(kind.title.lowercased()) to clean", kind: .ready)
+            return
+        }
+
+        if kind == .apfsSnapshots {
+            executeAPFSSnapshotThinning()
+            return
+        }
+
+        setStatus("Moving \(scanResult.entries.count) items to Trash…", kind: .working)
+        let result = maintenanceEngine.executeCleanup(entries: scanResult.entries)
+        reportCleanupResult(result)
+        if result.movedCount > 0 {
+            refreshInsights()
         }
     }
 

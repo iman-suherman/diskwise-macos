@@ -80,6 +80,7 @@ final class AppSettings: ObservableObject {
         static let launchAtLogin = "diskwise.settings.launchAtLogin"
         static let memoryAnalyzerEnabled = "diskwise.settings.memoryAnalyzerEnabled"
         static let memoryAnalyzerNotificationsEnabled = "diskwise.settings.memoryAnalyzerNotificationsEnabled"
+        static let scanCleanupNotificationsEnabled = "diskwise.settings.scanCleanupNotificationsEnabled"
         static let diskSpaceNotificationsEnabled = "diskwise.settings.diskSpaceNotificationsEnabled"
         static let systemHealthNotificationsEnabled = "diskwise.settings.systemHealthNotificationsEnabled"
         static let diskNotificationThresholdMode = "diskwise.settings.diskNotificationThresholdMode"
@@ -211,6 +212,17 @@ final class AppSettings: ObservableObject {
             if memoryAnalyzerNotificationsEnabled {
                 Task {
                     await MemoryInsightNotificationService.shared.requestAuthorizationIfNeeded()
+                }
+            }
+        }
+    }
+
+    @Published var scanCleanupNotificationsEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(scanCleanupNotificationsEnabled, forKey: Keys.scanCleanupNotificationsEnabled)
+            if scanCleanupNotificationsEnabled {
+                Task {
+                    await ScanCleanupNotificationService.shared.requestAuthorizationIfNeeded()
                 }
             }
         }
@@ -534,6 +546,11 @@ final class AppSettings: ObservableObject {
         } else {
             memoryAnalyzerNotificationsEnabled = defaults.bool(forKey: Keys.memoryAnalyzerNotificationsEnabled)
         }
+        if defaults.object(forKey: Keys.scanCleanupNotificationsEnabled) == nil {
+            scanCleanupNotificationsEnabled = true
+        } else {
+            scanCleanupNotificationsEnabled = defaults.bool(forKey: Keys.scanCleanupNotificationsEnabled)
+        }
         if defaults.object(forKey: Keys.diskSpaceNotificationsEnabled) == nil {
             diskSpaceNotificationsEnabled = true
         } else {
@@ -651,6 +668,7 @@ final class AppSettings: ObservableObject {
         launchAtLogin = false
         memoryAnalyzerEnabled = true
         memoryAnalyzerNotificationsEnabled = true
+        scanCleanupNotificationsEnabled = true
         diskSpaceNotificationsEnabled = true
         systemHealthNotificationsEnabled = true
         diskNotificationThresholdMode = .percentage

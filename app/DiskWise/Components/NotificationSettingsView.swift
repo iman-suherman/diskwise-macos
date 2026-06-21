@@ -14,6 +14,7 @@ struct NotificationSettingsForm: View {
             diskSpaceSection
             memorySection
             memoryAnalyzerSection
+            scanCleanupSection
         }
         .formStyle(.grouped)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -115,6 +116,20 @@ struct NotificationSettingsForm: View {
             .disabled(!settings.memoryAnalyzerEnabled)
 
             Text("Separate from usage alerts above — these notifications fire when DiskWise finds a new actionable memory recommendation.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var scanCleanupSection: some View {
+        Section("Disk Analysis") {
+            Toggle(
+                "Notify after scans when folders can be cleaned",
+                isOn: $settings.scanCleanupNotificationsEnabled
+            )
+
+            Text("After a Fast or Deep scan finishes, DiskWise alerts you for Safe to Clean items and lets you move them to Trash from the notification.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

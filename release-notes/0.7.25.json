@@ -1,0 +1,14 @@
+{
+  "summary": "After Fast or Deep scans finish, DiskWise notifies you about Safe to Clean folders and lets you move them to Trash straight from the notification.",
+  "introduced": [
+    "Scan cleanup notifications — after a volume Fast or Deep scan completes, alerts appear for Safe to Clean recommendations (caches, logs, temp exports, node_modules, APFS snapshots)",
+    "Notification actions — Move to Trash or Thin Snapshots runs cleanup immediately; Review in DiskWise opens the Breakdown tab"
+  ],
+  "changed": [
+    "Settings → Notifications — new Disk Analysis toggle to enable or disable post-scan cleanup alerts (on by default)"
+  ],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

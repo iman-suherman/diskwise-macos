@@ -37,6 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         MemoryInsightNotificationService.shared.prepare()
         DiskSpaceNotificationService.shared.prepare()
         SystemHealthNotificationService.shared.prepare()
+        ScanCleanupNotificationService.shared.prepare()
         MemoryAnalyzerMonitor.shared.startIfNeeded(settings: AppSettings.shared)
         ScanScheduleService.shared.start()
 

@@ -89,6 +89,9 @@ final class MemoryInsightNotificationService: NSObject, UNUserNotificationCenter
         if await SystemHealthNotificationService.shared.handleNotificationResponse(response) {
             return true
         }
+        if await ScanCleanupNotificationService.shared.handleNotificationResponse(response) {
+            return true
+        }
 
         let userInfo = response.notification.request.content.userInfo
         switch response.actionIdentifier {
