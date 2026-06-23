@@ -9,6 +9,14 @@ const { readState, findDeployment } = require("./deploy-store.cjs");
 
 const TRIGGER = path.join(REPO_ROOT, "scripts/deploy-trigger.cjs");
 
+function gitHead() {
+  const result = spawnSync("git", ["rev-parse", "HEAD"], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+  });
+  return result.status === 0 ? result.stdout.trim() : null;
+}
+
 function parseArgs(argv) {
   let repo = null;
   for (let i = 0; i < argv.length; i += 1) {
@@ -27,7 +35,8 @@ function needsRetry(rs, lastDeploy) {
   if (rs.status === "queued") return false;
   const outcome = lastDeploy?.status;
   if (outcome === "failure" || outcome === "cancelled") return true;
-  return Boolean(rs.headSha && rs.headSha !== rs.lastDeployedSha);
+  const head = gitHead();
+  return Boolean(head && head !== rs.lastDeployedSha);
 }
 
 function reposNeedingRetry(state) {
