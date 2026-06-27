@@ -27,7 +27,45 @@ function loadLocalEnv(repoRoot) {
 }
 
 function resolveGcpUserEmail(repoRoot) {
+  const fromEnv = process.env[USER_EMAIL_KEY];
+  if (fromEnv) return fromEnv;
   return loadLocalEnv(repoRoot)[USER_EMAIL_KEY] || null;
+}
+
+function buildGcpCliEnv(repoRoot, baseEnv = process.env) {
+  const env = { ...baseEnv };
+  const local = loadLocalEnv(repoRoot);
+
+  const email = env[USER_EMAIL_KEY] || local[USER_EMAIL_KEY];
+  if (email) {
+    env.CLOUDSDK_CORE_ACCOUNT = email;
+  }
+
+  let projectId = null;
+  for (const key of KEYS) {
+    if (env[key]) {
+      projectId = env[key];
+      break;
+    }
+    if (local[key]) {
+      projectId = local[key];
+      break;
+    }
+  }
+  if (projectId) {
+    env.CLOUDSDK_CORE_PROJECT = projectId;
+    env.GOOGLE_CLOUD_PROJECT = projectId;
+  }
+
+  const adc = env.GOOGLE_APPLICATION_CREDENTIALS || local.GOOGLE_APPLICATION_CREDENTIALS;
+  if (adc) {
+    const adcPath = path.isAbsolute(adc) ? adc : path.join(repoRoot, adc);
+    if (fs.existsSync(adcPath)) {
+      env.GOOGLE_APPLICATION_CREDENTIALS = adcPath;
+    }
+  }
+
+  return env;
 }
 
 function resolveLocalGcpProjectId(repoRoot) {
@@ -94,5 +132,6 @@ module.exports = {
   resolveGcpUserEmail,
   resolveLocalGcpProjectId,
   resolveGcpProjectId,
+  buildGcpCliEnv,
   upsertEnvKey,
 };

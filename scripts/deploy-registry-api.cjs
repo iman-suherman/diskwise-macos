@@ -13,6 +13,7 @@ const { recordDirectDeployOutcome } = require("./deploy-record-direct.cjs");
 const root = path.join(__dirname, "..");
 const serviceDir = path.join(root, "services", "registry-api");
 const shell = process.platform === "win32";
+let gcpEnv = process.env;
 const DEPLOY_REPO = "diskwise-registry";
 const DEPLOY_NPM_SCRIPT = "deploy:registry";
 const deployTarget = getDeployTarget(DEPLOY_REPO);
@@ -41,7 +42,7 @@ function run(command, args, options = {}) {
     stdio: "inherit",
     cwd: options.cwd || root,
     shell,
-    env: process.env,
+    env: gcpEnv,
   });
   if (r.error) throw r.error;
   if (r.status !== 0) {
@@ -51,8 +52,7 @@ function run(command, args, options = {}) {
 }
 
 function main() {
-  loadDotenv(root);
-  applyGcpEnv(root);
+  gcpEnv = applyGcpEnv(root);
 
   const projectId = resolveGcpProjectId(root);
   if (!projectId) fail("GCP_PROJECT_ID is not set. Run: npm run login");
