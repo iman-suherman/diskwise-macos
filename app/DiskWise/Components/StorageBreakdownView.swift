@@ -1,8 +1,175 @@
 import SwiftUI
 import Charts
 import AppKit
+import UniformTypeIdentifiers
 import DatabaseKit
 import DiskScannerKit
+
+enum CategoryFileListSort: String, CaseIterable, Identifiable {
+    case sizeDescending = "Size (largest first)"
+    case sizeAscending = "Size (smallest first)"
+    case nameAscending = "Name (A–Z)"
+    case nameDescending = "Name (Z–A)"
+    case modifiedDescending = "Modified (newest)"
+    case modifiedAscending = "Modified (oldest)"
+    case pathAscending = "Path (A–Z)"
+
+    var id: String { rawValue }
+
+    var menuLabel: String {
+        switch self {
+        case .sizeDescending: return "Size ↓"
+        case .sizeAscending: return "Size ↑"
+        case .nameAscending: return "Name A–Z"
+        case .nameDescending: return "Name Z–A"
+        case .modifiedDescending: return "Modified ↓"
+        case .modifiedAscending: return "Modified ↑"
+        case .pathAscending: return "Path A–Z"
+        }
+    }
+
+    func sort(_ files: [FileRecord]) -> [FileRecord] {
+        switch self {
+        case .sizeDescending:
+            return files.sorted { $0.size > $1.size }
+        case .sizeAscending:
+            return files.sorted { $0.size < $1.size }
+        case .nameAscending:
+            return files.sorted {
+                fileName(for: $0.path).localizedCaseInsensitiveCompare(fileName(for: $1.path)) == .orderedAscending
+            }
+        case .nameDescending:
+            return files.sorted {
+                fileName(for: $0.path).localizedCaseInsensitiveCompare(fileName(for: $1.path)) == .orderedDescending
+            }
+        case .modifiedDescending:
+            return files.sorted { modifiedDate(for: $0) > modifiedDate(for: $1) }
+        case .modifiedAscending:
+            return files.sorted { modifiedDate(for: $0) < modifiedDate(for: $1) }
+        case .pathAscending:
+            return files.sorted { $0.path.localizedCaseInsensitiveCompare($1.path) == .orderedAscending }
+        }
+    }
+
+    private func fileName(for path: String) -> String {
+        URL(fileURLWithPath: path).lastPathComponent
+    }
+
+    private func modifiedDate(for file: FileRecord) -> Date {
+        file.modifiedAt ?? file.createdAt ?? .distantPast
+    }
+}
+
+enum CategoryFileListSupport {
+    private static let exportDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+
+    private static let exportStampFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd-HHmmss"
+        return formatter
+    }()
+
+    static func filter(_ files: [FileRecord], searchQuery: String) -> [FileRecord] {
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !query.isEmpty else { return files }
+
+        return files.filter { file in
+            if file.path.lowercased().contains(query) { return true }
+            if fileName(for: file.path).lowercased().contains(query) { return true }
+            if let extensionName = file.extensionName, extensionName.lowercased().contains(query) { return true }
+            if query.hasPrefix("."), extensionName(for: file)?.lowercased() == String(query.dropFirst()) {
+                return true
+            }
+            return false
+        }
+    }
+
+    static func csv(
+        for files: [FileRecord],
+        categoryName: String,
+        extensionLabel: String?
+    ) -> String {
+        var lines = [
+            "# DiskWise file list",
+            "# Category: \(categoryName)",
+            "# Extension filter: \(extensionLabel ?? "All")",
+            "# Exported: \(exportDateFormatter.string(from: Date()))",
+            "# Files: \(files.count)",
+            "Name,Path,Size (bytes),Size,Extension,Category,Modified,Last Accessed",
+        ]
+
+        for file in files {
+            let name = fileName(for: file.path)
+            let sizeLabel = DiskWiseFormatters.bytes.string(fromByteCount: file.size)
+            let extensionLabel = extensionName(for: file) ?? ""
+            lines.append(
+                [
+                    csvField(name),
+                    csvField(file.path),
+                    "\(file.size)",
+                    csvField(sizeLabel),
+                    csvField(extensionLabel),
+                    csvField(file.category.granularName),
+                    csvField(formattedDate(file.modifiedAt)),
+                    csvField(formattedDate(file.lastAccessed)),
+                ].joined(separator: ",")
+            )
+        }
+
+        return lines.joined(separator: "\n")
+    }
+
+    static func exportFileName(categoryName: String, extensionName: String?) -> String {
+        let categorySlug = slug(categoryName)
+        let extensionSlug = extensionName.map { ext in
+            ext.isEmpty ? "no-extension" : ext
+        }
+        let stamp = exportStampFormatter.string(from: Date())
+        if let extensionSlug {
+            return "diskwise-\(categorySlug)-\(extensionSlug)-\(stamp).csv"
+        }
+        return "diskwise-\(categorySlug)-\(stamp).csv"
+    }
+
+    private static func fileName(for path: String) -> String {
+        URL(fileURLWithPath: path).lastPathComponent
+    }
+
+    private static func extensionName(for file: FileRecord) -> String? {
+        if let extensionName = file.extensionName, !extensionName.isEmpty {
+            return extensionName
+        }
+        let pathExtension = URL(fileURLWithPath: file.path).pathExtension
+        return pathExtension.isEmpty ? nil : pathExtension.lowercased()
+    }
+
+    private static func formattedDate(_ date: Date?) -> String {
+        guard let date else { return "" }
+        return exportDateFormatter.string(from: date)
+    }
+
+    private static func csvField(_ value: String) -> String {
+        if value.contains(",") || value.contains("\"") || value.contains("\n") {
+            return "\"\(value.replacingOccurrences(of: "\"", with: "\"\""))\""
+        }
+        return value
+    }
+
+    private static func slug(_ value: String) -> String {
+        let lowered = value.lowercased()
+        let allowed = lowered.map { character -> Character in
+            character.isLetter || character.isNumber ? character : "-"
+        }
+        return String(allowed)
+            .replacingOccurrences(of: "--", with: "-")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+    }
+}
 
 enum PieChartHitTester {
     static func category(
@@ -212,11 +379,11 @@ struct StorageTypePieChart: View {
             }
 
             if selectedName == item.name {
-                Label("Showing largest files below", systemImage: "list.bullet")
+                Label("Browse files by type below", systemImage: "list.bullet")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             } else {
-                Text("Click slice for full file list")
+                Text("Click slice to browse files")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
@@ -518,7 +685,7 @@ struct CategoryBarRow: View {
                 }
                 .frame(height: 10)
 
-                Text("\(fileCount.formatted()) files · tap for details")
+                Text("\(fileCount.formatted()) files · tap to browse")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -570,11 +737,40 @@ struct CategoryBarRow: View {
 }
 
 struct StorageCategoryDetailPanel: View {
+    @EnvironmentObject private var viewModel: AppViewModel
+
     let groupName: String
     let subSummaries: [CategorySummary]
+    let extensionSummaries: [ExtensionSummary]
+    let selectedExtension: String?
     let files: [FileRecord]
     let totalSize: Int64
     let onBack: () -> Void
+    let onSelectExtension: (String?) -> Void
+
+    @State private var fileSearchQuery = ""
+    @State private var fileSort: CategoryFileListSort = .sizeDescending
+    @State private var exportCopied = false
+
+    private var totalFileCount: Int {
+        extensionSummaries.reduce(0) { $0 + $1.fileCount }
+    }
+
+    private var activeFileCount: Int {
+        if let selectedExtension {
+            return extensionSummaries.first(where: { $0.extensionName == selectedExtension })?.fileCount ?? files.count
+        }
+        return totalFileCount
+    }
+
+    private var displayedFiles: [FileRecord] {
+        fileSort.sort(CategoryFileListSupport.filter(files, searchQuery: fileSearchQuery))
+    }
+
+    private var selectedExtensionLabel: String? {
+        guard let selectedExtension else { return nil }
+        return extensionSummaries.first(where: { $0.extensionName == selectedExtension })?.displayName
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -611,23 +807,249 @@ struct StorageCategoryDetailPanel: View {
                 }
             }
 
+            if !extensionSummaries.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("File types")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ExtensionFilterChip(
+                                title: "All",
+                                sizeLabel: DiskWiseFormatters.bytes.string(fromByteCount: totalSize),
+                                fileCount: totalFileCount,
+                                isSelected: selectedExtension == nil,
+                                onTap: { onSelectExtension(nil) }
+                            )
+
+                            ForEach(extensionSummaries) { summary in
+                                ExtensionFilterChip(
+                                    title: summary.displayName,
+                                    sizeLabel: DiskWiseFormatters.bytes.string(fromByteCount: summary.totalSize),
+                                    fileCount: summary.fileCount,
+                                    isSelected: selectedExtension == summary.extensionName,
+                                    onTap: { onSelectExtension(summary.extensionName) }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             VStack(alignment: .leading, spacing: 8) {
-                Text("Largest files")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                HStack {
+                    Text("Files")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    Spacer()
+
+                    if !files.isEmpty {
+                        Text(fileListCaption)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+
+                if !files.isEmpty {
+                    fileListToolbar
+                }
 
                 if files.isEmpty {
-                    Text("No files indexed for this category yet.")
+                    Text(emptyFilesMessage)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                } else if displayedFiles.isEmpty {
+                    Text("No files match \"\(fileSearchQuery)\".")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 } else {
-                    ForEach(files.prefix(12), id: \.path) { file in
-                        CategoryFileRow(file: file, groupTotal: totalSize)
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            ForEach(displayedFiles, id: \.path) { file in
+                                CategoryFileRow(file: file, groupTotal: totalSize)
+                            }
+                        }
                     }
+                    .frame(maxHeight: 420)
                 }
             }
         }
         .padding(.top, 4)
+        .onChange(of: selectedExtension) { _, _ in
+            fileSearchQuery = ""
+        }
+    }
+
+    private var fileListToolbar: some View {
+        HStack(spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                TextField("Search name or path", text: $fileSearchQuery)
+                    .textFieldStyle(.plain)
+
+                if !fileSearchQuery.isEmpty {
+                    Button {
+                        fileSearchQuery = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.tertiary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+
+            Menu {
+                Picker("Sort", selection: $fileSort) {
+                    ForEach(CategoryFileListSort.allCases) { sort in
+                        Text(sort.rawValue).tag(sort)
+                    }
+                }
+            } label: {
+                Label(fileSort.menuLabel, systemImage: "arrow.up.arrow.down")
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+
+            Menu {
+                Button {
+                    copyExport()
+                } label: {
+                    Label(exportCopied ? "Copied" : "Copy as CSV", systemImage: exportCopied ? "checkmark" : "doc.on.doc")
+                }
+
+                Button {
+                    saveExport()
+                } label: {
+                    Label("Export CSV…", systemImage: "square.and.arrow.down")
+                }
+            } label: {
+                Label("Export", systemImage: "square.and.arrow.up")
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .disabled(exportableFiles().isEmpty)
+        }
+    }
+
+    private var fileListCaption: String {
+        let filtered = CategoryFileListSupport.filter(files, searchQuery: fileSearchQuery)
+        let hasSearch = !fileSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+
+        if hasSearch {
+            let count = filtered.count
+            return "\(count.formatted()) match\(count == 1 ? "" : "es") in loaded files"
+        }
+
+        let shown = files.count
+        let total = activeFileCount
+        if shown >= 500 && shown < total {
+            return "Showing \(shown.formatted()) largest of \(total.formatted())"
+        }
+        return "\(shown.formatted()) file\(shown == 1 ? "" : "s")"
+    }
+
+    private var emptyFilesMessage: String {
+        if let selectedExtension,
+           let summary = extensionSummaries.first(where: { $0.extensionName == selectedExtension }) {
+            return "No indexed \(summary.displayName) files in this category yet."
+        }
+        return "No files indexed for this category yet."
+    }
+
+    private func exportableFiles() -> [FileRecord] {
+        let source = viewModel.categoryDetailFilesForExport()
+        return fileSort.sort(CategoryFileListSupport.filter(source, searchQuery: fileSearchQuery))
+    }
+
+    private func exportCSV() -> String {
+        CategoryFileListSupport.csv(
+            for: exportableFiles(),
+            categoryName: groupName,
+            extensionLabel: selectedExtensionLabel
+        )
+    }
+
+    private func copyExport() {
+        let csv = exportCSV()
+        guard !csv.isEmpty else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(csv, forType: .string)
+        exportCopied = true
+        viewModel.logCategoryFileExport(
+            categoryName: groupName,
+            fileCount: exportableFiles().count,
+            destination: "clipboard"
+        )
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            exportCopied = false
+        }
+    }
+
+    private func saveExport() {
+        let files = exportableFiles()
+        guard !files.isEmpty else { return }
+
+        let panel = NSSavePanel()
+        panel.title = "Export File List"
+        panel.nameFieldStringValue = CategoryFileListSupport.exportFileName(
+            categoryName: groupName,
+            extensionName: selectedExtension
+        )
+        panel.allowedContentTypes = [.commaSeparatedText]
+        panel.canCreateDirectories = true
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try exportCSV().write(to: url, atomically: true, encoding: .utf8)
+            viewModel.logCategoryFileExport(
+                categoryName: groupName,
+                fileCount: files.count,
+                destination: url.lastPathComponent
+            )
+        } catch {
+            viewModel.showError("Could not export file list: \(error.localizedDescription)")
+        }
+    }
+}
+
+private struct ExtensionFilterChip: View {
+    let title: String
+    let sizeLabel: String
+    let fileCount: Int
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+                Text("\(sizeLabel) · \(fileCount.formatted())")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isSelected ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.05))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(isSelected ? Color.accentColor.opacity(0.5) : Color.clear, lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -760,10 +1182,14 @@ struct StorageResultsChartsSection: View {
                     StorageCategoryDetailPanel(
                         groupName: selected,
                         subSummaries: viewModel.subSummaries(forChartGroup: selected),
+                        extensionSummaries: viewModel.categoryExtensionSummaries,
+                        selectedExtension: viewModel.selectedCategoryExtension,
                         files: viewModel.categoryDetailFiles,
                         totalSize: grouped.first(where: { $0.name == selected })?.totalSize ?? overview.totalSize,
-                        onBack: { viewModel.clearStorageCategorySelection() }
+                        onBack: { viewModel.clearStorageCategorySelection() },
+                        onSelectExtension: { viewModel.selectCategoryExtension($0) }
                     )
+                    .environmentObject(viewModel)
                 } else {
                     StorageCategoryBarChart(
                         items: grouped,

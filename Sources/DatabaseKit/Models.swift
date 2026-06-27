@@ -334,6 +334,26 @@ public struct CategorySummary: Sendable, Codable {
     }
 }
 
+/// Aggregated storage for a file extension within a category chart group.
+public struct ExtensionSummary: Sendable, Identifiable, Codable, Hashable {
+    /// Empty string means files with no extension.
+    public let extensionName: String
+    public let totalSize: Int64
+    public let fileCount: Int
+
+    public var id: String { extensionName }
+
+    public var displayName: String {
+        extensionName.isEmpty ? "(no extension)" : ".\(extensionName)"
+    }
+
+    public init(extensionName: String, totalSize: Int64, fileCount: Int) {
+        self.extensionName = extensionName
+        self.totalSize = totalSize
+        self.fileCount = fileCount
+    }
+}
+
 public struct SpaceConsumer: Sendable, Identifiable, Codable {
     public var id: String { name }
     public let name: String

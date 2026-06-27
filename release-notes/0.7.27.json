@@ -1,0 +1,15 @@
+{
+  "summary": "Breakdown now lets you browse indexed files by storage category and file extension, with search, sort, and CSV export.",
+  "introduced": [
+    "File type filters — tap a storage category in Breakdown to see extension chips (e.g. .mp4, .pdf) with size and file count; tap a chip to filter the list",
+    "File list tools — searchable scrollable file list with sort by size, name, modified date, or path",
+    "CSV export — copy or save the filtered file list from Breakdown (up to 50,000 files per category or extension)"
+  ],
+  "changed": [
+    "Breakdown category drill-down — replaces the 12-file preview with a full browseable list grouped by extension"
+  ],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

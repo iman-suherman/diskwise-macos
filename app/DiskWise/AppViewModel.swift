@@ -217,6 +217,8 @@ final class AppViewModel: ObservableObject {
     @Published var isAITyping = false
     @Published var selectedStorageCategory: String?
     @Published var categoryDetailFiles: [FileRecord] = []
+    @Published var categoryExtensionSummaries: [ExtensionSummary] = []
+    @Published var selectedCategoryExtension: String?
     @Published var hoveredStorageCategory: String?
     @Published var recommendationReview: RecommendationReviewState?
     @Published var categoryCleanupPreview: CleanupPreview?
@@ -1063,21 +1065,68 @@ final class AppViewModel: ObservableObject {
         }
 
         selectedStorageCategory = name
+        selectedCategoryExtension = nil
+        reloadCategoryDetailFiles(for: name)
+    }
+
+    func selectCategoryExtension(_ extensionName: String?) {
+        if selectedCategoryExtension == extensionName {
+            selectedCategoryExtension = nil
+        } else {
+            selectedCategoryExtension = extensionName
+        }
+        reloadCategoryDetailFiles(for: selectedStorageCategory)
+    }
+
+    private func reloadCategoryDetailFiles(for name: String?) {
         guard let name, let diskID = selectedDiskID else {
             categoryDetailFiles = []
+            categoryExtensionSummaries = []
             return
         }
-        categoryDetailFiles = (try? database.topFiles(
+        let pathScope = pathScopeForSelectedVolume()
+        categoryExtensionSummaries = (try? database.extensionSummaries(
             inChartGroup: name,
             diskID: diskID,
-            limit: 25,
+            pathScope: pathScope
+        )) ?? []
+        categoryDetailFiles = (try? database.files(
+            inChartGroup: name,
+            diskID: diskID,
+            extensionName: selectedCategoryExtension,
+            limit: 500,
+            pathScope: pathScope
+        )) ?? []
+    }
+
+    func categoryDetailFilesForExport(limit: Int = 50_000) -> [FileRecord] {
+        guard let name = selectedStorageCategory, let diskID = selectedDiskID else { return [] }
+        return (try? database.files(
+            inChartGroup: name,
+            diskID: diskID,
+            extensionName: selectedCategoryExtension,
+            limit: limit,
             pathScope: pathScopeForSelectedVolume()
         )) ?? []
     }
 
+    func logCategoryFileExport(categoryName: String, fileCount: Int, destination: String) {
+        logActivity(
+            .system,
+            "Exported \(categoryName) file list",
+            detail: "\(fileCount.formatted()) files · \(destination)"
+        )
+    }
+
+    func showError(_ message: String) {
+        setStatus(message, kind: .error)
+    }
+
     func clearStorageCategorySelection() {
         selectedStorageCategory = nil
+        selectedCategoryExtension = nil
         categoryDetailFiles = []
+        categoryExtensionSummaries = []
     }
 
     func revealStorageCategoryInFinder(_ name: String) {
@@ -2393,6 +2442,8 @@ final class AppViewModel: ObservableObject {
 
     func releaseCachedMemory() {
         categoryDetailFiles = []
+        categoryExtensionSummaries = []
+        selectedCategoryExtension = nil
         llmReport = ""
         database?.releaseMemory()
     }

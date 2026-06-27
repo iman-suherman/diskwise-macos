@@ -35,14 +35,37 @@ final class DatabaseKitTests: XCTestCase {
                 category: .video,
                 extensionName: "mp4"
             ),
+            FileRecord(
+                diskID: diskID,
+                path: "/Volumes/Media01/photo.jpg",
+                size: 50,
+                category: .photo,
+                extensionName: "jpg"
+            ),
         ])
+
+        let mediaExtensions = try database.extensionSummaries(
+            inChartGroup: "Media",
+            diskID: diskID
+        )
+        XCTAssertEqual(mediaExtensions.count, 2)
+        XCTAssertEqual(mediaExtensions.first?.extensionName, "mp4")
+        XCTAssertEqual(mediaExtensions.first?.fileCount, 2)
+
+        let mp4Files = try database.files(
+            inChartGroup: "Media",
+            diskID: diskID,
+            extensionName: "mp4"
+        )
+        XCTAssertEqual(mp4Files.count, 2)
+        XCTAssertTrue(mp4Files.allSatisfy { $0.extensionName == "mp4" })
 
         let overview = try database.storageOverview(
             forDiskID: diskID,
             oldFileThreshold: Calendar.current.date(byAdding: .year, value: -2, to: Date())!
         )
-        XCTAssertEqual(overview.totalSize, 300)
-        XCTAssertEqual(overview.fileCount, 2)
+        XCTAssertEqual(overview.totalSize, 350)
+        XCTAssertEqual(overview.fileCount, 3)
         XCTAssertEqual(overview.oldFileSize, 100)
     }
 

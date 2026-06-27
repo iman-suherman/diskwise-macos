@@ -724,30 +724,81 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         limit: Int = 25,
         pathScope: PathScopeFilter? = nil
     ) throws -> [FileRecord] {
-        let categoryValues = FileCategory.allCases
-            .filter { $0.chartGroup == groupName }
-            .map(\.rawValue)
-        guard !categoryValues.isEmpty else { return [] }
+        try files(
+            inChartGroup: groupName,
+            diskID: diskID,
+            extensionName: nil,
+            limit: limit,
+            pathScope: pathScope
+        )
+    }
 
-        let placeholders = Array(repeating: "?", count: categoryValues.count).joined(separator: ", ")
-        let scoped = Self.scopedWhere(
+    public func files(
+        inChartGroup groupName: String,
+        diskID: Int64,
+        extensionName: String?,
+        limit: Int = 500,
+        pathScope: PathScopeFilter? = nil
+    ) throws -> [FileRecord] {
+        let scoped = Self.chartGroupScope(
+            groupName: groupName,
             diskID: diskID,
             pathScope: pathScope,
-            extraSQL: "category IN (\(placeholders))",
-            extraArguments: categoryValues
+            extensionName: extensionName
         )
+        guard scoped != nil else { return [] }
 
         return try dbQueue.read { db in
             try FileRecord.fetchAll(
                 db,
                 sql: """
                 SELECT * FROM files
-                WHERE \(scoped.sql)
+                WHERE \(scoped!.sql)
                 ORDER BY size DESC
                 LIMIT ?
                 """,
-                arguments: scoped.arguments + [limit]
+                arguments: scoped!.arguments + [limit]
             )
+        }
+    }
+
+    public func extensionSummaries(
+        inChartGroup groupName: String,
+        diskID: Int64,
+        pathScope: PathScopeFilter? = nil,
+        limit: Int = 24
+    ) throws -> [ExtensionSummary] {
+        let scoped = Self.chartGroupScope(
+            groupName: groupName,
+            diskID: diskID,
+            pathScope: pathScope,
+            extensionName: nil
+        )
+        guard scoped != nil else { return [] }
+
+        return try dbQueue.read { db in
+            let rows = try Row.fetchAll(
+                db,
+                sql: """
+                SELECT COALESCE(extension_name, '') AS extension_name,
+                       COALESCE(SUM(size), 0) AS total_size,
+                       COUNT(*) AS file_count
+                FROM files
+                WHERE \(scoped!.sql)
+                GROUP BY extension_name
+                ORDER BY total_size DESC
+                LIMIT ?
+                """,
+                arguments: scoped!.arguments + [limit]
+            )
+
+            return rows.map { row in
+                ExtensionSummary(
+                    extensionName: row["extension_name"],
+                    totalSize: row["total_size"],
+                    fileCount: row["file_count"]
+                )
+            }
         }
     }
 
@@ -938,6 +989,38 @@ public final class DiskWiseDatabase: @unchecked Sendable {
                 arguments: [diskID, limit]
             )
         }
+    }
+
+    private static func chartGroupScope(
+        groupName: String,
+        diskID: Int64,
+        pathScope: PathScopeFilter?,
+        extensionName: String?
+    ) -> (sql: String, arguments: StatementArguments)? {
+        let categoryValues = FileCategory.allCases
+            .filter { $0.chartGroup == groupName }
+            .map(\.rawValue)
+        guard !categoryValues.isEmpty else { return nil }
+
+        let placeholders = Array(repeating: "?", count: categoryValues.count).joined(separator: ", ")
+        var extraSQL = "category IN (\(placeholders))"
+        var extraArguments: [DatabaseValueConvertible] = categoryValues
+
+        if let extensionName {
+            if extensionName.isEmpty {
+                extraSQL += " AND (extension_name IS NULL OR extension_name = '')"
+            } else {
+                extraSQL += " AND extension_name = ?"
+                extraArguments.append(extensionName)
+            }
+        }
+
+        return scopedWhere(
+            diskID: diskID,
+            pathScope: pathScope,
+            extraSQL: extraSQL,
+            extraArguments: extraArguments
+        )
     }
 
     private static func scopedWhere(
