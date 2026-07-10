@@ -43,9 +43,42 @@ function syncAdcToProject(repoRoot) {
   return true;
 }
 
+/**
+ * Resolve an ADC file path for local development.
+ * Prefers repo .gcloud/; optionally copies from gcloud's global location.
+ */
+function resolveAdcPath(repoRoot, { sync = false } = {}) {
+  const projectAdc = getProjectAdcPath(repoRoot);
+  if (fs.existsSync(projectAdc)) {
+    return projectAdc;
+  }
+
+  const defaultAdc = getDefaultAdcPath();
+  if (fs.existsSync(defaultAdc)) {
+    if (sync) {
+      syncAdcToProject(repoRoot);
+      return projectAdc;
+    }
+    return defaultAdc;
+  }
+
+  const configured = process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim();
+  if (configured) {
+    const resolved = path.isAbsolute(configured)
+      ? configured
+      : path.join(repoRoot, configured);
+    if (fs.existsSync(resolved)) {
+      return resolved;
+    }
+  }
+
+  return null;
+}
+
 module.exports = {
   ADC_FILENAME,
   getDefaultAdcPath,
   getProjectAdcPath,
+  resolveAdcPath,
   syncAdcToProject,
 };

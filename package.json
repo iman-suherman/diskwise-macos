@@ -41,6 +41,7 @@
     "deploy:registry": "node scripts/deploy-registry-api.cjs",
     "login": "node scripts/gcp-adc-login.cjs",
     "generate-env": "node scripts/generate-env.cjs",
+    "seed:secrets": "node scripts/seed-secrets.cjs",
     "setup": "node scripts/setup.cjs",
     "deploy:website": "node scripts/deploy-website.cjs",
     "deploy:retry": "node scripts/deploy-retry.cjs",
