@@ -23,6 +23,9 @@ releases/
 .env
 .env.local
 .env.release
+
+# Local CSM project link (cp .tickproject.example .tickproject)
+.tickproject
 .gcloud/application_default_credentials.json
 node_modules/
 logs/*
