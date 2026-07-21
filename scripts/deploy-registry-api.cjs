@@ -1,12 +1,16 @@
 /**
- * Deploy the registry API to Cloud Run and ensure Firestore indexes exist.
+ * Deploy the DiskWise registry API to Cloud Run from a GHCR image
+ * and ensure Firestore indexes exist.
+ *
+ * Builds/pushes via suherman-net-infra `ghcr-cloudrun-deploy` helper
+ * (ghcr.io/iman-suherman/diskwise-registry-api:<sha>).
  */
 const { spawnSync } = require("child_process");
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const { resolveGcpProjectId } = require("./gcp-config.cjs");
 const { applyGcpEnv } = require("./apply-gcp-env.cjs");
-const { loadDotenv } = require("./load-dotenv.cjs");
 const { getDeployTarget } = require("./deploy-config.cjs");
 const { recordDirectDeployOutcome } = require("./deploy-record-direct.cjs");
 
@@ -35,6 +39,20 @@ function fail(message) {
   recordDeploy("failure", { exitCode: 1, error: message });
   console.error(`deploy:registry: ${message}`);
   process.exit(1);
+}
+
+function requireGhcrDeploy() {
+  const candidates = [
+    process.env.SUHERMAN_NET_INFRA_ROOT?.trim(),
+    path.join(os.homedir(), "src", "personal", "suherman-net-infra"),
+  ].filter(Boolean);
+  for (const infraRoot of candidates) {
+    const helper = path.join(infraRoot, "scripts", "lib", "ghcr-cloudrun-deploy.cjs");
+    if (fs.existsSync(helper)) return require(helper);
+  }
+  fail(
+    "suherman-net-infra not found. Set SUHERMAN_NET_INFRA_ROOT or clone to ~/src/personal/suherman-net-infra",
+  );
 }
 
 function run(command, args, options = {}) {
@@ -95,24 +113,37 @@ function main() {
         "--database=(default)",
         "--quiet",
       ],
-      { cwd: root, shell, env: process.env, encoding: "utf8" }
+      { cwd: root, shell, env: process.env, encoding: "utf8" },
     );
     if (indexResult.status === 0) {
       console.log("deploy:registry: Firestore index created or already exists");
     } else {
       console.warn(
-        "deploy:registry: Firestore index step skipped — create manually from firestore/indexes.json if queries fail"
+        "deploy:registry: Firestore index step skipped — create manually from firestore/indexes.json if queries fail",
       );
     }
   }
 
-  console.log(`deploy:registry: deploying ${serviceName} to Cloud Run (${region})…`);
+  const { buildAndPushImage } = requireGhcrDeploy();
+  let image;
+  try {
+    image = buildAndPushImage({
+      cwd: root,
+      contextDir: serviceDir,
+      imageName: "diskwise-registry-api",
+      logPrefix: "deploy:registry",
+    });
+  } catch (error) {
+    fail(error.message || String(error));
+  }
+
+  console.log(`deploy:registry: deploying ${serviceName} ← ${image} (${region})…`);
   run("gcloud", [
     "run",
     "deploy",
     serviceName,
-    "--source",
-    serviceDir,
+    "--image",
+    image,
     "--project",
     projectId,
     "--region",

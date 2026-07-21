@@ -1,0 +1,22 @@
+# Used when building website/Dockerfile with repo-root context.
+.build/
+.git/
+**/.build/
+**/DerivedData/
+**/DerivedDataSparkle/
+**/node_modules/
+**/SourcePackages/
+app/
+Sources/
+Tests/
+.credentials/
+.gcloud/
+logs/
+releases/
+release-notes/
+*.dmg
+*.pkg
+*.xcarchive
+.env
+.env.*
+!.env.example

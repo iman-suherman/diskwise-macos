@@ -32,7 +32,7 @@ npm run install-hooks   # auto-deploy website/ on commit & push
 npm run deploy:website
 ```
 
-Deploys `website/` to Cloud Run service `diskwise-website` via `gcloud run deploy --source`.
+Builds `website/` → pushes `ghcr.io/iman-suherman/diskwise-website:<sha>` → deploys Cloud Run service `diskwise-website` via `gcloud run deploy --image` (see [GHCR-CLOUD-RUN.md](./GHCR-CLOUD-RUN.md)).
 
 ## Auto-deploy
 

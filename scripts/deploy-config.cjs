@@ -13,6 +13,10 @@ const DEPLOY_TARGETS = [
     label: "diskwise.suherman.net",
     branch: DEFAULT_BRANCH,
     npmScript: "deploy:website",
+    details: [
+      "GHCR via suherman-net-infra helper: ghcr.io/iman-suherman/diskwise-website:<sha>",
+      "Deploy: npm run deploy:website (build+push+Cloud Run)",
+    ],
   },
   {
     repo: "diskwise-download",
@@ -26,6 +30,10 @@ const DEPLOY_TARGETS = [
     label: "diskwise-registry.suherman.net",
     branch: DEFAULT_BRANCH,
     npmScript: "deploy:registry",
+    details: [
+      "GHCR via suherman-net-infra helper: ghcr.io/iman-suherman/diskwise-registry-api:<sha>",
+      "Deploy: npm run deploy:registry (build+push+Cloud Run)",
+    ],
   },
   {
     repo: "diskwise-app",

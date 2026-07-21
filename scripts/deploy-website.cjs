@@ -1,8 +1,13 @@
 /**
- * Deploy the Next.js marketing website to Cloud Run.
+ * Deploy the Next.js marketing website to Cloud Run from a GHCR image.
+ *
+ * Builds/pushes via suherman-net-infra `ghcr-cloudrun-deploy` helper
+ * (ghcr.io/iman-suherman/diskwise-website:<sha>).
+ * NEXT_PUBLIC_* values are baked into the image at build time.
  */
 const { spawnSync } = require("child_process");
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const { resolveGcpProjectId } = require("./gcp-config.cjs");
 const { getProjectAdcPath } = require("./gcp-lib-adc.cjs");
@@ -40,6 +45,20 @@ function fail(message) {
   recordDeploy("failure", { exitCode: 1, error: message });
   console.error(`deploy:website: ${message}`);
   process.exit(1);
+}
+
+function requireGhcrDeploy() {
+  const candidates = [
+    process.env.SUHERMAN_NET_INFRA_ROOT?.trim(),
+    path.join(os.homedir(), "src", "personal", "suherman-net-infra"),
+  ].filter(Boolean);
+  for (const infraRoot of candidates) {
+    const helper = path.join(infraRoot, "scripts", "lib", "ghcr-cloudrun-deploy.cjs");
+    if (fs.existsSync(helper)) return require(helper);
+  }
+  fail(
+    "suherman-net-infra not found. Set SUHERMAN_NET_INFRA_ROOT or clone to ~/src/personal/suherman-net-infra",
+  );
 }
 
 function applyGcpEnv() {
@@ -99,27 +118,42 @@ function main() {
   const registryApiUrl =
     process.env.NEXT_PUBLIC_REGISTRY_API_URL?.trim() ||
     "https://diskwise-registry.suherman.net";
-  // Always bake production CDN URLs into the website — never SPARKLE_LOCAL / localhost.
   const downloadBase =
     process.env.PUBLIC_DOWNLOAD_BASE_URL?.trim() ||
     process.env.NEXT_PUBLIC_DOWNLOAD_BASE_URL?.trim() ||
     "https://diskwise-download.suherman.net/downloads";
 
-  console.log(`deploy:website: deploying ${serviceName} to Cloud Run (${region})…`);
+  const { buildAndPushImage } = requireGhcrDeploy();
+  let image;
+  try {
+    image = buildAndPushImage({
+      cwd: root,
+      contextDir: websiteDir,
+      imageName: "diskwise-website",
+      buildArgs: {
+        NEXT_PUBLIC_REGISTRY_API_URL: registryApiUrl,
+        NEXT_PUBLIC_APP_ID: "diskwise-macos",
+        NEXT_PUBLIC_DOWNLOAD_BASE_URL: downloadBase,
+      },
+      logPrefix: "deploy:website",
+    });
+  } catch (error) {
+    fail(error.message || String(error));
+  }
+
+  console.log(`deploy:website: deploying ${serviceName} ← ${image} (${region})…`);
   run("gcloud", [
     "run",
     "deploy",
     serviceName,
-    "--source",
-    websiteDir,
+    "--image",
+    image,
     "--project",
     projectId,
     "--region",
     region,
     "--allow-unauthenticated",
     "--quiet",
-    "--set-build-env-vars",
-    `NEXT_PUBLIC_REGISTRY_API_URL=${registryApiUrl},NEXT_PUBLIC_APP_ID=diskwise-macos,NEXT_PUBLIC_DOWNLOAD_BASE_URL=${downloadBase}`,
   ]);
 
   console.log("deploy:website: done");

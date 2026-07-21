@@ -1,0 +1,122 @@
+# Build and push Cloud Run images to GitHub Container Registry.
+# Deploy still runs locally via npm run deploy:* (gcloud run deploy --image).
+
+name: Build images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/registry-api/**"
+      - "website/**"
+      - "scripts/build-*-image.sh"
+      - ".github/workflows/build-images.yml"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Which image(s) to build
+        type: choice
+        options:
+          - all
+          - registry
+          - website
+        default: all
+
+concurrency:
+  group: diskwise-build-images-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      registry: ${{ steps.filter.outputs.registry }}
+      website: ${{ steps.filter.outputs.website }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            registry:
+              - 'services/registry-api/**'
+              - 'scripts/build-registry-image.sh'
+            website:
+              - 'website/**'
+              - 'scripts/build-website-image.sh'
+
+  build-registry:
+    needs: changes
+    if: |
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.target == 'all' || github.event.inputs.target == 'registry')) ||
+      (github.event_name == 'push' && needs.changes.outputs.registry == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Image metadata
+        id: meta
+        run: |
+          OWNER="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          echo "image=ghcr.io/${OWNER}/diskwise-registry-api" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: services/registry-api
+          file: services/registry-api/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ github.sha }}
+            ${{ steps.meta.outputs.image }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-website:
+    needs: changes
+    if: |
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.target == 'all' || github.event.inputs.target == 'website')) ||
+      (github.event_name == 'push' && needs.changes.outputs.website == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Image metadata
+        id: meta
+        run: |
+          OWNER="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          echo "image=ghcr.io/${OWNER}/diskwise-website" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: website
+          file: website/Dockerfile
+          platforms: linux/amd64
+          push: true
+          build-args: |
+            NEXT_PUBLIC_REGISTRY_API_URL=https://diskwise-registry.suherman.net
+            NEXT_PUBLIC_DOWNLOAD_BASE_URL=https://diskwise-download.suherman.net/downloads
+            NEXT_PUBLIC_APP_ID=diskwise-macos
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ github.sha }}
+            ${{ steps.meta.outputs.image }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
