@@ -154,6 +154,7 @@ function main() {
     region,
     "--allow-unauthenticated",
     "--quiet",
+    "--clear-secrets",
   ]);
 
   console.log("deploy:website: done");

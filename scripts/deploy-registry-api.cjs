@@ -150,6 +150,7 @@ function main() {
     region,
     "--allow-unauthenticated",
     "--quiet",
+    "--clear-secrets",
     "--set-env-vars",
     `GCP_PROJECT_ID=${projectId},FIRESTORE_APP_COLLECTION=${collection},FIRESTORE_APP_CATALOG=${catalog},PUBLIC_DOWNLOAD_BASE_URL=${downloadBase},DEFAULT_APP_ID=${defaultAppId},GCS_APP_BUCKET=${gcsBucket},GCS_APP_PREFIX=${gcsPrefix},REGISTRY_API_PUBLIC_URL=${registryApiPublicUrl}`,
   ]);
