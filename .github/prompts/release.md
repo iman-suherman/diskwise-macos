@@ -1,0 +1,1 @@
+../../prompts/release.md

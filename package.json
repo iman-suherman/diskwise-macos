@@ -50,6 +50,7 @@
     "deploy:retry": "node scripts/deploy-retry.cjs",
     "deploy:stop": "node scripts/deploy-stop.cjs",
     "ci": "node scripts/ci-deploy-status.cjs",
+    "link:agents": "bash scripts/link-agent-adapters.sh",
     "postpush:website": "node scripts/post-push-website.cjs",
     "install-hooks": "node scripts/install-git-hooks.cjs",
     "dev:website": "npm install --prefix website && npm run dev --prefix website",

@@ -1,4 +1,9 @@
-.cursor/
+# Cursor — keep rules + skills tracked; ignore other local Cursor state
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+!.cursor/skills/
+!.cursor/skills/**
 
 .DS_Store
 .build/

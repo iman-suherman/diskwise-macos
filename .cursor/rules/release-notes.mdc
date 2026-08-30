@@ -1,0 +1,42 @@
+---
+description: Write detailed curated release notes before every release
+alwaysApply: true
+---
+
+# Release notes — always descriptive
+
+DiskWise release notes are **user-facing**. Never ship vague one-liners or auto-inferred bullets when a curated file can be written.
+
+## Before `npm run release`
+
+1. Create or update `release-notes/{version}.json` for the version being released.
+2. Base bullets on the **actual commits and code changes** since the previous tag — read `git log v{prev}..HEAD` and the diff, not only commit titles.
+3. Republish if notes change after a release: `npm run republish:notes -- {version}`.
+
+## Curated file format
+
+```json
+{
+  "summary": "One sentence: what users gain in plain language.",
+  "introduced": ["New feature — what it does and where to find it"],
+  "changed": ["Improvement — behavior before/after or why it matters"],
+  "fixed": ["Bug — what was wrong and what users see now"],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}
+```
+
+## Quality bar
+
+- **Summary**: specific outcome, not marketing fluff (bad: "improvements and fixes").
+- **Each bullet**: feature name + em dash + concrete detail (UI location, threshold, action, or user benefit).
+- **Sections**: use `introduced` for new UI/capabilities, `changed` for behavior/performance, `fixed` for bugs.
+- **Never** rely on `analyzeChanges()` fallback text (e.g. generic "three-step flow") when this release has real features — always add a curated JSON file.
+- Match tone and depth of recent files: `release-notes/0.6.6.json`, `release-notes/0.6.7.json`.
+
+## Agent checklist
+
+- [ ] `release-notes/{version}.json` exists before release
+- [ ] Summary and bullets describe what shipped, not how it was implemented
+- [ ] After editing notes post-release, run `npm run republish:notes -- {version}`
