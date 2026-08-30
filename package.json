@@ -1,6 +1,6 @@
 {
   "name": "diskwise-macos",
-  "version": "0.7.27",
+  "version": "0.7.28",
   "displayName": "DiskWise",
   "publisher": "Iman Suherman",
   "private": true,
@@ -47,7 +47,6 @@
     "deploy:website": "node scripts/deploy-website.cjs",
     "build:website:image": "bash scripts/build-website-image.sh",
     "deploy:cleanup-ar": "node scripts/cleanup-artifact-registry.cjs",
-
     "deploy:retry": "node scripts/deploy-retry.cjs",
     "deploy:stop": "node scripts/deploy-stop.cjs",
     "ci": "node scripts/ci-deploy-status.cjs",
