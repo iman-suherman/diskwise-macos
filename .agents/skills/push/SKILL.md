@@ -1,7 +1,7 @@
 ---
 name: push
 description: >-
-  Commit and push authorised DiskWise changes
+  Commit, push, and sync undeployed DiskWise deploy checkpoints
 disable-model-invocation: true
 ---
 

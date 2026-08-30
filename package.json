@@ -48,6 +48,7 @@
     "build:website:image": "bash scripts/build-website-image.sh",
     "deploy:cleanup-ar": "node scripts/cleanup-artifact-registry.cjs",
     "deploy:retry": "node scripts/deploy-retry.cjs",
+    "deploy:sync": "node scripts/deploy-sync.cjs",
     "deploy:stop": "node scripts/deploy-stop.cjs",
     "ci": "node scripts/ci-deploy-status.cjs",
     "link:agents": "bash scripts/link-agent-adapters.sh",

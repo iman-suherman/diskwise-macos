@@ -13,6 +13,11 @@ const { resolveGcpProjectId } = require("./gcp-config.cjs");
 const { applyGcpEnv } = require("./apply-gcp-env.cjs");
 const { getDeployTarget } = require("./deploy-config.cjs");
 const { recordDirectDeployOutcome } = require("./deploy-record-direct.cjs");
+const { readState, getRepoState } = require("./deploy-store.cjs");
+const {
+  requiresRegistryDeploy,
+  changedFilesSince,
+} = require("./deploy-change-filter.cjs");
 
 const root = path.join(__dirname, "..");
 const serviceDir = path.join(root, "services", "registry-api");
@@ -23,7 +28,7 @@ const DEPLOY_NPM_SCRIPT = "deploy:registry";
 const deployTarget = getDeployTarget(DEPLOY_REPO);
 const deployStartedAt = new Date().toISOString();
 
-function recordDeploy(status, { exitCode = 0, error = null } = {}) {
+function recordDeploy(status, { exitCode = 0, error = null, activityMessage = null } = {}) {
   recordDirectDeployOutcome({
     repo: DEPLOY_REPO,
     label: deployTarget?.label,
@@ -32,6 +37,7 @@ function recordDeploy(status, { exitCode = 0, error = null } = {}) {
     startedAt: deployStartedAt,
     exitCode,
     error,
+    activityMessage,
   });
 }
 
@@ -69,8 +75,32 @@ function run(command, args, options = {}) {
   }
 }
 
+function gitHead() {
+  const r = spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" });
+  return r.status === 0 ? r.stdout.trim() : null;
+}
+
+function maybeSkipNonRegistryDeploy() {
+  const head = gitHead();
+  if (!head) return false;
+
+  const state = readState();
+  const rs = getRepoState(state, DEPLOY_REPO);
+  const lastDeployed = rs.lastDeployedSha;
+  if (!lastDeployed || lastDeployed === head) return false;
+
+  const files = changedFilesSince(lastDeployed, head);
+  if (requiresRegistryDeploy(files)) return false;
+
+  const message = "deploy synced at HEAD — no registry changes since last deploy";
+  console.log(`deploy:registry: skip — ${message}`);
+  recordDeploy("success", { exitCode: 0, activityMessage: message });
+  process.exit(0);
+}
+
 function main() {
   gcpEnv = applyGcpEnv(root);
+  maybeSkipNonRegistryDeploy();
 
   const projectId = resolveGcpProjectId(root);
   if (!projectId) fail("GCP_PROJECT_ID is not set. Run: npm run login");
