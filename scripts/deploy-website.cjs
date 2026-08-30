@@ -10,8 +10,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { resolveGcpProjectId } = require("./gcp-config.cjs");
-const { getProjectAdcPath } = require("./gcp-lib-adc.cjs");
-const { loadDotenv } = require("./load-dotenv.cjs");
+const { applyGcpEnv } = require("./apply-gcp-env.cjs");
 const { getDeployTarget } = require("./deploy-config.cjs");
 const { recordDirectDeployOutcome } = require("./deploy-record-direct.cjs");
 const { readState, getRepoState } = require("./deploy-store.cjs");
@@ -23,6 +22,7 @@ const {
 const root = path.join(__dirname, "..");
 const websiteDir = path.join(root, "website");
 const shell = process.platform === "win32";
+let gcpEnv = process.env;
 const DEPLOY_REPO = "diskwise-website";
 const DEPLOY_NPM_SCRIPT = "deploy:website";
 const deployTarget = getDeployTarget(DEPLOY_REPO);
@@ -61,12 +61,9 @@ function requireGhcrDeploy() {
   );
 }
 
-function applyGcpEnv() {
-  loadDotenv(root);
-  const projectAdc = getProjectAdcPath(root);
-  if (fs.existsSync(projectAdc)) {
-    process.env.GOOGLE_APPLICATION_CREDENTIALS = projectAdc;
-  }
+/** Prefer linux/amd64 for Cloud Run; override with GHCR_PLATFORM if needed. */
+function resolveBuildPlatform() {
+  return process.env.GHCR_PLATFORM?.trim() || undefined;
 }
 
 function run(command, args, options = {}) {
@@ -74,7 +71,7 @@ function run(command, args, options = {}) {
     stdio: "inherit",
     cwd: options.cwd || root,
     shell,
-    env: process.env,
+    env: gcpEnv,
   });
   if (r.error) throw r.error;
   if (r.status !== 0) {
@@ -107,7 +104,7 @@ function maybeSkipNonWebsiteDeploy() {
 }
 
 function main() {
-  applyGcpEnv();
+  gcpEnv = applyGcpEnv(root);
   maybeSkipNonWebsiteDeploy();
 
   const projectId = resolveGcpProjectId(root);
@@ -122,6 +119,7 @@ function main() {
     process.env.PUBLIC_DOWNLOAD_BASE_URL?.trim() ||
     process.env.NEXT_PUBLIC_DOWNLOAD_BASE_URL?.trim() ||
     "https://diskwise-download.suherman.net/downloads";
+  const platform = resolveBuildPlatform();
 
   const { buildAndPushImage } = requireGhcrDeploy();
   let image;
@@ -130,6 +128,7 @@ function main() {
       cwd: root,
       contextDir: websiteDir,
       imageName: "diskwise-website",
+      platform,
       buildArgs: {
         NEXT_PUBLIC_REGISTRY_API_URL: registryApiUrl,
         NEXT_PUBLIC_APP_ID: "diskwise-macos",
