@@ -223,7 +223,9 @@ function statusLabel(status) {
 function isUpToDate(row) {
   if (row.headSha === "—" || row.headSha !== row.deployedSha) return false;
   if (row.syncOnly) return true;
-  return row.lastOutcome === "success";
+  // HEAD matches lastDeployedSha — treat as current even if a later cancel
+  // overwrote lastDeploymentId (race after deploy:stop).
+  return true;
 }
 
 function shaColor(headSha, deployedSha, pendingDeploy, active, lastOutcome) {
@@ -259,6 +261,10 @@ function componentNameColor(row) {
 function displayStatus(row) {
   if (row.status === "in_progress" || row.status === "queued") {
     return statusLabel(row.status);
+  }
+  // Checkpoint already at HEAD — don't keep showing a superseded cancel/failure.
+  if (row.headSha !== "—" && row.headSha === row.deployedSha) {
+    return statusLabel("success");
   }
   if (row.lastOutcome) {
     return statusLabel(row.lastOutcome);
@@ -305,6 +311,22 @@ function summarize(state, billing = null) {
       : null;
     if (!lastDeploy) {
       lastDeploy = (state.deployments || []).find((d) => d.repo === target.repo) || null;
+    }
+    // Prefer the success that matches lastDeployedSha over a later cancel/failure
+    // (deploy:stop can finish after deploy:sync and overwrite lastDeploymentId).
+    if (
+      rs.lastDeployedSha &&
+      lastDeploy &&
+      lastDeploy.status !== "success" &&
+      lastDeploy.sha !== rs.lastDeployedSha
+    ) {
+      const matchingSuccess = (state.deployments || []).find(
+        (d) =>
+          d.repo === target.repo &&
+          d.status === "success" &&
+          d.sha === rs.lastDeployedSha,
+      );
+      if (matchingSuccess) lastDeploy = matchingSuccess;
     }
     const lastOutcome = lastDeploy?.status || null;
     const rowStatus = activeStatus || "idle";
@@ -488,6 +510,7 @@ function buildStatusBoxLines(
       lines.push(row.lastOutcome === "success" ? dim(hint) : yellow(hint));
     } else if (
       row.status === "idle" &&
+      !isUpToDate(row) &&
       (row.lastOutcome === "failure" || row.lastOutcome === "cancelled")
     ) {
       lines.push(yellow(`  ↳ retry: npm run deploy:retry -- --repo ${row.repo}`));
