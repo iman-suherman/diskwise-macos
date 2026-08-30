@@ -57,15 +57,15 @@ function planAction(target, rs, state, head) {
 
   const last = lastOutcome(rs, state);
   const outcome = last?.status;
-  if (
-    (outcome === "failure" || outcome === "cancelled") &&
-    target.npmScript &&
-    !target.syncOnly
-  ) {
-    return { action: "deploy", reason: `last deploy ${outcome}` };
-  }
 
   if (!head || head === rs.lastDeployedSha) {
+    if (
+      (outcome === "failure" || outcome === "cancelled") &&
+      target.npmScript &&
+      !target.syncOnly
+    ) {
+      return { action: "deploy", reason: `retry last deploy ${outcome}` };
+    }
     return { action: "skip", reason: "up to date" };
   }
 
