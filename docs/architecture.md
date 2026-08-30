@@ -74,3 +74,16 @@ Phase 4 connects to Ollama for natural-language reports:
 > Analyze my 18 TB media drive and identify what can be safely removed.
 
 The app sends structured scan summaries to a local model and renders a consultant-style optimization plan.
+
+## DiskWise for iPhone & iPad (Photos)
+
+Universal iOS app target `DiskWiseiOS` uses **PhotosKit** (PhotoKit) for on-device library analysis and Recently Deleted cleanup. See [ios-photos.md](ios-photos.md).
+
+```mermaid
+flowchart TB
+    UI[DiskWiseiOS SwiftUI]
+    UI --> PhotosKit
+    PhotosKit --> PhotoKit[(Photos / iCloud Photos)]
+```
+
+macOS path/volume kits are not used for the Photos product.

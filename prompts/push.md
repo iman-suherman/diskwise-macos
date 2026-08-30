@@ -22,7 +22,7 @@ Optional:
 6. **Sync undeployed deploys:** run `npm run deploy:sync`.
    - Advances `lastDeployedSha` when HEAD has no deploy-required changes for that target (docs/prompts/scripts-only, etc.).
    - Triggers a real deploy when website / registry / app paths require it.
-   - Never auto-deploys `diskwise-download` (manual Cloudflare).
+   - Syncs checkpoints for `diskwise-download` and `diskwise-ios` (does not auto-run Cloudflare or TestFlight).
    - Do **not** run `npm run deploy:retry` blindly for `diskwise-app` when only non-app files changed — that would cut an unnecessary DMG. Prefer `deploy:sync`.
 7. If the human only asked to clear undeployed noise with nothing to commit, skip steps 2–4 and still run `npm run deploy:sync`.
 

@@ -24,6 +24,16 @@ Debug with breakpoints in Xcode:
 npm run xcode
 ```
 
+## iOS (Photos)
+
+```bash
+npm run build:ios
+# Open Xcode and run scheme DiskWiseiOS
+open app/DiskWise.xcodeproj
+```
+
+See [ios-photos.md](ios-photos.md) for product scope and MVP checklist.
+
 ## VS Code setup
 
 Recommended extensions:

@@ -12,6 +12,12 @@ const { spawnSync } = require("node:child_process");
 const { DEPLOY_TARGETS, REPO_ROOT } = require("./deploy-config.cjs");
 const { readState, STATE_FILE, findDeployment } = require("./deploy-store.cjs");
 const { lastLogLine, tailLogLines, sanitizeTerminal } = require("./deploy-log-utils.cjs");
+const {
+  getGcpBillingSummary,
+  allocateTargetCosts,
+  formatSummaryForDashboard,
+  formatTargetCost,
+} = require("./gcp-billing-ci.cjs");
 
 const useColor = process.stdout.isTTY && !process.env.NO_COLOR;
 const wrap =
@@ -30,16 +36,19 @@ const boldGreen = (t) => bold(green(t));
 const boldRed = (t) => bold(red(t));
 const boldYellow = (t) => bold(yellow(t));
 const boldCyan = (t) => bold(cyan(t));
+const boldWhite = (t) => (useColor ? `\x1b[1m${t}\x1b[0m` : t);
 
 const LOG_TAIL_LINES = Number.parseInt(process.env.DISKWise_CI_LOG_LINES || "12", 10);
 const ACTIVITY_LINES = Number.parseInt(process.env.DISKWise_CI_ACTIVITY_LINES || "8", 10);
 
 const TABLE = {
-  component: 30,
-  status: 12,
+  service: 28,
+  url: 34,
+  status: 10,
   head: 9,
   deployed: 9,
-  lastRun: 18,
+  cost: 10,
+  lastRun: 16,
 };
 
 function parseArgs(argv) {
@@ -78,13 +87,15 @@ function gitHead() {
 function boxWidth() {
   const cols = process.stdout.columns || 80;
   const tableInner =
-    TABLE.component +
+    TABLE.service +
+    TABLE.url +
     TABLE.status +
     TABLE.head +
     TABLE.deployed +
+    TABLE.cost +
     TABLE.lastRun +
-    14;
-  return Math.max(tableInner + 4, Math.min(cols - 1, 120));
+    20;
+  return Math.max(tableInner + 4, Math.min(cols - 1, 140));
 }
 
 function stripAnsi(text) {
@@ -210,11 +221,9 @@ function statusLabel(status) {
 }
 
 function isUpToDate(row) {
-  return (
-    row.lastOutcome === "success" &&
-    row.headSha !== "—" &&
-    row.headSha === row.deployedSha
-  );
+  if (row.headSha === "—" || row.headSha !== row.deployedSha) return false;
+  if (row.syncOnly) return true;
+  return row.lastOutcome === "success";
 }
 
 function shaColor(headSha, deployedSha, pendingDeploy, active, lastOutcome) {
@@ -257,7 +266,12 @@ function displayStatus(row) {
   return statusLabel("idle");
 }
 
-function isPendingDeploy(rs, lastDeploy) {
+function isPendingDeploy(rs, lastDeploy, target) {
+  if (target?.syncOnly || target?.infraDeploy) {
+    if (!rs.headSha) return false;
+    if (!rs.lastDeployedSha) return Boolean(rs.headSha);
+    return rs.headSha !== rs.lastDeployedSha;
+  }
   if (!rs.headSha || rs.headSha === rs.lastDeployedSha) return false;
   if (!rs.lastDeployedSha) {
     return lastDeploy?.sha === rs.headSha && lastDeploy?.status !== "success";
@@ -265,8 +279,14 @@ function isPendingDeploy(rs, lastDeploy) {
   return true;
 }
 
-function summarize(state) {
+function shortenUrl(url) {
+  if (!url) return "—";
+  return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+}
+
+function summarize(state, billing = null) {
   const head = gitHead();
+  const costs = allocateTargetCosts(billing || {}, DEPLOY_TARGETS);
   const rows = [];
   let active = 0;
   let failed = 0;
@@ -288,11 +308,12 @@ function summarize(state) {
     }
     const lastOutcome = lastDeploy?.status || null;
     const rowStatus = activeStatus || "idle";
-    const pendingDeploy = isPendingDeploy(rs, lastDeploy);
+    const pendingDeploy = isPendingDeploy(rs, lastDeploy, target);
+    const tracked = Boolean(target.npmScript || target.syncOnly || target.infraDeploy);
 
-    if (lastDeploy) everDeployed = true;
+    if (lastDeploy || rs.lastDeployedSha) everDeployed = true;
     if (activeStatus) active += 1;
-    if (!activeStatus && lastOutcome === "failure") {
+    if (!activeStatus && lastOutcome === "failure" && !target.syncOnly) {
       failed += 1;
       failedRepos.push({ repo: target.repo, label: target.label });
     }
@@ -308,10 +329,17 @@ function summarize(state) {
       ? current?.logFile || lastDeploy?.logFile
       : lastDeploy?.logFile || null;
 
+    const costAmount = Object.prototype.hasOwnProperty.call(costs, target.repo)
+      ? costs[target.repo]
+      : null;
+
     rows.push({
       repo: target.repo,
       label: target.label,
-      deployable: Boolean(target.npmScript),
+      url: target.url || "",
+      deployable: Boolean(target.npmScript && !target.syncOnly),
+      tracked,
+      syncOnly: Boolean(target.syncOnly || target.infraDeploy),
       note: target.note,
       details: target.details,
       status: rowStatus,
@@ -320,6 +348,8 @@ function summarize(state) {
       branch: rs.branch || target.branch || "main",
       headSha: rs.headSha ? rs.headSha.slice(0, 7) : "—",
       deployedSha: rs.lastDeployedSha ? rs.lastDeployedSha.slice(0, 7) : "—",
+      costPlain: formatTargetCost(costAmount, billing?.currency),
+      costAmount,
       lastRun:
         current?.startedAt || lastDeploy?.finishedAt || lastDeploy?.startedAt || null,
       duration: lastDeploy?.durationMs,
@@ -332,7 +362,7 @@ function summarize(state) {
     });
   }
 
-  return { rows, active, failed, pending, pendingRepos, failedRepos, everDeployed };
+  return { rows, active, failed, pending, pendingRepos, failedRepos, everDeployed, billing };
 }
 
 const TABLE_SEP = dim(" │ ");
@@ -340,10 +370,12 @@ const TABLE_SEP = dim(" │ ");
 function tableSep() {
   return dim(
     [
-      "─".repeat(TABLE.component),
+      "─".repeat(TABLE.service),
+      "─".repeat(TABLE.url),
       "─".repeat(TABLE.status),
       "─".repeat(TABLE.head),
       "─".repeat(TABLE.deployed),
+      "─".repeat(TABLE.cost),
       "─".repeat(TABLE.lastRun),
     ].join("─┼─"),
   );
@@ -355,10 +387,12 @@ function tableRow(cells) {
 
 function tableHeader() {
   return tableRow([
-    bold(padPlain("Component", TABLE.component)),
+    bold(padPlain("Service", TABLE.service)),
+    bold(padPlain("URL", TABLE.url)),
     bold(padPlain("Status", TABLE.status)),
     bold(padPlain("HEAD", TABLE.head)),
     bold(padPlain("Deployed", TABLE.deployed)),
+    bold(padPlain("Cost", TABLE.cost)),
     bold(padPlain("Last run", TABLE.lastRun)),
   ]);
 }
@@ -372,38 +406,35 @@ function buildStatusBoxLines(
   pendingRepos,
   failedRepos,
   everDeployed,
+  billing,
 ) {
   const relState = path.relative(process.cwd(), STATE_FILE) || STATE_FILE;
+  const billingLine = formatSummaryForDashboard(billing || { ok: false, line: "GCP billing…" }, {
+    green,
+    yellow,
+    dim,
+    bold: boldWhite,
+  });
   const lines = [
     dim(`State: ${relState}`),
     dim(`Updated: ${state.updatedAt || "—"}  ·  Ctrl+C to stop watching`),
+    "",
+    billingLine,
+    dim("Cost = allocated GCP MTD (Cloud Run / Storage / …); Cloudflare & App Store = —"),
     "",
     tableHeader(),
     tableSep(),
   ];
 
   for (const row of rows) {
-    if (!row.deployable) {
-      lines.push(
-        tableRow([
-          dim(padPlain(truncatePlain(row.label, TABLE.component), TABLE.component)),
-          dim(padPlain("— skip", TABLE.status)),
-          dim(padPlain("", TABLE.head)),
-          dim(padPlain("", TABLE.deployed)),
-          dim(padPlain(truncatePlain(row.note || "", TABLE.lastRun), TABLE.lastRun)),
-        ]),
-      );
-      if (row.details?.length) {
-        for (const detail of row.details) {
-          lines.push(dim(`  ↳ ${detail}`));
-        }
-      } else if (row.note) {
-        lines.push(dim(`  ↳ ${row.note}`));
-      }
-      continue;
-    }
+    const st = row.syncOnly && !row.deployable
+      ? row.pendingDeploy
+        ? { text: "pending", color: yellow }
+        : row.lastOutcome === "success" || (row.deployedSha !== "—" && !row.pendingDeploy)
+          ? { text: "synced", color: green }
+          : displayStatus(row)
+      : displayStatus(row);
 
-    const st = displayStatus(row);
     const when = row.lastRun ? formatRelativeTime(row.lastRun) : "—";
     const dur =
       row.status === "in_progress" || row.status === "queued"
@@ -412,6 +443,7 @@ function buildStatusBoxLines(
           ? ` (${formatDuration(row.duration)})`
           : "";
     const lastRunText = truncatePlain(`${when}${dur}`, TABLE.lastRun);
+    const urlPlain = truncatePlain(shortenUrl(row.url), TABLE.url);
 
     const headColor = shaColor(
       row.headSha,
@@ -430,10 +462,12 @@ function buildStatusBoxLines(
 
     lines.push(
       tableRow([
-        padCol(truncatePlain(row.label, TABLE.component), TABLE.component, componentNameColor(row)),
+        padCol(truncatePlain(row.label, TABLE.service), TABLE.service, componentNameColor(row)),
+        padCol(urlPlain, TABLE.url, dim),
         padCol(st.text, TABLE.status, st.color),
         padCol(row.headSha, TABLE.head, headColor),
         padCol(row.deployedSha, TABLE.deployed, deployedColor),
+        padCol(row.costPlain || "—", TABLE.cost, row.costAmount ? green : dim),
         padCol(lastRunText, TABLE.lastRun, lastRunColor(row)),
       ]),
     );
@@ -443,11 +477,15 @@ function buildStatusBoxLines(
     }
     if (row.status === "idle" && isUpToDate(row)) {
       lines.push(green(`  ↳ deployed and up to date`));
-    } else     if (row.status === "idle" && row.error && !row.lastOutcome) {
+    } else if (row.status === "idle" && row.syncOnly && !row.pendingDeploy && row.deployedSha !== "—") {
+      lines.push(green(`  ↳ checkpoint synced at HEAD`));
+    } else if (row.status === "idle" && row.error && !row.lastOutcome) {
       lines.push(yellow(`  ↳ ${row.error}`));
     } else if (row.status === "idle" && row.pendingDeploy) {
-      const retryHint = `  ↳ new commit ${row.headSha} — npm run deploy:retry -- --repo ${row.repo}`;
-      lines.push(row.lastOutcome === "success" ? dim(retryHint) : yellow(retryHint));
+      const hint = row.syncOnly
+        ? `  ↳ new commit ${row.headSha} — npm run deploy:sync -- --repo ${row.repo}`
+        : `  ↳ new commit ${row.headSha} — npm run deploy:retry -- --repo ${row.repo}`;
+      lines.push(row.lastOutcome === "success" ? dim(hint) : yellow(hint));
     } else if (
       row.status === "idle" &&
       (row.lastOutcome === "failure" || row.lastOutcome === "cancelled")
@@ -477,12 +515,12 @@ function buildStatusBoxLines(
         lines.push(red(`  ↳ ${target.repo} (${target.label})`));
       }
     }
-    lines.push(dim("Retry all:  npm run deploy:retry"));
+    lines.push(dim("Sync/retry:  npm run deploy:sync   ·   npm run deploy:retry"));
   } else if (!everDeployed) {
     lines.push(yellow("No deployments yet."));
     lines.push(dim("Push website changes or run: npm run deploy:retry -- --repo diskwise-website"));
   } else {
-    lines.push(green("All deployable targets idle and up to date."));
+    lines.push(green("All tracked targets idle and up to date."));
     lines.push(dim("Watching for new commits and deploys — Ctrl+C to stop"));
   }
 
@@ -589,8 +627,9 @@ function printActivitySection(state) {
 }
 
 function printDashboard(state) {
+  const billing = getGcpBillingSummary({ repoRoot: REPO_ROOT });
   const { rows, active, failed, pending, pendingRepos, failedRepos, everDeployed } =
-    summarize(state);
+    summarize(state, billing);
 
   clearScreen();
   renderBox(
@@ -604,6 +643,7 @@ function printDashboard(state) {
       pendingRepos,
       failedRepos,
       everDeployed,
+      billing,
     ),
   );
 
@@ -627,11 +667,20 @@ async function main() {
     if (process.stdout.isTTY) {
       printDashboard(state);
     } else {
-      const summary = summarize(state);
+      const billing = getGcpBillingSummary({ repoRoot: REPO_ROOT });
+      const summary = summarize(state, billing);
+      console.log(billing.line || "GCP billing unavailable");
       for (const row of summary.rows) {
-        if (!row.deployable) continue;
         console.log(
-          `${row.repo}\t${row.status}\t${row.lastOutcome || ""}\t${row.lastLine || ""}\t${row.logFile || ""}`,
+          [
+            row.repo,
+            row.status,
+            row.lastOutcome || "",
+            row.headSha,
+            row.deployedSha,
+            row.costPlain || "—",
+            row.lastLine || "",
+          ].join("\t"),
         );
       }
       if (once) {
@@ -639,7 +688,8 @@ async function main() {
       }
     }
 
-    const { active, failed, pending } = summarize(state);
+    const billing = getGcpBillingSummary({ repoRoot: REPO_ROOT });
+    const { active, failed, pending } = summarize(state, billing);
     if (process.stdout.isTTY) {
       if (once) {
         process.exit(failed > 0 || pending > 0 ? 1 : 0);

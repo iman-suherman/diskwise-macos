@@ -27,7 +27,8 @@ Local deploy dashboard: `npm run ci` → `scripts/ci-deploy-status.cjs` (state i
 | `diskwise-website` | diskwise.suherman.net | `npm run deploy:retry -- --repo diskwise-website` |
 | `diskwise-registry` | diskwise-registry.suherman.net | `npm run deploy:retry -- --repo diskwise-registry` |
 | `diskwise-app` | DiskWise macOS DMG | `npm run release` / `deploy:retry -- --repo diskwise-app` |
-| `diskwise-download` | diskwise-download.suherman.net | Manual via suherman-net-infra Cloudflare |
+| `diskwise-download` | diskwise-download.suherman.net | Checkpoint via `npm run deploy:sync`; Worker via suherman-net-infra Cloudflare |
+| `diskwise-ios` | DiskWise iOS App Store | Checkpoint via `npm run deploy:sync`; publish via `npm run publish:testflight` |
 
 Slash shortcuts: `/fix-failed-deploy`, `/release`, `/push`, `/investigate`, `/help`.
 

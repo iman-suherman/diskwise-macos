@@ -1,0 +1,43 @@
+{
+  "appleId": 6806657352,
+  "bundleId": "net.suherman.diskwise.ios",
+  "platform": "IOS",
+  "versionString": "1.0",
+  "copyright": "Copyright © 2026 Iman Suherman",
+  "primaryLocale": "en-AU",
+  "supportUrl": "https://diskwise.suherman.net/#privacy",
+  "marketingUrl": "https://diskwise.suherman.net",
+  "privacyPolicyUrl": "https://diskwise.suherman.net/#privacy",
+  "privacyPolicyUrls": {
+    "en-AU": "https://diskwise.suherman.net/#privacy"
+  },
+  "locales": {
+    "en-AU": {
+      "promotionalText": "On-device Photos storage consultant — find reclaimable space and clean up safely.",
+      "keywords": "photos,duplicates,cleanup,storage,screenshots,videos,privacy,iphone,ipad",
+      "description": "DiskWise for iPhone and iPad is an on-device Photos storage consultant. It scans your photo library, estimates reclaimable space, and helps you move clutter to Recently Deleted — never permanent delete in v1.\n\nWHAT IT DOES\n• Find exact duplicates and similar media\n• Surface screenshots, bursts, large videos, and older items\n• Ranked recommendations with reclaimable estimates\n• Preview and confirm before anything is removed\n\nSAFE CLEANUP\nSelected items go to Photos → Recently Deleted so you can recover them for about 30 days. DiskWise never empties Recently Deleted.\n\nPRIVACY\nAll analysis runs on your device. Photo contents are not uploaded to a cloud service.\n\nLearn more at https://diskwise.suherman.net"
+    }
+  },
+  "review": {
+    "contactFirstName": "Iman",
+    "contactLastName": "Suherman",
+    "contactPhone": "+61430058886",
+    "contactEmail": "iman.suherman@gmail.com",
+    "demoAccountRequired": false,
+    "notes": "DiskWise (net.suherman.diskwise.ios) — Photos storage consultant.\n\nHOW TO REVIEW\n1. Grant Photos access (Full Access recommended; Limited works).\n2. Wait for the library scan to finish — dashboard shows reclaimable space and buckets.\n3. Open a recommendation/bucket → select items → Review → Move to Recently Deleted.\n4. Confirm items appear in Photos → Recently Deleted.\n\nNo login. Analysis is on-device. v1 never permanently empties Recently Deleted.\n\nPrivacy: https://diskwise.suherman.net/#privacy\nSupport: https://diskwise.suherman.net/#privacy\nContact: iman.suherman@gmail.com | +61430058886"
+  },
+  "releaseType": "AFTER_APPROVAL",
+  "screenshots": {
+    "iphone-69": [
+      "dashboard.png",
+      "recommendations.png",
+      "bucket.png",
+      "confirm.png"
+    ],
+    "ipad-13": [
+      "dashboard.png",
+      "recommendations.png",
+      "bucket.png"
+    ]
+  }
+}

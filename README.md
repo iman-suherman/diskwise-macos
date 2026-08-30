@@ -23,7 +23,9 @@ Unlike traditional tools that only show category totals, DiskWise acts as an **A
 
 ```
 diskwise-macos/
-├── app/                    # SwiftUI desktop app
+├── app/
+│   ├── DiskWise/           # macOS SwiftUI app
+│   └── DiskWiseiOS/        # iPhone + iPad Photos consultant
 ├── website/                # Next.js marketing site
 ├── Sources/                # Swift packages (kits)
 │   ├── DatabaseKit/
@@ -31,7 +33,8 @@ diskwise-macos/
 │   ├── MetadataKit/
 │   ├── DuplicateKit/
 │   ├── CleanupKit/
-│   └── AIKit/
+│   ├── AIKit/
+│   └── PhotosKit/          # PhotoKit index, insights, cleanup (iOS)
 ├── Tests/
 ├── database/migrations/    # SQL reference schema
 ├── docs/
@@ -47,6 +50,7 @@ diskwise-macos/
 - **CleanupKit** — preview cleanup and move files to Trash via `FileManager.trashItem`
 - **AIKit** — storage insights, recommendations, optional Ollama report generation
 - **DatabaseKit** — GRDB schema, migrations, repositories
+- **PhotosKit** — Photos library authorization, index, duplicates/insights, Recently Deleted cleanup (see `docs/ios-photos.md`)
 
 ## Development
 

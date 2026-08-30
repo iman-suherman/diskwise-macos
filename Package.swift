@@ -5,6 +5,7 @@ let package = Package(
     name: "DiskWise",
     platforms: [
         .macOS(.v14),
+        .iOS(.v17),
     ],
     products: [
         .library(name: "DatabaseKit", targets: ["DatabaseKit"]),
@@ -14,6 +15,7 @@ let package = Package(
         .library(name: "CleanupKit", targets: ["CleanupKit"]),
         .library(name: "AIKit", targets: ["AIKit"]),
         .library(name: "MaintenanceKit", targets: ["MaintenanceKit"]),
+        .library(name: "PhotosKit", targets: ["PhotosKit"]),
     ],
     dependencies: [
         .package(url: "https://github.com/groue/GRDB.swift.git", from: "7.0.0"),
@@ -71,6 +73,17 @@ let package = Package(
         .testTarget(
             name: "MaintenanceKitTests",
             dependencies: ["MaintenanceKit"]
+        ),
+        .target(
+            name: "PhotosKit",
+            dependencies: [],
+            linkerSettings: [
+                .linkedFramework("Photos", .when(platforms: [.iOS, .macOS])),
+            ]
+        ),
+        .testTarget(
+            name: "PhotosKitTests",
+            dependencies: ["PhotosKit"]
         ),
     ]
 )

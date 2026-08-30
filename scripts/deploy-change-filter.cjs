@@ -71,6 +71,33 @@ function requiresAppRelease(changedFiles) {
   );
 }
 
+const IOS_RELEASE_PREFIXES = [
+  "Sources/PhotosKit/",
+  "Tests/PhotosKitTests/",
+  "app/DiskWiseiOS/",
+  "app-store-connect/",
+  "scripts/build-ios.sh",
+  "scripts/publish-testflight.sh",
+  "scripts/ensure-asc-app.sh",
+  "scripts/upload-app-store-listing.py",
+  "scripts/submit-app-store-review.py",
+  "scripts/set-app-store-price-free.py",
+  "scripts/prepare-app-store-metadata.py",
+  "scripts/capture-app-store-screenshots.sh",
+  "docs/ios-photos.md",
+];
+
+function requiresIosRelease(changedFiles) {
+  if (!changedFiles.length) return false;
+  return changedFiles.some((file) =>
+    IOS_RELEASE_PREFIXES.some((prefix) =>
+      prefix.endsWith(".sh") || prefix.endsWith(".py") || prefix.endsWith(".md")
+        ? file === prefix
+        : file.startsWith(prefix),
+    ),
+  );
+}
+
 function requiresDeployForRepo(repo, changedFiles) {
   switch (repo) {
     case "diskwise-website":
@@ -79,6 +106,10 @@ function requiresDeployForRepo(repo, changedFiles) {
       return requiresRegistryDeploy(changedFiles);
     case "diskwise-app":
       return requiresAppRelease(changedFiles);
+    case "diskwise-ios":
+      return requiresIosRelease(changedFiles);
+    case "diskwise-download":
+      return false;
     default:
       return changedFiles.length > 0;
   }
@@ -104,6 +135,7 @@ module.exports = {
   requiresWebsiteDeploy,
   requiresRegistryDeploy,
   requiresAppRelease,
+  requiresIosRelease,
   requiresDeployForRepo,
   isDeployCheckpointOnlyChange,
   changedFilesSince,

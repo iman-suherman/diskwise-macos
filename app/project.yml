@@ -3,6 +3,7 @@ options:
   bundleIdPrefix: net.suherman
   deploymentTarget:
     macOS: "14.0"
+    iOS: "17.0"
   createIntermediateGroups: true
 packages:
   Sparkle:
@@ -14,6 +15,7 @@ settings:
   base:
     SWIFT_VERSION: "5.9"
     MACOSX_DEPLOYMENT_TARGET: "14.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
 targets:
   DiskWise:
     type: application
@@ -78,10 +80,41 @@ targets:
     scheme:
       testTargets: []
 
+  DiskWiseiOS:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: DiskWiseiOS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: net.suherman.diskwise.ios
+        INFOPLIST_FILE: DiskWiseiOS/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: Q3TXW887NM
+        CURRENT_PROJECT_VERSION: 3
+        MARKETING_VERSION: 1.0
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: NO
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.utilities"
+    dependencies:
+      - package: DiskWisePackages
+        product: PhotosKit
+    scheme:
+      testTargets: []
+
 schemes:
   DiskWise:
     build:
       targets:
         DiskWise: all
+    run:
+      config: Debug
+  DiskWiseiOS:
+    build:
+      targets:
+        DiskWiseiOS: all
     run:
       config: Debug

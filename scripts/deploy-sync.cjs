@@ -3,11 +3,16 @@
  * After git push: advance deploy checkpoints when HEAD has no deploy-required
  * changes for a target; otherwise trigger a real deploy (same as deploy:retry).
  *
- * Manual infra target (diskwise-download) is never auto-synced.
+ * syncOnly / infraDeploy targets (download, iOS) only advance checkpoints —
+ * they never auto-trigger Cloudflare or TestFlight uploads.
  */
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
-const { DEPLOY_TARGETS, deployableTargets, REPO_ROOT } = require("./deploy-config.cjs");
+const {
+  DEPLOY_TARGETS,
+  syncableTargets,
+  REPO_ROOT,
+} = require("./deploy-config.cjs");
 const { readState, findDeployment } = require("./deploy-store.cjs");
 const { recordDirectDeployOutcome } = require("./deploy-record-direct.cjs");
 const {
@@ -31,7 +36,7 @@ function parseArgs(argv) {
     if (argv[i] === "--repo" && argv[i + 1]) repo = argv[++i];
     else if (argv[i] === "-h" || argv[i] === "--help") {
       console.log(
-        "Usage: npm run deploy:sync [-- --repo diskwise-website|diskwise-registry|diskwise-app]",
+        "Usage: npm run deploy:sync [-- --repo diskwise-website|diskwise-registry|diskwise-app|diskwise-download|diskwise-ios]",
       );
       process.exit(0);
     }
@@ -44,7 +49,7 @@ function lastOutcome(rs, state) {
   return findDeployment(state, rs.lastDeploymentId);
 }
 
-function planAction(repo, rs, state, head) {
+function planAction(target, rs, state, head) {
   if (rs.status === "in_progress") return { action: "skip", reason: "in progress" };
   if (rs.status === "queued" && (rs.pid || rs.currentDeploymentId)) {
     return { action: "skip", reason: "queued" };
@@ -52,7 +57,11 @@ function planAction(repo, rs, state, head) {
 
   const last = lastOutcome(rs, state);
   const outcome = last?.status;
-  if (outcome === "failure" || outcome === "cancelled") {
+  if (
+    (outcome === "failure" || outcome === "cancelled") &&
+    target.npmScript &&
+    !target.syncOnly
+  ) {
     return { action: "deploy", reason: `last deploy ${outcome}` };
   }
 
@@ -60,14 +69,21 @@ function planAction(repo, rs, state, head) {
     return { action: "skip", reason: "up to date" };
   }
 
+  if (target.syncOnly || target.infraDeploy) {
+    return {
+      action: "sync",
+      reason: `checkpoint → ${head.slice(0, 7)} (${target.note || target.repo})`,
+    };
+  }
+
   const files = changedFilesSince(rs.lastDeployedSha, head);
-  if (requiresDeployForRepo(repo, files)) {
+  if (requiresDeployForRepo(target.repo, files)) {
     return { action: "deploy", reason: "deploy-required changes since last deploy" };
   }
 
   return {
     action: "sync",
-    reason: `no ${repo} deploy-required changes since ${(rs.lastDeployedSha || "").slice(0, 7) || "?"} → ${head.slice(0, 7)}`,
+    reason: `no ${target.repo} deploy-required changes since ${(rs.lastDeployedSha || "").slice(0, 7) || "?"} → ${head.slice(0, 7)}`,
   };
 }
 
@@ -75,7 +91,7 @@ function syncCheckpoint(target, message) {
   recordDirectDeployOutcome({
     repo: target.repo,
     label: target.label,
-    npmScript: target.npmScript,
+    npmScript: target.npmScript || "deploy:sync",
     status: "success",
     startedAt: new Date().toISOString(),
     exitCode: 0,
@@ -102,14 +118,14 @@ function main() {
     process.exit(1);
   }
 
-  if (repo && !DEPLOY_TARGETS.find((t) => t.repo === repo && t.npmScript)) {
-    console.error(`error: unknown or non-deployable target: ${repo}`);
+  if (repo && !DEPLOY_TARGETS.find((t) => t.repo === repo)) {
+    console.error(`error: unknown target: ${repo}`);
     process.exit(1);
   }
 
   const targets = repo
-    ? deployableTargets().filter((t) => t.repo === repo)
-    : deployableTargets();
+    ? syncableTargets().filter((t) => t.repo === repo)
+    : syncableTargets();
 
   let synced = 0;
   let deployed = 0;
@@ -117,7 +133,7 @@ function main() {
 
   for (const target of targets) {
     const rs = state.repos[target.repo] || {};
-    const plan = planAction(target.repo, rs, state, head);
+    const plan = planAction(target, rs, state, head);
     if (plan.action === "skip") {
       console.log(`deploy:sync: ${target.repo} — skip (${plan.reason})`);
       skipped += 1;
