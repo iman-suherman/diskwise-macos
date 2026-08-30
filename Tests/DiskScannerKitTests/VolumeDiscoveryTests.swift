@@ -60,5 +60,73 @@ final class VolumeDiscoveryTests: XCTestCase {
         )
         XCTAssertFalse(VolumeDiscovery.canEject(internalData))
     }
+
+    func testPhysicalStorageAcceptsRootAndExternalVolumes() {
+        XCTAssertTrue(VolumeDiscovery.isPhysicalStorageVolume(mountPath: "/"))
+        XCTAssertTrue(VolumeDiscovery.isPhysicalStorageVolume(mountPath: "/Volumes/Media"))
+        XCTAssertTrue(
+            VolumeDiscovery.isPhysicalStorageVolume(
+                mountPath: "/Volumes/External Storage 1",
+                deviceProtocol: "USB",
+                deviceModel: "Elements 25A3"
+            )
+        )
+        XCTAssertTrue(
+            VolumeDiscovery.isPhysicalStorageVolume(
+                mountPath: "/",
+                deviceProtocol: "Apple Fabric",
+                deviceModel: "APPLE SSD AP1024Z"
+            )
+        )
+    }
+
+    func testPhysicalStorageRejectsNetworkVolumes() {
+        XCTAssertFalse(VolumeDiscovery.isPhysicalStorageVolume(mountPath: "/Volumes/Share", isLocal: false))
+        XCTAssertFalse(
+            VolumeDiscovery.isPhysicalStorageVolume(
+                mountPath: "/Volumes/Time Machine",
+                isNetworkVolume: true
+            )
+        )
+    }
+
+    func testPhysicalStorageRejectsDiskImagesAndVirtualMounts() {
+        XCTAssertFalse(
+            VolumeDiscovery.isPhysicalStorageVolume(
+                mountPath: "/Volumes/Installer",
+                deviceProtocol: "Disk Image",
+                deviceModel: "Disk Image"
+            )
+        )
+        XCTAssertFalse(
+            VolumeDiscovery.isPhysicalStorageVolume(
+                mountPath: "/Volumes/Simulator",
+                deviceProtocol: "Virtual Interface",
+                deviceModel: "Disk Image"
+            )
+        )
+        XCTAssertFalse(
+            VolumeDiscovery.isPhysicalStorageVolume(
+                mountPath: "/Library/Developer/CoreSimulator/Volumes/iOS_23F77"
+            )
+        )
+        XCTAssertFalse(
+            VolumeDiscovery.isPhysicalStorageVolume(
+                mountPath: "/private/var/run/com.apple.security.cryptexd/mnt/tool"
+            )
+        )
+    }
+
+    func testMountedVolumesExcludesLogicalDiskImages() throws {
+        let volumes = VolumeDiscovery.mountedVolumes()
+        XCTAssertFalse(volumes.contains { $0.mountPath.contains("CoreSimulator") })
+        XCTAssertFalse(volumes.contains { $0.mountPath.contains("cryptexd") })
+        for volume in volumes {
+            XCTAssertTrue(
+                VolumeDiscovery.isPhysicalStorageVolume(mountPath: volume.mountPath),
+                "Unexpected non-physical volume in discovery: \(volume.mountPath)"
+            )
+        }
+    }
 }
 #endif

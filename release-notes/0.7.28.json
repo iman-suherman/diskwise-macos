@@ -1,0 +1,12 @@
+{
+  "summary": "Disk Analysis, free-space badges, and low-space alerts only consider real physical drives — not simulator images, DMGs, or other logical mounts.",
+  "introduced": [],
+  "changed": [
+    "Volume discovery — Disk Analysis and notifications list only physical storage at / and /Volumes (internal SSD, USB, Thunderbolt)",
+    "Logical mounts ignored — simulator runtimes, disk images, cryptex, and network shares no longer appear as drives or trigger low-space alerts"
+  ],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}

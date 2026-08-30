@@ -1,4 +1,7 @@
 import Foundation
+#if os(macOS)
+import DiskArbitration
+#endif
 
 public struct MountedVolume: Identifiable, Sendable, Hashable {
     public var id: String { mountPath }
@@ -82,6 +85,40 @@ public enum VolumeDiscovery {
         mountPath == "/"
     }
 
+    /// Whether a mount is real physical storage suitable for disk space analysis.
+    ///
+    /// Excludes network shares, disk images (DMGs, simulator runtimes, cryptex), and
+    /// non-user-facing mount points outside `/` and `/Volumes`.
+    public static func isPhysicalStorageVolume(
+        mountPath: String,
+        isLocal: Bool? = true,
+        deviceProtocol: String? = nil,
+        deviceModel: String? = nil,
+        isNetworkVolume: Bool = false
+    ) -> Bool {
+        if isLocal == false || isNetworkVolume {
+            return false
+        }
+
+        if mountPath != "/" && !mountPath.hasPrefix("/Volumes/") {
+            return false
+        }
+
+        let protocolName = deviceProtocol?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let model = deviceModel?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if protocolName == "Disk Image" || protocolName == "Virtual Interface" {
+            return false
+        }
+        if model == "Disk Image" {
+            return false
+        }
+
+        return true
+    }
+
     /// Whether a volume can be unmounted and ejected. Excludes the system drive and non-removable internal volumes.
     public static func canEject(_ volume: MountedVolume) -> Bool {
         if isSystemVolume(mountPath: volume.mountPath) {
@@ -102,6 +139,7 @@ public enum VolumeDiscovery {
             .volumeIsInternalKey,
             .volumeIsRemovableKey,
             .volumeIsEjectableKey,
+            .volumeIsLocalKey,
         ]
 
         var volumes: [MountedVolume] = []
@@ -158,6 +196,17 @@ public enum VolumeDiscovery {
         guard let values = try? url.resourceValues(forKeys: Set(keys)) else { return nil }
 
         let mountPath = url.path
+        let device = volumeDeviceAttributes(mountPath: mountPath)
+        guard isPhysicalStorageVolume(
+            mountPath: mountPath,
+            isLocal: values.volumeIsLocal,
+            deviceProtocol: device.protocolName,
+            deviceModel: device.model,
+            isNetworkVolume: device.isNetworkVolume
+        ) else {
+            return nil
+        }
+
         let localizedName = values.volumeLocalizedName ?? values.volumeName
         let fallbackName = url.lastPathComponent.isEmpty ? mountPath : url.lastPathComponent
         let name = localizedName?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
@@ -181,5 +230,35 @@ public enum VolumeDiscovery {
             isInternal: values.volumeIsInternal ?? (mountPath == "/"),
             isRemovable: isRemovable
         )
+    }
+
+    private struct VolumeDeviceAttributes {
+        var protocolName: String?
+        var model: String?
+        var isNetworkVolume: Bool
+    }
+
+    private static func volumeDeviceAttributes(mountPath: String) -> VolumeDeviceAttributes {
+        #if os(macOS)
+        guard let session = DASessionCreate(kCFAllocatorDefault) else {
+            return VolumeDeviceAttributes(protocolName: nil, model: nil, isNetworkVolume: false)
+        }
+        let url = URL(fileURLWithPath: mountPath) as CFURL
+        guard let disk = DADiskCreateFromVolumePath(kCFAllocatorDefault, session, url),
+              let description = DADiskCopyDescription(disk) as? [String: Any] else {
+            return VolumeDeviceAttributes(protocolName: nil, model: nil, isNetworkVolume: false)
+        }
+
+        let protocolName = description[kDADiskDescriptionDeviceProtocolKey as String] as? String
+        let model = description[kDADiskDescriptionDeviceModelKey as String] as? String
+        let isNetwork = (description[kDADiskDescriptionVolumeNetworkKey as String] as? Bool) ?? false
+        return VolumeDeviceAttributes(
+            protocolName: protocolName,
+            model: model,
+            isNetworkVolume: isNetwork
+        )
+        #else
+        return VolumeDeviceAttributes(protocolName: nil, model: nil, isNetworkVolume: false)
+        #endif
     }
 }
