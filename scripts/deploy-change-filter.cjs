@@ -13,15 +13,30 @@ const REGISTRY_DEPLOY_PREFIXES = [
 ];
 
 const APP_RELEASE_PREFIXES = [
-  "Sources/",
-  "Tests/",
-  "Package.swift",
+  "Sources/DiskScannerKit/",
+  "Sources/DatabaseKit/",
+  "Sources/MetadataKit/",
+  "Sources/DuplicateKit/",
+  "Sources/CleanupKit/",
+  "Sources/AIKit/",
+  "Sources/MaintenanceKit/",
+  "Tests/DiskScannerKitTests/",
+  "Tests/DatabaseKitTests/",
+  "Tests/DuplicateKitTests/",
+  "Tests/AIKitTests/",
+  "Tests/MaintenanceKitTests/",
   "scripts/release.sh",
   "scripts/release-publish.cjs",
   "scripts/sign-and-notarize.sh",
 ];
 
 const APP_RELEASE_PATH_PATTERNS = [/^app\/DiskWise\/.*\.swift$/];
+
+const APP_RELEASE_EXCLUDE_PREFIXES = [
+  "Sources/PhotosKit/",
+  "Tests/PhotosKitTests/",
+  "app/DiskWiseiOS/",
+];
 
 const DEPLOY_CHECKPOINT_PREFIXES = ["scripts/", "release-notes/", "logs/"];
 
@@ -56,12 +71,17 @@ function requiresRegistryDeploy(changedFiles) {
 }
 
 /**
- * True when changes need a new notarized DMG (product code), not version/checkpoint bookkeeping.
+ * True when changes need a new notarized DMG (macOS product code), not iOS/PhotosKit.
  */
 function requiresAppRelease(changedFiles) {
   if (!changedFiles.length) return false;
   if (isDeployCheckpointOnlyChange(changedFiles)) return false;
-  return changedFiles.some(
+  const macOSFiles = changedFiles.filter(
+    (file) =>
+      !APP_RELEASE_EXCLUDE_PREFIXES.some((prefix) => file.startsWith(prefix)),
+  );
+  if (!macOSFiles.length) return false;
+  return macOSFiles.some(
     (file) =>
       APP_RELEASE_PREFIXES.some((prefix) =>
         prefix.includes(".") && !prefix.endsWith("/")
