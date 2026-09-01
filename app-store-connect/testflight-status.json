@@ -2,11 +2,10 @@
   "bundleId": "net.suherman.diskwise.ios",
   "appleId": "6806657352",
   "marketingVersion": "1.0",
-  "buildNumber": "3",
-  "gitCommit": "042959e6479e686ff350cbba73ceeaa99d217f9f",
-  "uploadedAt": "2026-08-29T21:18:53Z",
-  "submittedForReviewAt": "2026-08-29T21:33:00Z",
-  "reviewSubmissionId": "c9747129-f522-4068-bcd9-7f0737e790da",
-  "buildId": "d9a3407e-a9d5-4058-ac72-0eb8cc184197",
-  "note": "Submitted for App Store review via scripts/submit-app-store-review.py."
+  "buildNumber": "4",
+  "uploadedAt": "2026-09-01T07:44:54Z",
+  "submittedForReviewAt": "2026-09-01T07:44:54Z",
+  "reviewSubmissionId": "1d1b4501-1675-4ada-8345-018f7a9eb64e",
+  "buildId": "a0d99ad5-ff8f-4f58-a2fc-90fcc38a8012",
+  "note": "Resubmitted after 5.1.1(iv) fix: permission button Continue replaces Allow Photos Access."
 }

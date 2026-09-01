@@ -106,6 +106,7 @@
 		B1CF70C5E32C91E0CB3E2E05 /* SystemStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E3813DA348AA12313FC982 /* SystemStatusView.swift */; };
 		B3DC246BB66ED1E1451B986D /* 0.6.0.json in Resources */ = {isa = PBXBuildFile; fileRef = 68DCBEA8FF30108E7C861517 /* 0.6.0.json */; };
 		B45D56C55BA3F20C1925612B /* 0.5.13.json in Resources */ = {isa = PBXBuildFile; fileRef = 0FF3D9E21CD3A7F219755FE8 /* 0.5.13.json */; };
+		B6D6E3EB0CB142A866AD87C6 /* 0.7.28.json in Resources */ = {isa = PBXBuildFile; fileRef = D367FA9D978B4E08F6A6122F /* 0.7.28.json */; };
 		B7284DB7D37A1021F42F9A6C /* MenuBarMonitorInstructionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5691892A76E1A24CE7AAF729 /* MenuBarMonitorInstructionOverlay.swift */; };
 		B73481DF81F7E6AFBE8BDB1E /* 0.4.1.json in Resources */ = {isa = PBXBuildFile; fileRef = A837FD3874FB7FAF41F641AD /* 0.4.1.json */; };
 		B7B1E3914BEC481C3C31919E /* 0.5.19.json in Resources */ = {isa = PBXBuildFile; fileRef = 29ACCD97F5F5EACC612CD0DA /* 0.5.19.json */; };
@@ -307,6 +308,7 @@
 		CFE4E71E665CB6D42763B928 /* MenuBarExtensionPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarExtensionPrompt.swift; sourceTree = "<group>"; };
 		D11410D9D78D0C276152F4CE /* FullDiskAccessPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessPrompt.swift; sourceTree = "<group>"; };
 		D1AD81F965196697F42696E0 /* VolumeScanScheduleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeScanScheduleStore.swift; sourceTree = "<group>"; };
+		D367FA9D978B4E08F6A6122F /* 0.7.28.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.7.28.json; sourceTree = "<group>"; };
 		D4BCD4E96BC002C2E47A8E33 /* VolumeDiskTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeDiskTabView.swift; sourceTree = "<group>"; };
 		D55B4D8545269C44AB27D3D0 /* 0.5.18.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.5.18.json; sourceTree = "<group>"; };
 		D6BF3C996FCBAA4513AD9F9A /* 0.3.9.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = 0.3.9.json; sourceTree = "<group>"; };
@@ -495,6 +497,7 @@
 				EACA58C43E1CC245A219E4A3 /* 0.7.25.json */,
 				FB2B605AB890A30B9D875CAA /* 0.7.26.json */,
 				3F895066DB48C8A260B4D9A4 /* 0.7.27.json */,
+				D367FA9D978B4E08F6A6122F /* 0.7.28.json */,
 			);
 			path = "release-notes";
 			sourceTree = "<group>";
@@ -805,6 +808,7 @@
 				C2F653ED2F0E798CACB10C7D /* 0.7.25.json in Resources */,
 				2E200C0B581E74FF65CF0459 /* 0.7.26.json in Resources */,
 				02F61DD0AFFCD20DC13FBFE6 /* 0.7.27.json in Resources */,
+				B6D6E3EB0CB142A866AD87C6 /* 0.7.28.json in Resources */,
 				EB56D9F7608C74B1ED807A5D /* 0.7.3.json in Resources */,
 				BD59F8106D44F5E87359A802 /* 0.7.4.json in Resources */,
 				5DFD07E54D9D275EAA4738AB /* 0.7.5.json in Resources */,
@@ -1094,7 +1098,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = Q3TXW887NM;
 				INFOPLIST_FILE = DiskWiseiOS/Info.plist;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
@@ -1118,7 +1122,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = Q3TXW887NM;
 				INFOPLIST_FILE = DiskWiseiOS/Info.plist;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;

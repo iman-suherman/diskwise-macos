@@ -74,7 +74,7 @@ struct PermissionView: View {
                         .buttonStyle(.borderedProminent)
                 }
             } else {
-                Button("Allow Photos Access") {
+                Button("Continue") {
                     Task { await model.requestAccess() }
                 }
                 .buttonStyle(.borderedProminent)
