@@ -2,6 +2,19 @@ import Foundation
 import PhotosKit
 import SwiftUI
 
+enum DemoScreenshotRoute: String {
+    case dashboard
+    case recommendations
+    case bucket
+    case confirm
+
+    static var fromEnvironment: DemoScreenshotRoute? {
+        guard ProcessInfo.processInfo.environment["DISKWISE_DEMO"] == "1" else { return nil }
+        let raw = ProcessInfo.processInfo.environment["DISKWISE_DEMO_ROUTE"] ?? "dashboard"
+        return DemoScreenshotRoute(rawValue: raw) ?? .dashboard
+    }
+}
+
 @MainActor
 final class AppViewModel: ObservableObject {
     @Published var authorization: PhotosAuthorizationStatus = .notDetermined
@@ -13,15 +26,22 @@ final class AppViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var lastCleanupCount: Int?
     @Published var isCleaning = false
+    /// App Store screenshot deep-link (set only when DISKWISE_DEMO=1).
+    let demoRoute: DemoScreenshotRoute?
 
     private let consultant = PhotosConsultantService()
     private let cleanup = PhotosCleanupEngine()
 
     init() {
+        demoRoute = DemoScreenshotRoute.fromEnvironment
         authorization = consultant.authorizationStatus()
-        if ProcessInfo.processInfo.environment["DISKWISE_DEMO"] == "1" {
+        if demoRoute != nil {
             loadDemoReport()
         }
+    }
+
+    var demoBucketSummary: PhotosBucketSummary? {
+        report.buckets.first { $0.bucket == .screenshots } ?? report.buckets.first
     }
 
     private func loadDemoReport() {
@@ -37,6 +57,9 @@ final class AppViewModel: ObservableObject {
         ]
         assetsByID = Dictionary(uniqueKeysWithValues: assets.map { ($0.id, $0) })
         report = PhotosInsightEngine().analyze(assets)
+        if demoRoute == .bucket || demoRoute == .confirm, let summary = demoBucketSummary {
+            selectedIDs = Set(summary.assetIDs)
+        }
     }
 
     var canScan: Bool { authorization.canReadLibrary }
@@ -53,7 +76,7 @@ final class AppViewModel: ObservableObject {
     }
 
     func scan() async {
-        if ProcessInfo.processInfo.environment["DISKWISE_DEMO"] == "1" {
+        if demoRoute != nil {
             loadDemoReport()
             return
         }

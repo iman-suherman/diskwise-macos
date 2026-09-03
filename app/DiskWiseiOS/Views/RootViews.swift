@@ -8,16 +8,18 @@ struct RootView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if !model.canScan {
+                if let route = model.demoRoute {
+                    demoScreen(for: route)
+                } else if !model.canScan {
                     PermissionView()
                 } else {
                     DashboardView()
                 }
             }
-            .navigationTitle("DiskWise")
+            .navigationTitle(demoNavigationTitle)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    if model.canScan {
+                    if model.canScan, model.demoRoute == nil || model.demoRoute == .dashboard || model.demoRoute == .recommendations {
                         Button {
                             Task { await model.scan() }
                         } label: {
@@ -39,6 +41,33 @@ struct RootView: View {
             Button("OK", role: .cancel) { model.errorMessage = nil }
         } message: {
             Text(model.errorMessage ?? "")
+        }
+    }
+
+    @ViewBuilder
+    private func demoScreen(for route: DemoScreenshotRoute) -> some View {
+        switch route {
+        case .dashboard, .recommendations:
+            DashboardView()
+        case .bucket:
+            if let summary = model.demoBucketSummary {
+                BucketDetailView(summary: summary)
+            } else {
+                DashboardView()
+            }
+        case .confirm:
+            ReviewCleanupView()
+        }
+    }
+
+    private var demoNavigationTitle: String {
+        switch model.demoRoute {
+        case .bucket:
+            return model.demoBucketSummary?.bucket.title ?? "Screenshots"
+        case .confirm:
+            return "Confirm cleanup"
+        case .dashboard, .recommendations, .none:
+            return "DiskWise"
         }
     }
 }

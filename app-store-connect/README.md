@@ -41,6 +41,8 @@ npm run appstore:price-free
 npm run appstore:submit
 ```
 
+`appstore:screenshots` erases the HaloRT App Store iPhone/iPad simulators first so leftover permission sheets from other apps cannot appear in DiskWise metadata.
+
 **Manual once (API cannot set this):** App Privacy → publish **Data Not Collected**  
 https://appstoreconnect.apple.com/apps/6806657352/appData/privacy/practice
 

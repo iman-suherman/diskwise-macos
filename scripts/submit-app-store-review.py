@@ -256,13 +256,40 @@ def submit_for_review(client, version_id: str) -> None:
         f"/v1/apps/{APP_ID}/reviewSubmissions",
         params={"filter[platform]": "IOS", "limit": 10},
     )["data"]
+
+    # Metadata rejections leave a submission in UNRESOLVED_ISSUES that cannot accept
+    # more items — cancel it and start a fresh submission.
+    reusable_states = {"READY_FOR_REVIEW", "WAITING_FOR_REVIEW"}
+    submission_id = None
     for item in open_submission:
         state = item["attributes"].get("state")
-        if state not in {"COMPLETE", "CANCELLED"}:
+        if state in {"COMPLETE", "CANCELLED"}:
+            continue
+        if state == "UNRESOLVED_ISSUES":
+            sid = item["id"]
+            print(f"Cancelling unresolved review submission {sid}…")
+            client.patch(
+                f"/v1/reviewSubmissions/{sid}",
+                {
+                    "data": {
+                        "type": "reviewSubmissions",
+                        "id": sid,
+                        "attributes": {"canceled": True},
+                    }
+                },
+            )
+            # ASC needs a beat before the version can join a new submission.
+            import time
+
+            time.sleep(3)
+            continue
+        if state in reusable_states:
             submission_id = item["id"]
             print(f"Reusing open review submission {submission_id} (state={state}).")
             break
-    else:
+        print(f"Note: leaving review submission {item['id']} (state={state}) alone.")
+
+    if submission_id is None:
         created = client.post(
             "/v1/reviewSubmissions",
             {
