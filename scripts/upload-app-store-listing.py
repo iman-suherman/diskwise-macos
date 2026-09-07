@@ -31,7 +31,12 @@ PREVIEW_TYPES = {
 # Fallback display types Apple has used across API versions.
 DISPLAY_TYPE_FALLBACKS = {
     "APP_IPHONE_69": ["APP_IPHONE_69", "APP_IPHONE_67"],
-    "APP_IPAD_PRO_129": ["APP_IPAD_PRO_129", "APP_IPAD_PRO_3GEN_129", "APP_IPAD_PRO_2018_129"],
+    # Upload to every 13" iPad slot Apple exposes in Media Manager.
+    "APP_IPAD_PRO_129": [
+        "APP_IPAD_PRO_129",
+        "APP_IPAD_PRO_3GEN_129",
+        "APP_IPAD_PRO_2018_129",
+    ],
     "APP_WATCH_ULTRA": ["APP_WATCH_ULTRA", "APP_WATCH_ULTRA_2", "APP_APPLE_WATCH_ULTRA"],
 }
 PREVIEW_TYPE_FALLBACKS = {
@@ -267,15 +272,37 @@ def ensure_set(
     relationship: str,
     set_type: str,
 ) -> str | None:
+    sets = ensure_all_sets(
+        client, loc_id, kind, type_attr, type_value, fallbacks, relationship, set_type
+    )
+    return sets[0] if sets else None
+
+
+def ensure_all_sets(
+    client: Client,
+    loc_id: str,
+    kind: str,
+    type_attr: str,
+    type_value: str,
+    fallbacks: list[str],
+    relationship: str,
+    set_type: str,
+) -> list[str]:
+    """Return set IDs for every matching display/preview type (create missing preferred ones)."""
     listed = client.get(
         f"/v1/appStoreVersionLocalizations/{loc_id}/{kind}"
     )["data"]
     existing = {item["attributes"][type_attr]: item["id"] for item in listed}
+    set_ids: list[str] = []
+    seen: set[str] = set()
+
     for candidate in fallbacks:
-        if candidate in existing:
-            return existing[candidate]
-    last_error = None
-    for candidate in fallbacks:
+        set_id = existing.get(candidate)
+        if set_id:
+            if set_id not in seen:
+                set_ids.append(set_id)
+                seen.add(set_id)
+            continue
         try:
             created = client.post(
                 f"/v1/{kind}",
@@ -294,13 +321,18 @@ def ensure_set(
                     }
                 },
             )
+            new_id = created["data"]["id"]
             print(f"Created {kind} {candidate}")
-            return created["data"]["id"]
+            if new_id not in seen:
+                set_ids.append(new_id)
+                seen.add(new_id)
         except SystemExit as error:
-            last_error = error
-            continue
-    print(f"Skip {kind} {type_value}: {last_error}")
-    return None
+            # Not every API generation accepts every display type enum.
+            print(f"Skip create {kind} {candidate}: {error}")
+
+    if not set_ids:
+        print(f"Skip {kind} {type_value}: no matching screenshot/preview sets")
+    return set_ids
 
 
 def replace_screenshots(client: Client, set_id: str, files: list[Path]) -> None:
@@ -416,19 +448,20 @@ def main() -> None:
     update_metadata(client, version, localizations)
 
     # Screenshots for every localization — Apple does not share sets across locales.
-    shot_order = (LISTING.get("screenshots") or {}).get("iphone-69") or [
-        "onboarding",
-        "panduan",
-        "tujuan",
-        "daftar",
-        "privasi",
+    default_order = [
+        "dashboard",
+        "recommendations",
+        "bucket",
+        "confirm",
     ]
-    shot_stems = [name.replace(".png", "") for name in shot_order]
-    screenshot_map = {
-        "iphone-69": ordered_pngs(ASC_ROOT / "iphone-69", shot_stems),
-        "ipad-13": ordered_pngs(ASC_ROOT / "ipad-13", shot_stems),
-        "watch-ultra": [],
-    }
+    screenshot_map: dict[str, list[Path]] = {}
+    for key in ("iphone-69", "ipad-13", "watch-ultra"):
+        order = (LISTING.get("screenshots") or {}).get(key) or [
+            f"{stem}.png" for stem in default_order
+        ]
+        stems = [name.replace(".png", "") for name in order]
+        screenshot_map[key] = ordered_pngs(ASC_ROOT / key, stems)
+
     preview_map = {
         "iphone-69": [],
         "ipad-13": [],
@@ -444,7 +477,7 @@ def main() -> None:
                 print("Skip Watch screenshots because HALORT_SKIP_WATCH=1.")
                 continue
             type_value = DISPLAY_TYPES[key]
-            set_id = ensure_set(
+            set_ids = ensure_all_sets(
                 client,
                 loc_id,
                 "appScreenshotSets",
@@ -454,10 +487,9 @@ def main() -> None:
                 "appStoreVersionLocalization",
                 "appScreenshotSets",
             )
-            if not set_id:
-                continue
-            print(f"Uploading screenshots {locale_code}/{key}...")
-            replace_screenshots(client, set_id, files)
+            for set_id in set_ids:
+                print(f"Uploading screenshots {locale_code}/{key} → set {set_id}...")
+                replace_screenshots(client, set_id, files)
 
         for key, files in preview_map.items():
             files = [p for p in files if p.exists()]

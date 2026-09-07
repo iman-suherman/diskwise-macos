@@ -19,7 +19,7 @@ struct RootView: View {
             .navigationTitle(demoNavigationTitle)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    if model.canScan, model.demoRoute == nil || model.demoRoute == .dashboard || model.demoRoute == .recommendations {
+                    if model.canScan, model.demoRoute == nil || model.demoRoute == .dashboard {
                         Button {
                             Task { await model.scan() }
                         } label: {
@@ -47,8 +47,15 @@ struct RootView: View {
     @ViewBuilder
     private func demoScreen(for route: DemoScreenshotRoute) -> some View {
         switch route {
-        case .dashboard, .recommendations:
+        case .dashboard:
             DashboardView()
+        case .recommendations:
+            // Must be visually distinct from dashboard (App Review 2.3.3).
+            if let summary = model.demoRecommendationSummary {
+                BucketDetailView(summary: summary)
+            } else {
+                DashboardView()
+            }
         case .bucket:
             if let summary = model.demoBucketSummary {
                 BucketDetailView(summary: summary)
@@ -62,11 +69,13 @@ struct RootView: View {
 
     private var demoNavigationTitle: String {
         switch model.demoRoute {
+        case .recommendations:
+            return model.demoRecommendationSummary?.bucket.title ?? "Large Videos"
         case .bucket:
             return model.demoBucketSummary?.bucket.title ?? "Screenshots"
         case .confirm:
             return "Confirm cleanup"
-        case .dashboard, .recommendations, .none:
+        case .dashboard, .none:
             return "DiskWise"
         }
     }

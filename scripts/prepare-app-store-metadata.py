@@ -130,27 +130,35 @@ def ensure_age_rating(client, version_id: str) -> None:
 
 
 def ensure_ipad_3gen_screenshots(client, upload) -> None:
+    """Refresh every 13\" iPad Media Manager slot (Apple hides some behind View All Sizes)."""
     version = upload.find_version(client)
     locs = upload.ensure_localizations(client, version["id"])
-    files = sorted((ASC_ROOT / "ipad-13").glob("*.png"))
+    order = (LISTING.get("screenshots") or {}).get("ipad-13") or [
+        "dashboard.png",
+        "recommendations.png",
+        "bucket.png",
+        "confirm.png",
+    ]
+    stems = [name.replace(".png", "") for name in order]
+    files = upload.ordered_pngs(ASC_ROOT / "ipad-13", stems)
     if not files:
-        print("Skip APP_IPAD_PRO_3GEN_129 — no ipad screenshots on disk")
+        print("Skip iPad 13\" screenshots — none on disk")
         return
+    display_types = upload.DISPLAY_TYPE_FALLBACKS["APP_IPAD_PRO_129"]
     for locale, loc_id in locs.items():
-        set_id = upload.ensure_set(
+        set_ids = upload.ensure_all_sets(
             client,
             loc_id,
             "appScreenshotSets",
             "screenshotDisplayType",
-            "APP_IPAD_PRO_3GEN_129",
-            ["APP_IPAD_PRO_3GEN_129", "APP_IPAD_PRO_129", "APP_IPAD_PRO_2018_129"],
+            "APP_IPAD_PRO_129",
+            display_types,
             "appStoreVersionLocalization",
             "appScreenshotSets",
         )
-        if not set_id:
-            continue
-        print(f"Uploading APP_IPAD_PRO_3GEN_129 screenshots for {locale}…")
-        upload.replace_screenshots(client, set_id, files)
+        for set_id in set_ids:
+            print(f"Uploading 13\" iPad screenshots for {locale} → set {set_id}…")
+            upload.replace_screenshots(client, set_id, files)
 
 
 def ensure_privacy_nutrition(client) -> None:

@@ -40,25 +40,64 @@ final class AppViewModel: ObservableObject {
         }
     }
 
+    /// Screenshots bucket — used by `bucket` / `confirm` App Store routes.
     var demoBucketSummary: PhotosBucketSummary? {
         report.buckets.first { $0.bucket == .screenshots } ?? report.buckets.first
+    }
+
+    /// Highest-savings recommendation bucket — used by `recommendations` route (must differ from dashboard).
+    var demoRecommendationSummary: PhotosBucketSummary? {
+        guard let rec = report.recommendations.first else { return nil }
+        return PhotosBucketSummary(
+            bucket: rec.bucket,
+            assetIDs: rec.assetIDs,
+            reclaimableBytes: rec.estimatedSavings
+        )
     }
 
     private func loadDemoReport() {
         authorization = .authorized
         let day = Date()
-        let assets = [
+        // Rich enough for 13" iPad screenshots — sparse lists look like placeholders to App Review.
+        var assets: [PhotoAssetRecord] = [
             PhotoAssetRecord(id: "d1", mediaType: .image, byteSize: 4_200_000, pixelWidth: 4032, pixelHeight: 3024, creationDate: day),
             PhotoAssetRecord(id: "d2", mediaType: .image, byteSize: 4_200_000, pixelWidth: 4032, pixelHeight: 3024, creationDate: day),
-            PhotoAssetRecord(id: "s1", mediaType: .image, byteSize: 890_000, pixelWidth: 1170, pixelHeight: 2532, creationDate: day, isScreenshot: true),
-            PhotoAssetRecord(id: "s2", mediaType: .image, byteSize: 720_000, pixelWidth: 1170, pixelHeight: 2532, creationDate: day.addingTimeInterval(-86_400), isScreenshot: true),
+            PhotoAssetRecord(id: "d3", mediaType: .image, byteSize: 3_800_000, pixelWidth: 4032, pixelHeight: 3024, creationDate: day.addingTimeInterval(-3_600)),
+            PhotoAssetRecord(id: "d4", mediaType: .image, byteSize: 3_800_000, pixelWidth: 4032, pixelHeight: 3024, creationDate: day.addingTimeInterval(-3_600)),
             PhotoAssetRecord(id: "v1", mediaType: .video, byteSize: 420_000_000, pixelWidth: 1920, pixelHeight: 1080, durationSeconds: 184, creationDate: day.addingTimeInterval(-86400 * 40)),
+            PhotoAssetRecord(id: "v2", mediaType: .video, byteSize: 186_000_000, pixelWidth: 1920, pixelHeight: 1080, durationSeconds: 96, creationDate: day.addingTimeInterval(-86400 * 12)),
+            PhotoAssetRecord(id: "v3", mediaType: .video, byteSize: 112_000_000, pixelWidth: 1280, pixelHeight: 720, durationSeconds: 64, creationDate: day.addingTimeInterval(-86400 * 90)),
             PhotoAssetRecord(id: "o1", mediaType: .image, byteSize: 3_100_000, pixelWidth: 3000, pixelHeight: 2000, creationDate: day.addingTimeInterval(-86400 * 800)),
+            PhotoAssetRecord(id: "o2", mediaType: .image, byteSize: 2_400_000, pixelWidth: 3000, pixelHeight: 2000, creationDate: day.addingTimeInterval(-86400 * 900)),
+            PhotoAssetRecord(id: "o3", mediaType: .image, byteSize: 2_100_000, pixelWidth: 2400, pixelHeight: 1600, creationDate: day.addingTimeInterval(-86400 * 1100)),
         ]
+        let shotSizes: [Int64] = [890_000, 720_000, 640_000, 580_000, 510_000, 470_000, 430_000, 390_000]
+        for (index, size) in shotSizes.enumerated() {
+            assets.append(
+                PhotoAssetRecord(
+                    id: "s\(index + 1)",
+                    mediaType: .image,
+                    byteSize: size,
+                    pixelWidth: 1170,
+                    pixelHeight: 2532,
+                    creationDate: day.addingTimeInterval(TimeInterval(-86_400 * index)),
+                    isScreenshot: true
+                )
+            )
+        }
         assetsByID = Dictionary(uniqueKeysWithValues: assets.map { ($0.id, $0) })
         report = PhotosInsightEngine().analyze(assets)
-        if demoRoute == .bucket || demoRoute == .confirm, let summary = demoBucketSummary {
-            selectedIDs = Set(summary.assetIDs)
+        switch demoRoute {
+        case .recommendations:
+            if let summary = demoRecommendationSummary {
+                selectedIDs = Set(summary.assetIDs)
+            }
+        case .bucket, .confirm:
+            if let summary = demoBucketSummary {
+                selectedIDs = Set(summary.assetIDs)
+            }
+        case .dashboard, .none:
+            break
         }
     }
 

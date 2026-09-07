@@ -41,7 +41,7 @@ npm run appstore:price-free
 npm run appstore:submit
 ```
 
-`appstore:screenshots` erases the HaloRT App Store iPhone/iPad simulators first so leftover permission sheets from other apps cannot appear in DiskWise metadata.
+`appstore:screenshots` erases the HaloRT App Store iPhone/iPad simulators first so leftover permission sheets from other apps cannot appear in DiskWise metadata. It captures four distinct demo routes (`dashboard`, `recommendations` → large-videos detail, `bucket`, `confirm`) and fails if any two PNGs are identical. Upload refreshes every 13" iPad Media Manager slot (`APP_IPAD_PRO_129` / `3GEN` / `2018`) — open **View All Sizes** in ASC if a slot still looks stale.
 
 **Manual once (API cannot set this):** App Privacy → publish **Data Not Collected**  
 https://appstoreconnect.apple.com/apps/6806657352/appData/privacy/practice

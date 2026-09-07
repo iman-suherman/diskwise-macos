@@ -123,7 +123,21 @@ capture_device "$IPHONE_UDID" "$OUT_IPHONE" 1320 2868 "iphone"
 
 IPAD_UDID="$(prepare_simulator "$IPAD_NAME")"
 capture_device "$IPAD_UDID" "$OUT_IPAD" 2048 2732 "ipad"
-# iPad listing uses dashboard / recommendations / bucket only
-rm -f "$OUT_IPAD/confirm.png"
+
+# Fail fast if any two shots are identical (App Review 2.3.3 — stale / duplicate metadata).
+python3 - "$ROOT" <<'PY'
+import hashlib, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+for label, folder in (("iphone-69", root / "app-store-connect/asc/iphone-69"),
+                      ("ipad-13", root / "app-store-connect/asc/ipad-13")):
+    digests = {}
+    for path in sorted(folder.glob("*.png")):
+        digest = hashlib.md5(path.read_bytes()).hexdigest()
+        if digest in digests:
+            print(f"error: duplicate screenshots in {label}: {digests[digest].name} == {path.name}", file=sys.stderr)
+            sys.exit(1)
+        digests[digest] = path
+    print(f"OK {label}: {len(digests)} unique screenshots")
+PY
 
 echo "Screenshots → $OUT_IPHONE and $OUT_IPAD"
