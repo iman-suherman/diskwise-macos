@@ -283,22 +283,24 @@ struct BucketDetailView: View {
                     Button {
                         model.toggleSelection(id)
                     } label: {
-                        HStack {
+                        HStack(spacing: 12) {
                             Image(systemName: model.selectedIDs.contains(id) ? "checkmark.circle.fill" : "circle")
                                 .foregroundStyle(model.selectedIDs.contains(id) ? Color.accentColor : .secondary)
+                            PhotoThumbnailView(assetID: id, isVideo: asset?.isVideo == true)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(assetTitle(asset))
                                 Text(assetSubtitle(asset))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
-                            Spacer()
+                            Spacer(minLength: 8)
                             if let asset {
                                 Text(ByteCountFormat.string(for: asset.byteSize))
                                     .font(.caption.monospacedDigit())
                                     .foregroundStyle(.secondary)
                             }
                         }
+                        .padding(.vertical, 2)
                     }
                     .buttonStyle(.plain)
                 }
