@@ -15,6 +15,7 @@
     "en-AU": {
       "promotionalText": "On-device Photos storage consultant — find reclaimable space and clean up safely.",
       "keywords": "photos,duplicates,cleanup,storage,screenshots,videos,privacy,iphone,ipad",
+      "whatsNew": "Cleanup lists now show photo and video thumbnails, so Similar Media and other buckets are easier to review before you move items to Recently Deleted.",
       "description": "DiskWise for iPhone and iPad is an on-device Photos storage consultant. It scans your photo library, estimates reclaimable space, and helps you move clutter to Recently Deleted — never permanent delete in v1.\n\nWHAT IT DOES\n• Find exact duplicates and similar media\n• Surface screenshots, bursts, large videos, and older items\n• Ranked recommendations with reclaimable estimates\n• Preview and confirm before anything is removed\n\nSAFE CLEANUP\nSelected items go to Photos → Recently Deleted so you can recover them for about 30 days. DiskWise never empties Recently Deleted.\n\nPRIVACY\nAll analysis runs on your device. Photo contents are not uploaded to a cloud service.\n\nLearn more at https://diskwise.suherman.net"
     }
   },

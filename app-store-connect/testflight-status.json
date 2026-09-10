@@ -1,11 +1,12 @@
 {
   "bundleId": "net.suherman.diskwise.ios",
   "appleId": "6806657352",
-  "marketingVersion": "1.0",
-  "buildNumber": "4",
-  "uploadedAt": "2026-09-01T07:44:54Z",
-  "submittedForReviewAt": "2026-09-01T07:44:54Z",
-  "reviewSubmissionId": "1d1b4501-1675-4ada-8345-018f7a9eb64e",
-  "buildId": "a0d99ad5-ff8f-4f58-a2fc-90fcc38a8012",
-  "note": "Resubmitted after 5.1.1(iv) fix: permission button Continue replaces Allow Photos Access."
+  "marketingVersion": "1.0.1",
+  "buildNumber": "5",
+  "gitCommit": "90791aa1a1185e952fe01d2e96e7b827e1e0ce1c",
+  "uploadedAt": "2026-09-10T02:32:36Z",
+  "submittedForReviewAt": "2026-09-10T02:36:00Z",
+  "reviewSubmissionId": "8cc72834-5cbb-47c3-8a33-aa4c5fc279ae",
+  "buildId": "08ece7c6-18f2-4a8d-ba17-1007721428ef",
+  "note": "Submitted 1.0.1 (build 5) with PhotoKit thumbnails in cleanup bucket lists."
 }
