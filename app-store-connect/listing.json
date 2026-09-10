@@ -2,7 +2,7 @@
   "appleId": 6806657352,
   "bundleId": "net.suherman.diskwise.ios",
   "platform": "IOS",
-  "versionString": "1.0",
+  "versionString": "1.0.1",
   "copyright": "Copyright © 2026 Iman Suherman",
   "primaryLocale": "en-AU",
   "supportUrl": "https://diskwise.suherman.net/#privacy",
@@ -24,7 +24,7 @@
     "contactPhone": "+61430058886",
     "contactEmail": "iman.suherman@gmail.com",
     "demoAccountRequired": false,
-    "notes": "RESPONSE TO APP REVIEW — Guideline 2.3.3 Accurate Metadata (13-inch iPad screenshots)\n\nWe replaced all 13-inch iPad (and iPhone) screenshots with fresh captures from the current 1.0 build. Each frame shows live DiskWise UI in use:\n1. Dashboard — reclaimable estimate, ranked recommendations, cleanup buckets\n2. Large Videos recommendation detail — select reclaimable videos\n3. Screenshots bucket — multi-select cleanup candidates\n4. Confirm cleanup — Move to Recently Deleted preview (never permanent delete)\n\nScreenshots were recaptured on a clean App Store iPad Pro 13 simulator after erasing leftover system sheets from other apps. Duplicate/identical frames were removed.\n\nHOW TO REVIEW\n1. Tap Continue on the Photos explanation screen, then choose access (Full Access recommended; Limited works).\n2. Wait for the library scan — dashboard shows reclaimable space and buckets.\n3. Open a recommendation/bucket → select items → Review → Move to Recently Deleted.\n4. Confirm items appear in Photos → Recently Deleted.\n\nNo login. Analysis is on-device. DiskWise does not use Location Services.\n\nPrivacy: https://diskwise.suherman.net/#privacy\nSupport: https://diskwise.suherman.net/#privacy\nContact: iman.suherman@gmail.com | +61430058886"
+    "notes": "WHAT'S NEW IN 1.0.1\nCleanup bucket lists (Similar Media, Screenshots, etc.) now show PhotoKit thumbnails so you can review near-matches visually before moving items to Recently Deleted.\n\nHOW TO REVIEW\n1. Tap Continue on the Photos explanation screen, then choose access (Full Access recommended; Limited works).\n2. Wait for the library scan — dashboard shows reclaimable space and buckets.\n3. Open Similar Media (or any bucket) — each row shows a thumbnail, metadata, and size.\n4. Select items → Review → Move to Recently Deleted.\n5. Confirm items appear in Photos → Recently Deleted.\n\nNo login. Analysis is on-device. DiskWise does not use Location Services.\n\nPrivacy: https://diskwise.suherman.net/#privacy\nSupport: https://diskwise.suherman.net/#privacy\nContact: iman.suherman@gmail.com | +61430058886"
   },
   "releaseType": "AFTER_APPROVAL",
   "screenshots": {
