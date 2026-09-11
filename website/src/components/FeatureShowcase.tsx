@@ -1,4 +1,4 @@
-import { BRAND_NAME } from "@/lib/brand";
+import { APP_STORE_URL, BRAND_NAME } from "@/lib/brand";
 
 const coreFeatures = [
   {
@@ -77,7 +77,14 @@ const workflowSteps = [
   },
 ];
 
-const alsoIncluded = [
+const alsoIncluded: Array<{
+  title: string;
+  description: string;
+  icon: string;
+  href?: string;
+  cta?: string;
+  external?: boolean;
+}> = [
   {
     title: "Scheduled scans",
     description: "Plan recurring disk scans from the Disk Analysis Schedule tab.",
@@ -94,9 +101,13 @@ const alsoIncluded = [
     icon: "💿",
   },
   {
-    title: "Simple install",
-    description: "Download the DMG, drag DiskWise to Applications, and launch — standard macOS setup.",
-    icon: "📦",
+    title: "Also on iPhone & iPad",
+    description:
+      "Find Photos duplicates and clutter, preview, then move extras to Recently Deleted.",
+    icon: "📱",
+    href: APP_STORE_URL,
+    cta: "Get on the App Store",
+    external: true,
   },
 ];
 
@@ -163,6 +174,17 @@ export function FeatureShowcase() {
               {item.title}
             </p>
             <p className="mt-1 text-sm text-slate-400">{item.description}</p>
+            {item.href && item.cta && (
+              <a
+                href={item.href}
+                className="mt-2 inline-flex text-sm font-semibold text-brand-blue transition hover:text-brand-blueLight"
+                {...(item.external
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
+              >
+                {item.cta} →
+              </a>
+            )}
           </div>
         ))}
       </div>

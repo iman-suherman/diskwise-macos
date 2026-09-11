@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { LocalReleaseDate } from "@/components/LocalReleaseDate";
 import { ScanningHeroIcon } from "@/components/ScanningHeroIcon";
+import { AppStoreLink } from "@/components/AppStoreLink";
 import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 import { DownloadButton } from "@/components/DownloadButton";
 import { useLatestVersion } from "@/hooks/useRegistry";
@@ -30,18 +31,38 @@ export function Hero() {
             <span className="gradient-text">overall health.</span>
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-slate-400 sm:mt-6 sm:text-lg sm:leading-8 md:text-xl md:leading-9">
-            {BRAND_NAME} is a native macOS app that scans your drives, scores system health,
-            finds duplicates, cleans caches safely, and explains what to do next — with on-device
-            AI guidance, not cloud uploads.
+            {BRAND_NAME} for Mac scans your drives, scores system health, finds duplicates, and
+            cleans caches safely — with on-device AI, not cloud uploads. On iPhone and iPad, it
+            is a Photos storage consultant that finds reclaimable space and moves clutter to
+            Recently Deleted.
           </p>
 
-          <div id="download" className="mt-6 flex flex-col gap-3 sm:mt-8">
+          <div id="download" className="mt-6 flex flex-col gap-4 sm:mt-8">
+            <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  macOS
+                </p>
+                <p className="mt-1 text-sm text-slate-400">Universal DMG · macOS 14+</p>
+                <div className="mt-3">
+                  <DownloadButton
+                    latest={latest}
+                    loading={loading}
+                    className="btn-primary w-full whitespace-nowrap px-5 py-3 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  iPhone &amp; iPad
+                </p>
+                <p className="mt-1 text-sm text-slate-400">Photos cleanup · iOS 17+</p>
+                <div className="mt-1 flex min-h-[44px] items-center">
+                  <AppStoreLink variant="badge" className="-ml-2.5" />
+                </div>
+              </div>
+            </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-nowrap sm:items-center sm:gap-2 lg:gap-3">
-              <DownloadButton
-                latest={latest}
-                loading={loading}
-                className="btn-primary w-full shrink-0 whitespace-nowrap px-5 py-3 text-sm sm:w-auto sm:px-6 sm:py-3 lg:px-5"
-              />
               <Link
                 href="/versions"
                 className="btn-secondary w-full shrink-0 whitespace-nowrap px-5 py-3 text-sm sm:w-auto sm:px-6 sm:py-3 lg:px-5"

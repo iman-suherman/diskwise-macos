@@ -23,7 +23,7 @@ export function DownloadButton({ latest, loading, className = "btn-primary" }: D
 
   return (
     <a href={toPublicDownloadUrl(latest)} className={className}>
-      Download v{latest.version}
+      Download for Mac · v{latest.version}
     </a>
   );
 }

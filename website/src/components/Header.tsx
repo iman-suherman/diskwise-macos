@@ -3,12 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { AppStoreLink } from "@/components/AppStoreLink";
 import { BRAND_NAME, GITHUB_REPO_URL } from "@/lib/brand";
 
 const nav = [
   { href: "/", label: "Home" },
+  { href: "/#download", label: "Download" },
   { href: "/install", label: "Install" },
-  { href: "/versions", label: "Download" },
   { href: "/versions", label: "Versions" },
   { href: "/#preview", label: "Preview" },
   { href: "/#features", label: "Features" },
@@ -65,7 +66,7 @@ export function Header() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2">
-          <Link href="/install" className="btn-primary hidden md:inline-flex">
+          <Link href="/#download" className="btn-primary hidden md:inline-flex">
             Get DiskWise
           </Link>
           <button
@@ -125,13 +126,16 @@ export function Header() {
               </li>
             ))}
           </ul>
-          <Link
-            href="/install"
-            className="btn-primary mt-4 w-full"
-            onClick={() => setMenuOpen(false)}
-          >
-            Get DiskWise
-          </Link>
+          <div className="mt-4 grid gap-2">
+            <Link
+              href="/#download"
+              className="btn-primary w-full"
+              onClick={() => setMenuOpen(false)}
+            >
+              Download for Mac
+            </Link>
+            <AppStoreLink variant="button" className="btn-secondary w-full" />
+          </div>
         </nav>
       )}
     </header>

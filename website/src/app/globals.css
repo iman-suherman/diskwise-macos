@@ -60,6 +60,20 @@ body {
   @apply flex h-11 w-full items-center justify-center whitespace-nowrap rounded-xl border border-white/30 px-5 text-sm font-semibold text-white transition hover:bg-white/10;
 }
 
+.app-store-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Apple: onscreen min height 40px; clear space = 1/4 of badge height */
+  padding: 10px;
+}
+
+.app-store-badge img {
+  display: block;
+  height: 40px;
+  width: auto;
+}
+
 .app-icon-hero,
 .app-icon-mark,
 .scanning-hero-image {

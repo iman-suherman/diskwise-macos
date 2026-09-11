@@ -66,8 +66,8 @@ See `.env.example`. Build-time vars baked into the Next.js client:
 
 | Path | Purpose |
 |------|---------|
-| `/` | Landing page |
-| `/install` | macOS DMG install guide |
-| `/versions` | Release history + downloads |
+| `/` | Landing page with macOS DMG and App Store download links |
+| `/install` | macOS DMG install guide + App Store link |
+| `/versions` | macOS release history + DMG downloads |
 
 Release metadata is fetched client-side from the registry API (when configured).

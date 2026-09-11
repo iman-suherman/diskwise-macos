@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { LocalReleaseDate } from "@/components/LocalReleaseDate";
+import { AppStoreLink } from "@/components/AppStoreLink";
 import { useAllVersions } from "@/hooks/useRegistry";
 import {
   flattenReleaseNotes,
@@ -161,10 +162,14 @@ export function VersionHistory() {
         <p className="text-sm font-semibold uppercase tracking-wide text-brand-blue">
           All releases
         </p>
-        <h2 className="mt-2 text-3xl font-bold text-slate-50">Download any version</h2>
+        <h2 className="mt-2 text-3xl font-bold text-slate-50">Download any Mac version</h2>
         <p className="mt-2 max-w-2xl text-slate-400">
-          Browse past releases, read what changed, and grab the DMG you need.
+          Browse past macOS releases, read what changed, and grab the DMG you need. DiskWise for
+          iPhone and iPad is on the App Store.
         </p>
+        <div className="mt-4">
+          <AppStoreLink variant="button" className="btn-secondary" />
+        </div>
       </div>
 
       {loading ? (

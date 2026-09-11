@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { AppStoreLink } from "@/components/AppStoreLink";
 import { LocalReleaseDate } from "@/components/LocalReleaseDate";
 import { DownloadButton } from "@/components/DownloadButton";
 import { useLatestVersion } from "@/hooks/useRegistry";
@@ -58,12 +59,44 @@ export function InstallGuide() {
       </Link>
 
       <p className="mt-6 text-sm font-semibold uppercase tracking-wide text-brand-blue">
-        Installation guide
+        Get DiskWise
       </p>
       <h1 className="mt-3 text-3xl font-bold text-slate-50 md:text-4xl">
-        Install DiskWise on macOS
+        Download for Mac, or get it on the App Store
       </h1>
       <p className="mt-4 text-base leading-7 text-slate-400">
+        DiskWise for macOS is a notarized DMG. DiskWise for iPhone and iPad is on the App Store
+        and helps you clean Photos clutter on-device.
+      </p>
+
+      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        <div className="card p-6">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">macOS</p>
+          <h2 className="mt-2 text-lg font-semibold text-slate-100">Download the DMG</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-400">
+            Universal binary for Apple Silicon and Intel. macOS 14 or later.
+          </p>
+          <div className="mt-4">
+            <DownloadButton latest={latest} loading={loading} className="btn-primary w-full" />
+          </div>
+        </div>
+        <div className="card p-6">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            iPhone &amp; iPad
+          </p>
+          <h2 className="mt-2 text-lg font-semibold text-slate-100">Get it on the App Store</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-400">
+            Photos duplicates, screenshots, and large videos — preview, then Recently Deleted.
+            iOS 17 or later.
+          </p>
+          <div className="mt-3">
+            <AppStoreLink variant="badge" className="-ml-2.5" />
+          </div>
+        </div>
+      </div>
+
+      <h2 className="mt-12 text-2xl font-bold text-slate-50">Install DiskWise on macOS</h2>
+      <p className="mt-3 text-base leading-7 text-slate-400">
         Follow these steps to download the DMG, drag DiskWise into Applications, and explore disk
         analysis, system health, and safe cleanup.
       </p>
@@ -81,9 +114,8 @@ export function InstallGuide() {
 
       <div className="mt-8 flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-4">
-          <DownloadButton latest={latest} loading={loading} className="btn-primary" />
           <Link href="/versions" className="btn-secondary">
-            Browse all versions
+            Browse all Mac versions
           </Link>
         </div>
         {releasedAtIso && (
@@ -124,9 +156,10 @@ export function InstallGuide() {
       <div className="card mt-8 p-6">
         <h2 className="text-lg font-semibold text-slate-100">System requirements</h2>
         <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-400">
-          <li>• macOS 14 (Sonoma) or later</li>
-          <li>• Apple Silicon or Intel Mac</li>
-          <li>• Full Disk Access recommended for complete volume scans</li>
+          <li>• Mac: macOS 14 (Sonoma) or later, Apple Silicon or Intel</li>
+          <li>• iPhone &amp; iPad: iOS 17 or iPadOS 17 or later</li>
+          <li>• Full Disk Access recommended for complete Mac volume scans</li>
+          <li>• Photo Library access required for the iOS app (full access recommended)</li>
         </ul>
       </div>
     </article>

@@ -2,9 +2,9 @@ import { BRAND_NAME } from "@/lib/brand";
 
 const highlights = [
   {
-    title: "Analysis stays on your Mac",
+    title: "Analysis stays on your device",
     description:
-      "Volume scans, health metrics, startup inventories, and cleanup previews are processed locally. Your file contents are not uploaded to a cloud service.",
+      "Volume scans, health metrics, Photos insights, and cleanup previews are processed locally. File and photo contents are not uploaded to a cloud service.",
     icon: "💻",
     tint: "bg-brand-blue/15 text-brand-blue",
   },
@@ -43,9 +43,9 @@ export function PrivacySection() {
             Smart recommendations without sending your files to the cloud.
           </h2>
           <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400 sm:text-base sm:leading-7">
-            DiskWise reads your storage and system metrics to give you useful answers — like which
-            apps use the most memory or which startup items you can disable. That work happens on
-            your Mac, not on someone else&apos;s server.
+            DiskWise reads storage and system metrics on your Mac, and your Photos library on
+            iPhone and iPad, to give you useful answers. That work happens on your device — not on
+            someone else&apos;s server.
           </p>
           <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400 sm:text-base sm:leading-7">
             When you clean up, every action is previewed first and files go to Trash by default so
