@@ -41,7 +41,10 @@ let package = Package(
         ),
         .target(
             name: "MetadataKit",
-            dependencies: ["DatabaseKit"]
+            dependencies: ["DatabaseKit"],
+            linkerSettings: [
+                .linkedFramework("Vision"),
+            ]
         ),
         .target(
             name: "DuplicateKit",

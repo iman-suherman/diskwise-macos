@@ -26,7 +26,7 @@ DiskWise uses SQLite via GRDB. Migrations live in `Sources/DatabaseKit/Migration
 | hash | TEXT | SHA256 (optional until hashed) |
 | mime_type | TEXT | Uniform type identifier |
 | category | TEXT | video, photo, document, etc. |
-| subcategory | TEXT | Optional custom label |
+| subcategory | TEXT | Optional label such as `screenshot` |
 | created_at | DATETIME | File creation |
 | modified_at | DATETIME | Content modification |
 | last_accessed | DATETIME | Content access |

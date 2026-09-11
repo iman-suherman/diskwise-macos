@@ -28,10 +28,10 @@ flowchart TB
 | Module | Responsibility |
 |--------|----------------|
 | `DiskScannerKit` | Volume crawl, file classification, scan persistence |
-| `MetadataKit` | AVFoundation/ImageIO metadata extraction |
+| `MetadataKit` | AVFoundation/ImageIO metadata extraction and on-device screenshot OCR |
 | `DuplicateKit` | Filename, size, hash, and video fingerprint duplicate detection |
 | `CleanupKit` | Preview and Trash-based cleanup workflow |
-| `AIKit` | Rule-based insights and optional Ollama report generation |
+| `AIKit` | Rule-based insights, screenshot labels/scores, and optional Ollama report generation |
 | `DatabaseKit` | GRDB schema, migrations, query layer |
 
 ## Duplicate detection levels
@@ -50,7 +50,7 @@ flowchart LR
     C --> D[Undo via Finder]
 ```
 
-Cleanup never permanently deletes files by default. All destructive actions use `FileManager.trashItem(at:resultingItemURL:)`.
+Cleanup never permanently deletes files by default. All destructive actions use `FileManager.trashItem(at:resultingItemURL:)`. Duplicate photos are reviewed as a group so you can keep the best copy; screenshots use swipe-to-Trash with on-device labels and keep scores.
 
 ## IDE workflow
 

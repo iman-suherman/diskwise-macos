@@ -2,7 +2,7 @@
   "appleId": 6806657352,
   "bundleId": "net.suherman.diskwise.ios",
   "platform": "IOS",
-  "versionString": "1.0.1",
+  "versionString": "1.0.2",
   "copyright": "Copyright © 2026 Iman Suherman",
   "primaryLocale": "en-AU",
   "supportUrl": "https://diskwise.suherman.net/#privacy",
@@ -15,7 +15,7 @@
     "en-AU": {
       "promotionalText": "On-device Photos storage consultant — find reclaimable space and clean up safely.",
       "keywords": "photos,duplicates,cleanup,storage,screenshots,videos,privacy,iphone,ipad",
-      "whatsNew": "Cleanup lists now show photo and video thumbnails, so Similar Media and other buckets are easier to review before you move items to Recently Deleted.",
+      "whatsNew": "Play videos and view photos from any cleanup list. Exact and similar duplicates are grouped so you can keep the best copy, then move extras to Recently Deleted.",
       "description": "DiskWise for iPhone and iPad is an on-device Photos storage consultant. It scans your photo library, estimates reclaimable space, and helps you move clutter to Recently Deleted — never permanent delete in v1.\n\nWHAT IT DOES\n• Find exact duplicates and similar media\n• Surface screenshots, bursts, large videos, and older items\n• Ranked recommendations with reclaimable estimates\n• Preview and confirm before anything is removed\n\nSAFE CLEANUP\nSelected items go to Photos → Recently Deleted so you can recover them for about 30 days. DiskWise never empties Recently Deleted.\n\nPRIVACY\nAll analysis runs on your device. Photo contents are not uploaded to a cloud service.\n\nLearn more at https://diskwise.suherman.net"
     }
   },
@@ -25,7 +25,7 @@
     "contactPhone": "+61430058886",
     "contactEmail": "iman.suherman@gmail.com",
     "demoAccountRequired": false,
-    "notes": "WHAT'S NEW IN 1.0.1\nCleanup bucket lists (Similar Media, Screenshots, etc.) now show PhotoKit thumbnails so you can review near-matches visually before moving items to Recently Deleted.\n\nHOW TO REVIEW\n1. Tap Continue on the Photos explanation screen, then choose access (Full Access recommended; Limited works).\n2. Wait for the library scan — dashboard shows reclaimable space and buckets.\n3. Open Similar Media (or any bucket) — each row shows a thumbnail, metadata, and size.\n4. Select items → Review → Move to Recently Deleted.\n5. Confirm items appear in Photos → Recently Deleted.\n\nNo login. Analysis is on-device. DiskWise does not use Location Services.\n\nPrivacy: https://diskwise.suherman.net/#privacy\nSupport: https://diskwise.suherman.net/#privacy\nContact: iman.suherman@gmail.com | +61430058886"
+    "notes": "WHAT'S NEW IN 1.0.2\nYou can play videos and view photos from cleanup lists. Exact Duplicates and Similar Media are grouped so you can keep the best copy (Keep this) before moving extras to Recently Deleted.\n\nHOW TO REVIEW\n1. Tap Continue on the Photos explanation screen, then choose access (Full Access recommended; Limited works).\n2. Wait for the library scan — dashboard shows reclaimable space and buckets.\n3. Open Exact Duplicates or Similar Media — items are grouped. The copy to keep is labeled. Tap a thumbnail to view, or Play on videos. Tap Keep this on the photo you want to keep.\n4. Open Screenshots or Large Videos — tap View or Play, then select items → Review → Move to Recently Deleted.\n5. Confirm items appear in Photos → Recently Deleted.\n\nNo login. Analysis is on-device. DiskWise does not use Location Services.\n\nPrivacy: https://diskwise.suherman.net/#privacy\nSupport: https://diskwise.suherman.net/#privacy\nContact: iman.suherman@gmail.com | +61430058886"
   },
   "releaseType": "AFTER_APPROVAL",
   "screenshots": {

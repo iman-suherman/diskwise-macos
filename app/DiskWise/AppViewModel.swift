@@ -2813,8 +2813,19 @@ final class AppViewModel: ObservableObject {
         return result
     }
 
+    func files(for group: DuplicateGroup) -> [FileRecord] {
+        (try? database.members(forGroupID: group.id)) ?? group.files
+    }
+
     func previewCleanup(for group: DuplicateGroup) -> CleanupPreview {
-        let files = (try? database.members(forGroupID: group.id)) ?? group.files
+        previewCleanup(for: group, keepingPath: DuplicateCopyRanker.suggestedKeep(in: files(for: group))?.path)
+    }
+
+    func previewCleanup(for group: DuplicateGroup, keepingPath: String?) -> CleanupPreview {
+        let files = files(for: group)
+        if let keepingPath, files.contains(where: { $0.path == keepingPath }) {
+            return cleanupEngine.preview(files: files, keepingPaths: [keepingPath])
+        }
         return cleanupEngine.preview(files: files, keepFirstInEachGroup: true)
     }
 
@@ -2824,13 +2835,25 @@ final class AppViewModel: ObservableObject {
         var items: [CleanupItem] = []
         var totalBytes: Int64 = 0
         for group in duplicateGroups {
-            let files = (try? database.members(forGroupID: group.id)) ?? group.files
-            let preview = cleanupEngine.preview(files: files, keepFirstInEachGroup: true)
+            let members = files(for: group)
+            let keep = DuplicateCopyRanker.suggestedKeep(in: members)?.path
+            let preview: CleanupPreview
+            if let keep {
+                preview = cleanupEngine.preview(files: members, keepingPaths: [keep])
+            } else {
+                preview = cleanupEngine.preview(files: members, keepFirstInEachGroup: true)
+            }
             items.append(contentsOf: preview.items)
             totalBytes += preview.totalBytes
         }
         guard !items.isEmpty else { return nil }
         return CleanupPreview(items: items, totalBytes: totalBytes)
+    }
+
+    @discardableResult
+    func trashFiles(_ files: [FileRecord], revealTrash: Bool = false) -> CleanupResult {
+        let preview = cleanupEngine.preview(files: files, keepFirstInEachGroup: false)
+        return executeCleanup(preview: preview, revealTrash: revealTrash)
     }
 
     var orderedMenuPanes: [DetailPane] {
@@ -2894,6 +2917,11 @@ final class AppViewModel: ObservableObject {
         reportCleanupResult(result)
 
         if result.movedCount > 0 {
+            let failedPaths = Set(result.failures.map(\.path))
+            let movedPaths = preview.items.map(\.path).filter { !failedPaths.contains($0) }
+            try? database.deleteIndexedFiles(atPaths: movedPaths)
+            refreshDuplicateGroupsInBackground()
+            reloadCategoryDetailFiles(for: selectedStorageCategory)
             refreshInsights()
             if revealTrash {
                 revealTrashedFiles(result.trashedURLs)

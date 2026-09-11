@@ -112,9 +112,15 @@ public final class CleanupEngine: @unchecked Sendable {
     }
 
     public func preview(files: [FileRecord], keepFirstInEachGroup: Bool = true) -> CleanupPreview {
-        let sorted = files.sorted { $0.path < $1.path }
-        let candidates = keepFirstInEachGroup ? Array(sorted.dropFirst()) : sorted
-        let items = candidates.compactMap { file -> CleanupItem? in
+        if keepFirstInEachGroup, let first = files.sorted(by: { $0.path < $1.path }).first {
+            return preview(files: files, keepingPaths: [first.path])
+        }
+        return preview(files: files, keepingPaths: [])
+    }
+
+    public func preview(files: [FileRecord], keepingPaths: Set<String>) -> CleanupPreview {
+        let items = files.compactMap { file -> CleanupItem? in
+            guard !keepingPaths.contains(file.path) else { return nil }
             let id = file.id ?? Self.stablePathID(file.path)
             return CleanupItem(id: id, path: file.path, size: file.size)
         }

@@ -248,6 +248,26 @@ public final class AIAnalysisEngine: @unchecked Sendable {
             )
         }
 
+        let screenshotFiles = allFiles.filter { ScreenshotRules.isScreenshot(path: $0.path) }
+        let screenshotBytes = screenshotFiles.reduce(Int64(0)) { $0 + $1.size }
+        if screenshotFiles.count >= 3 || screenshotBytes > 5_000_000 {
+            insights.append(
+                StorageInsight(
+                    title: "Screenshots",
+                    detail: "\(screenshotFiles.count) screenshots labeled on-device — swipe to keep or move to Trash.",
+                    estimatedSavings: screenshotBytes
+                )
+            )
+            recommendations.append(
+                RecommendationRecord(
+                    type: "delete_screenshots",
+                    title: "Review Screenshots",
+                    estimatedSavings: screenshotBytes,
+                    reason: "Each screenshot gets a label and keep score. Swipe left to Trash, right to keep — no checklist."
+                )
+            )
+        }
+
         let photoBytes = try database.categorySize(forDiskID: diskID, category: .photo)
         if photoBytes > 100_000_000 {
             insights.append(

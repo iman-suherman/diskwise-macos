@@ -1087,6 +1087,8 @@ private struct CategoryFileRow: View {
                     .foregroundStyle(.secondary)
             }
 
+            FilePreviewButton(path: file.path)
+
             Button {
                 NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: file.path)])
             } label: {

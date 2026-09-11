@@ -41,6 +41,44 @@ struct RecommendationReviewSheet: View {
     }
 
     var body: some View {
+        if usesSwipeReview {
+            SwipeMediaReviewSheet(
+                title: reviewState.recommendation.title,
+                subtitle: swipeSubtitle,
+                files: reviewState.files,
+                showsScreenshotInsights: reviewState.recommendation.type == "delete_screenshots",
+                onTrash: { file in
+                    viewModel.trashFiles([file])
+                },
+                onFinished: {
+                    viewModel.dismissRecommendationReview()
+                    dismiss()
+                }
+            )
+        } else {
+            checklistBody
+        }
+    }
+
+    private var usesSwipeReview: Bool {
+        switch reviewState.recommendation.type {
+        case "delete_screenshots":
+            return !reviewState.files.isEmpty
+        case "archive_old_files":
+            return reviewState.files.contains { $0.isVideoFile || $0.isImageFile }
+        default:
+            return false
+        }
+    }
+
+    private var swipeSubtitle: String {
+        if reviewState.recommendation.type == "delete_screenshots" {
+            return "On-device labels and keep scores — swipe left to Trash, right to keep."
+        }
+        return recommendationSubtitle
+    }
+
+    private var checklistBody: some View {
         VStack(alignment: .leading, spacing: 18) {
             header
 
@@ -89,6 +127,9 @@ struct RecommendationReviewSheet: View {
         }
         if isArchiveOldVideosReview {
             return "Video files (.mp4, .mov, etc.) in your home folder that have not been opened recently."
+        }
+        if reviewState.recommendation.type == "delete_screenshots" {
+            return "On-device labels and keep scores. Swipe left to Trash, right to keep."
         }
         return reviewState.recommendation.reason
     }
@@ -285,6 +326,8 @@ private struct RecommendationFileRow: View {
             Text(DiskWiseFormatters.bytes.string(fromByteCount: file.size))
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
+
+            FilePreviewButton(path: file.path)
 
             Button(action: onReveal) {
                 Image(systemName: "folder")

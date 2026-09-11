@@ -266,6 +266,15 @@ struct BucketRow: View {
 struct BucketDetailView: View {
     @EnvironmentObject private var model: AppViewModel
     let summary: PhotosBucketSummary
+    @State private var preview: AssetPreviewRequest?
+
+    private var duplicateGroups: [PhotosDuplicateGroup] {
+        model.duplicateGroups(for: summary)
+    }
+
+    private var usesGroupedDuplicates: Bool {
+        summary.bucket == .exactDuplicates || summary.bucket == .similar
+    }
 
     var body: some View {
         List {
@@ -275,34 +284,58 @@ struct BucketDetailView: View {
                     .foregroundStyle(.secondary)
                 Text("\(summary.itemCount) items · \(ByteCountFormat.string(for: summary.reclaimableBytes)) reclaimable")
                     .font(.footnote)
+                if usesGroupedDuplicates {
+                    Text("Grouped so you can keep the best copy in each set. Tap a thumbnail to view or play.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
-            Section("Items") {
-                ForEach(summary.assetIDs, id: \.self) { id in
-                    let asset = model.assetsByID[id]
-                    Button {
-                        model.toggleSelection(id)
-                    } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: model.selectedIDs.contains(id) ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(model.selectedIDs.contains(id) ? Color.accentColor : .secondary)
-                            PhotoThumbnailView(assetID: id, isVideo: asset?.isVideo == true)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(assetTitle(asset))
-                                Text(assetSubtitle(asset))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer(minLength: 8)
-                            if let asset {
-                                Text(ByteCountFormat.string(for: asset.byteSize))
-                                    .font(.caption.monospacedDigit())
-                                    .foregroundStyle(.secondary)
-                            }
+            if usesGroupedDuplicates {
+                ForEach(Array(duplicateGroups.enumerated()), id: \.element.id) { index, group in
+                    Section {
+                        ForEach(group.assets) { asset in
+                            AssetCleanupRow(
+                                asset: asset,
+                                isSelected: model.selectedIDs.contains(asset.id),
+                                keepLabel: !model.selectedIDs.contains(asset.id)
+                                    ? (asset.id == group.suggestedKeepID ? "Keeping · suggested" : "Keeping")
+                                    : nil,
+                                onToggle: { model.toggleSelection(asset.id) },
+                                onKeepOnly: { model.keepOnly(asset.id, in: group) },
+                                onPreview: {
+                                    preview = AssetPreviewRequest(
+                                        id: asset.id,
+                                        isVideo: asset.isVideo,
+                                        title: assetTitle(asset)
+                                    )
+                                }
+                            )
                         }
-                        .padding(.vertical, 2)
+                    } header: {
+                        Text(groupHeader(index: index, group: group))
                     }
-                    .buttonStyle(.plain)
+                }
+            } else {
+                Section("Items") {
+                    ForEach(summary.assetIDs, id: \.self) { id in
+                        let asset = model.assetsByID[id]
+                        AssetCleanupRow(
+                            asset: asset,
+                            assetID: id,
+                            isSelected: model.selectedIDs.contains(id),
+                            keepLabel: nil,
+                            onToggle: { model.toggleSelection(id) },
+                            onKeepOnly: nil,
+                            onPreview: {
+                                preview = AssetPreviewRequest(
+                                    id: id,
+                                    isVideo: asset?.isVideo == true,
+                                    title: assetTitle(asset)
+                                )
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -327,6 +360,13 @@ struct BucketDetailView: View {
                 model.selectDefault(for: summary)
             }
         }
+        .sheet(item: $preview) { request in
+            MediaPreviewView(
+                assetID: request.id,
+                isVideo: request.isVideo,
+                title: request.title
+            )
+        }
     }
 
     private var cleanupButtonTitle: String {
@@ -335,28 +375,114 @@ struct BucketDetailView: View {
         return "Review \(n) · \(ByteCountFormat.string(for: model.selectedReclaimableBytes))"
     }
 
-    private func assetTitle(_ asset: PhotoAssetRecord?) -> String {
-        guard let asset else { return "Unknown item" }
-        if asset.isScreenshot { return "Screenshot" }
-        if asset.isVideo { return "Video" }
-        if asset.isBurst { return "Burst photo" }
-        return "Photo"
+    private func groupHeader(index: Int, group: PhotosDuplicateGroup) -> String {
+        let reclaim = ByteCountFormat.string(for: group.reclaimableSize)
+        return "Group \(index + 1) · \(group.assets.count) items · \(reclaim) reclaimable"
+    }
+}
+
+private struct AssetPreviewRequest: Identifiable {
+    let id: String
+    let isVideo: Bool
+    let title: String
+}
+
+private struct AssetCleanupRow: View {
+    let asset: PhotoAssetRecord?
+    var assetID: String?
+    let isSelected: Bool
+    let keepLabel: String?
+    let onToggle: () -> Void
+    let onKeepOnly: (() -> Void)?
+    let onPreview: () -> Void
+
+    private var resolvedID: String {
+        asset?.id ?? assetID ?? ""
     }
 
-    private func assetSubtitle(_ asset: PhotoAssetRecord?) -> String {
-        guard let asset else { return "" }
-        var parts: [String] = []
-        if let date = asset.creationDate {
-            parts.append(date.formatted(date: .abbreviated, time: .omitted))
+    var body: some View {
+        HStack(spacing: 12) {
+            Button(action: onToggle) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                    .font(.title3)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isSelected ? "Selected for cleanup" : "Not selected")
+
+            Button(action: onPreview) {
+                PhotoThumbnailView(assetID: resolvedID, isVideo: asset?.isVideo == true, side: 64)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(asset?.isVideo == true ? "Play video" : "View photo")
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(assetTitle(asset))
+                    .font(.body.weight(.medium))
+                Text(assetSubtitle(asset))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    if let keepLabel {
+                        Text(keepLabel)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.green)
+                    }
+                    if let onKeepOnly, isSelected {
+                        Button("Keep this") {
+                            onKeepOnly()
+                        }
+                        .font(.caption.weight(.semibold))
+                        .buttonStyle(.borderless)
+                    }
+                    Button(asset?.isVideo == true ? "Play" : "View") {
+                        onPreview()
+                    }
+                    .font(.caption.weight(.semibold))
+                    .buttonStyle(.borderless)
+                }
+            }
+            Spacer(minLength: 8)
+            if let asset {
+                Text(ByteCountFormat.string(for: asset.byteSize))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
         }
-        if asset.pixelWidth > 0 {
-            parts.append("\(asset.pixelWidth)×\(asset.pixelHeight)")
-        }
-        if asset.isFavorite {
-            parts.append("Favorite")
-        }
-        return parts.joined(separator: " · ")
+        .padding(.vertical, 4)
     }
+}
+
+private func assetTitle(_ asset: PhotoAssetRecord?) -> String {
+    guard let asset else { return "Unknown item" }
+    if asset.isScreenshot { return "Screenshot" }
+    if asset.isVideo { return "Video" }
+    if asset.isBurst { return "Burst photo" }
+    return "Photo"
+}
+
+private func assetSubtitle(_ asset: PhotoAssetRecord?) -> String {
+    guard let asset else { return "" }
+    var parts: [String] = []
+    if let date = asset.creationDate {
+        parts.append(date.formatted(date: .abbreviated, time: .omitted))
+    }
+    if asset.isVideo, asset.durationSeconds > 0 {
+        parts.append(durationLabel(asset.durationSeconds))
+    } else if asset.pixelWidth > 0 {
+        parts.append("\(asset.pixelWidth)×\(asset.pixelHeight)")
+    }
+    if asset.isFavorite {
+        parts.append("Favorite")
+    }
+    return parts.joined(separator: " · ")
+}
+
+private func durationLabel(_ seconds: Double) -> String {
+    let total = Int(seconds.rounded())
+    let minutes = total / 60
+    let secs = total % 60
+    return String(format: "%d:%02d", minutes, secs)
 }
 
 struct ReviewCleanupView: View {

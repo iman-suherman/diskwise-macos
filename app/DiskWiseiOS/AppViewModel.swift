@@ -157,6 +157,28 @@ final class AppViewModel: ObservableObject {
         }
     }
 
+    /// Duplicate / similar groups that feed this bucket (includes the suggested keep copy).
+    func duplicateGroups(for summary: PhotosBucketSummary) -> [PhotosDuplicateGroup] {
+        let source: [PhotosDuplicateGroup]
+        switch summary.bucket {
+        case .exactDuplicates:
+            source = report.exactDuplicateGroups
+        case .similar:
+            source = report.similarGroups
+        default:
+            return []
+        }
+        let cleanupIDs = Set(summary.assetIDs)
+        return source.filter { !Set($0.suggestedCleanupIDs).isDisjoint(with: cleanupIDs) }
+    }
+
+    /// Keep `id` in the group; mark every other member for cleanup.
+    func keepOnly(_ id: String, in group: PhotosDuplicateGroup) {
+        let memberIDs = Set(group.assets.map(\.id))
+        selectedIDs.subtract(memberIDs)
+        selectedIDs.formUnion(memberIDs.filter { $0 != id })
+    }
+
     var selectedReclaimableBytes: Int64 {
         selectedIDs.compactMap { assetsByID[$0]?.byteSize }.reduce(0, +)
     }

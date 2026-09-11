@@ -409,6 +409,70 @@ public final class DiskWiseDatabase: @unchecked Sendable {
         }
     }
 
+    public func screenshotFiles(forDiskID diskID: Int64, limit: Int = 500) throws -> [FileRecord] {
+        try dbQueue.read { db in
+            let candidates = try FileRecord.fetchAll(
+                db,
+                sql: """
+                SELECT * FROM files
+                WHERE disk_id = ?
+                  AND (
+                    subcategory = ?
+                    OR LOWER(path) LIKE '%screenshot%'
+                    OR LOWER(path) LIKE '%screen shot%'
+                    OR LOWER(path) LIKE '%/screenshots/%'
+                    OR LOWER(path) LIKE '%tangkapan layar%'
+                    OR LOWER(path) LIKE '%cleanshot%'
+                  )
+                ORDER BY COALESCE(last_accessed, modified_at, created_at) ASC, size DESC
+                LIMIT ?
+                """,
+                arguments: [diskID, ScreenshotRules.subcategory, max(limit * 2, 1_000)]
+            )
+            return Array(
+                candidates
+                    .filter { ScreenshotRules.isScreenshot(path: $0.path) }
+                    .prefix(limit)
+            )
+        }
+    }
+
+    public func deleteIndexedFiles(atPaths paths: [String]) throws {
+        let uniquePaths = Array(Set(paths.filter { !$0.isEmpty }))
+        guard !uniquePaths.isEmpty else { return }
+
+        try dbQueue.write { db in
+            for path in uniquePaths {
+                try db.execute(sql: "DELETE FROM files WHERE path = ?", arguments: [path])
+            }
+            try db.execute(
+                sql: """
+                DELETE FROM duplicate_groups
+                WHERE id NOT IN (
+                    SELECT group_id
+                    FROM duplicate_members
+                    GROUP BY group_id
+                    HAVING COUNT(*) >= 2
+                )
+                """
+            )
+            try db.execute(
+                sql: """
+                UPDATE duplicate_groups
+                SET file_count = (
+                    SELECT COUNT(*) FROM duplicate_members WHERE group_id = duplicate_groups.id
+                ),
+                total_size = (
+                    SELECT COALESCE(SUM(files.size), 0)
+                    FROM duplicate_members
+                    JOIN files ON files.id = duplicate_members.file_id
+                    WHERE duplicate_members.group_id = duplicate_groups.id
+                )
+                """
+            )
+        }
+    }
+
     public func createDuplicateGroup(_ group: DuplicateGroupRecord, fileIDs: [Int64]) throws -> DuplicateGroupRecord {
         try dbQueue.write { db in
             var insertedGroup = group
@@ -697,6 +761,9 @@ public final class DiskWiseDatabase: @unchecked Sendable {
                     .prefix(limit)
                     .map { $0 }
             }
+
+        case "delete_screenshots":
+            return try screenshotFiles(forDiskID: diskID, limit: limit)
 
         default:
             return try files(forDiskID: diskID, limit: limit)

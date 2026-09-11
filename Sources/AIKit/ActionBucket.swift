@@ -51,7 +51,8 @@ public enum ActionBucket: String, Sendable, CaseIterable, Identifiable {
              "maintenance_developer_caches", "maintenance_logs", "maintenance_temp",
              "maintenance_node_modules", "maintenance_build_artifacts", "maintenance_virtual_env":
             return .safeRegenerable
-        case "delete_dmg", "delete_ios_backups", "clean_downloads", "duplicate_cleanup":
+        case "delete_dmg", "delete_ios_backups", "clean_downloads", "duplicate_cleanup",
+             "delete_screenshots":
             return .reviewFirst
         case "archive_old_files":
             return .personalKeep

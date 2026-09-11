@@ -129,5 +129,45 @@ final class DatabaseKitTests: XCTestCase {
         XCTAssertEqual(history.first?.scanMode, "fast")
         XCTAssertEqual(history.first?.decodedSnapshot()?.majorCategories.count, 2)
     }
+
+    func testScreenshotFilesQuery() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("diskwise-test-\(UUID().uuidString).sqlite")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let database = try DiskWiseDatabase(path: url)
+        _ = try database.upsertDisk(
+            DiskRecord(name: "Macintosh HD", mountPath: "/", totalSize: 1_000, freeSize: 500)
+        )
+        let diskID = try XCTUnwrap(try database.allDisks().first?.id)
+
+        try database.insertFiles([
+            FileRecord(
+                diskID: diskID,
+                path: "/Users/me/Desktop/Screenshot 2026-09-11.png",
+                size: 200_000,
+                category: .photo,
+                subcategory: ScreenshotRules.subcategory,
+                extensionName: "png"
+            ),
+            FileRecord(
+                diskID: diskID,
+                path: "/Users/me/Pictures/IMG_1049.HEIC",
+                size: 1_000_000,
+                category: .photo,
+                extensionName: "heic"
+            ),
+        ])
+
+        let screenshots = try database.screenshotFiles(forDiskID: diskID)
+        XCTAssertEqual(screenshots.count, 1)
+        XCTAssertTrue(screenshots[0].path.contains("Screenshot"))
+
+        let fromRecommendation = try database.files(
+            forRecommendationType: "delete_screenshots",
+            diskID: diskID,
+            oldFileThreshold: Date()
+        )
+        XCTAssertEqual(fromRecommendation.count, 1)
+    }
 }
 #endif

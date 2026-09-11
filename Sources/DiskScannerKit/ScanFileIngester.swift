@@ -41,6 +41,7 @@ public final class ScanFileIngester: @unchecked Sendable {
                 size: scanned.size,
                 mimeType: FileClassifier.mimeType(for: url),
                 category: FileClassifier.category(for: url, isDirectory: false),
+                subcategory: ScreenshotRules.subcategory(for: scanned.path),
                 createdAt: scanned.createdAt,
                 modifiedAt: scanned.modifiedAt,
                 lastAccessed: scanned.lastAccessed,

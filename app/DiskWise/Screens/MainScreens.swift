@@ -29,6 +29,7 @@ extension DuplicatesTab: DiskWiseTabRepresentable {}
 struct DuplicatesView: View {
     @EnvironmentObject private var viewModel: AppViewModel
     @State private var selectedPreview: CleanupPreview?
+    @State private var selectedGroup: DuplicateGroup?
 
     private var totalReclaimable: Int64 {
         viewModel.duplicateGroups.reduce(0) { $0 + $1.reclaimableSize }
@@ -58,6 +59,9 @@ struct DuplicatesView: View {
                     selectedPreview = nil
                 }
             }
+        }
+        .sheet(item: $selectedGroup) { group in
+            DuplicateGroupReviewSheet(group: group)
         }
         .onChange(of: viewModel.duplicateGroups.count) { _, count in
             if count > 0, viewModel.selectedDuplicatesTab == .find, !viewModel.isFindingDuplicates {
@@ -101,9 +105,11 @@ struct DuplicatesView: View {
                 howToCleanHint
 
                 ForEach(viewModel.duplicateGroups) { group in
-                    DuplicateGroupCard(group: group) {
+                    DuplicateGroupCard(group: group, onReview: {
+                        selectedGroup = group
+                    }, onCleanup: {
                         selectedPreview = viewModel.previewCleanup(for: group)
-                    }
+                    })
                 }
             }
         }
@@ -267,7 +273,7 @@ struct DuplicatesView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Ready to free up space")
                     .font(.headline)
-                Text("DiskWise keeps one copy per group and moves the rest to Trash. Empty Trash when you're sure.")
+                Text("Review a group to pick the best copy. DiskWise can also keep the highest-quality file and move extras to Trash.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -289,7 +295,7 @@ struct DuplicatesView: View {
     }
 
     private var howToCleanHint: some View {
-        Label("Use Move to Trash on any group below to remove extra copies safely.", systemImage: "hand.tap.fill")
+        Label("Open a group to pick the best copy, then swipe extras to Trash. Play or view any file first.", systemImage: "hand.tap.fill")
             .font(.subheadline)
             .foregroundStyle(.secondary)
     }
@@ -345,9 +351,11 @@ struct DuplicatesView: View {
                 Text("Found so far")
                     .font(.headline)
                 ForEach(viewModel.duplicateGroups) { group in
-                    DuplicateGroupCard(group: group) {
+                    DuplicateGroupCard(group: group, onReview: {
+                        selectedGroup = group
+                    }, onCleanup: {
                         selectedPreview = viewModel.previewCleanup(for: group)
-                    }
+                    })
                 }
             } else {
                 Text("Fingerprinting files can take several minutes on large drives. You can review storage in Overview while this runs.")
@@ -361,6 +369,7 @@ struct DuplicatesView: View {
 
 struct DuplicateGroupCard: View {
     let group: DuplicateGroup
+    let onReview: () -> Void
     let onCleanup: () -> Void
 
     private var displayName: String {
@@ -374,11 +383,15 @@ struct DuplicateGroupCard: View {
         max(0, group.fileCount - 1)
     }
 
+    private var showsMediaThumbnails: Bool {
+        group.files.contains { $0.isImageFile || $0.isVideoFile }
+    }
+
     var body: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "doc.on.doc.fill")
+                    Image(systemName: showsMediaThumbnails ? "photo.on.rectangle.angled" : "doc.on.doc.fill")
                         .font(.title2)
                         .foregroundStyle(.orange)
 
@@ -394,46 +407,63 @@ struct DuplicateGroupCard: View {
                     }
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(group.files.prefix(4), id: \.path) { file in
-                        HStack(spacing: 6) {
-                            Image(systemName: "folder")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                            Text(file.path)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
+                if showsMediaThumbnails {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(group.files.prefix(6), id: \.path) { file in
+                                FileThumbnailView(path: file.path, cornerRadius: 8)
+                                    .frame(width: 72, height: 72)
+                            }
+                            if group.fileCount > 6 {
+                                Text("+\(group.fileCount - 6)")
+                                    .font(.caption.weight(.semibold))
+                                    .frame(width: 72, height: 72)
+                                    .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+                            }
                         }
                     }
-                    if group.fileCount > 4 {
-                        Text("+ \(group.fileCount - 4) more")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
+                } else {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(group.files.prefix(4), id: \.path) { file in
+                            HStack(spacing: 6) {
+                                Image(systemName: "folder")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                Text(file.path)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                Spacer(minLength: 4)
+                                FilePreviewButton(path: file.path)
+                            }
+                        }
+                        if group.fileCount > 4 {
+                            Text("+ \(group.fileCount - 4) more")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
                     }
                 }
 
                 Divider()
 
-                Button(action: onCleanup) {
-                    Label {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Move \(extraCopyCount) Duplicate\(extraCopyCount == 1 ? "" : "s") to Trash")
-                                .font(.headline)
-                            Text("Keeps one copy · you can empty Trash later")
-                                .font(.caption)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    } icon: {
-                        Image(systemName: "trash.fill")
-                            .font(.title3)
+                HStack(spacing: 10) {
+                    Button(action: onReview) {
+                        Label("Review & choose best", systemImage: "star.circle")
+                            .frame(maxWidth: .infinity)
                     }
-                    .padding(.vertical, 4)
+                    .buttonStyle(.borderedProminent)
+                    .tint(.orange)
+                    .controlSize(.large)
+
+                    Button(action: onCleanup) {
+                        Label("Trash extras", systemImage: "trash")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                    .help("Keeps the highest-quality copy and moves the rest to Trash")
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.orange)
-                .controlSize(.large)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -760,14 +790,20 @@ struct CleanupPreviewSheet: View {
             }
 
             List(preview.items) { item in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(URL(fileURLWithPath: item.path).lastPathComponent)
-                        .font(.subheadline.weight(.medium))
-                    Text(item.path)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                HStack(alignment: .top, spacing: 12) {
+                    FileThumbnailView(path: item.path, cornerRadius: 6)
+                        .frame(width: 44, height: 44)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(URL(fileURLWithPath: item.path).lastPathComponent)
+                            .font(.subheadline.weight(.medium))
+                        Text(item.path)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                    Spacer(minLength: 8)
+                    FilePreviewButton(path: item.path)
                 }
             }
 
