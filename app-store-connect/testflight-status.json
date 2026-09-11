@@ -1,12 +1,12 @@
 {
   "bundleId": "net.suherman.diskwise.ios",
   "appleId": "6806657352",
-  "marketingVersion": "1.0.2",
-  "buildNumber": "6",
-  "gitCommit": "29157179f566fcf4369839e50aaef65610d704c7",
-  "uploadedAt": "2026-09-11T00:10:52Z",
-  "submittedForReviewAt": "2026-09-11T00:18:28Z",
-  "reviewSubmissionId": "15fd7f81-631e-46ce-9d14-0246bce0597c",
-  "buildId": "8930cb60-18d0-481a-a313-6ec5466f4c8c",
-  "note": "Submitted 1.0.2 (build 6) with play/view previews and grouped duplicate keep-the-best copies."
+  "marketingVersion": "1.0.3",
+  "buildNumber": "7",
+  "gitCommit": "24cd6f8c1eaf7a8a033e1319083cf3de30da6dc9",
+  "uploadedAt": "2026-09-11T23:44:49Z",
+  "submittedForReviewAt": "2026-09-11T23:59:21Z",
+  "reviewSubmissionId": "c5a2e313-5d6f-4eb4-987e-174e2c4e1b0b",
+  "buildId": "2aeeb7ac-808d-4996-9672-1e4500220ac2",
+  "note": "Submitted 1.0.3 (build 7) with screenshot labels, single-item delete, and fitted preview."
 }

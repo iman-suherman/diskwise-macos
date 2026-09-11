@@ -56,6 +56,9 @@ struct PhotoThumbnailView: View {
     }
 
     private func requestThumbnail() {
+        if ProcessInfo.processInfo.environment["DISKWISE_DEMO"] == "1" {
+            return
+        }
         let fetch = PHAsset.fetchAssets(withLocalIdentifiers: [assetID], options: nil)
         guard let asset = fetch.firstObject else { return }
 
