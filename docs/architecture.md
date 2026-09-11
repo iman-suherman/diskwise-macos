@@ -77,7 +77,7 @@ The app sends structured scan summaries to a local model and renders a consultan
 
 ## DiskWise for iPhone & iPad (Photos)
 
-Universal iOS app target `DiskWiseiOS` uses **PhotosKit** (PhotoKit) for on-device library analysis and Recently Deleted cleanup. See [ios-photos.md](ios-photos.md).
+Universal iOS app target `DiskWiseiOS` uses **PhotosKit** (PhotoKit) for on-device library analysis, screenshot labels/keep scores, and Recently Deleted cleanup. See [ios-photos.md](ios-photos.md).
 
 ```mermaid
 flowchart TB

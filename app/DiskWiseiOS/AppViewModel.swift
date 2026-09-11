@@ -26,11 +26,13 @@ final class AppViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var lastCleanupCount: Int?
     @Published var isCleaning = false
+    @Published var screenshotInsights: [String: PhotosScreenshotInsight] = [:]
     /// App Store screenshot deep-link (set only when DISKWISE_DEMO=1).
     let demoRoute: DemoScreenshotRoute?
 
     private let consultant = PhotosConsultantService()
     private let cleanup = PhotosCleanupEngine()
+    private var screenshotOCRCompleted: Set<String> = []
 
     init() {
         demoRoute = DemoScreenshotRoute.fromEnvironment
@@ -80,13 +82,20 @@ final class AppViewModel: ObservableObject {
                     byteSize: size,
                     pixelWidth: 1170,
                     pixelHeight: 2532,
-                    creationDate: day.addingTimeInterval(TimeInterval(-86_400 * index)),
-                    isScreenshot: true
+                    creationDate: day.addingTimeInterval(TimeInterval(-86_400 * (index + 3))),
+                    isScreenshot: true,
+                    originalFilename: index == 0
+                        ? "WhatsApp Image.png"
+                        : "Screenshot 2026-09-\(String(format: "%02d", 12 - index)).png"
                 )
             )
         }
         assetsByID = Dictionary(uniqueKeysWithValues: assets.map { ($0.id, $0) })
         report = PhotosInsightEngine().analyze(assets)
+        seedScreenshotInsights(ocrByID: [
+            "s1": "WhatsApp\nYesterday",
+            "s2": "Settings\nWi-Fi",
+        ])
         switch demoRoute {
         case .recommendations:
             if let summary = demoRecommendationSummary {
@@ -140,13 +149,22 @@ final class AppViewModel: ObservableObject {
             assetsByID = Dictionary(uniqueKeysWithValues: result.assets.map { ($0.id, $0) })
             report = result.report
             selectedIDs = []
+            screenshotOCRCompleted = []
+            seedScreenshotInsights()
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
-    func selectDefault(for summary: PhotosBucketSummary) {
+    func selectAll(for summary: PhotosBucketSummary) {
         selectedIDs = Set(summary.assetIDs)
+    }
+
+    func selectDefault(for summary: PhotosBucketSummary) {
+        if summary.bucket == .screenshots {
+            return
+        }
+        selectAll(for: summary)
     }
 
     func toggleSelection(_ id: String) {
@@ -184,17 +202,99 @@ final class AppViewModel: ObservableObject {
     }
 
     func moveSelectedToRecentlyDeleted() async {
-        guard !selectedIDs.isEmpty else { return }
+        _ = await moveToRecentlyDeleted(ids: Array(selectedIDs), rescan: true)
+    }
+
+    /// Moves items to Recently Deleted. Returns false if nothing was moved.
+    func moveToRecentlyDeleted(ids: [String], rescan: Bool) async -> Bool {
+        let unique = Array(Set(ids))
+        guard !unique.isEmpty else { return false }
         isCleaning = true
         errorMessage = nil
         defer { isCleaning = false }
         do {
-            let count = try await cleanup.moveToRecentlyDeleted(ids: Array(selectedIDs))
+            let count = try await cleanup.moveToRecentlyDeleted(ids: unique)
             lastCleanupCount = count
-            selectedIDs = []
-            await scan()
+            selectedIDs.subtract(unique)
+            for id in unique {
+                assetsByID.removeValue(forKey: id)
+                screenshotInsights.removeValue(forKey: id)
+            }
+            if rescan {
+                await scan()
+            }
+            return count > 0
         } catch {
             errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
+    func seedScreenshotInsights(ocrByID: [String: String] = [:]) {
+        let ids = report.buckets.first { $0.bucket == .screenshots }?.assetIDs ?? []
+        var next = screenshotInsights
+        for id in ids {
+            guard let asset = assetsByID[id] else { continue }
+            if next[id] != nil, ocrByID[id] == nil { continue }
+            next[id] = PhotosScreenshotInsightEngine.insight(
+                for: asset,
+                ocrText: ocrByID[id] ?? ""
+            )
+        }
+        screenshotInsights = next
+    }
+
+    /// Refine screenshot labels with on-device OCR (no-op in App Store demo mode).
+    func refineScreenshotInsights(for ids: [String]) async {
+        guard demoRoute == nil else { return }
+        let pending = ids.filter { id in
+            assetsByID[id] != nil && !screenshotOCRCompleted.contains(id)
+        }
+        guard !pending.isEmpty else { return }
+
+        await withTaskGroup(of: (String, String).self) { group in
+            var queued = 0
+            for id in pending {
+                if queued >= 4 {
+                    if let (assetID, ocr) = await group.next() {
+                        applyOCR(assetID: assetID, ocr: ocr)
+                    }
+                    queued -= 1
+                }
+                queued += 1
+                group.addTask {
+                    let ocr = await ScreenshotOCR.recognizedText(assetID: id)
+                    return (id, ocr)
+                }
+            }
+            for await (assetID, ocr) in group {
+                applyOCR(assetID: assetID, ocr: ocr)
+            }
+        }
+    }
+
+    private func applyOCR(assetID: String, ocr: String) {
+        screenshotOCRCompleted.insert(assetID)
+        guard !ocr.isEmpty, let asset = assetsByID[assetID] else { return }
+        screenshotInsights[assetID] = PhotosScreenshotInsightEngine.insight(for: asset, ocrText: ocr)
+    }
+
+    func rankedScreenshotIDs(_ ids: [String]) -> [String] {
+        ids.sorted { lhs, rhs in
+            let left = screenshotInsights[lhs]
+            let right = screenshotInsights[rhs]
+            let leftRank = actionRank(left?.action)
+            let rightRank = actionRank(right?.action)
+            if leftRank != rightRank { return leftRank < rightRank }
+            return (left?.keepScore ?? 50) < (right?.keepScore ?? 50)
+        }
+    }
+
+    private func actionRank(_ action: PhotosScreenshotKeepAction?) -> Int {
+        switch action {
+        case .trash: return 0
+        case .review, .none: return 1
+        case .keep: return 2
         }
     }
 }

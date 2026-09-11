@@ -90,7 +90,7 @@ public struct PhotosInsightEngine: Sendable {
             ids: screenshotIDs,
             reclaimable: 0,
             title: "Clean up screenshots",
-            detail: "Screenshots are easy to re-capture if you still need them."
+            detail: "Each screenshot gets a label and keep score. Swipe to delete one, or open the preview."
         )
 
         let burstExtras = burstCleanupIDs(in: assets, claimed: claimed)

@@ -35,6 +35,8 @@ public struct PhotoAssetRecord: Identifiable, Hashable, Sendable, Codable {
     public let isBurst: Bool
     public let isFavorite: Bool
     public let burstIdentifier: String?
+    /// Original camera-roll filename when PhotoKit exposes it (used for screenshot labels).
+    public let originalFilename: String?
 
     public init(
         id: String,
@@ -48,7 +50,8 @@ public struct PhotoAssetRecord: Identifiable, Hashable, Sendable, Codable {
         isScreenshot: Bool = false,
         isBurst: Bool = false,
         isFavorite: Bool = false,
-        burstIdentifier: String? = nil
+        burstIdentifier: String? = nil,
+        originalFilename: String? = nil
     ) {
         self.id = id
         self.mediaType = mediaType
@@ -62,6 +65,7 @@ public struct PhotoAssetRecord: Identifiable, Hashable, Sendable, Codable {
         self.isBurst = isBurst
         self.isFavorite = isFavorite
         self.burstIdentifier = burstIdentifier
+        self.originalFilename = originalFilename
     }
 
     public var isVideo: Bool { mediaType == .video }
@@ -97,7 +101,7 @@ public enum PhotosClutterBucket: String, Sendable, CaseIterable, Identifiable, C
         switch self {
         case .exactDuplicates: return "Same size and dimensions — keep one copy"
         case .similar: return "Near-matches from the same day — review carefully"
-        case .screenshots: return "Screen captures that often pile up"
+        case .screenshots: return "Labeled on-device — swipe to delete one, or open to preview"
         case .bursts: return "Extra frames from burst mode"
         case .largeVideos: return "Videos over 100 MB"
         case .oldMedia: return "Items older than two years"

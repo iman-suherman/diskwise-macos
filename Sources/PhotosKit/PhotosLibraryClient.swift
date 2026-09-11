@@ -133,6 +133,7 @@ public struct PhotosLibraryClient: PhotosLibraryAccessing {
         #else
         let isBurst = asset.burstIdentifier != nil
         #endif
+        let originalFilename = resources.first?.originalFilename
 
         return PhotoAssetRecord(
             id: asset.localIdentifier,
@@ -146,7 +147,8 @@ public struct PhotosLibraryClient: PhotosLibraryAccessing {
             isScreenshot: isScreenshot,
             isBurst: isBurst,
             isFavorite: asset.isFavorite,
-            burstIdentifier: asset.burstIdentifier
+            burstIdentifier: asset.burstIdentifier,
+            originalFilename: originalFilename
         )
     }
 }

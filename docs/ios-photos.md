@@ -10,8 +10,9 @@ On-device **Photos storage consultant**: scan the photo library, surface reclaim
 | Exact + near-duplicate media | WhatsApp / third-party app folders |
 | Clutter buckets (screenshots, bursts, large videos, old media) | Shared album editing |
 | Insights + ranked recommendations | Background auto-delete |
-| Preview, play/view, then confirm → Recently Deleted | Permanent purge from Recently Deleted |
-| Universal iPhone + iPad (SwiftUI) | macOS Photos library control |
+| Screenshot labels + keep scores (on-device OCR) | Permanent purge from Recently Deleted |
+| Preview, swipe, or preview **Delete** for a single item → Recently Deleted | macOS Photos library control |
+| Universal iPhone + iPad (SwiftUI) | — |
 
 ## Privacy
 
@@ -62,6 +63,7 @@ macOS kits (`DiskScannerKit`, etc.) stay path/volume oriented and are **not** re
 - [ ] Dashboard shows reclaimable estimate and buckets after scan
 - [ ] Open Exact Duplicates / Similar Media → grouped copies, Keep this, play/view
 - [ ] Open a bucket → preview → confirm → items appear in Photos → Recently Deleted
+- [ ] Screenshots show on-device labels/scores; swipe or preview Delete moves one item to Recently Deleted
 - [ ] ~10k library: scan + first cleanup path completes in under ~5 minutes
 - [ ] No network upload of photo content (on-device only)
 

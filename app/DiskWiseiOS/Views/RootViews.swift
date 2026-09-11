@@ -267,6 +267,9 @@ struct BucketDetailView: View {
     @EnvironmentObject private var model: AppViewModel
     let summary: PhotosBucketSummary
     @State private var preview: AssetPreviewRequest?
+    @State private var hiddenIDs: Set<String> = []
+    @State private var pendingDeleteIDs: [String] = []
+    @State private var confirmDelete = false
 
     private var duplicateGroups: [PhotosDuplicateGroup] {
         model.duplicateGroups(for: summary)
@@ -276,16 +279,32 @@ struct BucketDetailView: View {
         summary.bucket == .exactDuplicates || summary.bucket == .similar
     }
 
+    private var isScreenshots: Bool {
+        summary.bucket == .screenshots
+    }
+
+    private var visibleItemIDs: [String] {
+        let remaining = summary.assetIDs.filter { !hiddenIDs.contains($0) }
+        if isScreenshots {
+            return model.rankedScreenshotIDs(remaining)
+        }
+        return remaining
+    }
+
     var body: some View {
         List {
             Section {
                 Text(summary.bucket.subtitle)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                Text("\(summary.itemCount) items · \(ByteCountFormat.string(for: summary.reclaimableBytes)) reclaimable")
+                Text("\(visibleItemIDs.count) items · \(ByteCountFormat.string(for: summary.reclaimableBytes)) reclaimable")
                     .font(.footnote)
                 if usesGroupedDuplicates {
                     Text("Grouped so you can keep the best copy in each set. Tap a thumbnail to view or play.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else if isScreenshots {
+                    Text("Swipe left to delete one item, or open the preview and tap Delete. Labels and keep scores are on-device.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -293,48 +312,29 @@ struct BucketDetailView: View {
 
             if usesGroupedDuplicates {
                 ForEach(Array(duplicateGroups.enumerated()), id: \.element.id) { index, group in
-                    Section {
-                        ForEach(group.assets) { asset in
-                            AssetCleanupRow(
-                                asset: asset,
-                                isSelected: model.selectedIDs.contains(asset.id),
-                                keepLabel: !model.selectedIDs.contains(asset.id)
-                                    ? (asset.id == group.suggestedKeepID ? "Keeping · suggested" : "Keeping")
-                                    : nil,
-                                onToggle: { model.toggleSelection(asset.id) },
-                                onKeepOnly: { model.keepOnly(asset.id, in: group) },
-                                onPreview: {
-                                    preview = AssetPreviewRequest(
-                                        id: asset.id,
-                                        isVideo: asset.isVideo,
-                                        title: assetTitle(asset)
-                                    )
-                                }
-                            )
+                    let visibleAssets = group.assets.filter { !hiddenIDs.contains($0.id) }
+                    if !visibleAssets.isEmpty {
+                        Section {
+                            ForEach(visibleAssets) { asset in
+                                assetRow(
+                                    asset: asset,
+                                    assetID: asset.id,
+                                    keepLabel: !model.selectedIDs.contains(asset.id)
+                                        ? (asset.id == group.suggestedKeepID ? "Keeping · suggested" : "Keeping")
+                                        : nil,
+                                    onKeepOnly: { model.keepOnly(asset.id, in: group) }
+                                )
+                            }
+                        } header: {
+                            Text(groupHeader(index: index, group: group))
                         }
-                    } header: {
-                        Text(groupHeader(index: index, group: group))
                     }
                 }
             } else {
                 Section("Items") {
-                    ForEach(summary.assetIDs, id: \.self) { id in
+                    ForEach(visibleItemIDs, id: \.self) { id in
                         let asset = model.assetsByID[id]
-                        AssetCleanupRow(
-                            asset: asset,
-                            assetID: id,
-                            isSelected: model.selectedIDs.contains(id),
-                            keepLabel: nil,
-                            onToggle: { model.toggleSelection(id) },
-                            onKeepOnly: nil,
-                            onPreview: {
-                                preview = AssetPreviewRequest(
-                                    id: id,
-                                    isVideo: asset?.isVideo == true,
-                                    title: assetTitle(asset)
-                                )
-                            }
-                        )
+                        assetRow(asset: asset, assetID: id, keepLabel: nil, onKeepOnly: nil)
                     }
                 }
             }
@@ -343,7 +343,7 @@ struct BucketDetailView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Select All") {
-                    model.selectDefault(for: summary)
+                    model.selectAll(for: summary)
                 }
             }
             ToolbarItem(placement: .bottomBar) {
@@ -359,13 +359,89 @@ struct BucketDetailView: View {
             if model.selectedIDs.isEmpty {
                 model.selectDefault(for: summary)
             }
+            if isScreenshots {
+                model.seedScreenshotInsights()
+            }
         }
-        .sheet(item: $preview) { request in
+        .task(id: isScreenshots ? visibleItemIDs.prefix(24).joined(separator: ",") : "") {
+            guard isScreenshots else { return }
+            await model.refineScreenshotInsights(for: Array(visibleItemIDs.prefix(24)))
+        }
+        .fullScreenCover(item: $preview) { request in
             MediaPreviewView(
                 assetID: request.id,
                 isVideo: request.isVideo,
-                title: request.title
+                title: request.title,
+                subtitle: request.subtitle,
+                onDelete: {
+                    let ok = await model.moveToRecentlyDeleted(ids: [request.id], rescan: false)
+                    if ok {
+                        hiddenIDs.insert(request.id)
+                    }
+                    return ok
+                }
             )
+        }
+        .confirmationDialog(
+            pendingDeleteIDs.count == 1
+                ? "Move this item to Recently Deleted?"
+                : "Move \(pendingDeleteIDs.count) items to Recently Deleted?",
+            isPresented: $confirmDelete,
+            titleVisibility: .visible
+        ) {
+            Button("Move to Recently Deleted", role: .destructive) {
+                let ids = pendingDeleteIDs
+                pendingDeleteIDs = []
+                Task {
+                    let ok = await model.moveToRecentlyDeleted(ids: ids, rescan: false)
+                    if ok {
+                        hiddenIDs.formUnion(ids)
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {
+                pendingDeleteIDs = []
+            }
+        } message: {
+            Text("You can recover it in Photos for about 30 days.")
+        }
+    }
+
+    private func assetRow(
+        asset: PhotoAssetRecord?,
+        assetID: String,
+        keepLabel: String?,
+        onKeepOnly: (() -> Void)?
+    ) -> some View {
+        let insight = isScreenshots ? model.screenshotInsights[assetID] : nil
+        return AssetCleanupRow(
+            asset: asset,
+            assetID: assetID,
+            isSelected: model.selectedIDs.contains(assetID),
+            keepLabel: keepLabel,
+            insight: insight,
+            onToggle: { model.toggleSelection(assetID) },
+            onKeepOnly: onKeepOnly,
+            onPreview: {
+                preview = AssetPreviewRequest(
+                    id: assetID,
+                    isVideo: asset?.isVideo == true,
+                    title: insight?.label ?? assetTitle(asset),
+                    subtitle: insight?.reason
+                )
+            },
+            onDelete: {
+                pendingDeleteIDs = [assetID]
+                confirmDelete = true
+            }
+        )
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+                pendingDeleteIDs = [assetID]
+                confirmDelete = true
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
         }
     }
 
@@ -385,6 +461,7 @@ private struct AssetPreviewRequest: Identifiable {
     let id: String
     let isVideo: Bool
     let title: String
+    var subtitle: String?
 }
 
 private struct AssetCleanupRow: View {
@@ -392,9 +469,11 @@ private struct AssetCleanupRow: View {
     var assetID: String?
     let isSelected: Bool
     let keepLabel: String?
+    var insight: PhotosScreenshotInsight?
     let onToggle: () -> Void
     let onKeepOnly: (() -> Void)?
     let onPreview: () -> Void
+    var onDelete: (() -> Void)?
 
     private var resolvedID: String {
         asset?.id ?? assetID ?? ""
@@ -417,12 +496,19 @@ private struct AssetCleanupRow: View {
             .accessibilityLabel(asset?.isVideo == true ? "Play video" : "View photo")
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(assetTitle(asset))
+                Text(insight?.label ?? assetTitle(asset))
                     .font(.body.weight(.medium))
-                Text(assetSubtitle(asset))
+                    .lineLimit(1)
+                Text(insight?.reason ?? assetSubtitle(asset))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .lineLimit(2)
                 HStack(spacing: 8) {
+                    if let insight {
+                        Text(insight.action.label)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(scoreColor(insight.action))
+                    }
                     if let keepLabel {
                         Text(keepLabel)
                             .font(.caption2.weight(.semibold))
@@ -440,16 +526,38 @@ private struct AssetCleanupRow: View {
                     }
                     .font(.caption.weight(.semibold))
                     .buttonStyle(.borderless)
+                    if let onDelete {
+                        Button("Delete", role: .destructive) {
+                            onDelete()
+                        }
+                        .font(.caption.weight(.semibold))
+                        .buttonStyle(.borderless)
+                    }
                 }
             }
             Spacer(minLength: 8)
-            if let asset {
-                Text(ByteCountFormat.string(for: asset.byteSize))
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
+            VStack(alignment: .trailing, spacing: 4) {
+                if let insight {
+                    Text("\(insight.keepScore)")
+                        .font(.caption.weight(.bold).monospacedDigit())
+                        .foregroundStyle(scoreColor(insight.action))
+                }
+                if let asset {
+                    Text(ByteCountFormat.string(for: asset.byteSize))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .padding(.vertical, 4)
+    }
+
+    private func scoreColor(_ action: PhotosScreenshotKeepAction) -> Color {
+        switch action {
+        case .trash: return .orange
+        case .review: return .blue
+        case .keep: return .green
+        }
     }
 }
 
