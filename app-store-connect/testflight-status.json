@@ -1,12 +1,12 @@
 {
   "bundleId": "net.suherman.diskwise.ios",
   "appleId": "6806657352",
-  "marketingVersion": "1.0.1",
-  "buildNumber": "5",
-  "gitCommit": "90791aa1a1185e952fe01d2e96e7b827e1e0ce1c",
-  "uploadedAt": "2026-09-10T02:32:36Z",
-  "submittedForReviewAt": "2026-09-10T02:36:00Z",
-  "reviewSubmissionId": "8cc72834-5cbb-47c3-8a33-aa4c5fc279ae",
-  "buildId": "08ece7c6-18f2-4a8d-ba17-1007721428ef",
-  "note": "Submitted 1.0.1 (build 5) with PhotoKit thumbnails in cleanup bucket lists."
+  "marketingVersion": "1.0.2",
+  "buildNumber": "6",
+  "gitCommit": "29157179f566fcf4369839e50aaef65610d704c7",
+  "uploadedAt": "2026-09-11T00:10:52Z",
+  "submittedForReviewAt": "2026-09-11T00:18:28Z",
+  "reviewSubmissionId": "15fd7f81-631e-46ce-9d14-0246bce0597c",
+  "buildId": "8930cb60-18d0-481a-a313-6ec5466f4c8c",
+  "note": "Submitted 1.0.2 (build 6) with play/view previews and grouped duplicate keep-the-best copies."
 }
