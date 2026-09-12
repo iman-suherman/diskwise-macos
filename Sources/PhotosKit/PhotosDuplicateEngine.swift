@@ -18,7 +18,7 @@ public struct PhotosDuplicateEngine: Sendable {
             .sorted { $0.reclaimableSize > $1.reclaimableSize }
     }
 
-    /// Near-duplicates: same calendar day, same media type, dimensions within 2%, size within 8%.
+    /// Near-duplicates taken moments apart (not every same-day clip at the same resolution).
     /// Excludes assets already claimed by exact duplicate groups.
     public func findSimilar(
         in assets: [PhotoAssetRecord],
@@ -61,6 +61,15 @@ public struct PhotosDuplicateEngine: Sendable {
         return groups.sorted { $0.reclaimableSize > $1.reclaimableSize }
     }
 
+    /// Videos: copies saved within a few seconds. Sequential event clips fail this even when length matches.
+    static let videoCaptureWindow: TimeInterval = 4
+    /// Photos: burst / duplicate-import window.
+    static let photoCaptureWindow: TimeInterval = 5
+    static let videoMaxDurationDelta: TimeInterval = 0.4
+    static let videoMaxDurationRatio = 0.02
+    static let videoMaxSizeRatio = 0.04
+    static let photoMaxSizeRatio = 0.08
+
     public static func isSimilar(_ a: PhotoAssetRecord, _ b: PhotoAssetRecord) -> Bool {
         guard a.mediaType == b.mediaType else { return false }
         guard a.pixelWidth > 0, a.pixelHeight > 0, b.pixelWidth > 0, b.pixelHeight > 0 else {
@@ -70,19 +79,32 @@ public struct PhotosDuplicateEngine: Sendable {
         let heightRatio = Double(abs(a.pixelHeight - b.pixelHeight)) / Double(max(a.pixelHeight, b.pixelHeight))
         guard widthRatio <= 0.02, heightRatio <= 0.02 else { return false }
 
+        guard captureTimesAreNear(a, b) else { return false }
+
         let maxSize = max(a.byteSize, b.byteSize)
         guard maxSize > 0 else { return false }
         let sizeRatio = Double(abs(a.byteSize - b.byteSize)) / Double(maxSize)
-        guard sizeRatio <= 0.08 else { return false }
 
         if a.isVideo || b.isVideo {
             let maxDuration = max(a.durationSeconds, b.durationSeconds)
-            if maxDuration > 0 {
-                let durationRatio = abs(a.durationSeconds - b.durationSeconds) / maxDuration
-                if durationRatio > 0.05 { return false }
+            guard maxDuration > 0 else { return false }
+            let durationDelta = abs(a.durationSeconds - b.durationSeconds)
+            let durationRatio = durationDelta / maxDuration
+            guard durationDelta <= videoMaxDurationDelta || durationRatio <= videoMaxDurationRatio else {
+                return false
             }
+            guard sizeRatio <= videoMaxSizeRatio else { return false }
+            return true
         }
+
+        guard sizeRatio <= photoMaxSizeRatio else { return false }
         return true
+    }
+
+    static func captureTimesAreNear(_ a: PhotoAssetRecord, _ b: PhotoAssetRecord) -> Bool {
+        guard let first = a.creationDate, let second = b.creationDate else { return false }
+        let window = (a.isVideo || b.isVideo) ? videoCaptureWindow : photoCaptureWindow
+        return abs(first.timeIntervalSince(second)) <= window
     }
 
     private static func dayKey(_ date: Date) -> String {

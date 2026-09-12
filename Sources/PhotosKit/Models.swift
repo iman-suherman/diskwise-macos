@@ -100,7 +100,7 @@ public enum PhotosClutterBucket: String, Sendable, CaseIterable, Identifiable, C
     public var subtitle: String {
         switch self {
         case .exactDuplicates: return "Same size and dimensions — keep one copy"
-        case .similar: return "Near-matches from the same day — review carefully"
+        case .similar: return "Near-copies taken moments apart — review carefully"
         case .screenshots: return "Labeled on-device — swipe to delete one, or open to preview"
         case .bursts: return "Extra frames from burst mode"
         case .largeVideos: return "Videos over 100 MB"

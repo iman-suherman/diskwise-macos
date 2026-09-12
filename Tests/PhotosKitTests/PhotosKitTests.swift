@@ -69,6 +69,64 @@ final class PhotosDuplicateEngineTests: XCTestCase {
         XCTAssertEqual(Set(groups[0].assets.map(\.id)), Set(["a", "b"]))
     }
 
+    func testSimilarVideosRequireCloseCaptureTimeNotJustSameDay() {
+        let day = Date(timeIntervalSince1970: 1_772_150_400) // 27 Feb 2026
+        func video(
+            id: String,
+            bytes: Int64,
+            duration: Double,
+            offset: TimeInterval
+        ) -> PhotoAssetRecord {
+            PhotoAssetRecord(
+                id: id,
+                mediaType: .video,
+                byteSize: bytes,
+                pixelWidth: 1920,
+                pixelHeight: 1080,
+                durationSeconds: duration,
+                creationDate: day.addingTimeInterval(offset)
+            )
+        }
+
+        // Didit-style: same event, similar length/size, minutes apart — different clips.
+        let eventClips = [
+            video(id: "v1", bytes: 29_000_000, duration: 17.1, offset: 0),
+            video(id: "v2", bytes: 28_900_000, duration: 17.0, offset: 90),
+            video(id: "v3", bytes: 28_300_000, duration: 16.4, offset: 180),
+            video(id: "v4", bytes: 28_300_000, duration: 16.2, offset: 240),
+        ]
+        XCTAssertTrue(engine.findSimilar(in: eventClips).isEmpty)
+
+        let duplicateSave = [
+            video(id: "keep", bytes: 29_000_000, duration: 17.05, offset: 0),
+            video(id: "copy", bytes: 28_900_000, duration: 17.02, offset: 2),
+        ]
+        let groups = engine.findSimilar(in: duplicateSave)
+        XCTAssertEqual(groups.count, 1)
+        XCTAssertEqual(Set(groups[0].assets.map(\.id)), Set(["keep", "copy"]))
+    }
+
+    func testSimilarRejectsVideosWithoutCreationDate() {
+        let a = PhotoAssetRecord(
+            id: "a",
+            mediaType: .video,
+            byteSize: 1_000_000,
+            pixelWidth: 1920,
+            pixelHeight: 1080,
+            durationSeconds: 10,
+            creationDate: Date()
+        )
+        let b = PhotoAssetRecord(
+            id: "b",
+            mediaType: .video,
+            byteSize: 1_000_000,
+            pixelWidth: 1920,
+            pixelHeight: 1080,
+            durationSeconds: 10
+        )
+        XCTAssertTrue(engine.findSimilar(in: [a, b]).isEmpty)
+    }
+
     func testSuggestedKeepPrefersFavorite() {
         let keep = PhotoAssetRecord(
             id: "keep",

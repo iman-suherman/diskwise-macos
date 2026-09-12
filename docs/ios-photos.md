@@ -7,7 +7,7 @@ On-device **Photos storage consultant**: scan the photo library, surface reclaim
 | In scope | Out of scope |
 |----------|----------------|
 | Local + iCloud Photos via PhotoKit | Files app / iCloud Drive browsing |
-| Exact + near-duplicate media | WhatsApp / third-party app folders |
+| Exact + near-duplicate media (near-copies taken moments apart, not same-day event clips) | WhatsApp / third-party app folders |
 | Clutter buckets (screenshots, bursts, large videos, old media) | Shared album editing |
 | Insights + ranked recommendations | Background auto-delete |
 | Screenshot labels + keep scores (on-device OCR) | Permanent purge from Recently Deleted |

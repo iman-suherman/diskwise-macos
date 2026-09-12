@@ -2,7 +2,7 @@
   "appleId": 6806657352,
   "bundleId": "net.suherman.diskwise.ios",
   "platform": "IOS",
-  "versionString": "1.0.3",
+  "versionString": "1.0.4",
   "copyright": "Copyright © 2026 Iman Suherman",
   "primaryLocale": "en-AU",
   "supportUrl": "https://diskwise.suherman.net/#privacy",
@@ -15,7 +15,7 @@
     "en-AU": {
       "promotionalText": "On-device Photos storage consultant — find reclaimable space and clean up safely.",
       "keywords": "photos,duplicates,cleanup,storage,screenshots,videos,privacy,iphone,ipad",
-      "whatsNew": "Screenshots now get on-device labels and keep scores. Delete one item with a swipe or from the preview — and the preview fits the screen so Delete stays reachable.",
+      "whatsNew": "Similar Media no longer groups different videos from the same event just because they share resolution and length. Only near-copies saved moments apart are listed — extras start selected so Review shows real reclaimable space.",
       "description": "DiskWise for iPhone and iPad is an on-device Photos storage consultant. It scans your photo library, estimates reclaimable space, and helps you move clutter to Recently Deleted — never permanent delete in v1.\n\nWHAT IT DOES\n• Find exact duplicates and similar media\n• Label screenshots on-device with keep scores\n• Surface bursts, large videos, and older items\n• Ranked recommendations with reclaimable estimates\n• Preview and confirm before anything is removed — including one item at a time\n\nSAFE CLEANUP\nSelected items go to Photos → Recently Deleted so you can recover them for about 30 days. DiskWise never empties Recently Deleted.\n\nPRIVACY\nAll analysis runs on your device. Photo contents are not uploaded to a cloud service.\n\nLearn more at https://diskwise.suherman.net"
     }
   },
@@ -25,7 +25,7 @@
     "contactPhone": "+61430058886",
     "contactEmail": "iman.suherman@gmail.com",
     "demoAccountRequired": false,
-    "notes": "WHAT'S NEW IN 1.0.3\nScreenshots are labeled on-device with a keep score. You can delete a single item with a swipe, or open the preview (now fitted to the screen) and tap Delete. Items still go to Recently Deleted.\n\nHOW TO REVIEW\n1. Tap Continue on the Photos explanation screen, then choose access (Full Access recommended; Limited works).\n2. Wait for the library scan — dashboard shows reclaimable space and buckets.\n3. Open Screenshots — each row shows a label and keep score. Swipe left to delete one item, or tap View then Delete. The preview fits the screen; Delete is on the toolbar and at the bottom.\n4. Open Exact Duplicates or Similar Media — items are grouped. Tap Keep this on the copy to keep. Tap a thumbnail to view, or Play on videos.\n5. Confirm deleted items appear in Photos → Recently Deleted.\n\nNo login. Analysis is on-device. DiskWise does not use Location Services.\n\nPrivacy: https://diskwise.suherman.net/#privacy\nSupport: https://diskwise.suherman.net/#privacy\nContact: iman.suherman@gmail.com | +61430058886"
+    "notes": "WHAT'S NEW IN 1.0.4\nSimilar Media only groups near-copies taken moments apart. Same-day event videos that merely share resolution and length are not treated as duplicates. Open Similar Media: extras in each group start selected; Keep this stays on the suggested copy. Confirm items go to Photos → Recently Deleted.\n\nHOW TO REVIEW\n1. Tap Continue on the Photos explanation screen, then choose access (Full Access recommended; Limited works).\n2. Wait for the library scan — dashboard shows reclaimable space and buckets.\n3. Open Similar Media — unrelated event clips should not appear together. If a true near-copy group exists, extras are checked; suggested keep is labeled. Tap Play to preview. Confirm Review shows a non-zero size when extras are selected.\n4. Open Screenshots — each row shows a label and keep score. Swipe left to delete one item, or tap View then Delete.\n5. Confirm deleted items appear in Photos → Recently Deleted.\n\nNo login. Analysis is on-device. DiskWise does not use Location Services.\n\nPrivacy: https://diskwise.suherman.net/#privacy\nSupport: https://diskwise.suherman.net/#privacy\nContact: iman.suherman@gmail.com | +61430058886"
   },
   "releaseType": "AFTER_APPROVAL",
   "screenshots": {

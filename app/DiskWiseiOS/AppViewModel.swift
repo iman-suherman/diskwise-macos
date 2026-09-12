@@ -27,6 +27,8 @@ final class AppViewModel: ObservableObject {
     @Published var lastCleanupCount: Int?
     @Published var isCleaning = false
     @Published var screenshotInsights: [String: PhotosScreenshotInsight] = [:]
+    /// Last bucket that applied a default selection — avoids leftover IDs from another screen.
+    private var selectionContext: String?
     /// App Store screenshot deep-link (set only when DISKWISE_DEMO=1).
     let demoRoute: DemoScreenshotRoute?
 
@@ -149,6 +151,7 @@ final class AppViewModel: ObservableObject {
             assetsByID = Dictionary(uniqueKeysWithValues: result.assets.map { ($0.id, $0) })
             report = result.report
             selectedIDs = []
+            selectionContext = nil
             screenshotOCRCompleted = []
             seedScreenshotInsights()
         } catch {
@@ -161,10 +164,23 @@ final class AppViewModel: ObservableObject {
     }
 
     func selectDefault(for summary: PhotosBucketSummary) {
+        selectionContext = summary.id
         if summary.bucket == .screenshots {
+            selectedIDs = []
             return
         }
-        selectAll(for: summary)
+        if summary.bucket == .exactDuplicates || summary.bucket == .similar {
+            selectedIDs = Set(duplicateGroups(for: summary).flatMap(\.suggestedCleanupIDs))
+            return
+        }
+        selectedIDs = Set(summary.assetIDs)
+    }
+
+    /// Replace stale selection when opening a different bucket (e.g. 102 leftover IDs).
+    func ensureSelection(for summary: PhotosBucketSummary) {
+        if selectionContext != summary.id {
+            selectDefault(for: summary)
+        }
     }
 
     func toggleSelection(_ id: String) {

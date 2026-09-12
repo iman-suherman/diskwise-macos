@@ -81,7 +81,7 @@ public struct PhotosInsightEngine: Sendable {
             ids: similarCleanupIDs,
             reclaimable: similarReclaimable,
             title: "Review similar media",
-            detail: "Near-matches from the same day — confirm before cleaning."
+            detail: "Near-copies taken moments apart — confirm before cleaning."
         )
 
         let screenshotIDs = assets.filter { $0.isScreenshot && !claimed.contains($0.id) }.map(\.id)

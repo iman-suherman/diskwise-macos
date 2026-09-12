@@ -356,9 +356,7 @@ struct BucketDetailView: View {
             }
         }
         .onAppear {
-            if model.selectedIDs.isEmpty {
-                model.selectDefault(for: summary)
-            }
+            model.ensureSelection(for: summary)
             if isScreenshots {
                 model.seedScreenshotInsights()
             }
