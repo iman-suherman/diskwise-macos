@@ -1,0 +1,16 @@
+{
+  "summary": "Play or view files before cleanup, pick the best copy in each duplicate group, and swipe through labeled screenshots to Trash or keep.",
+  "introduced": [
+    "Play / View — open photos and videos from Review Duplicates, Recommendations, Breakdown, and cleanup previews before anything moves to Trash",
+    "Review & choose best — Review Duplicates → Review & choose best lets you keep the suggested copy or tap Keep this on another, then send extras to Trash",
+    "Screenshot swipe review — Recommendations → Screenshots shows an on-device label and keep score; swipe left (or ←) to Trash, right to keep"
+  ],
+  "changed": [
+    "Screenshot detection — files named Screenshot / Screen Shot or stored in a Screenshots folder are classified during scan so they appear in that recommendation",
+    "Suggested keep in duplicate groups — ranking prefers favorites and richer copies over screenshots when choosing which file to keep"
+  ],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}
