@@ -5,14 +5,9 @@
   "buildNumber": "8",
   "gitCommit": "c5981c06d4ef15a342df1076a86d401a1632d18d",
   "uploadedAt": "2026-09-12T02:43:12Z",
+  "submittedForReviewAt": "2026-09-12T02:47:52Z",
+  "reviewSubmissionId": "3d79c6bb-1d83-48b2-86ef-87ac9bb780fb",
+  "buildId": "57193821-157a-4e29-9652-22d85ae7fc35",
   "deliveryUUID": "57193821-157a-4e29-9652-22d85ae7fc35",
-  "note": "Uploaded 1.0.4 (build 8) Similar Media: same-day event videos are not grouped; extras start selected. 1.0.3 (build 7) remains in App Review.",
-  "pendingReview": {
-    "marketingVersion": "1.0.3",
-    "buildNumber": "7",
-    "gitCommit": "24cd6f8c1eaf7a8a033e1319083cf3de30da6dc9",
-    "submittedForReviewAt": "2026-09-11T23:59:21Z",
-    "reviewSubmissionId": "c5a2e313-5d6f-4eb4-987e-174e2c4e1b0b",
-    "buildId": "2aeeb7ac-808d-4996-9672-1e4500220ac2"
-  }
+  "note": "Submitted 1.0.4 (build 8) Similar Media: same-day event videos are not grouped; extras start selected. Replaced inflight 1.0.3."
 }
