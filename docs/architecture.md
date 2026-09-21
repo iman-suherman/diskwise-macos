@@ -87,3 +87,7 @@ flowchart TB
 ```
 
 macOS path/volume kits are not used for the Photos product.
+
+## Android gallery product
+
+Kotlin + Jetpack Compose app under `app/DiskWiseAndroid` (`net.suherman.diskwise.android`) mirrors the iOS Photos consultant using MediaStore: exact duplicates, screenshots / large videos / older media buckets, and recoverable Trash cleanup. See [android-photos.md](android-photos.md).

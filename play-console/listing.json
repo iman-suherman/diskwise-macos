@@ -1,0 +1,21 @@
+{
+  "packageName": "net.suherman.diskwise.android",
+  "appId": "4975355557632156100",
+  "developerId": "8591860321759482577",
+  "track": "internal",
+  "defaultLanguage": "en-US",
+  "title": "DiskWise",
+  "contactEmail": "iman.suherman@gmail.com",
+  "contactWebsite": "https://diskwise.suherman.net",
+  "privacyPolicyUrl": "https://diskwise.suherman.net/#privacy",
+  "versionCode": 3,
+  "versionName": "1.0.0",
+  "locales": {
+    "en-US": {
+      "title": "DiskWise",
+      "shortDescription": "On-device gallery storage consultant — find reclaimable space safely.",
+      "fullDescription": "DiskWise for Android is an on-device gallery storage consultant. It scans your photos and videos, estimates reclaimable space, and helps you move clutter to Trash — never permanent delete in v1.\n\nWHAT IT DOES\n• Find exact duplicates\n• Surface screenshots, large videos, and older items\n• Ranked recommendations with reclaimable estimates\n• Preview and confirm before anything is removed\n\nSAFE CLEANUP\nSelected items go to system Trash so you can recover them. DiskWise never empties Trash.\n\nPRIVACY\nAll analysis runs on your device. Photo contents are not uploaded to a cloud service.\n\nLearn more at https://diskwise.suherman.net",
+      "releaseNotes": "First Android release — on-device gallery scan, exact duplicates, clutter buckets, and recoverable Trash cleanup."
+    }
+  }
+}

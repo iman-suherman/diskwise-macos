@@ -25,7 +25,8 @@ Unlike traditional tools that only show category totals, DiskWise acts as an **A
 diskwise-macos/
 ├── app/
 │   ├── DiskWise/           # macOS SwiftUI app
-│   └── DiskWiseiOS/        # iPhone + iPad Photos consultant
+│   ├── DiskWiseiOS/        # iPhone + iPad Photos consultant
+│   └── DiskWiseAndroid/    # Android gallery consultant (Kotlin + Compose)
 ├── website/                # Next.js marketing site
 ├── Sources/                # Swift packages (kits)
 │   ├── DatabaseKit/
@@ -35,6 +36,7 @@ diskwise-macos/
 │   ├── CleanupKit/
 │   ├── AIKit/
 │   └── PhotosKit/          # PhotoKit index, insights, cleanup (iOS)
+├── play-console/           # Google Play listing + status
 ├── Tests/
 ├── database/migrations/    # SQL reference schema
 ├── docs/
@@ -51,6 +53,7 @@ diskwise-macos/
 - **AIKit** — storage insights, recommendations, optional Ollama report generation
 - **DatabaseKit** — GRDB schema, migrations, repositories
 - **PhotosKit** — Photos library authorization, index, duplicates/insights, Recently Deleted cleanup (see `docs/ios-photos.md`)
+- **DiskWiseAndroid** — MediaStore gallery consultant for Google Play (see `docs/android-photos.md`)
 
 ## Development
 
@@ -119,6 +122,8 @@ npm run open:xcode
 - [Architecture](docs/architecture.md)
 - [Database schema](docs/database.md)
 - [Local development](docs/local-development.md)
+- [iOS Photos](docs/ios-photos.md)
+- [Android gallery](docs/android-photos.md)
 - [Auto-updates (Sparkle)](docs/updates.md)
 - [Website](docs/website.md)
 

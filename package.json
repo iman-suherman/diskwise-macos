@@ -19,6 +19,8 @@
     "setup:xcode": "xcodebuild -runFirstLaunch",
     "build:app": "bash scripts/build.sh",
     "build:ios": "bash scripts/build-ios.sh",
+    "build:android": "bash app/DiskWiseAndroid/scripts/build.sh assembleDebug",
+    "build:android:bundle": "bash app/DiskWiseAndroid/scripts/build.sh bundleRelease",
     "asc:ensure": "bash scripts/ensure-asc-app.sh",
     "publish:testflight": "bash scripts/publish-testflight.sh",
     "appstore:screenshots": "bash scripts/capture-app-store-screenshots.sh",

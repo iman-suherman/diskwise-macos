@@ -1,0 +1,12 @@
+{
+  "packageName": "net.suherman.diskwise.android",
+  "appId": "4975355557632156100",
+  "developerId": "8591860321759482577",
+  "versionCode": 3,
+  "versionName": "1.0.0",
+  "track": "internal",
+  "status": "available_to_internal_testers",
+  "releasedAt": "2026-09-22T08:09:00+10:00",
+  "consoleUrl": "https://play.google.com/console/u/0/developers/8591860321759482577/app/4975355557632156100",
+  "notes": "AAB uploaded via Play Helper UI (API SA still 403 for new package until API access fully linked). Temporary store name until first review."
+}
