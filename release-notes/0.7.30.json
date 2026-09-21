@@ -1,0 +1,11 @@
+{
+  "summary": "Notarized packaging refresh to 0.7.30 — no user-facing macOS behavior changes in this build.",
+  "introduced": [],
+  "changed": [
+    "Release channel — notarized DMG and Sparkle appcast updated to 0.7.30 for distribution and update checks"
+  ],
+  "fixed": [],
+  "updated": [],
+  "removed": [],
+  "breaking": []
+}
