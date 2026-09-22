@@ -4,9 +4,47 @@
   "developerId": "8591860321759482577",
   "versionCode": 3,
   "versionName": "1.0.0",
-  "track": "internal",
-  "status": "available_to_internal_testers",
+  "track": "production_pending_review",
+  "status": "changes_in_review",
   "releasedAt": "2026-09-22T08:09:00+10:00",
+  "submittedForReviewAt": "2026-09-22T13:16:00+10:00",
   "consoleUrl": "https://play.google.com/console/u/0/developers/8591860321759482577/app/4975355557632156100",
-  "notes": "AAB uploaded via Play Helper UI (API SA still 403 for new package until API access fully linked). Temporary store name until first review."
+  "appContent": {
+    "needAttention": 0,
+    "note": "Included in review submission"
+  },
+  "storeListing": {
+    "appName": "DiskWise",
+    "locale": "en-GB",
+    "category": "Tools",
+    "contactEmail": "iman.suherman@gmail.com",
+    "contactWebsite": "https://diskwise.suherman.net",
+    "graphics": {
+      "appIcon": "1/1",
+      "featureGraphic": "1/1",
+      "phoneScreenshots": "4/8",
+      "tablet7": "2/8",
+      "tablet10": "2/8"
+    }
+  },
+  "production": {
+    "countries": ["Australia", "Indonesia", "Singapore", "United Kingdom", "United States"],
+    "release": "3 (1.0.0) Start full rollout",
+    "warning": "Native code without debug symbols (non-blocking)"
+  },
+  "publishing": {
+    "managedPublishing": "off",
+    "status": "changes_in_review",
+    "submittedChanges": 10,
+    "note": "Submit 10 changes for review confirmed. Quick checks may still run; Play sends to review when checks complete."
+  },
+  "internalTesting": {
+    "status": "available_to_internal_testers",
+    "versionCode": 3,
+    "versionName": "1.0.0"
+  },
+  "nextTasks": [
+    "Wait for Play review (hours–days)",
+    "Optional: upload native debug symbols for clearer crash reports"
+  ]
 }
