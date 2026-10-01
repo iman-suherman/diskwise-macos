@@ -268,8 +268,6 @@ struct BucketDetailView: View {
     let summary: PhotosBucketSummary
     @State private var preview: AssetPreviewRequest?
     @State private var hiddenIDs: Set<String> = []
-    @State private var pendingDeleteIDs: [String] = []
-    @State private var confirmDelete = false
 
     private var duplicateGroups: [PhotosDuplicateGroup] {
         model.duplicateGroups(for: summary)
@@ -304,7 +302,7 @@ struct BucketDetailView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else if isScreenshots {
-                    Text("Swipe left to delete one item, or open the preview and tap Delete. Labels and keep scores are on-device.")
+                    Text("Swipe left to delete one item, or open the preview and tap Delete — both move straight to Recently Deleted. Labels and keep scores are on-device.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -372,37 +370,22 @@ struct BucketDetailView: View {
                 title: request.title,
                 subtitle: request.subtitle,
                 onDelete: {
-                    let ok = await model.moveToRecentlyDeleted(ids: [request.id], rescan: false)
-                    if ok {
-                        hiddenIDs.insert(request.id)
-                    }
+                    let ok = await deleteSingleItem(request.id)
                     return ok
                 }
             )
         }
-        .confirmationDialog(
-            pendingDeleteIDs.count == 1
-                ? "Move this item to Recently Deleted?"
-                : "Move \(pendingDeleteIDs.count) items to Recently Deleted?",
-            isPresented: $confirmDelete,
-            titleVisibility: .visible
-        ) {
-            Button("Move to Recently Deleted", role: .destructive) {
-                let ids = pendingDeleteIDs
-                pendingDeleteIDs = []
-                Task {
-                    let ok = await model.moveToRecentlyDeleted(ids: ids, rescan: false)
-                    if ok {
-                        hiddenIDs.formUnion(ids)
-                    }
-                }
-            }
-            Button("Cancel", role: .cancel) {
-                pendingDeleteIDs = []
-            }
-        } message: {
-            Text("You can recover it in Photos for about 30 days.")
+    }
+
+    /// Single-item delete: swipe / row Delete / preview Delete go straight to Recently Deleted
+    /// (no extra confirm). Bulk cleanup still confirms in `ReviewCleanupView`.
+    @discardableResult
+    private func deleteSingleItem(_ id: String) async -> Bool {
+        let ok = await model.moveToRecentlyDeleted(ids: [id], rescan: false)
+        if ok {
+            hiddenIDs.insert(id)
         }
+        return ok
     }
 
     private func assetRow(
@@ -429,14 +412,12 @@ struct BucketDetailView: View {
                 )
             },
             onDelete: {
-                pendingDeleteIDs = [assetID]
-                confirmDelete = true
+                Task { await deleteSingleItem(assetID) }
             }
         )
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
-                pendingDeleteIDs = [assetID]
-                confirmDelete = true
+                Task { await deleteSingleItem(assetID) }
             } label: {
                 Label("Delete", systemImage: "trash")
             }

@@ -19,7 +19,6 @@ struct MediaPreviewView: View {
     @State private var loadFailed = false
     @State private var imageRequestID: PHImageRequestID?
     @State private var videoRequestID: PHImageRequestID?
-    @State private var confirmDelete = false
     @State private var isDeleting = false
 
     private static let imageManager = PHCachingImageManager()
@@ -44,7 +43,7 @@ struct MediaPreviewView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     if onDelete != nil {
                         Button("Delete", role: .destructive) {
-                            confirmDelete = true
+                            Task { await performDelete() }
                         }
                         .disabled(isDeleting)
                     }
@@ -62,7 +61,7 @@ struct MediaPreviewView: View {
                     }
                     if onDelete != nil {
                         Button(role: .destructive) {
-                            confirmDelete = true
+                            Task { await performDelete() }
                         } label: {
                             Label("Delete", systemImage: "trash")
                                 .frame(maxWidth: .infinity)
@@ -77,26 +76,17 @@ struct MediaPreviewView: View {
                 .frame(maxWidth: .infinity)
                 .background(.black.opacity(0.78))
             }
-            .confirmationDialog(
-                "Move this item to Recently Deleted?",
-                isPresented: $confirmDelete,
-                titleVisibility: .visible
-            ) {
-                Button("Move to Recently Deleted", role: .destructive) {
-                    Task {
-                        isDeleting = true
-                        let ok = await onDelete?() ?? false
-                        isDeleting = false
-                        if ok { dismiss() }
-                    }
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("You can recover it in Photos for about 30 days. DiskWise never empties Recently Deleted.")
-            }
         }
         .onAppear(perform: load)
         .onDisappear(perform: teardown)
+    }
+
+    private func performDelete() async {
+        guard !isDeleting else { return }
+        isDeleting = true
+        let ok = await onDelete?() ?? false
+        isDeleting = false
+        if ok { dismiss() }
     }
 
     @ViewBuilder

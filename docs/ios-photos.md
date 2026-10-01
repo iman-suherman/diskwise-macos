@@ -25,11 +25,14 @@ On-device **Photos storage consultant**: scan the photo library, surface reclaim
 
 ```mermaid
 flowchart LR
-    A[Select items] --> B[Preview]
-    B --> C[Confirm]
-    C --> D[Recently Deleted]
+    A[Swipe / Delete / Preview Delete] --> D[Recently Deleted]
+    B[Select items] --> C[Review + confirm]
+    C --> D
     D --> E[User can recover ~30 days in Photos]
 ```
+
+- **Single item** (swipe, row Delete, or preview Delete): moves straight to Recently Deleted — the gesture itself is the confirmation.
+- **Bulk cleanup** (Review → Move to Recently Deleted): still shows an explicit confirmation dialog.
 
 Destructive actions use `PHAssetChangeRequest.deleteAssets` only. v1 never empties Recently Deleted.
 
@@ -62,8 +65,9 @@ macOS kits (`DiskScannerKit`, etc.) stay path/volume oriented and are **not** re
 - [ ] Grant Photos access (full recommended; limited supported)
 - [ ] Dashboard shows reclaimable estimate and buckets after scan
 - [ ] Open Exact Duplicates / Similar Media → grouped copies, Keep this, play/view
-- [ ] Open a bucket → preview → confirm → items appear in Photos → Recently Deleted
-- [ ] Screenshots show on-device labels/scores; swipe or preview Delete moves one item to Recently Deleted
+- [ ] Open a bucket → preview → Delete → item appears in Photos → Recently Deleted (no extra confirm)
+- [ ] Screenshots show on-device labels/scores; swipe or preview Delete moves one item to Recently Deleted in one step
+- [ ] Bulk Review still confirms before moving multiple items
 - [ ] ~10k library: scan + first cleanup path completes in under ~5 minutes
 - [ ] No network upload of photo content (on-device only)
 
