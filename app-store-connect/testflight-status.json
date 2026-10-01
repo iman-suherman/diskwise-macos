@@ -1,13 +1,12 @@
 {
   "bundleId": "net.suherman.diskwise.ios",
   "appleId": "6806657352",
-  "marketingVersion": "1.0.4",
-  "buildNumber": "8",
-  "gitCommit": "c5981c06d4ef15a342df1076a86d401a1632d18d",
-  "uploadedAt": "2026-09-12T02:43:12Z",
-  "submittedForReviewAt": "2026-09-12T02:47:52Z",
-  "reviewSubmissionId": "3d79c6bb-1d83-48b2-86ef-87ac9bb780fb",
-  "buildId": "57193821-157a-4e29-9652-22d85ae7fc35",
-  "deliveryUUID": "57193821-157a-4e29-9652-22d85ae7fc35",
-  "note": "Submitted 1.0.4 (build 8) Similar Media: same-day event videos are not grouped; extras start selected. Replaced inflight 1.0.3."
+  "marketingVersion": "1.0.5",
+  "buildNumber": "9",
+  "gitCommit": "8395b3e",
+  "uploadedAt": "2026-10-01T09:25:33Z",
+  "buildId": "f17bfc06-aa23-4991-b37c-6868a9a3f21d",
+  "note": "Submitted 1.0.5 (build 9) for App Store review \u2014 one-step single-item delete; free app; bulk Review still confirms.",
+  "reviewSubmissionId": "a4194190-ea93-44ae-b768-f31c4851225b",
+  "submittedForReviewAt": "2026-10-01T09:30:00Z"
 }
