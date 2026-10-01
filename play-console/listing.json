@@ -2,14 +2,14 @@
   "packageName": "net.suherman.diskwise.android",
   "appId": "4975355557632156100",
   "developerId": "8591860321759482577",
-  "track": "internal",
+  "track": "production",
   "defaultLanguage": "en-US",
   "title": "DiskWise",
   "contactEmail": "iman.suherman@gmail.com",
   "contactWebsite": "https://diskwise.suherman.net",
   "privacyPolicyUrl": "https://diskwise.suherman.net/#privacy",
-  "versionCode": 4,
-  "versionName": "1.0.1",
+  "versionCode": 7,
+  "versionName": "1.0.3",
   "locales": {
     "en-US": {
       "title": "DiskWise",

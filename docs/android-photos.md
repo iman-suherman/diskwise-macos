@@ -69,7 +69,7 @@ Release status: `play-console/play-status.json`
 
 ### Published so far
 
-- **Internal testing** — versionCode **4** (`1.0.1`) one-step single-item delete (swipe / Delete / preview); bulk Review still confirms.
+- **Production** — versionCode **7** (`1.0.3`) one-step single-item delete (swipe / Delete / preview); bulk Review still confirms.
 - **Production** — versionCode **3** (`1.0.0`) previously submitted for review.
 
 ### Still required for production / Play Store listing

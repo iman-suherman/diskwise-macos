@@ -14,8 +14,8 @@ android {
         applicationId = "net.suherman.diskwise.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.0.1"
+        versionCode = 7
+        versionName = "1.0.3"
     }
 
     signingConfigs {
