@@ -11,6 +11,7 @@ EXPORT_PATH="${IOS_EXPORT_PATH:-$ROOT/build/ios/export}"
 EXPORT_OPTIONS="$ROOT/build/ios/ExportOptions.plist"
 TEAM_ID="${DEVELOPMENT_TEAM:-Q3TXW887NM}"
 BUNDLE_ID="net.suherman.diskwise.ios"
+APPLE_ID="${ASC_APPLE_ID:-6806657352}"
 HALORT_INFRA="${HALORT_INFRA_ROOT:-$ROOT/../../halort/halort-infra}"
 ASC_DIR="${ASC_CREDENTIALS_DIR:-$HALORT_INFRA/.credentials/asc}"
 
@@ -111,11 +112,12 @@ xcodebuild \
 
 IPA="$(ls "$EXPORT_PATH"/*.ipa | head -1)"
 echo "Uploading ${IPA} to App Store Connect (TestFlight)…"
-xcrun altool --upload-app -f "$IPA" -t ios --apiKey "$KEY_ID" --apiIssuer "$ISSUER_ID"
+xcrun altool --upload-app -f "$IPA" -t ios --apiKey "$KEY_ID" --apiIssuer "$ISSUER_ID" --apple-id "$APPLE_ID"
 
 cat > "$STATUS_FILE" <<EOF
 {
   "bundleId": "${BUNDLE_ID}",
+  "appleId": "${APPLE_ID}",
   "marketingVersion": "${MARKETING_VERSION}",
   "buildNumber": "${BUILD_NUMBER}",
   "gitCommit": "${GIT_COMMIT}",
