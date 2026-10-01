@@ -71,8 +71,13 @@ fun DiskWiseApp(viewModel: DiskWiseViewModel) {
     ) { result ->
         viewModel.onTrashResult(result.resultCode)
         if (result.resultCode == DiskWiseViewModel.CleanupResult.OK) {
-            navController.popBackStack("dashboard", inclusive = false)
             pendingPreview = null
+            val route = navController.currentBackStackEntry?.destination?.route.orEmpty()
+            when {
+                route.startsWith("preview") -> navController.popBackStack()
+                route == "confirm" -> navController.popBackStack("dashboard", inclusive = false)
+                // Single-item delete from a bucket: stay on the list (rescan refreshes rows).
+            }
         }
     }
 
@@ -175,6 +180,7 @@ fun DiskWiseApp(viewModel: DiskWiseViewModel) {
                     pendingPreview = asset
                     navController.navigate("preview/${asset.id}")
                 },
+                onDelete = { viewModel.prepareTrashForSingle(it) },
                 onReview = { navController.navigate("confirm") }
             )
         }

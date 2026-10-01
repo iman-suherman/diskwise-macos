@@ -10,7 +10,8 @@ On-device **gallery storage consultant**: scan MediaStore, surface reclaimable s
 | Exact duplicates (size + dimensions + duration) | Similar-media near-copies |
 | Clutter buckets (screenshots, large videos, older media) | WhatsApp / third-party app folders |
 | Insights + ranked recommendations | Background auto-delete |
-| Preview + confirm → system Trash | Emptying Trash / permanent purge |
+| Preview, swipe, or list **Delete** for a single item → system Trash | Emptying Trash / permanent purge |
+| Bulk Review + confirm → system Trash | — |
 
 ## Privacy
 
@@ -22,11 +23,14 @@ On-device **gallery storage consultant**: scan MediaStore, surface reclaimable s
 
 ```mermaid
 flowchart LR
-    A[Select items] --> B[Preview / Review]
-    B --> C[Confirm]
-    C --> D[System Trash]
+    A[Swipe / Delete / Preview Delete] --> D[System Trash]
+    B[Select items] --> C[Review + confirm]
+    C --> D
     D --> E[User can recover from Trash]
 ```
+
+- **Single item** (swipe, row Delete, or preview Delete): launches the system Trash UI directly — no in-app confirm dialog.
+- **Bulk cleanup** (Review → Move to Trash): still shows an in-app confirmation screen, then the system Trash UI.
 
 Destructive actions use `MediaStore.createDeleteRequest` (API 30+) so the OS shows the Trash confirmation. v1 never empties Trash.
 
@@ -65,7 +69,8 @@ Release status: `play-console/play-status.json`
 
 ### Published so far
 
-- **Internal testing** — versionCode **3** (`1.0.0`) available to internal testers (temporary unreviewed name until store listing + first review complete).
+- **Internal testing** — versionCode **4** (`1.0.1`) one-step single-item delete (swipe / Delete / preview); bulk Review still confirms.
+- **Production** — versionCode **3** (`1.0.0`) previously submitted for review.
 
 ### Still required for production / Play Store listing
 

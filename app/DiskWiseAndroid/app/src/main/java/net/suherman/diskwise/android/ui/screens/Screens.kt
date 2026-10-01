@@ -35,13 +35,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -306,6 +310,7 @@ fun BucketScreen(
     onToggle: (Long) -> Unit,
     onKeepAsset: (Long, DuplicateGroup) -> Unit,
     onPreview: (MediaAsset) -> Unit,
+    onDelete: (Long) -> Unit,
     onReview: () -> Unit
 ) {
     val assets = summary.assetIds.mapNotNull { state.assetsById[it] }
@@ -363,6 +368,12 @@ fun BucketScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
                 )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Swipe left or tap Delete to move one item to Trash. Review still confirms bulk cleanup.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+                )
             }
 
             if (groups.isNotEmpty()) {
@@ -372,7 +383,8 @@ fun BucketScreen(
                         selectedIds = state.selectedIds,
                         onToggle = onToggle,
                         onKeep = onKeepAsset,
-                        onPreview = onPreview
+                        onPreview = onPreview,
+                        onDelete = onDelete
                     )
                 }
             } else {
@@ -381,7 +393,8 @@ fun BucketScreen(
                         asset = asset,
                         selected = asset.id in state.selectedIds,
                         onToggle = { onToggle(asset.id) },
-                        onPreview = { onPreview(asset) }
+                        onPreview = { onPreview(asset) },
+                        onDelete = { onDelete(asset.id) }
                     )
                 }
             }
@@ -395,7 +408,8 @@ private fun DuplicateGroupCard(
     selectedIds: Set<Long>,
     onToggle: (Long) -> Unit,
     onKeep: (Long, DuplicateGroup) -> Unit,
-    onPreview: (MediaAsset) -> Unit
+    onPreview: (MediaAsset) -> Unit,
+    onDelete: (Long) -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
@@ -413,13 +427,15 @@ private fun DuplicateGroupCard(
                     keepLabel = asset.id == group.suggestedKeepId,
                     onToggle = { onToggle(asset.id) },
                     onPreview = { onPreview(asset) },
-                    onKeep = { onKeep(asset.id, group) }
+                    onKeep = { onKeep(asset.id, group) },
+                    onDelete = { onDelete(asset.id) }
                 )
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AssetRow(
     asset: MediaAsset,
@@ -427,58 +443,102 @@ private fun AssetRow(
     keepLabel: Boolean = false,
     onToggle: () -> Unit,
     onPreview: () -> Unit,
-    onKeep: (() -> Unit)? = null
+    onKeep: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onPreview)
-            .padding(4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onToggle) {
-            Icon(
-                imageVector = if (selected) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
-                contentDescription = if (selected) "Selected" else "Not selected",
-                tint = if (selected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                }
-            )
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart && onDelete != null) {
+                onDelete()
+            }
+            // Snap back; system Trash UI is the confirmation.
+            false
         }
-        AsyncImage(
-            model = asset.uri,
-            contentDescription = asset.displayName,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = asset.displayName ?: "Media ${asset.id}",
-                maxLines = 1,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = ByteFormat.format(asset.byteSize) + if (asset.isVideo) " · video" else "",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-            if (keepLabel) {
-                Text(
-                    text = "Suggested keep",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = onDelete != null,
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.error)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Delete,
+                    contentDescription = "Move to Trash",
+                    tint = Color.White
                 )
             }
         }
-        if (onKeep != null) {
-            TextButton(onClick = onKeep) { Text("Keep") }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .clickable(onClick = onPreview)
+                .padding(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onToggle) {
+                Icon(
+                    imageVector = if (selected) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+                    contentDescription = if (selected) "Selected" else "Not selected",
+                    tint = if (selected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                    }
+                )
+            }
+            AsyncImage(
+                model = asset.uri,
+                contentDescription = asset.displayName,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = asset.displayName ?: "Media ${asset.id}",
+                    maxLines = 1,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = ByteFormat.format(asset.byteSize) + if (asset.isVideo) " · video" else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+                if (keepLabel) {
+                    Text(
+                        text = "Suggested keep",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            if (onKeep != null) {
+                TextButton(onClick = onKeep) { Text("Keep") }
+            }
+            if (onDelete != null) {
+                TextButton(
+                    onClick = onDelete,
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete")
+                }
+            }
         }
     }
 }

@@ -8,14 +8,14 @@
   "contactEmail": "iman.suherman@gmail.com",
   "contactWebsite": "https://diskwise.suherman.net",
   "privacyPolicyUrl": "https://diskwise.suherman.net/#privacy",
-  "versionCode": 3,
-  "versionName": "1.0.0",
+  "versionCode": 4,
+  "versionName": "1.0.1",
   "locales": {
     "en-US": {
       "title": "DiskWise",
       "shortDescription": "On-device gallery storage consultant — find reclaimable space safely.",
-      "fullDescription": "DiskWise for Android is an on-device gallery storage consultant. It scans your photos and videos, estimates reclaimable space, and helps you move clutter to Trash — never permanent delete in v1.\n\nWHAT IT DOES\n• Find exact duplicates\n• Surface screenshots, large videos, and older items\n• Ranked recommendations with reclaimable estimates\n• Preview and confirm before anything is removed\n\nSAFE CLEANUP\nSelected items go to system Trash so you can recover them. DiskWise never empties Trash.\n\nPRIVACY\nAll analysis runs on your device. Photo contents are not uploaded to a cloud service.\n\nLearn more at https://diskwise.suherman.net",
-      "releaseNotes": "First Android release — on-device gallery scan, exact duplicates, clutter buckets, and recoverable Trash cleanup."
+      "fullDescription": "DiskWise for Android is an on-device gallery storage consultant. It scans your photos and videos, estimates reclaimable space, and helps you move clutter to Trash — never permanent delete in v1.\n\nWHAT IT DOES\n• Find exact duplicates\n• Surface screenshots, large videos, and older items\n• Ranked recommendations with reclaimable estimates\n• Swipe or Delete one item at a time, or Review a selection for bulk cleanup\n\nSAFE CLEANUP\nSelected items go to system Trash so you can recover them. DiskWise never empties Trash.\n\nPRIVACY\nAll analysis runs on your device. Photo contents are not uploaded to a cloud service.\n\nLearn more at https://diskwise.suherman.net",
+      "releaseNotes": "Deleting one photo is faster: swipe left, tap Delete in the list, or Delete from preview — goes straight to the system Trash UI. Bulk Review still confirms before moving multiple items."
     }
   }
 }
