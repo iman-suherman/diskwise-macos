@@ -1,9 +1,11 @@
 /**
- * Deploy the Next.js marketing website to Cloud Run from a GHCR image.
+ * Deploy the Next.js marketing website to Cloud Run.
  *
- * Builds/pushes via suherman-net-infra `ghcr-cloudrun-deploy` helper
- * (ghcr.io/iman-suherman/diskwise-website:<sha>).
- * NEXT_PUBLIC_* values are baked into the image at build time.
+ * Default: Cloud Build → Artifact Registry (australia-southeast1/cloudrun),
+ * then `gcloud run deploy`. This avoids flaky local Podman/QEMU amd64 builds.
+ *
+ * Optional: WEBSITE_DEPLOY_VIA=ghcr uses suherman-net-infra GHCR helper instead.
+ * NEXT_PUBLIC_* defaults are baked in the Dockerfile ARGs.
  */
 const { spawnSync } = require("child_process");
 const fs = require("fs");
@@ -61,11 +63,6 @@ function requireGhcrDeploy() {
   );
 }
 
-/** Prefer linux/amd64 for Cloud Run; override with GHCR_PLATFORM if needed. */
-function resolveBuildPlatform() {
-  return process.env.GHCR_PLATFORM?.trim() || undefined;
-}
-
 function run(command, args, options = {}) {
   const r = spawnSync(command, args, {
     stdio: "inherit",
@@ -85,7 +82,14 @@ function gitHead() {
   return r.status === 0 ? r.stdout.trim() : null;
 }
 
+function gitShort() {
+  const head = gitHead();
+  return head ? head.slice(0, 7) : "local";
+}
+
 function maybeSkipNonWebsiteDeploy() {
+  if (process.env.WEBSITE_FORCE_DEPLOY === "1") return false;
+
   const head = gitHead();
   if (!head) return false;
 
@@ -101,6 +105,64 @@ function maybeSkipNonWebsiteDeploy() {
   console.log(`deploy:website: skip — ${message}`);
   recordDeploy("success", { exitCode: 0, activityMessage: message });
   process.exit(0);
+}
+
+function stamp() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  return (
+    `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}` +
+    `${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`
+  );
+}
+
+/** Cloud Build → Artifact Registry (proven path for personal-suherman). */
+function buildViaCloudBuild(projectId, region) {
+  const repo =
+    process.env.WEBSITE_AR_REPO?.trim() ||
+    `${region}-docker.pkg.dev/${projectId}/cloudrun/diskwise-website`;
+  const tag = process.env.WEBSITE_IMAGE_TAG?.trim() || `${gitShort()}-${stamp()}`;
+  const image = `${repo}:${tag}`;
+
+  console.log(`deploy:website: Cloud Build amd64 → ${image}`);
+  run(
+    "gcloud",
+    [
+      "builds",
+      "submit",
+      "--project",
+      projectId,
+      "--tag",
+      image,
+      "--timeout",
+      process.env.WEBSITE_BUILD_TIMEOUT?.trim() || "1200s",
+      "--quiet",
+      ".",
+    ],
+    { cwd: websiteDir },
+  );
+  return image;
+}
+
+function buildViaGhcr(registryApiUrl, downloadBase) {
+  const platform = process.env.GHCR_PLATFORM?.trim() || undefined;
+  const { buildAndPushImage } = requireGhcrDeploy();
+  try {
+    return buildAndPushImage({
+      cwd: root,
+      contextDir: websiteDir,
+      imageName: "diskwise-website",
+      platform,
+      buildArgs: {
+        NEXT_PUBLIC_REGISTRY_API_URL: registryApiUrl,
+        NEXT_PUBLIC_APP_ID: "diskwise-macos",
+        NEXT_PUBLIC_DOWNLOAD_BASE_URL: downloadBase,
+      },
+      logPrefix: "deploy:website",
+    });
+  } catch (error) {
+    fail(error.message || String(error));
+  }
 }
 
 function main() {
@@ -119,26 +181,12 @@ function main() {
     process.env.PUBLIC_DOWNLOAD_BASE_URL?.trim() ||
     process.env.NEXT_PUBLIC_DOWNLOAD_BASE_URL?.trim() ||
     "https://diskwise-download.suherman.net/downloads";
-  const platform = resolveBuildPlatform();
 
-  const { buildAndPushImage } = requireGhcrDeploy();
-  let image;
-  try {
-    image = buildAndPushImage({
-      cwd: root,
-      contextDir: websiteDir,
-      imageName: "diskwise-website",
-      platform,
-      buildArgs: {
-        NEXT_PUBLIC_REGISTRY_API_URL: registryApiUrl,
-        NEXT_PUBLIC_APP_ID: "diskwise-macos",
-        NEXT_PUBLIC_DOWNLOAD_BASE_URL: downloadBase,
-      },
-      logPrefix: "deploy:website",
-    });
-  } catch (error) {
-    fail(error.message || String(error));
-  }
+  const via = (process.env.WEBSITE_DEPLOY_VIA || "cloudbuild").trim().toLowerCase();
+  const image =
+    via === "ghcr"
+      ? buildViaGhcr(registryApiUrl, downloadBase)
+      : buildViaCloudBuild(projectId, region);
 
   console.log(`deploy:website: deploying ${serviceName} ← ${image} (${region})…`);
   run("gcloud", [
@@ -157,7 +205,10 @@ function main() {
   ]);
 
   console.log("deploy:website: done");
-  recordDeploy("success", { exitCode: 0 });
+  recordDeploy("success", {
+    exitCode: 0,
+    activityMessage: `Cloud Build amd64 + Cloud Run deploy — ${gitShort()}`,
+  });
 }
 
 main();

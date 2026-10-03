@@ -60,7 +60,7 @@ npm run build:android:bundle
 |-------|-------|
 | Application ID | `net.suherman.diskwise.android` |
 | Play app id | `4975355557632156100` |
-| Privacy | https://diskwise.suherman.net/#privacy |
+| Privacy | https://diskwise.suherman.net/privacy |
 | Support | https://diskwise.suherman.net |
 | Contact | iman.suherman@gmail.com |
 
@@ -72,12 +72,15 @@ Release status: `play-console/play-status.json`
 - **Production** — versionCode **7** (`1.0.3`) one-step single-item delete (swipe / Delete / preview); bulk Review still confirms.
 - **Production** — versionCode **3** (`1.0.0`) previously submitted for review.
 
+### Policy rejection fixes (2026-09-23)
+
+| Issue | Fix |
+|-------|-----|
+| Misleading Claims — store listing icon/name mismatch | Android launcher now uses the same DiskWise mark as the Play listing (`mipmap` adaptive icons from `play-console/icon-512.png`) |
+| Invalid Privacy policy — indirect link | Dedicated page at https://diskwise.suherman.net/privacy (no `#` hash) |
+
 ### Still required for production / Play Store listing
 
-1. Add internal tester emails (Play Console → Internal testing → Testers).
-2. Complete **App content** (Data safety, Ads = No, target audience, content rating).
-3. Store listing: short/full description, icon, feature graphic, phone screenshots.
-4. Privacy policy URL on the store listing (already hosted).
-5. Promote internal → closed testing or production and send for review.
+1. Optional: upload native debug symbols for clearer crash reports.
 
 Console: https://play.google.com/console/u/0/developers/8591860321759482577/app/4975355557632156100

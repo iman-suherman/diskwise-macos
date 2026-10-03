@@ -43,9 +43,9 @@ export function PrivacySection() {
             Smart recommendations without sending your files to the cloud.
           </h2>
           <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400 sm:text-base sm:leading-7">
-            DiskWise reads storage and system metrics on your Mac, and your Photos library on
-            iPhone and iPad, to give you useful answers. That work happens on your device — not on
-            someone else&apos;s server.
+            DiskWise reads storage and system metrics on your Mac, and your Photos or gallery
+            library on iPhone, iPad, and Android, to give you useful answers. That work happens on
+            your device — not on someone else&apos;s server.
           </p>
           <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400 sm:text-base sm:leading-7">
             When you clean up, every action is previewed first and files go to Trash by default so

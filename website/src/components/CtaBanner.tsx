@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { AppStoreLink } from "@/components/AppStoreLink";
+import { GooglePlayLink } from "@/components/GooglePlayLink";
 import { DownloadButton } from "@/components/DownloadButton";
 import { useLatestVersion } from "@/hooks/useRegistry";
 
@@ -14,16 +15,17 @@ export function CtaBanner() {
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="text-xl font-bold sm:text-2xl md:text-3xl">
-              Ready to reclaim space — on Mac or iPhone?
+              Ready to reclaim space — on Mac, iPhone, or Android?
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-blue-100/90 md:text-base">
-              Download the macOS DMG, or get DiskWise for iPhone and iPad on the App Store.
-              Preview every cleanup, keep analysis on-device, and reclaim space with confidence.
+              Download the macOS DMG, or get DiskWise on the App Store and Google Play. Preview
+              every cleanup, keep analysis on-device, and reclaim space with confidence.
             </p>
           </div>
           <div className="grid w-full gap-3 sm:w-auto sm:min-w-[18rem]">
             <DownloadButton latest={latest} loading={loading} className="btn-cta-primary" />
             <AppStoreLink variant="button" className="btn-cta-secondary" />
+            <GooglePlayLink variant="button" className="btn-cta-secondary" />
             <Link href="/install" className="btn-cta-secondary">
               Install guide
             </Link>

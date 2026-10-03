@@ -27,8 +27,9 @@ const DEPLOY_TARGETS = [
     npmScript: "deploy:website",
     gcpServiceWeights: { "Cloud Run": 1 },
     details: [
-      "GHCR via suherman-net-infra helper: ghcr.io/iman-suherman/diskwise-website:<sha>",
-      "Deploy: npm run deploy:website (build+push+Cloud Run)",
+      "Default: Cloud Build → Artifact Registry cloudrun/diskwise-website:<sha-stamp>",
+      "Optional: WEBSITE_DEPLOY_VIA=ghcr for local Podman/GHCR path",
+      "Deploy: npm run deploy:website",
     ],
   },
   {

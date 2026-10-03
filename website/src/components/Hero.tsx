@@ -4,6 +4,7 @@ import Link from "next/link";
 import { LocalReleaseDate } from "@/components/LocalReleaseDate";
 import { ScanningHeroIcon } from "@/components/ScanningHeroIcon";
 import { AppStoreLink } from "@/components/AppStoreLink";
+import { GooglePlayLink } from "@/components/GooglePlayLink";
 import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 import { DownloadButton } from "@/components/DownloadButton";
 import { useLatestVersion } from "@/hooks/useRegistry";
@@ -32,13 +33,13 @@ export function Hero() {
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-slate-400 sm:mt-6 sm:text-lg sm:leading-8 md:text-xl md:leading-9">
             {BRAND_NAME} for Mac scans your drives, scores system health, finds duplicates, and
-            cleans caches safely — with on-device AI, not cloud uploads. On iPhone and iPad, it
-            is a Photos storage consultant that finds reclaimable space and moves clutter to
-            Recently Deleted.
+            cleans caches safely — with on-device AI, not cloud uploads. On iPhone, iPad, and
+            Android, it is a Photos / gallery storage consultant that finds reclaimable space and
+            moves clutter to Trash or Recently Deleted.
           </p>
 
           <div id="download" className="mt-6 flex flex-col gap-4 sm:mt-8">
-            <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+            <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   macOS
@@ -48,7 +49,8 @@ export function Hero() {
                   <DownloadButton
                     latest={latest}
                     loading={loading}
-                    className="btn-primary w-full whitespace-nowrap px-5 py-3 text-sm"
+                    labelPrefix="Download"
+                    className="btn-primary flex w-full items-center justify-center px-3 py-3 text-center text-sm leading-snug"
                   />
                 </div>
               </div>
@@ -59,6 +61,15 @@ export function Hero() {
                 <p className="mt-1 text-sm text-slate-400">Photos cleanup · iOS 17+</p>
                 <div className="mt-1 flex min-h-[44px] items-center">
                   <AppStoreLink variant="badge" className="-ml-2.5" />
+                </div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Android
+                </p>
+                <p className="mt-1 text-sm text-slate-400">Gallery cleanup · Android 8+</p>
+                <div className="mt-1 flex min-h-[44px] items-center">
+                  <GooglePlayLink variant="badge" className="-ml-2.5" />
                 </div>
               </div>
             </div>

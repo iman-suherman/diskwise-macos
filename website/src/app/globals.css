@@ -60,7 +60,8 @@ body {
   @apply flex h-11 w-full items-center justify-center whitespace-nowrap rounded-xl border border-white/30 px-5 text-sm font-semibold text-white transition hover:bg-white/10;
 }
 
-.app-store-badge {
+.app-store-badge,
+.google-play-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -68,7 +69,8 @@ body {
   padding: 10px;
 }
 
-.app-store-badge img {
+.app-store-badge img,
+.google-play-badge img {
   display: block;
   height: 40px;
   width: auto;

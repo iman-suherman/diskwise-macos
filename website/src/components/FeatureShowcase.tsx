@@ -1,4 +1,4 @@
-import { APP_STORE_URL, BRAND_NAME } from "@/lib/brand";
+import { APP_STORE_URL, BRAND_NAME, PLAY_STORE_URL } from "@/lib/brand";
 
 const coreFeatures = [
   {
@@ -107,6 +107,15 @@ const alsoIncluded: Array<{
     icon: "📱",
     href: APP_STORE_URL,
     cta: "Get on the App Store",
+    external: true,
+  },
+  {
+    title: "Also on Android",
+    description:
+      "Scan your gallery for duplicates and clutter, preview, then move extras to system Trash.",
+    icon: "🤖",
+    href: PLAY_STORE_URL,
+    cta: "Get on Google Play",
     external: true,
   },
 ];

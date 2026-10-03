@@ -6,9 +6,16 @@ type DownloadButtonProps = {
   latest: AppVersion | null;
   loading: boolean;
   className?: string;
+  /** Defaults to "Download for Mac". Use a shorter label in narrow cards. */
+  labelPrefix?: string;
 };
 
-export function DownloadButton({ latest, loading, className = "btn-primary" }: DownloadButtonProps) {
+export function DownloadButton({
+  latest,
+  loading,
+  className = "btn-primary",
+  labelPrefix = "Download for Mac",
+}: DownloadButtonProps) {
   if (loading) {
     return (
       <button type="button" className={className} disabled aria-busy="true">
@@ -23,7 +30,7 @@ export function DownloadButton({ latest, loading, className = "btn-primary" }: D
 
   return (
     <a href={toPublicDownloadUrl(latest)} className={className}>
-      Download for Mac · v{latest.version}
+      {labelPrefix} · v{latest.version}
     </a>
   );
 }

@@ -5,11 +5,11 @@
   "versionString": "1.0.5",
   "copyright": "Copyright © 2026 Iman Suherman",
   "primaryLocale": "en-AU",
-  "supportUrl": "https://diskwise.suherman.net/#privacy",
+  "supportUrl": "https://diskwise.suherman.net/privacy",
   "marketingUrl": "https://diskwise.suherman.net",
-  "privacyPolicyUrl": "https://diskwise.suherman.net/#privacy",
+  "privacyPolicyUrl": "https://diskwise.suherman.net/privacy",
   "privacyPolicyUrls": {
-    "en-AU": "https://diskwise.suherman.net/#privacy"
+    "en-AU": "https://diskwise.suherman.net/privacy"
   },
   "locales": {
     "en-AU": {

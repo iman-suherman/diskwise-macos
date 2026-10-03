@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppStoreLink } from "@/components/AppStoreLink";
+import { GooglePlayLink } from "@/components/GooglePlayLink";
 import { BRAND_NAME, GITHUB_ISSUES_URL, GITHUB_REPO_URL } from "@/lib/brand";
 
 export function Footer() {
@@ -7,9 +8,10 @@ export function Footer() {
     <footer className="border-t border-white/10 bg-black/40">
       <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-6">
         <p className="max-w-5xl text-sm leading-6 text-slate-400">
-          {BRAND_NAME} is an open source storage consultant for Mac, iPhone, and iPad. Disk
-          scans and Photos analysis run on your device — files and photo contents never leave
-          unless you choose to sync them elsewhere. Contributions and issue reports are welcome on{" "}
+          {BRAND_NAME} is an open source storage consultant for Mac, iPhone, iPad, and Android.
+          Disk scans and Photos / gallery analysis run on your device — files and photo contents
+          never leave unless you choose to sync them elsewhere. Contributions and issue reports are
+          welcome on{" "}
           <a
             href={GITHUB_REPO_URL}
             className="text-brand-blue transition hover:text-brand-blueLight"
@@ -35,10 +37,14 @@ export function Footer() {
             .
           </p>
           <div className="flex flex-wrap gap-4">
+            <Link href="/privacy" className="transition hover:text-brand-blue">
+              Privacy
+            </Link>
             <Link href="/#download" className="transition hover:text-brand-blue">
               Download for Mac
             </Link>
             <AppStoreLink variant="text" className="transition hover:text-brand-blue" />
+            <GooglePlayLink variant="text" className="transition hover:text-brand-blue" />
             <Link href="/install" className="transition hover:text-brand-blue">
               Install guide
             </Link>

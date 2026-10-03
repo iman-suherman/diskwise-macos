@@ -215,7 +215,7 @@ fun DashboardScreen(
                     }
                     items(
                         items = state.report.recommendations.take(3),
-                        key = { it.bucket.name }
+                        key = { "rec-${it.bucket.name}" }
                     ) { rec ->
                         RecommendationCard(rec = rec, onClick = { onOpenRecommendation(rec) })
                     }
@@ -231,7 +231,7 @@ fun DashboardScreen(
                 }
                 items(
                     items = state.report.buckets,
-                    key = { it.bucket.name }
+                    key = { "bucket-${it.bucket.name}" }
                 ) { bucket ->
                     BucketRow(summary = bucket, onClick = { onOpenBucket(bucket) })
                 }

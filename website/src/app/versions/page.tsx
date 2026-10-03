@@ -7,7 +7,7 @@ import { BRAND_NAME } from "@/lib/brand";
 export const metadata: Metadata = {
   title: `Version History · ${BRAND_NAME}`,
   description:
-    "Browse every DiskWise macOS release, read release notes, and download any DMG version. iPhone and iPad: App Store.",
+    "Browse every DiskWise macOS release, read release notes, and download any DMG version. Also on the App Store and Google Play.",
 };
 
 export default function VersionsPage() {

@@ -164,8 +164,8 @@ export function VersionHistory() {
         </p>
         <h2 className="mt-2 text-3xl font-bold text-slate-50">Download any Mac version</h2>
         <p className="mt-2 max-w-2xl text-slate-400">
-          Browse past macOS releases, read what changed, and grab the DMG you need. DiskWise for
-          iPhone and iPad is on the App Store.
+          Browse past macOS releases, read what changed, and grab the DMG you need. DiskWise is
+          also on the App Store and Google Play.
         </p>
         <div className="mt-4">
           <AppStoreLink variant="button" className="btn-secondary" />

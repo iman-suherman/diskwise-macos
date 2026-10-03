@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { AppStoreLink } from "@/components/AppStoreLink";
+import { GooglePlayLink } from "@/components/GooglePlayLink";
 import { BRAND_NAME, GITHUB_REPO_URL } from "@/lib/brand";
 
 const nav = [
@@ -13,7 +14,7 @@ const nav = [
   { href: "/versions", label: "Versions" },
   { href: "/#preview", label: "Preview" },
   { href: "/#features", label: "Features" },
-  { href: "/#privacy", label: "Privacy" },
+  { href: "/privacy", label: "Privacy" },
   { href: "/#opensource", label: "Open source" },
   { href: GITHUB_REPO_URL, label: "GitHub", external: true },
 ];
@@ -135,6 +136,7 @@ export function Header() {
               Download for Mac
             </Link>
             <AppStoreLink variant="button" className="btn-secondary w-full" />
+            <GooglePlayLink variant="button" className="btn-secondary w-full" />
           </div>
         </nav>
       )}

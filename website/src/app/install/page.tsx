@@ -5,7 +5,7 @@ import { BRAND_NAME } from "@/lib/brand";
 export const metadata: Metadata = {
   title: `Download · ${BRAND_NAME}`,
   description:
-    "Download DiskWise for Mac as a notarized DMG, or get DiskWise for iPhone and iPad on the App Store.",
+    "Download DiskWise for Mac as a notarized DMG, get it on the App Store for iPhone and iPad, or on Google Play for Android.",
 };
 
 export default function InstallPage() {

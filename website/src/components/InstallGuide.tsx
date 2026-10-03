@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { AppStoreLink } from "@/components/AppStoreLink";
+import { GooglePlayLink } from "@/components/GooglePlayLink";
 import { LocalReleaseDate } from "@/components/LocalReleaseDate";
 import { DownloadButton } from "@/components/DownloadButton";
 import { useLatestVersion } from "@/hooks/useRegistry";
@@ -62,14 +63,15 @@ export function InstallGuide() {
         Get DiskWise
       </p>
       <h1 className="mt-3 text-3xl font-bold text-slate-50 md:text-4xl">
-        Download for Mac, or get it on the App Store
+        Download for Mac, or get it on the App Store and Google Play
       </h1>
       <p className="mt-4 text-base leading-7 text-slate-400">
-        DiskWise for macOS is a notarized DMG. DiskWise for iPhone and iPad is on the App Store
-        and helps you clean Photos clutter on-device.
+        DiskWise for macOS is a notarized DMG. On iPhone, iPad, and Android it is an on-device
+        Photos / gallery consultant that finds reclaimable space and moves clutter to Trash or
+        Recently Deleted.
       </p>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+      <div className="mt-8 grid gap-4 sm:grid-cols-3">
         <div className="card p-6">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">macOS</p>
           <h2 className="mt-2 text-lg font-semibold text-slate-100">Download the DMG</h2>
@@ -91,6 +93,17 @@ export function InstallGuide() {
           </p>
           <div className="mt-3">
             <AppStoreLink variant="badge" className="-ml-2.5" />
+          </div>
+        </div>
+        <div className="card p-6">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Android</p>
+          <h2 className="mt-2 text-lg font-semibold text-slate-100">Get it on Google Play</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-400">
+            Gallery duplicates, screenshots, and large videos — preview, then system Trash.
+            Android 8 or later.
+          </p>
+          <div className="mt-3">
+            <GooglePlayLink variant="badge" className="-ml-2.5" />
           </div>
         </div>
       </div>
@@ -158,8 +171,10 @@ export function InstallGuide() {
         <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-400">
           <li>• Mac: macOS 14 (Sonoma) or later, Apple Silicon or Intel</li>
           <li>• iPhone &amp; iPad: iOS 17 or iPadOS 17 or later</li>
+          <li>• Android: Android 8 (API 26) or later</li>
           <li>• Full Disk Access recommended for complete Mac volume scans</li>
           <li>• Photo Library access required for the iOS app (full access recommended)</li>
+          <li>• Photos and videos access required for the Android app</li>
         </ul>
       </div>
     </article>
