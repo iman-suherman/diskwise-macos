@@ -46,3 +46,6 @@ website/public/downloads/*.html
 __pycache__/
 *.pyc
 app/DiskWise/Resources/release-notes/
+
+# Local screenshot backups
+play-console/screenshots/.iphone-backup/
